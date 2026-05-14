@@ -2,10 +2,14 @@
 Deep tier entry point — runs 03:00 UTC daily.
 
 What this does:
-  1. Fetch earnings transcripts published recently — from free sources:
-       • Direct IR-site scrapers (SK Hynix, Samsung, Micron)
+  1. Fetch earnings transcripts published recently — from free sources,
+     in priority order:
+       • Yahoo Finance (PRIMARY — full transcripts for every name, incl. the
+         KRX-listed memory makers SK Hynix + Samsung)
        • Motley Fool transcripts (US-listed names, English calls)
-     (Replaces the gated Quartr API as of v3.31 — see transcript_sources.py)
+       • Direct IR-site scrapers (Micron full; SK Hynix / Samsung materials-only)
+     (Replaced the gated Quartr API in v3.31; Yahoo Finance added v3.32 — see
+     transcript_sources.py)
   2. Fetch Korean broker English PDFs (Mirae + NH + Samsung Securities)
   3. Run Layer 1 digester (Haiku) over each new document
   4. Persist digests to state/digests/{YYYY-MM-DD}/
@@ -24,6 +28,7 @@ instead of silently omitting a company. Getting commentary right is the point;
 a missing transcript is a tracked fact.
 
 CHANGELOG (this file):
+  v3.32  (2026-05-14) — Step 1 now passes YAHOO_TRANSCRIPT_TICKERS to fetch_transcripts_with_retry (Yahoo Finance is primary transcript source)
   v3.31  (2026-05-14) — Step 1 rewired to transcript_sources (was Quartr); writes state/transcript_status.json
 """
 
@@ -33,7 +38,7 @@ import logging
 import sys
 from datetime import date, datetime
 
-from src.config import IR_SOURCES, MOTLEY_FOOL_TICKERS
+from src.config import IR_SOURCES, MOTLEY_FOOL_TICKERS, YAHOO_TRANSCRIPT_TICKERS
 from src.data.transcript_sources import fetch_transcripts_with_retry
 from src.data.korean_brokers import (
     fetch_mirae_with_retry,
@@ -61,10 +66,10 @@ def run_deep_tier() -> int:
 
     digests_dir_for(today)  # ensure directory exists
 
-    # ----- Step 1: Earnings transcripts (IR scrapers + Motley Fool) -----
-    logger.info("Fetching earnings transcripts (IR scrapers + Motley Fool)...")
+    # ----- Step 1: Earnings transcripts (Yahoo Finance + Motley Fool + IR scrapers) -----
+    logger.info("Fetching earnings transcripts (Yahoo Finance + Motley Fool + IR scrapers)...")
     transcript_payload, transcript_meta = fetch_transcripts_with_retry(
-        IR_SOURCES, MOTLEY_FOOL_TICKERS
+        IR_SOURCES, MOTLEY_FOOL_TICKERS, YAHOO_TRANSCRIPT_TICKERS
     )
     logger.info(f"Transcripts: status={transcript_meta.get('status')}")
     if transcript_meta.get("summary"):
