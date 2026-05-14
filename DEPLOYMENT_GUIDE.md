@@ -1,7 +1,8 @@
-# Memory Cycle Brief — Deployment Guide (v3.31)
+# Memory Cycle Brief — Deployment Guide (v3.32)
 
 <!--
 CHANGELOG (this file):
+  v3.32  (2026-05-14) — Section 2.3: Yahoo Finance added as primary transcript source; troubleshooting + tuning notes updated
   v3.31  (2026-05-14) — Section 2.3 rewritten — no Quartr signup/key; transcript troubleshooting rows; transcript-sources tuning notes
   v3.3   (2026-05-12) — extraction_log review steps; GitHub-connect + @claude workflow section
   v3.1   (2026-05-12) — News relevance filter calibration + dropped-items log
@@ -62,29 +63,36 @@ After upload, your repo file list should show: `.github/`, `src/`, `docs/`, `REA
 2. Confirm email, log in
 3. API key is on dashboard, top of page — looks like `c8a1k2hr01qtn8c5j7v0c8a1k2hr01qtn8c5j7vg`
 
-### 2.3 Earnings transcripts — no signup needed (v3.31)
+### 2.3 Earnings transcripts — no signup needed (v3.32)
 
 **There is nothing to set up here.** Earlier versions used the Quartr API for
 earnings-call transcripts, but Quartr discontinued its free developer tier
-(it's now enterprise-only, "contact us" pricing). As of v3.31, transcripts come
-from free sources that need no API key:
+(it's now enterprise-only, "contact us" pricing). Transcripts now come from
+free sources that need no API key, used in priority order:
 
-- **Direct IR-site scrapers** — SK Hynix, Samsung, Micron (the 3 core memory makers)
-- **Motley Fool transcripts** — US-listed names with English earnings calls
-- **SEC EDGAR 8-K earnings exhibits** — already covered by your EDGAR feeds
+- **Yahoo Finance** *(primary)* — full earnings-call transcripts for every
+  name in the basket, including the KRX-listed memory makers SK Hynix and
+  Samsung (with the Korean+English Q&A). Latest call is free.
+- **Motley Fool transcripts** — US-listed names with English earnings calls.
+- **Direct IR-site scrapers** — Micron posts the full call; SK Hynix and
+  Samsung IR sites publish slides + webcast only (no text transcript), so
+  they're treated as **materials-only** by config and kept just for the
+  earnings release / slide deck.
+- **SEC EDGAR 8-K earnings exhibits** — already covered by your EDGAR feeds.
 
 Skip straight to 2.4. There is no `QUARTR_API_KEY` anymore — if you have one
 in your environment from an earlier setup, you can delete it; it's unused.
 
 One thing to know about how this behaves: every transcript source reports a
 three-state availability flag — `full_transcript`, `materials_only`, or
-`nothing`. For the Korean names (SK Hynix, Samsung), the earnings *call* is
-Korean-hosted and the English transcript is often posted days late or only as a
-webcast. When that happens, the brief's data-source validation section will
-show that company's transcript as a WARN with "COMMENTARY NOT AVAILABLE —
-materials only". That's expected and by design: a missing transcript is a
-tracked fact, surfaced explicitly, not a silent gap. The Korean broker PDF
-echo (Mirae / NH / Samsung Securities) usually carries the commentary anyway.
+`nothing` — and the aggregator keeps the best state across sources. For SK
+Hynix and Samsung, Yahoo Finance is normally the source that delivers
+`full_transcript`; the IR scraper for those two is capped at `materials_only`
+on purpose. If Yahoo *also* comes back short for a Korean name, the brief's
+data-source validation section shows that company as a WARN with "COMMENTARY
+NOT AVAILABLE — materials only". That's a tracked fact surfaced explicitly,
+not a silent gap — and the Korean broker PDF echo (Mirae / NH / Samsung
+Securities) usually still carries the commentary.
 
 ### 2.4 Alpha Vantage (EPS cross-check — optional)
 
@@ -309,8 +317,8 @@ GitHub disables scheduled workflows in inactive repos after 60 days. The pipelin
 | "Bad credentials" in Anthropic step | ANTHROPIC_API_KEY wrong/missing | Settings → Secrets → update |
 | Brief missing 🚨 banners | Signal not actually firing (correct behavior) | Check the EPS section if visible |
 | Brief sent but no Korean broker data | Finnhub / Naver scraper / Korean broker PDF fetch fail | Check assessment table for which |
-| Transcript shows "COMMENTARY NOT AVAILABLE — materials only" | Korean call, English transcript posted late or webcast-only | Expected for SK Hynix / Samsung. The Korean broker PDF echo usually carries the commentary. If it persists for **Micron** (a US name), the IR scraper selectors likely need review — see "Where to make adjustments" |
-| All transcript rows show "nothing" for weeks | IR site redesign, or Motley Fool structure change | Check `state/transcript_status.json` for the notes. Each scraper degrades gracefully, so this won't break the brief — but selectors in `src/data/transcript_sources.py` need updating (same maintenance pattern as the Naver scraper) |
+| Transcript shows "COMMENTARY NOT AVAILABLE — materials only" | Yahoo Finance came back short for that name (and IR site is materials-only) | For SK Hynix / Samsung, Yahoo Finance is the transcript source — if it's short, the latest call may not be posted yet, or Yahoo changed its page structure (check `state/transcript_status.json` notes). The Korean broker PDF echo usually still carries the commentary. If it persists for **Micron** or a US name, the Yahoo or IR scraper selectors need review — see "Where to make adjustments" |
+| All transcript rows show "nothing" for weeks | Yahoo Finance / Motley Fool / IR site structure change | Check `state/transcript_status.json` for the per-source notes. Each scraper degrades gracefully, so this won't break the brief — but selectors in `src/data/transcript_sources.py` need updating (same maintenance pattern as the Naver scraper) |
 | "Naver Finance: FAIL" | Korea blocking GitHub IPs (rare) | Self-resolves in 24hr; cached payload used |
 | No email arriving | GMAIL_APP_PASSWORD wrong (most common) | Must be 16 chars from apppasswords page, NOT regular Gmail password |
 | Email missing a section | Old workflow file cached | Push any commit to force refresh |
@@ -347,7 +355,7 @@ After Part 6 verification:
 - **EPS scoring thresholds** → edit `EPS_SCORING_THRESHOLDS` in `src/config.py`. Current thresholds (bearish 7d < -10 = EARLY WARNING, bearish 30d < -15 = FIRED) were validated against the 2021 and 2024 Morgan Stanley "Winter is Coming" / "Winter Looms" events — see `docs/INDICATOR_3_EXAMPLES.md` for the math
 - **News relevance filter tuning** → edit `TRACKED_ANALYSTS` / `TRACKED_BROKERS` / `TRACKED_COMPANIES` / `TRACKED_CONCEPTS` in `src/config.py` to expand or narrow the keyword pass. The Haiku scoring threshold is the `min_score=3` argument in `src/fast_tier.py` (Step 1b). Lower it to catch more (and accept more noise); raise it to be stricter. Dropped items are logged to `state/news_dropped_*.json` for spot-checking
 - **Architecture extraction prompt (v3.3)** → the captive-ratio extraction rules live in `DIGEST_SYSTEM_PROMPT` in `src/analysis/digester.py`. If you see extraction missing a signal type you care about, add the field to the `architecture_signals` schema in the prompt. Output flows to `state/extraction_log_*.jsonl`. Test changes by running `python -m tests.test_architecture_extraction` against your local copy before deploying — this validates the prompt still extracts the three known fixture types correctly
-- **Transcript sources (v3.31)** → IR-site scrapers and the Motley Fool scraper live in `src/data/transcript_sources.py`. When an IR site is redesigned, the link-matching keywords or the content selectors there need updating — same maintenance pattern as the Naver scraper, expect 1-2 fixes/year. Each scraper is defensive: a broken selector degrades to `materials_only` or `nothing` and logs a warning, it never crashes the deep tier. Diagnose from `state/transcript_status.json`. To add a new company, add it to `IR_SOURCES` (direct IR site) or `MOTLEY_FOOL_TICKERS` (US-listed, English call) in `src/config.py`. When OpenAI or Anthropic goes public, fill in the `AI_LAB_IR_WATCH` entry in `src/config.py` and move it into the appropriate list — the news pipeline already watches for the listing event
+- **Transcript sources (v3.32)** → all three scrapers — Yahoo Finance, Motley Fool, and the IR sites — live in `src/data/transcript_sources.py`. Yahoo Finance is the primary source (full transcripts incl. the Korean names); the SK Hynix / Samsung IR scrapers are capped at `materials_only` via `transcript_capable: False` in `IR_SOURCES`. When a site is redesigned, the link-matching keywords or content selectors need updating — same maintenance pattern as the Naver scraper, expect 1-2 fixes/year. Each scraper is defensive: a broken selector degrades to `materials_only` or `nothing` and logs a warning, it never crashes the deep tier. Diagnose from `state/transcript_status.json`. To add a new company: add it to `YAHOO_TRANSCRIPT_TICKERS` (use ONE canonical Yahoo ticker — Yahoo syndicates the same transcript across many listing variants), and optionally to `MOTLEY_FOOL_TICKERS` or `IR_SOURCES` in `src/config.py`. When OpenAI or Anthropic goes public, fill in the `AI_LAB_IR_WATCH` entry and add the ticker to `YAHOO_TRANSCRIPT_TICKERS` — the news pipeline already watches for the listing event
 - **Add new ticker** → edit `WIDER_BASKET` in `src/config.py`
 - **Email format** → edit `src/email_module/template.py` (HTML/CSS)
 
