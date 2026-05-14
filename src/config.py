@@ -5,6 +5,7 @@ Defines the tickers tracked, the indicator framework (tiers 1-4),
 and the thresholds that classify each signal as fired vs not fired.
 
 CHANGELOG (this file):
+  v3.32  (2026-05-14) — Added YAHOO_TRANSCRIPT_TICKERS (primary transcript source); IR_SOURCES gains transcript_capable flag (SK Hynix/Samsung = False — IR sites are materials-only); scrubbed 24 stale "Quartr" refs in INDICATORS sources/stitching → "Yahoo Finance"
   v3.31  (2026-05-14) — Added IR_SOURCES, MOTLEY_FOOL_TICKERS, AI_LAB_IR_WATCH; OpenAI/Anthropic listing-watch queries
   v3.3   (2026-05-12) — (no direct change — TRACKED_* lists added v3.1/3.2)
   v3.2   (2026-05-12) — RSS feeds 24->32, queries 26->56, TRACKED_CONCEPTS added
@@ -146,7 +147,7 @@ INDICATORS: list[Indicator] = [
             "slots opening up (currently sold out through 2026). Detected via memory "
             "maker earnings calls + OEM earnings + Korean broker PDFs citing TrendForce."
         ),
-        sources=["Quartr earnings transcripts", "Korean broker PDFs", "TrendForce press releases"],
+        sources=["Yahoo Finance earnings transcripts", "Korean broker PDFs", "TrendForce press releases"],
         trigger_patterns=[
             # Direction language (must pair with lead time / delivery context):
             "lead time shrinking", "lead times shrinking", "lead times shortening",
@@ -160,9 +161,9 @@ INDICATORS: list[Indicator] = [
         trigger_numeric={
             "lpddr5x_lead_time_weeks": {"trigger_below": 26, "comparison": "vs_prior_quarter"},
         },
-        cadence="Single Quartr earnings call statement OR Korean broker PDF numeric citation",
+        cadence="Single Yahoo Finance earnings call statement OR Korean broker PDF numeric citation",
         stitching=(
-            "Earnings transcript (Quartr) provides direct mgmt statement = highest signal. "
+            "Earnings transcript (Yahoo Finance) provides direct mgmt statement = highest signal. "
             "Korean broker PDF numeric citation = secondary confirm. News articles using "
             "shrinking/shortening language = tertiary. Trigger on primary alone; corroboration not required."
         ),
@@ -217,8 +218,8 @@ INDICATORS: list[Indicator] = [
             "evidence from BOTH supplier-side (memory makers) AND buyer-side (Dell/HPE/Lenovo)."
         ),
         sources=[
-            "Quartr earnings (memory makers state supplier inventory weeks)",
-            "Quartr earnings (Dell/HPE/Lenovo state component inventory)",
+            "Yahoo Finance earnings (memory makers state supplier inventory weeks)",
+            "Yahoo Finance earnings (Dell/HPE/Lenovo state component inventory)",
             "TrendForce monthly press releases",
         ],
         trigger_patterns=[
@@ -238,7 +239,7 @@ INDICATORS: list[Indicator] = [
         cadence="Quarterly earnings cycle (~3 months) — each earnings call updates numbers",
         stitching=(
             "STITCHED — REQUIRES BOTH SIDES. Supplier inventory from memory maker earnings "
-            "(Quartr) + buyer inventory from OEM earnings (Quartr Dell/HPE/Lenovo) OR "
+            "(Yahoo Finance) + buyer inventory from OEM earnings (Yahoo Finance Dell/HPE/Lenovo) OR "
             "TrendForce monthly summary citing both. Trigger fires only when both sides "
             "show the gap widening simultaneously."
         ),
@@ -377,7 +378,7 @@ INDICATORS: list[Indicator] = [
         ),
         sources=[
             "Hyperscaler IR pages (microsoft.com/investor, abc.xyz/investor, ir.meta.com, ir.aboutamazon.com, investor.oracle.com)",
-            "Quartr earnings transcripts (full Q&A on capex)",
+            "Yahoo Finance earnings transcripts (full Q&A on capex)",
             "Memory maker earnings (Korean press + press releases)",
         ],
         trigger_patterns=[
@@ -395,7 +396,7 @@ INDICATORS: list[Indicator] = [
         },
         cadence="Quarterly earnings (Q2 2026 prints MSFT Jul 22, GOOG Jul 22, META Jul 23, AMZN Jul 24)",
         stitching=(
-            "Hyperscaler IR press release primary. Quartr Q&A transcript adds depth on capex intent. "
+            "Hyperscaler IR press release primary. Yahoo Finance Q&A transcript adds depth on capex intent. "
             "Trigger on EACH hyperscaler independently — one blink is enough for bear catalyst."
         ),
     ),
@@ -409,7 +410,7 @@ INDICATORS: list[Indicator] = [
             "3+ year HBM LTA announcements. 'Sold out through 2027/2028' phrasing. "
             "Currently fired (HBM3E sold out through 2026; Hynix HBM4 LTAs with Nvidia)."
         ),
-        sources=["Memory maker press releases", "Korean press", "Quartr earnings transcripts (Q&A)"],
+        sources=["Memory maker press releases", "Korean press", "Yahoo Finance earnings transcripts (Q&A)"],
         trigger_patterns=[
             "sold out through 2027", "sold out through 2028", "sold out through 2029",
             "multi-year LTA", "long-term supply agreement",
@@ -533,7 +534,7 @@ INDICATORS: list[Indicator] = [
         sources=[
             "TrendForce monthly contract report press releases",
             "Mirae Asset PDFs (reproduce TrendForce spot+contract charts)",
-            "Quartr earnings call commentary",
+            "Yahoo Finance earnings call commentary",
         ],
         trigger_patterns=[
             "spot weakness", "spot below contract", "spot-contract spread narrowing",
@@ -568,7 +569,7 @@ INDICATORS: list[Indicator] = [
         sources=[
             "TrendForce monthly contract report press release",
             "Mirae Asset PDFs (Korean brokers cite the contract table)",
-            "Quartr memory maker earnings commentary",
+            "Yahoo Finance memory maker earnings commentary",
         ],
         trigger_patterns=[
             "contract prices declined", "contract prices fell", "contract pricing weakened",
@@ -584,7 +585,7 @@ INDICATORS: list[Indicator] = [
         stitching=(
             "TrendForce monthly press release is primary (always free, always headlines "
             "the contract direction). Mirae Asset PDF reproduction confirms numeric. "
-            "Quartr earnings call commentary adds context."
+            "Yahoo Finance earnings call commentary adds context."
         ),
     ),
 
@@ -598,7 +599,7 @@ INDICATORS: list[Indicator] = [
             "or earnings disclosure. Currently 2-3 weeks."
         ),
         sources=[
-            "Quartr memory maker earnings (★ management states inventory weeks directly)",
+            "Yahoo Finance memory maker earnings (★ management states inventory weeks directly)",
             "Mirae Asset PDFs", "TrendForce monthly press releases",
         ],
         trigger_patterns=[
@@ -613,7 +614,7 @@ INDICATORS: list[Indicator] = [
         },
         cadence="Quarterly earnings (every ~3 months) + monthly TrendForce",
         stitching=(
-            "★ Quartr earnings transcripts BEST — management states verbatim each quarter "
+            "★ Yahoo Finance earnings transcripts BEST — management states verbatim each quarter "
             "('we exited Q1 at 2.3 weeks'). TrendForce monthly press release confirms. "
             "SK Hynix Q2 print Jul 29, Micron Q3 FY26 Jun 24."
         ),
@@ -648,7 +649,7 @@ INDICATORS: list[Indicator] = [
             "worldwide WFE billings printing MoM decline."
         ),
         sources=["ASML earnings press releases", "AMAT earnings press releases",
-                 "SEMI press releases RSS (semi.org)", "Quartr earnings transcripts",
+                 "SEMI press releases RSS (semi.org)", "Yahoo Finance earnings transcripts",
                  "Finnhub for ASML/AMAT analyst reactions"],
         trigger_patterns=[
             "bookings declined", "bookings fell", "bookings weakened",
@@ -663,7 +664,7 @@ INDICATORS: list[Indicator] = [
         },
         cadence="Quarterly (ASML/AMAT earnings) + monthly (SEMI billings)",
         stitching=(
-            "ASML or AMAT earnings press release primary (Quartr adds depth). SEMI monthly "
+            "ASML or AMAT earnings press release primary (Yahoo Finance adds depth). SEMI monthly "
             "billings RSS confirms broader picture. Single source sufficient for trigger."
         ),
     ),
@@ -678,7 +679,7 @@ INDICATORS: list[Indicator] = [
             "MU Q2 41.86%). OR first miss while forward guidance maintained or raised. "
             "Scenario A and Scenario B from Part 8 Indicator 5."
         ),
-        sources=["Memory maker earnings press releases", "Quartr full transcripts",
+        sources=["Memory maker earnings press releases", "Yahoo Finance full transcripts",
                  "Finnhub earnings + analyst reactions", "Investing.com per-ticker RSS"],
         trigger_patterns=[
             "earnings miss", "EPS missed", "results below consensus",
@@ -691,7 +692,7 @@ INDICATORS: list[Indicator] = [
         },
         cadence="Quarterly (SK Hynix Jul 29 Q2, MU Jun 24 Q3 FY26)",
         stitching=(
-            "Press release gives EPS number. Quartr Q&A reveals guidance subtext. Both "
+            "Press release gives EPS number. Yahoo Finance Q&A reveals guidance subtext. Both "
             "needed for Scenario B detection (small miss + guidance still raised)."
         ),
     ),
@@ -706,7 +707,7 @@ INDICATORS: list[Indicator] = [
         name="Negative YoY ASP prints",
         description="Memory ASPs print year-over-year declines.",
         what_to_look_for="DRAM or NAND ASP YoY change negative in TrendForce or supplier earnings.",
-        sources=["Quartr earnings transcripts", "TrendForce press releases", "Mirae PDFs"],
+        sources=["Yahoo Finance earnings transcripts", "TrendForce press releases", "Mirae PDFs"],
         trigger_patterns=[
             "ASP declined", "ASP fell", "average selling price decline",
             "ASP YoY negative", "year-over-year price decline",
@@ -716,7 +717,7 @@ INDICATORS: list[Indicator] = [
             "nand_asp_yoy_pct": {"trigger_below": 0.0},
         },
         cadence="Quarterly earnings + monthly TrendForce",
-        stitching="Memory maker earnings (Quartr) primary. TrendForce confirms third-party.",
+        stitching="Memory maker earnings (Yahoo Finance) primary. TrendForce confirms third-party.",
     ),
 
     Indicator(
@@ -725,7 +726,7 @@ INDICATORS: list[Indicator] = [
         name="Earnings guidance cuts",
         description="Memory makers cut forward guidance or pre-announce miss.",
         what_to_look_for="MU or SK Hynix or Samsung issues guidance cut or pre-announces miss.",
-        sources=["Press releases", "Quartr earnings", "Finnhub company news"],
+        sources=["Press releases", "Yahoo Finance earnings", "Finnhub company news"],
         trigger_patterns=[
             "cut guidance", "lowered guidance", "reduced guidance",
             "pre-announce", "preliminary results",
@@ -742,7 +743,7 @@ INDICATORS: list[Indicator] = [
         name="Capex slashed",
         description="Memory makers announce major capex cuts.",
         what_to_look_for="Any Big Three announces capex reduction of >20% or fab idling.",
-        sources=["Press releases", "Quartr earnings", "Korean press / DART filings"],
+        sources=["Press releases", "Yahoo Finance earnings", "Korean press / DART filings"],
         trigger_patterns=[
             "capex reduction", "capex cut", "capital spending reduced",
             "fab idling", "production cut", "capacity reduction",
@@ -804,7 +805,7 @@ COMPANY_SPECIFIC_INDICATORS = {
             "samsung_hbm4_nvidia_share_pct": {"40": -6, "50": -15, "70": -30},
             "skhx_hbm4_yield_pct": {"trigger_below": 65},
         },
-        "stitching": "Mirae Asset PDFs (Korean brokers do HBM yield analysis) + Quartr Nvidia/Samsung calls.",
+        "stitching": "Mirae Asset PDFs (Korean brokers do HBM yield analysis) + Yahoo Finance Nvidia/Samsung calls.",
     },
     "i6c_micron_hbm4": {
         "name": "Micron HBM4 catch-up",
@@ -814,7 +815,7 @@ COMPANY_SPECIFIC_INDICATORS = {
             "Micron HBM4 hyperscaler",
         ],
         "trigger_numeric": None,
-        "stitching": "Micron earnings (Quartr) + Nvidia/AMD earnings + news scraping.",
+        "stitching": "Micron earnings (Yahoo Finance) + Nvidia/AMD earnings + news scraping.",
     },
     # Indicator 7 — US ADR / SPO launch tracking
     "i7_adr_launch": {
@@ -1127,25 +1128,71 @@ SCRAPE_TARGETS = {
 # (not a pre-ADR stopgap): even after the SK Hynix US ADR lists, the earnings
 # CALL is still Korean-hosted on the company IR site. The ADR gives a US ticker
 # for price/analyst data via Finnhub — it does NOT create transcript coverage.
+#
+# v3.32 — `transcript_capable` makes the SK Hynix/Samsung reality explicit:
+# their IR sites publish slides + webcast only, NOT a text transcript. When
+# False, the IR scraper is capped at `materials_only` regardless of how much
+# text it finds — it must never masquerade as a full-transcript source. The
+# actual full transcript for these names comes from Yahoo Finance (see
+# YAHOO_TRANSCRIPT_TICKERS below), which carries the Korean+English call text.
 IR_SOURCES = {
     "SK Hynix": {
         "ticker": "000660.KS",
         "ir_url": "https://www.skhynix.com/ir/UI-FR-IR15",
         "transcript_reliability": "low",   # Korean call; English transcript often days late or webcast-only
+        "transcript_capable": False,       # v3.32 — IR site is materials/webcast only; Yahoo Finance is the transcript source
         "lang": "ko/en",
     },
     "Samsung Electronics": {
         "ticker": "005930.KS",
         "ir_url": "https://www.samsung.com/global/ir/",
         "transcript_reliability": "low",   # same as SK Hynix — flag aggressively
+        "transcript_capable": False,       # v3.32 — IR site is materials/webcast only; Yahoo Finance is the transcript source
         "lang": "ko/en",
     },
     "Micron": {
         "ticker": "MU",
         "ir_url": "https://investors.micron.com/events-and-presentations",
         "transcript_reliability": "high",  # US, English, prompt posting
+        "transcript_capable": True,        # v3.32 — Micron IR posts the full call promptly
         "lang": "en",
     },
+}
+
+# Yahoo Finance earnings-call transcripts (v3.32) — the PRIMARY transcript
+# source. Verified to carry full call text (incl. Korean+English Q&A) for
+# every name in the basket, crucially including the KRX-listed memory makers
+# that the IR scrapers and Motley Fool cannot cover. Latest call is free;
+# historical is gated behind a Yahoo subscription — fine for a daily brief
+# that wants the most recent call.
+#
+# Coverage verified May 2026: SK Hynix, Samsung, Micron, ASML, TSMC confirmed
+# full; US mega-caps (NVDA/MSFT/GOOGL/META/AMZN/ORCL/AVGO/DELL/HPE) expected
+# full (same syndication feed, all US-listed English calls).
+#
+# IMPORTANT: Yahoo syndicates each transcript across many ticker variants
+# (SK Hynix also shows as HY9H.F/.DU/.SG; Samsung as SSU.F/SMSN.L/SSNLF;
+# etc.). These are the SAME transcript — use ONE canonical ticker per company
+# below, do not treat the variants as independent corroboration.
+YAHOO_TRANSCRIPT_TICKERS = {
+    # Core memory makers — Yahoo is the ONLY working full-transcript source
+    # for the two Korean names.
+    "SK Hynix": "000660.KS",
+    "Samsung Electronics": "005930.KS",
+    "Micron": "MU",
+    # Wider basket — transcript-fed indicators (HBM4 / capex / WFE / OEM inventory)
+    "Nvidia": "NVDA",
+    "Broadcom": "AVGO",
+    "TSMC": "TSM",
+    "Applied Materials": "AMAT",
+    "ASML": "ASML",
+    "Microsoft": "MSFT",
+    "Alphabet": "GOOGL",
+    "Meta": "META",
+    "Amazon": "AMZN",
+    "Oracle": "ORCL",
+    "Dell": "DELL",
+    "HPE": "HPE",
 }
 
 # Motley Fool transcript coverage — US-listed names with English earnings calls.
