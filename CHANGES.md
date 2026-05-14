@@ -1,8 +1,29 @@
 # Memory Cycle Brief — Changelog
 
-This release consolidates v3.1 (news relevance filter), v3.2 (architectural sensing feeds), v3.3 (earnings architecture extraction), and v3.31 (transcript sources — Quartr replacement). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
+This release consolidates v3.1 (news relevance filter), v3.2 (architectural sensing feeds), v3.3 (earnings architecture extraction), v3.31 (transcript sources — Quartr replacement), and v3.32 (transcript source correction — Yahoo Finance primary). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
 
-> **A note on version numbering.** v3.31 is a maintenance fix (replacing a gated dependency), deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators. A transient mislabel during the build briefly called the transcript work "v3.4" — that has been corrected to v3.31 everywhere.
+> **A note on version numbering.** v3.31 and v3.32 are maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators. A transient mislabel during the v3.31 build briefly called the transcript work "v3.4" — that has been corrected to v3.31 everywhere.
+
+---
+
+## v3.32 — Transcript Source Correction (Yahoo Finance primary)
+
+**Why**: v3.31 replaced the gated Quartr API with IR-site scrapers + Motley Fool — but that left a real gap. The SK Hynix and Samsung IR sites publish slides + webcast only, **no text transcript**, and Motley Fool doesn't cover Korean listings. So the two most important names in the portfolio had *no working full-transcript source*. Verification (May 2026) found Yahoo Finance carries the full call text — including the Korean+English Q&A — for SK Hynix, Samsung, Micron, ASML, TSMC, and (by the same syndication feed) the US mega-caps.
+
+| File | Changes |
+|---|---|
+| `src/config.py` | NEW `YAHOO_TRANSCRIPT_TICKERS` — canonical Yahoo ticker per company (15 names), the primary transcript source. `IR_SOURCES` gains a `transcript_capable` flag: `False` for SK Hynix / Samsung (IR sites are materials-only), `True` for Micron. Also scrubbed 24 stale `"Quartr"` references in the `INDICATORS` `sources` / `stitching` fields (left over from v3.31) → `"Yahoo Finance"` — the `stitching` text feeds the live Haiku digester prompt, so this matters |
+| `src/data/transcript_sources.py` | NEW `fetch_yahoo_finance_transcripts()` + `_scrape_yahoo_ticker()` — defensive Yahoo scraper following the same three-state-flag contract. `_scrape_ir_site()` now honours `transcript_capable` — caps SK Hynix / Samsung at `materials_only` regardless of text length. `fetch_all_transcripts()` and `fetch_transcripts_with_retry()` take a `yahoo_tickers` arg; source priority is Yahoo → Motley Fool → IR, with the aggregator keeping the best availability state (so Yahoo's full SK Hynix transcript wins over the IR-site materials automatically) |
+| `src/deep_tier.py` | Step 1 imports and passes `YAHOO_TRANSCRIPT_TICKERS` to `fetch_transcripts_with_retry()` |
+| `DEPLOYMENT_GUIDE.md` | Section 2.3 rewritten — Yahoo Finance listed as primary; SK Hynix / Samsung IR explicitly materials-only. Troubleshooting + "Where to make adjustments" rows updated |
+| `README.md`, `SETUP.md`, `CLAUDE.md` | Transcript-source descriptions updated to Yahoo Finance + Motley Fool + IR; CLAUDE.md gains a v3.32 section and a correction note on v3.31 |
+| `memory_cycle_data_source_audit_v3_32.xlsx` | Source Registry corrected: stale "Quartr — TO ADD" row replaced; Yahoo Finance / Motley Fool / IR scrapers added as ✅ in-repo. Indicator-sheet "Primary sources" columns updated from "Quartr earnings transcripts" to the actual sources. Summary sheet gains v3.31 + v3.32 notes |
+
+**The Yahoo syndication quirk**: Yahoo carries the same transcript under many ticker variants (SK Hynix also shows as HY9H.F / .DU / .SG; Samsung as SSU.F / SMSN.L / SSNLF). `YAHOO_TRANSCRIPT_TICKERS` uses ONE canonical ticker per company so the same call isn't counted as independent corroboration.
+
+**Caveat carried forward**: Yahoo gives the *latest* call free; historical calls are behind a Yahoo subscription. Fine for a daily brief that wants the most recent call — but there's no free backfill of old quarters.
+
+**Not in scope** (parked): transcript-memory / quarter-over-quarter diff and event-deduplication — these are a v3.5 item, see `ROADMAP.md`.
 
 ---
 
