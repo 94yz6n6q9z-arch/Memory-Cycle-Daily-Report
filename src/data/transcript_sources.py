@@ -1,12 +1,20 @@
 """
-Earnings transcript sources — v3.31 replacement for the gated Quartr API.
+Earnings transcript sources — free transcript coverage (no API key required).
 
-Quartr discontinued its free developer tier (enterprise-only now). This module
-rebuilds transcript coverage from free sources:
+Quartr discontinued its free developer tier (enterprise-only now). Transcript
+coverage is built from free sources, in priority order:
 
-  1. Direct IR-site scrapers — SK Hynix, Samsung, Micron (the 3 core memory makers)
-  2. Motley Fool — US-listed names with English earnings calls (one scraper, ~13 names)
-  3. EDGAR 8-K earnings exhibits — handled in news.py / digester, not here
+  1. Yahoo Finance — PRIMARY. Full earnings-call transcripts (incl. Korean+
+     English Q&A) for every name in the basket. Crucially the ONLY working
+     full-transcript source for the KRX-listed memory makers (SK Hynix,
+     Samsung). Latest call free; historical gated.
+  2. Motley Fool — US-listed names with English earnings calls (~13 names).
+     Does NOT cover the Korean listings.
+  3. Direct IR-site scrapers — SK Hynix, Samsung, Micron. For SK Hynix and
+     Samsung these are MATERIALS-ONLY (slides + webcast, no text transcript) —
+     `transcript_capable=False` in config caps them at `materials_only`. Micron
+     IR posts the full call. Kept for the earnings release / slide deck.
+  4. EDGAR 8-K earnings exhibits — handled in news.py / digester, not here.
 
 THE THREE-STATE AVAILABILITY FLAG
 ---------------------------------
@@ -15,23 +23,23 @@ transcript source returns one of three states per company per event:
 
   "full_transcript" — got the actual earnings-call text; commentary intact
   "materials_only"  — got the earnings release and/or slides, but NO call
-                      commentary (the SK Hynix / Samsung risk case — Korean
-                      call, English transcript often days late or webcast-only)
+                      commentary
   "nothing"         — source had nothing for this event
 
-The digester and the email both surface this explicitly. When SK Hynix posts
-only a slide deck with no transcript, the brief says so plainly — absence of
-commentary is never silently confused with "nothing notable was said".
+The digester and the email both surface this explicitly. When a source has
+only a slide deck, the brief says so plainly — absence of commentary is never
+silently confused with "nothing notable was said".
 
 FRAGILITY NOTE
 --------------
-IR-site scrapers are the most fragile part of any pipeline — when SK Hynix
-redesigns their IR page, the selector breaks. Every scraper here is written
-DEFENSIVELY: a broken selector degrades to "materials_only" or "nothing" and
-logs a warning. It never raises into the deep-tier orchestrator. Same
-maintenance posture as the Naver scraper (expect 1-2 fixes/year).
+Scrapers are the most fragile part of any pipeline — when a site redesigns,
+the selector breaks. Every scraper here is written DEFENSIVELY: a broken
+selector degrades to "materials_only" or "nothing" and logs a warning. It
+never raises into the deep-tier orchestrator. Same maintenance posture as the
+Naver scraper (expect 1-2 fixes/year).
 
 CHANGELOG (this file):
+  v3.32  (2026-05-14) — Added fetch_yahoo_finance_transcripts() as PRIMARY source; fetch_all_transcripts()/fetch_transcripts_with_retry() take yahoo_tickers; IR scraper honours transcript_capable (caps SK Hynix/Samsung at materials_only)
   v3.31  (2026-05-14) — NEW FILE — IR-site + Motley Fool scrapers; replaces gated Quartr API; three-state availability flag
 """
 
@@ -134,6 +142,7 @@ def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptR
     ir_url = cfg.get("ir_url")
     ticker = cfg.get("ticker", "")
     reliability = cfg.get("transcript_reliability", "unknown")
+    transcript_capable = cfg.get("transcript_capable", True)  # v3.32 — False = cap at materials_only
     results: list[TranscriptResult] = []
 
     if not ir_url:
@@ -206,19 +215,35 @@ def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptR
             text = _strip_html(page)
             availability = _classify_availability(text)
 
+            # v3.32 — SK Hynix / Samsung IR sites publish slides + webcast only,
+            # never a text transcript. Cap them so the IR scraper can never
+            # masquerade as a full-transcript source. Yahoo Finance is the
+            # actual transcript source for these names.
+            capped = False
+            if not transcript_capable and availability == "full_transcript":
+                availability = "materials_only"
+                capped = True
+
             # Build an explanatory note, louder for low-reliability companies
             note = None
             if availability == "materials_only":
-                note = (
-                    f"Earnings materials captured but FULL CALL COMMENTARY NOT AVAILABLE "
-                    f"in text form ({len(text)} chars — below transcript threshold). "
-                )
-                if reliability == "low":
-                    note += (
-                        "Expected for this company — Korean-hosted call, English "
-                        "transcript often posted days late or only as webcast. "
-                        "Check back, or rely on Korean broker echo for commentary."
+                if capped:
+                    note = (
+                        f"IR site is materials-only by design ({company} publishes "
+                        f"slides + webcast, no text transcript). Full call commentary "
+                        f"comes from Yahoo Finance, not here."
                     )
+                else:
+                    note = (
+                        f"Earnings materials captured but FULL CALL COMMENTARY NOT AVAILABLE "
+                        f"in text form ({len(text)} chars — below transcript threshold). "
+                    )
+                    if reliability == "low":
+                        note += (
+                            "Expected for this company — Korean-hosted call, English "
+                            "transcript often posted days late or only as webcast. "
+                            "Yahoo Finance carries the full call text for this name."
+                        )
             elif availability == "nothing":
                 note = f"Linked page had no usable text: {label}"
 
@@ -238,6 +263,9 @@ def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptR
         logger.warning("bs4 not available; using regex fallback for IR scrape")
         text = _strip_html(html)
         availability = _classify_availability(text)
+        # v3.32 — honour transcript_capable in the fallback path too
+        if not transcript_capable and availability == "full_transcript":
+            availability = "materials_only"
         if availability == "full_transcript":
             # unlikely from an index page, but accept it
             results.append(TranscriptResult(
@@ -412,12 +440,142 @@ def fetch_motley_fool_transcripts(mf_tickers: dict, days_back: int = 10) -> list
 
 
 # ============================================================
+# Source 3 — Yahoo Finance transcripts (PRIMARY — all names, incl. KRX)
+# ============================================================
+
+YAHOO_EARNINGS_INDEX = "https://finance.yahoo.com/quote/{ticker}/earnings-calls/"
+
+
+def _scrape_yahoo_ticker(company: str, ticker: str, days_back: int) -> TranscriptResult:
+    """Look for a recent Yahoo Finance earnings-call transcript for one ticker.
+
+    Yahoo's earnings-calls index page lists transcript links of the form
+    /quote/{TICKER}/earnings/{TICKER}-Q{n}-{year}-earnings_call-{id}.html .
+    We take the most recent one, fetch it, and classify.
+
+    Defensive: any failure -> a `nothing` result with a note. Yahoo carries
+    full call text (incl. Korean+English Q&A) for the KRX-listed memory makers,
+    which is why this is the primary source. Latest call is free; older calls
+    sit behind a Yahoo subscription — for those the page text is short and the
+    result classifies as `materials_only` rather than `full_transcript`.
+    """
+    index_url = YAHOO_EARNINGS_INDEX.format(ticker=ticker)
+    index_html = _http_get(index_url)
+    if index_html is None:
+        return TranscriptResult(
+            company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+            event_type="earnings_call", availability="nothing",
+            source_name="Yahoo Finance", source_url=index_url,
+            note="Yahoo Finance earnings-calls index fetch failed.",
+        )
+
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(index_html, "html.parser")
+        # Transcript links: href contains '/earnings/' and 'earnings_call'.
+        # The index is ordered newest-first, so the first match is the latest call.
+        match_href = None
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            if "/earnings/" in href and "earnings_call" in href:
+                match_href = href if href.startswith("http") else f"https://finance.yahoo.com{href}"
+                break
+
+        if not match_href:
+            return TranscriptResult(
+                company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+                event_type="earnings_call", availability="nothing",
+                source_name="Yahoo Finance", source_url=index_url,
+                note=(
+                    f"No transcript link found on Yahoo earnings-calls index for "
+                    f"{company} ({ticker}). Either no recent call, or Yahoo changed "
+                    f"the index structure — selectors need review."
+                ),
+            )
+
+        page = _http_get(match_href)
+        if page is None:
+            return TranscriptResult(
+                company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+                event_type="earnings_call", availability="nothing",
+                source_name="Yahoo Finance", source_url=match_href,
+                note="Yahoo transcript page fetch failed.",
+            )
+
+        psoup = BeautifulSoup(page, "html.parser")
+        body = psoup.find("article") or psoup.find("div", class_=re.compile(r"body|content|caas", re.I))
+        text = _strip_html(str(body)) if body else _strip_html(page)
+        availability = _classify_availability(text)
+
+        note = None
+        if availability == "materials_only":
+            note = (
+                f"Yahoo page captured but below full-transcript length "
+                f"({len(text)} chars). Likely a historical call behind Yahoo's "
+                f"subscription gate, or a stub — latest call is normally free and full."
+            )
+        elif availability == "nothing":
+            note = "Yahoo transcript page had no usable text."
+
+        return TranscriptResult(
+            company=company, ticker=ticker,
+            event_date_iso=date.today().isoformat(),  # digester refines from page content
+            event_type="earnings_call",
+            availability=availability,
+            text=text if availability != "nothing" else "",
+            source_name="Yahoo Finance",
+            source_url=match_href,
+            note=note,
+        )
+
+    except ImportError:
+        logger.warning("bs4 not available; Yahoo Finance scrape degraded")
+        return TranscriptResult(
+            company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+            event_type="earnings_call", availability="nothing",
+            source_name="Yahoo Finance", source_url=index_url,
+            note="bs4 unavailable — cannot parse Yahoo earnings-calls index.",
+        )
+    except Exception as e:
+        logger.warning(f"Yahoo Finance scrape failed for {company} ({ticker}): {e}")
+        return TranscriptResult(
+            company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+            event_type="earnings_call", availability="nothing",
+            source_name="Yahoo Finance", source_url=index_url,
+            note=f"Yahoo Finance scrape error: {e}",
+        )
+
+
+def fetch_yahoo_finance_transcripts(yahoo_tickers: dict, days_back: int = 10) -> list[TranscriptResult]:
+    """Scrape Yahoo Finance for all configured tickers. Never raises.
+
+    `yahoo_tickers` maps company display name -> canonical Yahoo ticker. Use
+    ONE ticker per company — Yahoo syndicates the same transcript across many
+    listing variants, so the canonical map prevents double-counting.
+    """
+    results: list[TranscriptResult] = []
+    for company, ticker in yahoo_tickers.items():
+        try:
+            results.append(_scrape_yahoo_ticker(company, ticker, days_back))
+        except Exception as e:
+            logger.warning(f"Yahoo Finance scrape failed entirely for {company}: {e}")
+            results.append(TranscriptResult(
+                company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+                event_type="earnings_call", availability="nothing",
+                source_name="Yahoo Finance",
+                note=f"Scraper raised: {e}",
+            ))
+    return results
+
+
+# ============================================================
 # Aggregator — what deep_tier calls
 # ============================================================
 
 def fetch_all_transcripts(
     ir_sources: dict,
     motley_fool_tickers: dict,
+    yahoo_tickers: dict,
     days_back: int = 10,
 ) -> dict:
     """Aggregate all transcript sources into one payload for the digester.
@@ -432,17 +590,24 @@ def fetch_all_transcripts(
           }
         }
 
-    De-dupes Micron (it's in both IR_SOURCES and MOTLEY_FOOL_TICKERS): if both
-    sources return something, prefer the one with the better availability state
-    (full_transcript > materials_only > nothing).
+    Sources, in priority order: Yahoo Finance (primary — full transcripts incl.
+    KRX names), Motley Fool (US names), IR scrapers (Micron full; SK Hynix /
+    Samsung materials-only by config). Most names appear in 2-3 sources.
+    De-dup is by (company, event_date, event_type), keeping the BEST
+    availability state (full_transcript > materials_only > nothing). Yahoo
+    results are placed first so they win ties — e.g. SK Hynix returns
+    full_transcript from Yahoo and materials_only from the IR scraper; Yahoo
+    wins, and the IR-site materials are dropped from scoring (still logged).
     """
+    yahoo_results = fetch_yahoo_finance_transcripts(yahoo_tickers, days_back=days_back)
     ir_results = fetch_ir_transcripts(ir_sources, days_back=days_back)
     mf_results = fetch_motley_fool_transcripts(motley_fool_tickers, days_back=days_back)
 
-    # De-dup by (company, event_date) preferring better availability
+    # De-dup by (company, event_date) preferring better availability.
+    # Yahoo first => wins ties at equal availability.
     _rank = {"full_transcript": 3, "materials_only": 2, "nothing": 1}
     best: dict[tuple, TranscriptResult] = {}
-    for r in ir_results + mf_results:
+    for r in yahoo_results + mf_results + ir_results:
         key = (r.company.lower(), r.event_date_iso, r.event_type)
         if key not in best or _rank[r.availability] > _rank[best[key].availability]:
             best[key] = r
@@ -467,7 +632,11 @@ def fetch_all_transcripts(
     }
 
 
-def fetch_transcripts_with_retry(ir_sources: dict, motley_fool_tickers: dict) -> tuple[Optional[dict], dict]:
+def fetch_transcripts_with_retry(
+    ir_sources: dict,
+    motley_fool_tickers: dict,
+    yahoo_tickers: dict,
+) -> tuple[Optional[dict], dict]:
     """Mirror of the old fetch_quartr_with_retry signature, for deep_tier.
 
     Unlike Quartr (which needed an API key), these are free scrapers — there's
@@ -475,7 +644,7 @@ def fetch_transcripts_with_retry(ir_sources: dict, motley_fool_tickers: dict) ->
     'nothing' rather than None, so the digester still records the gap.
     """
     try:
-        payload = fetch_all_transcripts(ir_sources, motley_fool_tickers)
+        payload = fetch_all_transcripts(ir_sources, motley_fool_tickers, yahoo_tickers)
         return payload, {"status": "ok", "summary": payload["summary"]}
     except Exception as e:
         logger.error(f"Transcript aggregate failed entirely: {e}")
