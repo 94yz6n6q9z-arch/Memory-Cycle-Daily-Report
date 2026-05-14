@@ -2,6 +2,7 @@
 
 <!--
 CHANGELOG (this file):
+  v3.32  (2026-05-14) — Added v3.32 section (Yahoo Finance transcript source); v3.31 section corrected re: IR-site coverage
   v3.31  (2026-05-14) — Version sections relabelled — transcript work = v3.31, deferred indicators reclaim v3.4
   v3.3   (2026-05-12) — NEW FILE — permanent in-repo context (who/architecture/locked decisions/build state/norms)
 -->
@@ -128,7 +129,7 @@ of deep tier. The split exists for runtime and cost reasons.
 
 ---
 
-## v3.1 / v3.2 / v3.3 — what's already built
+## v3.1 → v3.32 — what's already built
 
 ### v3.1 — News relevance filter
 Two-pass filter (`src/data/news.py`: `score_relevance` + `filter_relevant_news`)
@@ -152,19 +153,44 @@ digest output. Test fixtures in `tests/test_architecture_extraction.py`.
 
 ### v3.31 — Transcript sources (Quartr replacement) — BUILT
 Quartr discontinued its free developer tier. `src/data/transcript_sources.py`
-replaces it with free sources: direct IR-site scrapers (SK Hynix, Samsung,
-Micron) + Motley Fool transcripts (US-listed names) + EDGAR 8-K exhibits.
-`src/data/quartr.py` is now a deprecation shim. Every transcript source returns
-a three-state availability flag (full_transcript / materials_only / nothing);
-the digester records it and the email surfaces "commentary NOT available"
-explicitly. `IR_SOURCES`, `MOTLEY_FOOL_TICKERS`, `AI_LAB_IR_WATCH` in config.py.
-OpenAI/Anthropic are dormant `AI_LAB_IR_WATCH` entries — activate when they list
-(news pipeline already watches for the listing event). The IR scrapers are the
-most fragile part of the pipeline — expect selector maintenance 1-2x/year.
+replaces it with free sources. **Note: the original v3.31 build relied on
+IR-site scrapers + Motley Fool only — this missed that the SK Hynix and Samsung
+IR sites publish no text transcript, and that Yahoo Finance carries the full
+call text for them. Corrected in v3.32 below.** `src/data/quartr.py` is a
+deprecation shim. Every transcript source returns a three-state availability
+flag (full_transcript / materials_only / nothing); the digester records it and
+the email surfaces "commentary NOT available" explicitly. OpenAI/Anthropic are
+dormant `AI_LAB_IR_WATCH` entries — activate when they list (news pipeline
+already watches for the listing event). The scrapers are the most fragile part
+of the pipeline — expect selector maintenance 1-2x/year.
 NOTE ON NUMBERING: this was deliberately numbered v3.31 — a .3x maintenance fix,
 not a feature increment — so the deferred captive-ratio indicators keep their
 original **v3.4** label. (A transient mislabel briefly called this work "v3.4";
 corrected to v3.31.)
+
+### v3.32 — Transcript source correction (Yahoo Finance primary) — BUILT
+v3.31 left a real gap: it scraped the SK Hynix / Samsung IR sites for
+transcripts, but those sites publish slides + webcast only — no text
+transcript — and Motley Fool doesn't cover Korean listings. So the two most
+important names had **no working full-transcript source**. v3.32 fixes it:
+- **Yahoo Finance is now the primary transcript source** (`YAHOO_TRANSCRIPT_TICKERS`
+  in config.py, `fetch_yahoo_finance_transcripts()` in transcript_sources.py).
+  Verified to carry full call text incl. Korean+English Q&A for SK Hynix,
+  Samsung, Micron, ASML, TSMC; expected full for the US mega-caps. Latest call
+  free; historical gated — fine for a daily brief.
+- **SK Hynix / Samsung IR scrapers demoted to materials-only** via
+  `transcript_capable: False` in `IR_SOURCES` — the IR scraper is now capped at
+  `materials_only` for them and can never masquerade as a transcript source.
+  Kept for the earnings release / slide deck. Micron IR stays full-capable.
+- Source priority is now Yahoo → Motley Fool → IR; the aggregator keeps the
+  best availability state, so Yahoo's full SK Hynix transcript wins over the
+  IR-site materials automatically.
+- One Yahoo quirk handled: Yahoo syndicates the same transcript across many
+  ticker variants — `YAHOO_TRANSCRIPT_TICKERS` uses ONE canonical ticker per
+  company to avoid double-counting.
+Files touched: `config.py`, `transcript_sources.py`, `deep_tier.py`,
+`DEPLOYMENT_GUIDE.md`, `README.md`, `SETUP.md`, `CHANGES.md`, the data-source
+audit xlsx. Still a .3x maintenance fix — v3.4 keeps its label.
 
 ### v3.4 — DEFERRED (see ROADMAP.md)
 Three new indicators (Inference Efficiency Shock, CXL Production Deployment,
