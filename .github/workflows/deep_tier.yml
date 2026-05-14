@@ -1,0 +1,62 @@
+name: Memory Cycle Brief — Deep Tier (overnight)
+
+on:
+  schedule:
+    # 03:00 UTC daily (05:00 CEST / 04:00 CET) — overnight; no time pressure
+    # Pulls slow sources: Quartr earnings transcripts (24-48hr post-call) and
+    # Korean broker English PDFs (Mirae/NH/Samsung Securities, 24-48hr lag).
+    # Runs the Layer 1 digester (Haiku) over each large document and persists
+    # JSON digests to state/digests/{YYYY-MM-DD}/ for the fast tier to consume.
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write  # commits digests + caches back to repo
+
+concurrency:
+  group: memory-cycle-brief-deep
+  cancel-in-progress: false
+
+jobs:
+  deep-tier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25  # PDF parsing + digester is slower than fast tier
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run deep tier (Quartr + Korean broker PDFs + Layer 1 digester)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Quartr — earnings call transcripts
+          QUARTR_API_KEY: ${{ secrets.QUARTR_API_KEY }}
+          # Samsung Securities Global — separate Gmail inbox for IMAP poll
+          SAMSUNG_GMAIL_USER: ${{ secrets.SAMSUNG_GMAIL_USER }}
+          SAMSUNG_GMAIL_APP_PW: ${{ secrets.SAMSUNG_GMAIL_APP_PW }}
+          HAIKU_MODEL_OVERRIDE: ${{ secrets.HAIKU_MODEL_OVERRIDE }}
+        run: |
+          python -m src.deep_tier
+
+      - name: Commit digests + caches
+        run: |
+          git config --global user.name "memory-cycle-brief-bot"
+          git config --global user.email "bot@memory-cycle-brief"
+          git add -A state/digests/ state/cache/
+          if git diff --staged --quiet; then
+            echo "No state changes to commit."
+          else
+            git commit -m "Deep tier digests $(date -u +%Y-%m-%d)"
+            git push
+          fi
