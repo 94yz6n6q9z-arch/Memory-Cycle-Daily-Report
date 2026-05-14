@@ -29,7 +29,7 @@ Two GitHub Actions cron jobs:
 
 | Workflow | Schedule (UTC) | What it does |
 |---|---|---|
-| `deep_tier.yml` | `0 3 * * *` (03:00 daily) | Fetch earnings transcripts (IR scrapers + Motley Fool) + Korean broker PDFs → Layer 1 digests |
+| `deep_tier.yml` | `0 3 * * *` (03:00 daily) | Fetch earnings transcripts (Yahoo Finance + Motley Fool + IR scrapers) + Korean broker PDFs → Layer 1 digests |
 | `fast_tier.yml` | `0 11`, `30 11`, `5 12 * * 1-5` (weekdays) | Fast fetch → Layer 2 → Layer 3 → email |
 
 Fast tier has 3 cron triggers for redundancy. Idempotency via `state/brief_sent_dates.json` — only the first successful run produces output.
@@ -40,7 +40,7 @@ Deep tier `permissions: contents: write` so it can commit `state/digests/` and `
 
 Three tiers:
 - **CRITICAL** (5× retry, 🚨 banner on failure): yfinance, Anthropic API, Naver Finance
-- **IMPORTANT** (3× retry, cached stale fallback): Finnhub, Korean broker PDFs, EDGAR feeds, DART. Transcript scrapers (IR + Motley Fool) degrade gracefully per-source rather than retrying
+- **IMPORTANT** (3× retry, cached stale fallback): Finnhub, Korean broker PDFs, EDGAR feeds, DART. Transcript scrapers (Yahoo Finance + Motley Fool + IR) degrade gracefully per-source rather than retrying
 - **NICE_TO_HAVE** (1× retry, skip silently): RSS feeds, web scrapers, Google News
 
 Backoff: 1s → 3s → 9s → 27s → 81s exponential. Cached fallback for IMPORTANT/CRITICAL uses `state/cache/<source_id>.json` keyed by sanitized source ID.
