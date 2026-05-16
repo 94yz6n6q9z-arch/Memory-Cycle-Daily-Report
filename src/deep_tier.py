@@ -2,14 +2,14 @@
 Deep tier entry point — runs 08:00 UTC daily.
 
 What this does:
-  1. Fetch earnings transcripts published recently — from free sources,
-     in priority order:
-       • Yahoo Finance (PRIMARY — full transcripts for every name, incl. the
-         KRX-listed memory makers SK Hynix + Samsung)
-       • Motley Fool transcripts (US-listed names, English calls)
-       • Direct IR-site scrapers (Micron full; SK Hynix / Samsung materials-only)
-     (Replaced the gated Quartr API in v3.31; Yahoo Finance added v3.32 — see
-     transcript_sources.py)
+  1. Fetch earnings transcripts via a sequential cascade (v3.33):
+       • Motley Fool (primary for US names — direct fetch, no proxy)
+       • IR-site scrapers (Micron full; SK Hynix / Samsung materials-only)
+       • Yahoo Finance (fallback ONLY for companies still missing a full
+         transcript — runs through residential proxy when RESIDENTIAL_PROXY_URL
+         is set; covers SK Hynix / Samsung that no other free source covers)
+     (Replaced Quartr API in v3.31; Yahoo added v3.32; cascade order in v3.33.
+     See transcript_sources.py for the full picture.)
   2. Fetch Korean broker English PDFs (Mirae + NH + Samsung Securities)
   3. Run Layer 1 digester (Haiku) over each new document
   4. Persist digests to state/digests/{YYYY-MM-DD}/
@@ -28,6 +28,7 @@ instead of silently omitting a company. Getting commentary right is the point;
 a missing transcript is a tracked fact.
 
 CHANGELOG (this file):
+  v3.33  (2026-05-16) — Step 1 docstring updated for sequential cascade; datetime.utcnow() → datetime.now(timezone.utc) (Python 3.12+ deprecation fix); transcript_payload now also surfaces `already_processed` results which the digester should skip
   v3.32  (2026-05-14) — Step 1 now passes YAHOO_TRANSCRIPT_TICKERS to fetch_transcripts_with_retry (Yahoo Finance is primary transcript source)
   v3.31  (2026-05-14) — Step 1 rewired to transcript_sources (was Quartr); writes state/transcript_status.json
 """
@@ -36,7 +37,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from src.config import IR_SOURCES, MOTLEY_FOOL_TICKERS, YAHOO_TRANSCRIPT_TICKERS
 from src.data.transcript_sources import fetch_transcripts_with_retry
@@ -77,8 +78,12 @@ def run_deep_tier() -> int:
         logger.info(
             f"  → {s.get('full_transcript', 0)} full, "
             f"{s.get('materials_only', 0)} materials-only, "
+            f"{s.get('already_processed', 0)} already-processed (cached), "
             f"{s.get('nothing', 0)} nothing"
         )
+        yahoo_attempted = s.get("yahoo_attempted_for", [])
+        if yahoo_attempted:
+            logger.info(f"  → Yahoo fallback invoked for: {yahoo_attempted}")
 
     transcript_digests = []
     if transcript_payload:
@@ -128,7 +133,7 @@ def _write_transcript_status(transcript_payload, transcript_meta) -> None:
     status_path = state_dir / "transcript_status.json"
 
     payload = {
-        "written_at_iso": datetime.utcnow().isoformat(),
+        "written_at_iso": datetime.now(timezone.utc).isoformat(),
         "status": transcript_meta.get("status", "unknown"),
         "summary": (transcript_payload or {}).get("summary", {}),
         "results": [
