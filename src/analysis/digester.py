@@ -384,16 +384,24 @@ def digest_quartr_transcripts(quartr_payload: dict) -> list[Digest]:
 def digest_transcript_results(transcript_payload: dict) -> list[Digest]:
     """v3.31 — digest the transcript_sources payload (IR scrapers + Motley Fool).
 
-    Honours the three-state availability flag:
-      - "full_transcript": run the normal digester over the call text
-      - "materials_only":  digest what we have BUT tag the digest so the email
-                           can say "commentary NOT available". The digest still
-                           captures whatever numeric data is in the release/slides.
-      - "nothing":         write a minimal placeholder digest recording the gap,
-                           so the absence is visible in the brief rather than silent.
+    Honours the availability flag (v3.33 adds `already_processed`):
+      - "full_transcript":    run the normal digester over the call text
+      - "materials_only":     digest what we have BUT tag the digest so the email
+                              can say "commentary NOT available". The digest still
+                              captures whatever numeric data is in the release/slides.
+      - "already_processed":  cache hit (URL was digested in a previous run).
+                              Skip silently — the prior digest is already in
+                              state/digests/. Avoids re-burning Haiku tokens
+                              and proxy bandwidth on repeat captures.
+      - "nothing":            write a minimal placeholder digest recording the gap,
+                              so the absence is visible in the brief rather than silent.
 
     The whole point of this pipeline is getting commentary right — so a missing
     transcript is itself a tracked fact, not a silent hole.
+
+    CHANGELOG (this function):
+      v3.33  (2026-05-16) — Added `already_processed` branch (URL-cache hits skip
+                            re-digesting; prior digest already in state/digests/).
     """
     digests: list[Digest] = []
     for r in transcript_payload.get("results", []):
@@ -454,6 +462,14 @@ def digest_transcript_results(transcript_payload: dict) -> list[Digest]:
                     availability="materials_only",
                     note=note or "Materials found but digest failed.",
                 ))
+
+        elif availability == "already_processed":
+            # v3.33: cache hit. Prior digest is in state/digests/; no Haiku call,
+            # no placeholder record. Log it so we know the cache fired correctly.
+            logger.info(
+                f"Transcript cache hit for {company} ({source_name}): {source_url} "
+                f"— skipping (already digested in a previous run)"
+            )
 
         else:  # "nothing"
             digests.append(_placeholder_gap_digest(
