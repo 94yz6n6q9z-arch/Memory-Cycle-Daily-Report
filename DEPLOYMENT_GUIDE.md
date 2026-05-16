@@ -1,7 +1,8 @@
-# Memory Cycle Brief — Deployment Guide (v3.32)
+# Memory Cycle Brief — Deployment Guide (v3.33)
 
 <!--
 CHANGELOG (this file):
+  v3.33  (2026-05-16) — Section 2.3 rewritten: Motley Fool primary, Yahoo via Bright Data residential proxy; full proxy setup walkthrough; troubleshooting + tuning notes updated for cascade architecture
   v3.32  (2026-05-14) — Section 2.3: Yahoo Finance added as primary transcript source; troubleshooting + tuning notes updated
   v3.31  (2026-05-14) — Section 2.3 rewritten — no Quartr signup/key; transcript troubleshooting rows; transcript-sources tuning notes
   v3.3   (2026-05-12) — extraction_log review steps; GitHub-connect + @claude workflow section
@@ -63,36 +64,77 @@ After upload, your repo file list should show: `.github/`, `src/`, `docs/`, `REA
 2. Confirm email, log in
 3. API key is on dashboard, top of page — looks like `c8a1k2hr01qtn8c5j7v0c8a1k2hr01qtn8c5j7vg`
 
-### 2.3 Earnings transcripts — no signup needed (v3.32)
+### 2.3 Earnings transcripts — Bright Data residential proxy setup (v3.33)
 
-**There is nothing to set up here.** Earlier versions used the Quartr API for
-earnings-call transcripts, but Quartr discontinued its free developer tier
-(it's now enterprise-only, "contact us" pricing). Transcripts now come from
-free sources that need no API key, used in priority order:
+In v3.33 transcripts come from a cascade — free sources first, paid proxy only
+where needed. There is one optional setup step here: a Bright Data residential
+proxy for Yahoo Finance fallback. **You can skip this entirely** and the
+pipeline still works for the 13 US names via Motley Fool — but SK Hynix and
+Samsung (the two most important names in the portfolio) have no other working
+full-transcript source, so the proxy is strongly recommended.
 
-- **Yahoo Finance** *(primary)* — full earnings-call transcripts for every
-  name in the basket, including the KRX-listed memory makers SK Hynix and
-  Samsung (with the Korean+English Q&A). Latest call is free.
-- **Motley Fool transcripts** — US-listed names with English earnings calls.
-- **Direct IR-site scrapers** — Micron posts the full call; SK Hynix and
+The transcript cascade, in order:
+
+- **Motley Fool** *(primary, free)* — US-listed names with English earnings
+  calls (Micron, Nvidia, Broadcom, TSMC, Applied Materials, Microsoft, Alphabet,
+  Meta, Amazon, Oracle, Dell, HPE, ASML). Direct fetch from per-ticker quote
+  pages (`fool.com/quote/{exchange}/{ticker}/`) — these are persistent and list
+  the full transcript history for each company.
+- **IR-site scrapers** *(free)* — Micron posts the full call. SK Hynix and
   Samsung IR sites publish slides + webcast only (no text transcript), so
   they're treated as **materials-only** by config and kept just for the
   earnings release / slide deck.
-- **SEC EDGAR 8-K earnings exhibits** — already covered by your EDGAR feeds.
+- **Yahoo Finance** *(fallback, requires residential proxy)* — full earnings-
+  call transcripts for every name, including SK Hynix and Samsung with the
+  Korean+English Q&A. Yahoo blocks GitHub Actions / datacenter IPs with HTTP 404
+  on the relevant URLs, so the pipeline routes the Yahoo fetch through a
+  Bright Data residential proxy. Yahoo fallback fires for any company missing a
+  full transcript after the first two steps — typically just SK Hynix and
+  Samsung on a normal day; more if Motley Fool is slow to publish.
 
-Skip straight to 2.4. There is no `QUARTR_API_KEY` anymore — if you have one
-in your environment from an earlier setup, you can delete it; it's unused.
+**To enable Yahoo fallback** (skip if you only care about US names):
 
-One thing to know about how this behaves: every transcript source reports a
-three-state availability flag — `full_transcript`, `materials_only`, or
-`nothing` — and the aggregator keeps the best state across sources. For SK
-Hynix and Samsung, Yahoo Finance is normally the source that delivers
-`full_transcript`; the IR scraper for those two is capped at `materials_only`
-on purpose. If Yahoo *also* comes back short for a Korean name, the brief's
-data-source validation section shows that company as a WARN with "COMMENTARY
-NOT AVAILABLE — materials only". That's a tracked fact surfaced explicitly,
-not a silent gap — and the Korean broker PDF echo (Mirae / NH / Samsung
-Securities) usually still carries the commentary.
+1. Sign up at <https://brightdata.com> as an individual (no business/KYC
+   required). You'll get $27 in trial credits (~3.3 GB residential) good for
+   30 days.
+2. Add a payment method when prompted. This is identity verification — trial
+   credits are consumed before any paid balance. After trial credits expire,
+   ongoing usage at this pipeline's volume is ~$0.30-1.00/month at $4/GB.
+3. In the dashboard: **Proxies & Scraping → Add → Residential**. Name it
+   anything (e.g. `yahoo-finance-scraping`). Default country: US. Web Unlocker
+   OFF. Keep the default rotation settings.
+4. From the zone's "Access parameters" page, note:
+   - Host: `brd.superproxy.io`
+   - Port: `33335`
+   - Username: long string starting with `brd-customer-`
+   - Password: random string (click to reveal)
+5. Assemble a single URL:
+   `http://USERNAME-country-us:PASSWORD@brd.superproxy.io:33335`
+   The `-country-us` is a Bright Data routing flag, keep it as-is. The pipeline
+   appends `-session-{N}` dynamically per request for residential-IP rotation.
+6. Add this as a GitHub Secret named `RESIDENTIAL_PROXY_URL` (Settings →
+   Secrets and variables → Actions → New repository secret).
+
+There is no `QUARTR_API_KEY` anymore — if you have one in your environment
+from an earlier setup, you can delete it; it's unused.
+
+One thing to know about how this behaves: every transcript source reports an
+availability flag — `full_transcript`, `materials_only`, `already_processed`
+(URL was digested in a previous run; cached), or `nothing` — and the aggregator
+keeps the best state across sources. For SK Hynix and Samsung, Yahoo Finance
+is normally the source that delivers `full_transcript`; the IR scraper for
+those two is capped at `materials_only` on purpose. If Yahoo *also* comes back
+short for a Korean name (e.g. proxy is down, or Yahoo rate-limited heavily),
+the brief's data-source validation section shows that company as a WARN with
+"COMMENTARY NOT AVAILABLE — materials only". That's a tracked fact surfaced
+explicitly, not a silent gap — and the Korean broker PDF echo (Mirae / NH /
+Samsung Securities) usually still carries the commentary.
+
+If you see persistent 429s from Yahoo in the logs even with proxy enabled,
+Bright Data may have throttled your IP rotation pool — wait 5-10 minutes and
+the next deep-tier run usually clears. Bright Data individual accounts
+("Immediate Access" mode) have built-in throttling that the pipeline mitigates
+with rotation + realistic headers + 3-second inter-ticker delay + retry-on-429.
 
 ### 2.4 Alpha Vantage (EPS cross-check — optional)
 
@@ -355,7 +397,7 @@ After Part 6 verification:
 - **EPS scoring thresholds** → edit `EPS_SCORING_THRESHOLDS` in `src/config.py`. Current thresholds (bearish 7d < -10 = EARLY WARNING, bearish 30d < -15 = FIRED) were validated against the 2021 and 2024 Morgan Stanley "Winter is Coming" / "Winter Looms" events — see `docs/INDICATOR_3_EXAMPLES.md` for the math
 - **News relevance filter tuning** → edit `TRACKED_ANALYSTS` / `TRACKED_BROKERS` / `TRACKED_COMPANIES` / `TRACKED_CONCEPTS` in `src/config.py` to expand or narrow the keyword pass. The Haiku scoring threshold is the `min_score=3` argument in `src/fast_tier.py` (Step 1b). Lower it to catch more (and accept more noise); raise it to be stricter. Dropped items are logged to `state/news_dropped_*.json` for spot-checking
 - **Architecture extraction prompt (v3.3)** → the captive-ratio extraction rules live in `DIGEST_SYSTEM_PROMPT` in `src/analysis/digester.py`. If you see extraction missing a signal type you care about, add the field to the `architecture_signals` schema in the prompt. Output flows to `state/extraction_log_*.jsonl`. Test changes by running `python -m tests.test_architecture_extraction` against your local copy before deploying — this validates the prompt still extracts the three known fixture types correctly
-- **Transcript sources (v3.32)** → all three scrapers — Yahoo Finance, Motley Fool, and the IR sites — live in `src/data/transcript_sources.py`. Yahoo Finance is the primary source (full transcripts incl. the Korean names); the SK Hynix / Samsung IR scrapers are capped at `materials_only` via `transcript_capable: False` in `IR_SOURCES`. When a site is redesigned, the link-matching keywords or content selectors need updating — same maintenance pattern as the Naver scraper, expect 1-2 fixes/year. Each scraper is defensive: a broken selector degrades to `materials_only` or `nothing` and logs a warning, it never crashes the deep tier. Diagnose from `state/transcript_status.json`. To add a new company: add it to `YAHOO_TRANSCRIPT_TICKERS` (use ONE canonical Yahoo ticker — Yahoo syndicates the same transcript across many listing variants), and optionally to `MOTLEY_FOOL_TICKERS` or `IR_SOURCES` in `src/config.py`. When OpenAI or Anthropic goes public, fill in the `AI_LAB_IR_WATCH` entry and add the ticker to `YAHOO_TRANSCRIPT_TICKERS` — the news pipeline already watches for the listing event
+- **Transcript sources (v3.33)** → all three scrapers — Motley Fool, Yahoo Finance, and the IR sites — live in `src/data/transcript_sources.py`. The cascade runs Motley Fool first (per-ticker quote pages, free direct fetch), then IR scrapers, then Yahoo (residential proxy, only for names still missing a full transcript). The SK Hynix / Samsung IR scrapers are capped at `materials_only` via `transcript_capable: False` in `IR_SOURCES`. When a site is redesigned, the link-matching keywords or content selectors need updating — same maintenance pattern as the Naver scraper, expect 1-2 fixes/year. Each scraper is defensive: a broken selector degrades to `materials_only` or `nothing` and logs a warning, it never crashes the deep tier. Diagnose from `state/transcript_status.json` (per-company availability) and `state/cache/transcripts_seen.json` (URL cache; delete to force re-digest of everything). To add a new company: add it to `MOTLEY_FOOL_TICKERS` if US-listed (specify both `exchange` and `ticker`), and/or `YAHOO_TRANSCRIPT_TICKERS` for Yahoo fallback (use ONE canonical Yahoo ticker — Yahoo syndicates the same transcript across many listing variants), and optionally `IR_SOURCES` for IR-site coverage. When OpenAI or Anthropic goes public, fill in the `AI_LAB_IR_WATCH` entry and add the ticker to `MOTLEY_FOOL_TICKERS` and `YAHOO_TRANSCRIPT_TICKERS` — the news pipeline already watches for the listing event
 - **Add new ticker** → edit `WIDER_BASKET` in `src/config.py`
 - **Email format** → edit `src/email_module/template.py` (HTML/CSS)
 
