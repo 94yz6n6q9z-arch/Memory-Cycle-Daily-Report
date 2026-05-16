@@ -8,7 +8,7 @@ The brief is delivered ~13:00 CEST weekdays — at least 1 hour before US market
 
 - **Crisp trigger framework** — every indicator has explicit `trigger_patterns` (specific phrases to detect), `trigger_numeric` (numeric thresholds), `cadence` (how many occurrences over what window), and `stitching` logic (when one source isn't sufficient). 19/22 indicators have phrase patterns, 18/22 have numeric thresholds, 22/22 have stitching logic.
 - **Weighted broker scoring for the canonical Tier 2 signal** (`t2_eps_revisions`). Each broker action scored by direction × magnitude × authority tier (A=3×, B=2×, C=1×) × combo bonus (rating+PT+EPS aligned). Rolling 7d and 30d sums drive trigger logic — see `src/analysis/signal_scoring.py`.
-- **Two-tier execution architecture** — deep tier 03:00 UTC daily pulls slow sources (earnings transcripts via Yahoo Finance + Motley Fool + IR-site scrapers, Korean broker English PDFs) and produces structured digests; fast tier 11:00 UTC weekdays consumes those digests + fresh fast sources and delivers the brief. Idempotency via `state/brief_sent_dates.json`.
+- **Two-tier execution architecture** — deep tier 08:00 UTC daily pulls slow sources (earnings transcripts via Yahoo Finance + Motley Fool + IR-site scrapers, Korean broker English PDFs) and produces structured digests; fast tier 11:00 UTC weekdays consumes those digests + fresh fast sources and delivers the brief. Idempotency via `state/brief_sent_dates.json`.
 - **Hierarchical LLM synthesis** — Layer 1 (Haiku, deep tier) digests each large document; Layer 2 (Haiku, fast tier) reasons per-signal across all evidence with explicit convergence assessment; Layer 3 (Sonnet, fast tier) writes the exec summary.
 - **9 new data sources** — Naver Finance, Finnhub, Mirae Asset, NH Investment, Samsung Securities (Gmail IMAP), DART, Alpha Vantage, KED Global / Korea Herald RSS, 4 AI lab blogs, SEMI press releases, per-ticker Investing.com, Yahoo Finance earnings-call transcripts (primary — all names incl. KRX), Motley Fool transcripts, IR-site transcript scrapers (Micron full; SK Hynix / Samsung materials-only).
 - **Email enhancements** — 🚨 banner for relative strength alerts (3 sub-triggers), 🚨 banner + dedicated section for EPS revisions when canonical Tier 2 fires, **Calendar of events** showing the next 90 days of catalysts, **Data source assessment** confirming each source was read successfully.
@@ -23,7 +23,7 @@ The brief is delivered ~13:00 CEST weekdays — at least 1 hour before US market
         ┌────────────────────────────────┼─────────────────────────────────┐
         │                                │                                 │
 ┌───────▼─────────────┐  ┌──────────────▼──────────────┐  ┌───────────────▼──────────────┐
-│ PRIORITY ALERTS     │  │  DEEP TIER (03:00 UTC)      │  │  FAST TIER (11:00/11:30/12:05) │
+│ PRIORITY ALERTS     │  │  DEEP TIER (08:00 UTC)      │  │  FAST TIER (11:00/11:30/12:05) │
 │ Every 30 min        │  │  10-25 min runtime          │  │  4-10 min runtime              │
 │ during mkt hrs      │  │                             │  │                                │
 │ ~1 min/run          │  │ • Transcripts: Yahoo+MF+IR  │  │ • RSS (32 feeds)               │
@@ -54,7 +54,7 @@ The brief is delivered ~13:00 CEST weekdays — at least 1 hour before US market
 |---|---|---|---|
 | **Priority alerts** (ntfy.sh push) | 30-90 min from broker publish | Tier A brokers only on SKHX/MU/Samsung, score ≤ -6 OR 2-notch OR PT >15% | Material events that need same-day awareness |
 | **Daily brief** (email 13:00 CEST) | ~next morning | All 22 indicators × all tiers × all 13 tickers | Full picture, position management |
-| **Deep digests** (state/digests/) | Daily 03:00 UTC | Earnings transcripts (Yahoo Finance + Motley Fool + IR) + Korean broker PDFs digested | Quarterly catalysts, structural changes |
+| **Deep digests** (state/digests/) | Daily 08:00 UTC | Earnings transcripts (Yahoo Finance + Motley Fool + IR) + Korean broker PDFs digested | Quarterly catalysts, structural changes |
 
 ## Indicator coverage scorecard
 
