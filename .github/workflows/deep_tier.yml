@@ -2,12 +2,15 @@ name: Memory Cycle Brief — Deep Tier (overnight)
 
 on:
   schedule:
-    # 03:00 UTC daily (05:00 CEST / 04:00 CET) — overnight; no time pressure
-    # Pulls slow sources: Quartr earnings transcripts (24-48hr post-call) and
-    # Korean broker English PDFs (Mirae/NH/Samsung Securities, 24-48hr lag).
-    # Runs the Layer 1 digester (Haiku) over each large document and persists
-    # JSON digests to state/digests/{YYYY-MM-DD}/ for the fast tier to consume.
-    - cron: "0 3 * * *"
+    # 08:00 UTC daily (10:00 CEST / 09:00 CET) — aligns with the empirical
+    # Yahoo/Quartr transcript availability curve (median ~6.5h post US call end,
+    # so by 08:00 UTC ~94% of US after-hours transcripts are scrape-able).
+    # Pulls slow sources: earnings transcripts (Yahoo Finance + Motley Fool +
+    # IR-site scrapers per v3.31/v3.32) and Korean broker English PDFs
+    # (Mirae/NH/Samsung Securities, 24-48hr lag). Runs the Layer 1 digester
+    # (Haiku) over each large document and persists JSON digests to
+    # state/digests/{YYYY-MM-DD}/ for the fast tier (11:00 UTC) to consume.
+    - cron: "0 8 * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -37,11 +40,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run deep tier (Quartr + Korean broker PDFs + Layer 1 digester)
+      - name: Run deep tier (transcripts + Korean broker PDFs + Layer 1 digester)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Quartr — earnings call transcripts
-          QUARTR_API_KEY: ${{ secrets.QUARTR_API_KEY }}
           # Samsung Securities Global — separate Gmail inbox for IMAP poll
           SAMSUNG_GMAIL_USER: ${{ secrets.SAMSUNG_GMAIL_USER }}
           SAMSUNG_GMAIL_APP_PW: ${{ secrets.SAMSUNG_GMAIL_APP_PW }}
