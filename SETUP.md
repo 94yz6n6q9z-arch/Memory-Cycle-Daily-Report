@@ -29,7 +29,7 @@ Two GitHub Actions cron jobs:
 
 | Workflow | Schedule (UTC) | What it does |
 |---|---|---|
-| `deep_tier.yml` | `0 3 * * *` (03:00 daily) | Fetch earnings transcripts (Yahoo Finance + Motley Fool + IR scrapers) + Korean broker PDFs → Layer 1 digests |
+| `deep_tier.yml` | `0 8 * * *` (08:00 daily) | Fetch earnings transcripts (Yahoo Finance + Motley Fool + IR scrapers) + Korean broker PDFs → Layer 1 digests |
 | `fast_tier.yml` | `0 11`, `30 11`, `5 12 * * 1-5` (weekdays) | Fast fetch → Layer 2 → Layer 3 → email |
 
 Fast tier has 3 cron triggers for redundancy. Idempotency via `state/brief_sent_dates.json` — only the first successful run produces output.
@@ -110,7 +110,7 @@ For Indicator 3 broker tiers, edit `BROKER_AUTHORITY_TIERS` in `config.py` — s
 ```
 .
 ├── .github/workflows/
-│   ├── deep_tier.yml      # 03:00 UTC daily
+│   ├── deep_tier.yml      # 08:00 UTC daily
 │   └── fast_tier.yml      # weekday 11:00/11:30/12:05 UTC
 ├── src/
 │   ├── config.py
