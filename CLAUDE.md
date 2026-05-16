@@ -2,6 +2,7 @@
 
 <!--
 CHANGELOG (this file):
+  v3.33  (2026-05-16) — Added v3.33 section (cascade architecture: Motley Fool primary + Yahoo via residential proxy + URL-seen cache); model name bug + first-run diagnosis recorded
   v3.32  (2026-05-14) — Added v3.32 section (Yahoo Finance transcript source); v3.31 section corrected re: IR-site coverage
   v3.31  (2026-05-14) — Version sections relabelled — transcript work = v3.31, deferred indicators reclaim v3.4
   v3.3   (2026-05-12) — NEW FILE — permanent in-repo context (who/architecture/locked decisions/build state/norms)
@@ -129,7 +130,7 @@ of deep tier. The split exists for runtime and cost reasons.
 
 ---
 
-## v3.1 → v3.32 — what's already built
+## v3.1 → v3.33 — what's already built
 
 ### v3.1 — News relevance filter
 Two-pass filter (`src/data/news.py`: `score_relevance` + `filter_relevant_news`)
@@ -191,6 +192,64 @@ important names had **no working full-transcript source**. v3.32 fixes it:
 Files touched: `config.py`, `transcript_sources.py`, `deep_tier.py`,
 `DEPLOYMENT_GUIDE.md`, `README.md`, `SETUP.md`, `CHANGES.md`, the data-source
 audit xlsx. Still a .3x maintenance fix — v3.4 keeps its label.
+
+### v3.33 — Transcript cascade + Yahoo via residential proxy — BUILT
+v3.32's "Yahoo is primary" design broke when the first deep-tier run revealed
+Yahoo blocks datacenter IPs (404). v3.33 reorders the architecture: free
+sources first, paid proxy only where needed. Also fixed two unrelated bugs
+caught in the same run.
+
+Three bugs the first run surfaced:
+- **Model name bug**: `HAIKU_MODEL = "haiku"` and `SONNET_MODEL = "sonnet"`
+  literal defaults — those are placeholders the Anthropic API doesn't accept.
+  Fixed to `"claude-haiku-4-5"` / `"claude-sonnet-4-6"` (dateless aliases work,
+  pin to current snapshots).
+- **Motley Fool pointed at the wrong URL**: scraper hit
+  `/earnings-call-transcripts/` (global recent index, ~20 transcripts, rolls
+  off in 24-48h — every basket name was already gone). Rewritten to hit
+  `/quote/{exchange}/{ticker}/` per company — persistent pages that list the
+  full transcript history. Hence the `MOTLEY_FOOL_TICKERS` shape change from
+  `{name: ticker}` → `{name: {"exchange": "nasdaq"|"nyse", "ticker": ...}}`.
+- **Yahoo blocked from datacenter IPs**: HTTP 404 to GitHub Actions runners.
+  Routed through Bright Data residential proxy via `RESIDENTIAL_PROXY_URL` env;
+  uses realistic Chrome headers, `-session-{N}` username token injection for
+  per-request IP rotation, redirect-following, retry-on-429 with fresh session,
+  and 3-second inter-ticker delay. Empirically validated 2026-05-16 (one curl
+  AMAT test returned 200 with real Q2 FY26 transcript content).
+
+The cascade (in `fetch_all_transcripts`):
+1. **Motley Fool** — primary for the 13 US names. Direct fetch, no proxy.
+2. **IR scrapers** — Micron (full transcript), SK Hynix + Samsung
+   (`materials_only` per v3.32). Direct fetch.
+3. **Yahoo Finance** — fallback. Fires for any name NOT in fresh
+   `full_transcript` state at this point — so `nothing` + `materials_only` +
+   `already_processed` (per Raul's "goal is the transcript" rule, the cached
+   state still triggers Yahoo because the cache may be hiding new content).
+   Skips only when Motley Fool or IR just digested a fresh full transcript.
+   Korean names always reach this step (no MF coverage). Routes through
+   residential proxy.
+
+New URL-seen cache at `state/cache/transcripts_seen.json` — scrapers
+short-circuit to `availability="already_processed"` on URL re-encounter; the
+digester skips those entirely. Saves Haiku tokens, proxy bandwidth, and avoids
+filling `state/digests/` with daily re-digests of the same call.
+
+Bright Data setup constraint surfaced in v3.33: individual accounts (no
+business KYC) are stuck on Bright Data's "Immediate Access" mode — robots.txt
+enforcement, GET/HEAD only, "high volume throttled". For our use (15 daily GET
+requests on Yahoo Finance) this is fine. 429s seen during testing were Yahoo
+target-site rate limits, NOT Bright Data blocks (confirmed via support chat);
+the rotation + headers + 3s-delay pattern mitigates them.
+
+Cost ceiling: ~3-5 MB/day proxy bandwidth worst case (~$0.10/month); trial
+credits ($27, 3.3 GB) cover ~2 years of normal operation. Ongoing at
+~$0.30-1.00/month on Bright Data paid residential ($4/GB) if Raul keeps the
+account active after trial expiry.
+
+Files touched: `config.py`, `transcript_sources.py`, `analysis/digester.py`,
+`deep_tier.py`, `.github/workflows/deep_tier.yml`, `CLAUDE.md`, `README.md`,
+`SETUP.md`, `DEPLOYMENT_GUIDE.md`, `CHANGES.md`, audit xlsx. Still .3x; v3.4
+keeps the captive-ratio label.
 
 ### v3.4 — DEFERRED (see ROADMAP.md)
 Three new indicators (Inference Efficiency Shock, CXL Production Deployment,
