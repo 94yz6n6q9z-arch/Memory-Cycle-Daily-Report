@@ -47,6 +47,13 @@ jobs:
           SAMSUNG_GMAIL_USER: ${{ secrets.SAMSUNG_GMAIL_USER }}
           SAMSUNG_GMAIL_APP_PW: ${{ secrets.SAMSUNG_GMAIL_APP_PW }}
           HAIKU_MODEL_OVERRIDE: ${{ secrets.HAIKU_MODEL_OVERRIDE }}
+          # v3.33: Bright Data residential proxy for Yahoo Finance transcript
+          # scraping. Yahoo blocks datacenter IPs (incl. GitHub Actions runners)
+          # with 404. Format: http://USER-country-us:PASS@brd.superproxy.io:33335
+          # The transcript scraper appends a per-request -session-{n} token
+          # for residential-IP rotation. If unset, Yahoo fallback degrades to
+          # "nothing" gracefully; Motley Fool + IR continue to work.
+          RESIDENTIAL_PROXY_URL: ${{ secrets.RESIDENTIAL_PROXY_URL }}
         run: |
           python -m src.deep_tier
 
