@@ -57,7 +57,7 @@ Do not introduce changes that break this without explicit discussion.
 ### Two-tier execution
 
 ```
-DEEP TIER (03:00 UTC daily)         FAST TIER (11:00/11:30/12:05 UTC weekdays)
+DEEP TIER (08:00 UTC daily)         FAST TIER (11:00/11:30/12:05 UTC weekdays)
   10-25 min runtime                   4-10 min runtime
   • Transcripts: IR + Motley Fool      • RSS (32 feeds)
   • Mirae/NH PDFs                     • EDGAR (6 feeds)
