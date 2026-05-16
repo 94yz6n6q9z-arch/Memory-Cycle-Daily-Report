@@ -1,8 +1,46 @@
 # Memory Cycle Brief — Changelog
 
-This release consolidates v3.1 (news relevance filter), v3.2 (architectural sensing feeds), v3.3 (earnings architecture extraction), v3.31 (transcript sources — Quartr replacement), and v3.32 (transcript source correction — Yahoo Finance primary). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
+This release consolidates v3.1 (news relevance filter), v3.2 (architectural sensing feeds), v3.3 (earnings architecture extraction), v3.31 (transcript sources — Quartr replacement), v3.32 (Yahoo Finance added as transcript source), and v3.33 (sequential cascade + Motley Fool primary + Yahoo via residential proxy). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
 
-> **A note on version numbering.** v3.31 and v3.32 are maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators. A transient mislabel during the v3.31 build briefly called the transcript work "v3.4" — that has been corrected to v3.31 everywhere.
+> **A note on version numbering.** v3.31, v3.32, v3.33 are maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+
+---
+
+## v3.33 — Transcript cascade + Yahoo via residential proxy
+
+**Why**: First post-v3.32 deep-tier run (May 16, 13:10 UTC) revealed three blocking bugs.
+
+1. **`HAIKU_MODEL` / `SONNET_MODEL` defaults were literal `"haiku"` / `"sonnet"`** — placeholder strings the Anthropic API doesn't accept. Every Layer 1 Haiku call 404'd; the deep tier ran without actually producing any digests.
+2. **Yahoo Finance blocks datacenter IPs with HTTP 404** — both GitHub Actions runners and Anthropic's own fetcher get the same 404 when hitting `/quote/{TICKER}/earnings-calls/`. Yahoo's bot detection cloaks the page from non-residential ASNs.
+3. **Motley Fool scraper was hitting the global recent-transcripts index** (`/earnings-call-transcripts/`) which only shows the ~20 most-recently-published transcripts site-wide. By the time the deep tier ran each morning, every name in the basket had already rolled off (replaced by hundreds of small-cap transcripts published in the intervening hours). The result: Motley Fool returned `nothing` for every ticker, every day.
+
+The fix isn't "always proxy everything" — it's "proxy the source that needs it, fix the scraper that's pointed at the wrong URL, and order the sources so the free one runs first."
+
+| File | Changes |
+|---|---|
+| `src/config.py` | `HAIKU_MODEL` default → `"claude-haiku-4-5"`; `SONNET_MODEL` default → `"claude-sonnet-4-6"` (was literal `"haiku"`/`"sonnet"` — these aren't valid Anthropic API model strings and every LLM call was 404'ing). `MOTLEY_FOOL_TICKERS` restructured from `{name: ticker}` to `{name: {"exchange": "nasdaq"\|"nyse", "ticker": ...}}` — exchange is needed by the new per-ticker URL pattern (`/quote/{exchange}/{ticker}/`) |
+| `src/data/transcript_sources.py` | Substantial rewrite. **New cascade architecture** (`fetch_all_transcripts`): Motley Fool first → IR-site scrapers → Yahoo Finance ONLY for companies still missing a full transcript (or with `already_processed` cache hits — the "old cache hides new content" edge case). The only state that skips Yahoo is a fresh `full_transcript` captured this run. **Motley Fool scraper rewritten** to hit per-ticker quote page (`https://www.fool.com/quote/{exchange}/{ticker}/`) and parse for `/earnings/call-transcripts/YYYY/MM/DD/...` links — these pages persist (don't roll off in 24-48h like the global index), and contain the full transcript history for the company. **Yahoo scraper rewritten** to route through residential proxy: realistic Chrome `User-Agent` + `Accept` / `Accept-Language` / `Accept-Encoding` / `Upgrade-Insecure-Requests` headers, per-request `-session-{N}` token injection for residential-IP rotation, redirect-following (Yahoo serves 301s to canonicalize URLs), one retry-on-429 with 10s backoff and a fresh session token, and a 3-second inter-ticker delay. `RESIDENTIAL_PROXY_URL` env var enables proxy mode; absent the var, Yahoo degrades to `nothing` gracefully. **NEW URL cache** at `state/cache/transcripts_seen.json` records URLs already digested; scrapers short-circuit to `availability="already_processed"` on re-encounter (saves Haiku tokens + proxy bandwidth on transcripts captured in earlier runs). `datetime.utcnow()` → `datetime.now()` (Python 3.12+ deprecation) |
+| `src/analysis/digester.py` | `digest_transcript_results()` gains an `already_processed` branch — cache hits skip both the Haiku call AND the placeholder gap record (the prior digest is already in `state/digests/`, no point recording a "gap" for a transcript we already have) |
+| `src/deep_tier.py` | Docstring updated for cascade architecture. `datetime.utcnow().isoformat()` → `datetime.now(timezone.utc).isoformat()` (deprecation fix, same line that records `written_at_iso` in `transcript_status.json`). Summary log line surfaces `already_processed` count and `yahoo_attempted_for` list — makes it visible at a glance which names made it past the MF+IR gate to require proxy fallback |
+| `.github/workflows/deep_tier.yml` | Adds `RESIDENTIAL_PROXY_URL: ${{ secrets.RESIDENTIAL_PROXY_URL }}` to the deep-tier step env |
+| `CLAUDE.md`, `README.md`, `SETUP.md`, `DEPLOYMENT_GUIDE.md` | Architecture descriptions updated to MF-primary + Yahoo-via-proxy-fallback. `SETUP.md` secrets table gains `RESIDENTIAL_PROXY_URL`. `DEPLOYMENT_GUIDE.md` Section 2.3 (Transcript sources) rewritten |
+| `memory_cycle_data_source_audit_v3_33.xlsx` | Source Registry updated: Yahoo Finance row gains "residential proxy required" note; Motley Fool row notes per-ticker URL pattern. Summary sheet gains v3.33 notes |
+
+**Empirical validation done before the commit** (May 16, 2026):
+
+- Yahoo at datacenter IP: `https://finance.yahoo.com/quote/AMAT/earnings-calls/` → 404 (confirmed bot block, both GitHub Actions and Anthropic fetcher).
+- Yahoo via Bright Data residential, no headers: 429 (Yahoo rate-limit, NOT a Bright Data block — confirmed via Bright Data support, who clarified that under Immediate Access mode 429 = target-site response, not their throttle).
+- Yahoo via Bright Data residential + realistic Chrome headers + `-session-rand` token + `-L` (redirect follow): **200, real AMAT Q2 FY26 transcript content**.
+- Motley Fool global index (`/earnings-call-transcripts/`): contains only ~20 most-recent transcripts; none of the basket present after a 24-48h window.
+- Motley Fool per-ticker quote page (`/quote/nasdaq/amat/`): 200 from datacenter IPs, persists for months, lists transcript history with the URL pattern `/earnings/call-transcripts/YYYY/MM/DD/{slug}`.
+
+**Architectural decision (Raul, May 16)**: aggressive Yahoo fallback. The cascade fires Yahoo for *any* name not in fresh `full_transcript` state — including the `already_processed` cache state — out of an abundance of caution. Trades ~$3-5/year in residual proxy spend for full coverage of the "MF cached an old quarter, Yahoo has the new one" edge case. Goal is the transcript; cost is secondary.
+
+**Cost ceiling under the new cascade**: ~3-5 MB/day proxy bandwidth worst case (~$0.10/month), well within Bright Data's $27 trial credit budget (3.3 GB residential) which alone covers about 2 years of normal operation. Trial credits expire 30 days from May 16; ongoing usage at this rate is ~$0.30-1.00/month on paid Residential at $4/GB.
+
+**Bright Data setup constraint surfaced**: individual accounts (no business KYC) are stuck on Bright Data's Immediate Access mode — domain blocklist enforcement + robots.txt enforcement + GET/HEAD only + "high volume throttled" per their docs. For Yahoo Finance `/quote/.../earnings-calls`, this is not a block (confirmed with Bright Data support) — it's just the throttling, mitigable with rotation + headers + slow request rate + retry-on-429.
+
+**Not in scope** (parked, see `ROADMAP.md`): transcript-memory + QoQ diff (v3.5), event dedup across rerun cycles (v3.5).
 
 ---
 
