@@ -19,6 +19,9 @@ Optional v3 (Samsung Securities Global research distribution):
 - `SAMSUNG_GMAIL_USER` — dedicated Gmail for Samsung Securities PDF distribution
 - `SAMSUNG_GMAIL_APP_PW` — Gmail app password for IMAP poll
 
+v3.33 — Yahoo Finance transcript fallback (recommended; without it, SK Hynix + Samsung have no full-transcript source):
+- `RESIDENTIAL_PROXY_URL` — Bright Data residential proxy URL for Yahoo Finance scraping. Yahoo blocks GitHub Actions / datacenter IPs with 404; the residential proxy bypasses this. Format: `http://USER-country-us:PASS@brd.superproxy.io:33335` (`-country-us` is a Bright Data routing flag, keep it as-is). The transcript scraper appends a per-request `-session-{N}` token for IP rotation. Bright Data individual accounts work on "Immediate Access" mode (no business KYC required). $4/GB residential after trial credits; expected ~$0.30-1.00/month at our usage. If unset, Motley Fool + IR scrapers still run; Yahoo fallback degrades to `nothing` gracefully.
+
 Model overrides — leave empty in normal operation:
 - `HAIKU_MODEL_OVERRIDE` — pin to specific Haiku version
 - `SONNET_MODEL_OVERRIDE` — pin to specific Sonnet version
@@ -29,7 +32,7 @@ Two GitHub Actions cron jobs:
 
 | Workflow | Schedule (UTC) | What it does |
 |---|---|---|
-| `deep_tier.yml` | `0 8 * * *` (08:00 daily) | Fetch earnings transcripts (Yahoo Finance + Motley Fool + IR scrapers) + Korean broker PDFs → Layer 1 digests |
+| `deep_tier.yml` | `0 8 * * *` (08:00 daily) | Sequential transcript cascade: Motley Fool (per-ticker pages) → IR-site scrapers → Yahoo Finance via residential proxy (only for names missing full transcript) → Korean broker PDFs → Layer 1 digests |
 | `fast_tier.yml` | `0 11`, `30 11`, `5 12 * * 1-5` (weekdays) | Fast fetch → Layer 2 → Layer 3 → email |
 
 Fast tier has 3 cron triggers for redundancy. Idempotency via `state/brief_sent_dates.json` — only the first successful run produces output.
