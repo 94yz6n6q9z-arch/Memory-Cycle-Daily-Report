@@ -1,7 +1,7 @@
 """
 Layer 1 — Document digester.
 
-Runs in the DEEP TIER (03:00 UTC daily). For each large input (Quartr
+Runs in the DEEP TIER (08:00 UTC daily). For each large input (Yahoo Finance / Motley Fool / IR
 earnings transcript, Korean broker English PDF, hyperscaler 10-Q
 exhibit), produces a structured JSON digest:
 
