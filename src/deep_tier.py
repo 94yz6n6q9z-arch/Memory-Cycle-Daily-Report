@@ -1,5 +1,5 @@
 """
-Deep tier entry point — runs 03:00 UTC daily.
+Deep tier entry point — runs 08:00 UTC daily.
 
 What this does:
   1. Fetch earnings transcripts published recently — from free sources,
