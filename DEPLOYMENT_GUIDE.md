@@ -300,7 +300,7 @@ If 🚨 banners fire at the top, that's by design — they indicate active EPS r
 
 Schedule activates automatically after first manual run.
 
-- **Deep tier**: 03:00 UTC = 05:00 Munich (summer) / 04:00 (winter)
+- **Deep tier**: 08:00 UTC = 10:00 Munich (summer) / 09:00 (winter)
 - **Fast tier**: weekdays 11:00 UTC + 11:30 fallback + 12:05 safety = 13:00 / 13:30 / 14:05 Munich (summer)
 
 Tomorrow 13:00-14:05 Munich → brief should arrive. Check **Actions** tab to confirm both workflows ran.
