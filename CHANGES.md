@@ -21,6 +21,10 @@ This release consolidates v3.1 (news relevance filter), v3.2 (architectural sens
 
 **The Yahoo syndication quirk**: Yahoo carries the same transcript under many ticker variants (SK Hynix also shows as HY9H.F / .DU / .SG; Samsung as SSU.F / SMSN.L / SSNLF). `YAHOO_TRANSCRIPT_TICKERS` uses ONE canonical ticker per company so the same call isn't counted as independent corroboration.
 
+**Bonus finding from empirical investigation (May 15, 2026)**: Yahoo's transcript pages are tagged `Powered by Quartr` — meaning Quartr is still alive as a content distributor to Yahoo Finance; they only killed the *free public developer API*. The scrape against Yahoo is, mechanically, re-acquiring Quartr coverage through Quartr's own consumer partner.
+
+**Schedule shift (deep tier cron 03:00 → 08:00 UTC)**: empirical timestamps from 5 recent US after-hours calls (NVDA Q4 FY26, AVGO Q1 FY26, MSFT Q3 FY26, AMAT Q2 FY26, NU Q1 2026) put the Yahoo/Quartr transcript availability distribution at mean ~6.5h post-call-end, σ ~2.5h. The original 03:00 UTC deep tier caught only ~34% of US after-hours transcripts same-day; 08:00 UTC catches ~94% and still leaves ~3h buffer before the first fast-tier run at 11:00 UTC. Also helps Asian calls (SK Hynix / Samsung / TSMC) whose transcripts land ~05:00-09:00 UTC. Changed in `.github/workflows/deep_tier.yml`, and synced across `src/deep_tier.py`, `src/analysis/digester.py`, `README.md`, `CLAUDE.md`, `SETUP.md`, `DEPLOYMENT_GUIDE.md`. Workflow file also cleaned of leftover `QUARTR_API_KEY` env and "Quartr" step label (v3.31 misses).
+
 **Caveat carried forward**: Yahoo gives the *latest* call free; historical calls are behind a Yahoo subscription. Fine for a daily brief that wants the most recent call — but there's no free backfill of old quarters.
 
 **Not in scope** (parked): transcript-memory / quarter-over-quarter diff and event-deduplication — these are a v3.5 item, see `ROADMAP.md`.
