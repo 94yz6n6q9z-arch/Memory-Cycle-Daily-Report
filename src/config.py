@@ -5,6 +5,7 @@ Defines the tickers tracked, the indicator framework (tiers 1-4),
 and the thresholds that classify each signal as fired vs not fired.
 
 CHANGELOG (this file):
+  v3.33  (2026-05-16) — Model strings fixed: HAIKU_MODEL='claude-haiku-4-5', SONNET_MODEL='claude-sonnet-4-6' (was the literal "haiku"/"sonnet" which Anthropic API doesn't accept). MOTLEY_FOOL_TICKERS gains exchange field per ticker (needed for per-ticker URL pattern in v3.33 scraper rewrite).
   v3.32  (2026-05-14) — Added YAHOO_TRANSCRIPT_TICKERS (primary transcript source); IR_SOURCES gains transcript_capable flag (SK Hynix/Samsung = False — IR sites are materials-only); scrubbed 24 stale "Quartr" refs in INDICATORS sources/stitching → "Yahoo Finance"
   v3.31  (2026-05-14) — Added IR_SOURCES, MOTLEY_FOOL_TICKERS, AI_LAB_IR_WATCH; OpenAI/Anthropic listing-watch queries
   v3.3   (2026-05-12) — (no direct change — TRACKED_* lists added v3.1/3.2)
@@ -1196,21 +1197,25 @@ YAHOO_TRANSCRIPT_TICKERS = {
 }
 
 # Motley Fool transcript coverage — US-listed names with English earnings calls.
-# One scraper covers all of these. Maps display name -> ticker.
+# v3.33: maps display name -> {exchange, ticker}. Exchange is needed because
+# the scraper now hits the per-ticker quote page at
+# https://www.fool.com/quote/{exchange}/{ticker}/  (persistent, lists all
+# transcripts for that company) instead of the global recent-transcripts
+# index (which only shows the last ~20 and rolls off in 24-48h).
 MOTLEY_FOOL_TICKERS = {
-    "Micron": "MU",            # memory maker — core (also in IR_SOURCES as cross-check)
-    "Nvidia": "NVDA",          # HBM demand driver
-    "Broadcom": "AVGO",        # custom silicon / networking
-    "TSMC": "TSM",             # CoWoS packaging bottleneck
-    "Applied Materials": "AMAT",  # equipment — Tier 3 confirm
-    "Microsoft": "MSFT",       # hyperscaler capex
-    "Alphabet": "GOOGL",       # hyperscaler capex + TPU
-    "Meta": "META",            # hyperscaler capex + MTIA
-    "Amazon": "AMZN",          # hyperscaler capex + Trainium
-    "Oracle": "ORCL",          # hyperscaler capex
-    "Dell": "DELL",            # OEM inventory (buyer-side)
-    "HPE": "HPE",              # OEM inventory (buyer-side)
-    "ASML": "ASML",            # equipment — coverage less consistent; flag will tell us
+    "Micron":            {"exchange": "nasdaq", "ticker": "MU"},      # memory maker — core (also in IR_SOURCES as cross-check)
+    "Nvidia":            {"exchange": "nasdaq", "ticker": "NVDA"},    # HBM demand driver
+    "Broadcom":          {"exchange": "nasdaq", "ticker": "AVGO"},    # custom silicon / networking
+    "TSMC":              {"exchange": "nyse",   "ticker": "TSM"},     # CoWoS packaging bottleneck (NYSE-listed ADR)
+    "Applied Materials": {"exchange": "nasdaq", "ticker": "AMAT"},    # equipment — Tier 3 confirm
+    "Microsoft":         {"exchange": "nasdaq", "ticker": "MSFT"},    # hyperscaler capex
+    "Alphabet":          {"exchange": "nasdaq", "ticker": "GOOGL"},   # hyperscaler capex + TPU
+    "Meta":              {"exchange": "nasdaq", "ticker": "META"},    # hyperscaler capex + MTIA
+    "Amazon":            {"exchange": "nasdaq", "ticker": "AMZN"},    # hyperscaler capex + Trainium
+    "Oracle":            {"exchange": "nyse",   "ticker": "ORCL"},    # hyperscaler capex
+    "Dell":              {"exchange": "nyse",   "ticker": "DELL"},    # OEM inventory (buyer-side)
+    "HPE":               {"exchange": "nyse",   "ticker": "HPE"},     # OEM inventory (buyer-side)
+    "ASML":              {"exchange": "nasdaq", "ticker": "ASML"},    # equipment — coverage less consistent; flag will tell us
 }
 
 # AI labs — NOT yet publicly traded. Dormant entries: when either lists, fill in
@@ -1580,14 +1585,14 @@ def get_upcoming_events(within_days: int = 90, today: Optional[_date] = None) ->
 # Stage 1 — small/cheap model for high-volume news classification.
 # Currently resolves to Haiku 4.5; will roll forward as Anthropic ships
 # new Haiku-tier models.
-HAIKU_MODEL = os.environ.get("HAIKU_MODEL_OVERRIDE") or "haiku"
+HAIKU_MODEL = os.environ.get("HAIKU_MODEL_OVERRIDE") or "claude-haiku-4-5"
 HAIKU_MAX_TOKENS = 4000
 
 # Stage 2 — mid-tier reasoning model for tier classification, probability
 # synthesis, exec summary composition. Currently resolves to Sonnet 4.6;
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for
 # marginal quality gain on this structured task.
-SONNET_MODEL = os.environ.get("SONNET_MODEL_OVERRIDE") or "sonnet"
+SONNET_MODEL = os.environ.get("SONNET_MODEL_OVERRIDE") or "claude-sonnet-4-6"
 SONNET_MAX_TOKENS = 8000
 
 LLM_TEMPERATURE = 0.3  # low for analytical work
