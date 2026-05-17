@@ -462,6 +462,10 @@ _SOURCE_TYPE_LABELS = {
     "yfinance": "yfinance",
     "fmp": "FMP (estimates)",
     "llm": "Anthropic API",
+    # v3.38 — added to surface deep-tier and previously-batched sources
+    "api": "External API",
+    "transcript": "Earnings transcript source",
+    "broker_pdf": "Korean broker note feed",
 }
 
 
