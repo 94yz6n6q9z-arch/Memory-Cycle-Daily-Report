@@ -71,6 +71,7 @@ never raises into the deep-tier orchestrator. Same maintenance posture as the
 Naver scraper (expect 1-2 fixes/year).
 
 CHANGELOG (this file):
+  v3.34  (2026-05-16) — Motley Fool URL regex: exclude backslash from char class (HTML/JSON escape was leaking a stray backslash into URLs → all transcript fetches 404 in first v3.33 run). Yahoo via proxy: added HTTP-status + body-length + anchor-count diagnostic logging — first v3.33 run showed Yahoo returning 200 but bs4 finding 0 transcript links on most tickers; need data on whether Yahoo serves a JS shell through residential proxy vs. real HTML.
   v3.33  (2026-05-16) — Sequential cascade: Motley Fool primary → IR fill-ins → Yahoo fallback for gaps. Motley Fool scraper rewritten to use per-ticker /quote/{exchange}/{ticker}/ page (was global recent-index which rolled off in 24-48h, leaving no fallback). Yahoo routed through Bright Data residential proxy when RESIDENTIAL_PROXY_URL is set, with realistic Chrome headers, per-request session rotation, redirect-following, 3s inter-ticker delay, and one retry-on-429 with 10s backoff. transcripts_seen.json cache skips re-fetching/re-digesting URLs we've already processed.
   v3.32  (2026-05-14) — Added fetch_yahoo_finance_transcripts() as PRIMARY source; fetch_all_transcripts()/fetch_transcripts_with_retry() take yahoo_tickers; IR scraper honours transcript_capable (caps SK Hynix/Samsung at materials_only)
   v3.31  (2026-05-14) — NEW FILE — IR-site + Motley Fool scrapers; replaces gated Quartr API; three-state availability flag
@@ -216,6 +217,13 @@ def _http_get(url: str, use_proxy: bool = False, session_id: Optional[str] = Non
             # Force a NEW session token for the retry to get a different IP
             new_session = str(random.randint(100000, 999999))
             return _http_get(url, use_proxy=True, session_id=new_session, follow_redirects=follow_redirects)
+        # v3.34: diagnostic logging for proxy requests — surface response size +
+        # status so we can debug "200 but no transcripts" without re-running.
+        if use_proxy:
+            body_len = len(r.text or "")
+            logger.info(
+                f"Yahoo via proxy: {url} → HTTP {r.status_code}, {body_len:,} bytes"
+            )
         r.raise_for_status()
         return r.text
     except Exception as e:
@@ -465,8 +473,12 @@ MOTLEY_FOOL_QUOTE_PAGE = "https://www.fool.com/quote/{exchange}/{ticker}/"
 #   /earnings/call-transcripts/YYYY/MM/DD/{slug}
 #   /{article_id}/earnings/call-transcripts/YYYY/MM/DD/{slug}
 # Both lead to the same content; we match either and extract the date.
+# v3.34: char class excludes backslash too — the page renders some URLs inside
+# JSON-stringified blobs where the closing quote is escaped (backslash-quote),
+# and an overly-permissive char class greedily included the backslash before
+# stopping at the quote. That trailing backslash gets URL-encoded as %5C and 404s.
 MOTLEY_FOOL_TRANSCRIPT_PATTERN = re.compile(
-    r"/(?:\d+/)?earnings/call-transcripts/(\d{4})/(\d{2})/(\d{2})/[^\"\s'?#]+"
+    r"/(?:\d+/)?earnings/call-transcripts/(\d{4})/(\d{2})/(\d{2})/[^\"\s'?#\\]+"
 )
 
 
@@ -501,6 +513,11 @@ def _scrape_motley_fool_ticker(
     transcript_links = []  # list of (date_tuple, full_url)
     for m in MOTLEY_FOOL_TRANSCRIPT_PATTERN.finditer(page_html):
         href = m.group(0)
+        # v3.34 defensive: belt-and-suspenders strip of trailing backslashes
+        # in case the page introduces a new escape pattern the regex missed.
+        href = href.rstrip("\\")
+        if not href.endswith("/"):
+            href = href + "/"
         full_url = href if href.startswith("http") else f"https://www.fool.com{href}"
         # De-dupe — the page renders the same link twice (with and without article ID)
         if any(full_url == u for _, u in transcript_links):
@@ -664,12 +681,23 @@ def _scrape_yahoo_ticker(company: str, ticker: str, days_back: int,
         soup = BeautifulSoup(index_html, "html.parser")
         # Transcript links: href contains '/earnings/' and 'earnings_call'.
         # The index is ordered newest-first, so the first match is the latest call.
+        all_anchors = soup.find_all("a", href=True)
         match_href = None
-        for a in soup.find_all("a", href=True):
+        for a in all_anchors:
             href = a["href"]
             if "/earnings/" in href and "earnings_call" in href:
                 match_href = href if href.startswith("http") else f"https://finance.yahoo.com{href}"
                 break
+
+        # v3.34 diagnostic: log what we saw on the page so we can debug
+        # "200 but no transcripts" cases. If anchor_count is 0 or very low,
+        # Yahoo served a JS shell, not the real page.
+        sample_hrefs = [a["href"] for a in all_anchors[:5] if a.get("href")]
+        logger.info(
+            f"Yahoo parse for {ticker}: {len(all_anchors)} anchors total, "
+            f"transcript link found: {bool(match_href)}, "
+            f"first 5 anchor hrefs: {sample_hrefs}"
+        )
 
         if not match_href:
             return TranscriptResult(
