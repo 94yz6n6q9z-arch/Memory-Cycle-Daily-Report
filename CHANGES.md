@@ -1,8 +1,36 @@
 # Memory Cycle Brief — Changelog
 
-This release consolidates v3.1 (news relevance filter), v3.2 (architectural sensing feeds), v3.3 (earnings architecture extraction), v3.31 (transcript sources — Quartr replacement), v3.32 (Yahoo Finance added as transcript source), v3.33 (sequential cascade + Motley Fool primary + Yahoo via residential proxy), and v3.34 (post-deploy fixes: Motley Fool URL regex + Yahoo diagnostic logging + workflow git push race fix). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
+This release consolidates v3.1 (news relevance filter), v3.2 (architectural sensing feeds), v3.3 (earnings architecture extraction), v3.31 (transcript sources — Quartr replacement), v3.32 (Yahoo Finance added as transcript source), v3.33 (sequential cascade + Motley Fool primary + Yahoo via residential proxy), v3.34 (post-deploy fixes: Motley Fool URL regex + Yahoo diagnostic logging + workflow git push race fix), and v3.35 (Yahoo parser rewrite using stable test-id selectors + Scout AI capture + Motley Fool diagnostic logging). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
 
-> **A note on version numbering.** v3.31, v3.32, v3.33, v3.34 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+> **A note on version numbering.** v3.31, v3.32, v3.33, v3.34, v3.35 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+
+---
+
+## v3.35 — Yahoo parser rewrite (DOM test-id extraction + Scout AI capture) + Motley Fool diagnostic logging
+
+**Why**: v3.34 deep-tier run (May 17, 07:15 UTC) showed Yahoo returning 200 OK on every fetch (proxy working, redirects working, canonical tickers correct) but 0/15 `full_transcript` results. v3.34's diagnostic logging revealed why: the bs4 selector `psoup.find("article") or div.body|content|caas` was returning <400 chars on 3 MB pages. Investigation against `/tmp/yahoo_nvda.html` (NVDA Q4 FY2026, 3.6 MB, fetched via Bright Data proxy) confirmed the transcript text lives in `<p data-testid="typography" class="...type-paragraph-md-reg...">` tags, not inside an `<article>` wrapper. Yahoo also embeds a Scout AI structured analysis (TLDR, 12 key_insights sections, 5 labeled quotes, 11 Q&A exchanges) in a SvelteKit hydration script block at `mad/v2/analyst/ect` — high-quality signal that was being silently discarded.
+
+**Local validation before commit** (per the explicit "no more shipping without parsing actual content locally first" commitment from the v3.35 handoff brief): on `/tmp/yahoo_nvda.html`, the new parser extracts 90 timestamp-paired paragraphs (51,990 chars text), all 12 Scout AI insight sections, 5 quotes, 11 Q&A exchanges. First paragraph is operator greeting at 0:00:00; last is operator closing at 1:06:32. Cross-checks pass.
+
+1. **Inlined helpers in `src/data/transcript_sources.py`** (above `_scrape_yahoo_ticker`, matching the inline pattern used by Motley Fool and IR scrapers):
+   - `_yahoo_extract_paragraphs(html)` → `[{"timestamp": "0:33:21", "text": "..."}, ...]`. Anchored on the stable `data-testid="typography"` test-automation hook and the stable `type-paragraph-md-reg` class prefix. The volatile runtime hash suffix (`yf-gjjls9` and similar) is deliberately ignored. Dedupes by content (each paragraph appears twice on Yahoo's page — SSR'd DOM + SvelteKit hydration data — empirically confirmed via `grep -c` on a unique phrase: count = 2).
+   - `_yahoo_paragraphs_to_text(paragraphs)` → renders as `[H:MM:SS]\\n<text>\\n\\n[H:MM:SS]\\n<text>` for `TranscriptResult.text`.
+   - `_yahoo_extract_analysis(html)` → Yahoo Scout AI's structured analysis dict from the embedded SvelteKit block. Double-decode (wrapper JSON has `body` as JSON-encoded string).
+
+2. **`_scrape_yahoo_ticker` patched**: replaces lines 740-743 (the failing bs4 selector) with calls to `extract_paragraphs` + `extract_analysis`. New diagnostic log line per ticker: `paragraph count, text length, Scout AI presence`. The length-based `_classify_availability` heuristic unchanged — 52K chars on a real call → `full_transcript`.
+
+3. **`TranscriptResult.analysis_json: Optional[dict] = None`** new field. Captures Scout AI analysis when Yahoo provides it (and only Yahoo provides it). Current deep-tier Haiku digester ignores unknown fields, so this is non-breaking. v3.5 will wire it into the email template proper.
+
+4. **Motley Fool diagnostic logging** mirroring Yahoo's v3.34 anchor-count pattern. When `_scrape_motley_fool_ticker` finds zero transcript links, the new log line records `page_html_len`, `total_hrefs`, and up to 5 `near_miss_transcript_hrefs` (anchors that contained "transcript" but didn't match the strict pattern). v3.34 produced 13/13 "nothing" from MF with zero diagnostic output — this gives the next deploy actionable signal on whether MF served a real page, served a JS shell, or changed its URL pattern.
+
+| File | Changes |
+|---|---|
+| `src/data/transcript_sources.py` | `import html as html_module` added. New helpers inlined above the Yahoo section: `_yahoo_extract_paragraphs`, `_yahoo_paragraphs_to_text`, `_yahoo_extract_analysis`, plus the regex constants and stability notes. `TranscriptResult` gains `analysis_json: Optional[dict] = None`. `_scrape_yahoo_ticker` replaces the bs4 article/body selector (3 lines) with calls into the inlined helpers; logs paragraph count + text length + scout_ai_analysis presence; threads `analysis_json` into the returned result. `_scrape_motley_fool_ticker` adds a diagnostic log before the "no transcript links" return showing page length, total anchor count, and near-miss transcript hrefs. Changelog block updated |
+| `CHANGES.md` | This entry |
+
+**Stability assumptions worth flagging.** The DOM selectors anchor on `data-testid="typography"` (test-automation hooks, designed to be stable across redesigns) and `type-paragraph-md-reg` (semantic CSS class). If Yahoo ships a major redesign that changes either of these, this scraper degrades to `nothing` and logs a 0-paragraph diagnostic — same defensive failure mode as v3.34. The SvelteKit `mad/v2/analyst/ect` API path is Yahoo internal but published in the page's hydration data; treated as same-stability as the DOM selectors.
+
+**Coverage caveat to confirm next deploy.** Scout AI analysis was validated present on NVDA (US mega-cap, recent call). Whether it's also populated for HY9H.MU (SK Hynix, Munich cross-listing) and SSU.F (Samsung, Frankfurt) remains to be empirically confirmed in the May 18 deep-tier run. Raw paragraph extraction is the primary value here; Scout AI is an additive signal that v3.5 will surface.
 
 ---
 
