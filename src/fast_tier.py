@@ -43,7 +43,7 @@ import sys
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -52,6 +52,9 @@ from src.config import (
     BENCHMARKS,
     BIG_MOVER_THRESHOLD_PCT,
     CORE_TICKERS,
+    CYCLE_PHASE_COLORS,
+    CYCLE_PHASE_DURATIONS_MONTHS,
+    CYCLE_TROUGH_DATE,
     EDGAR_FEEDS,
     EMAIL_TO,
     FMP_API_KEY,
@@ -60,6 +63,8 @@ from src.config import (
     HYPERSCALERS,
     INDICATORS,
     RSS_FEEDS,
+    SUPERCYCLE_CHART_TICKER_CURRENCY,
+    SUPERCYCLE_CHART_TICKER_NAME,
     TRACKED_ANALYSTS,
     TRACKED_BROKERS,
     TRACKED_COMPANIES,
@@ -98,7 +103,7 @@ from src.analysis.llm_summarizer import (
     fallback_analysis,
     identify_big_movers,
 )
-from src.analysis.chart_generator import generate_performance_chart
+from src.analysis.chart_generator import generate_performance_chart, generate_supercycle_chart
 from src.email_module.template import build_email_html
 from src.email_module.sender import send_email
 
@@ -129,7 +134,7 @@ def save_state(analysis) -> None:
     try:
         with open(PRIOR_STATE_FILE, "w") as f:
             payload = {
-                "saved_at_iso": datetime.utcnow().isoformat(),
+                "saved_at_iso": datetime.now(UTC).isoformat(),
                 "executive_summary": asdict(analysis.executive_summary) if hasattr(analysis, "executive_summary") else {},
                 "indicator_assessments": [asdict(a) for a in (analysis.indicator_assessments or [])] if hasattr(analysis, "indicator_assessments") else [],
             }
@@ -141,7 +146,7 @@ def save_state(analysis) -> None:
 def run_fast_tier() -> int:
     """Execute the fast-tier pipeline. Returns exit code (0 = success)."""
     today = date.today()
-    started_at = datetime.utcnow()
+    started_at = datetime.now(UTC)
 
     # ----- Step 0: Idempotency check -----
     # v3.38.6: FORCE_RUN env var bypasses this check. Set automatically by
@@ -202,7 +207,18 @@ def run_fast_tier() -> int:
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         futures = [
-            pool.submit(_run, "prices",    lambda: fetch_price_history(WIDER_BASKET, collector=collector)),
+            # v3.39.2: period bumped 1y → 3y. Two reasons coordinated:
+            # (1) 1Y performance returns were rendering "n/a" in the email
+            #     because period="1y" yielded ~252 trading days, and the
+            #     pct_change_lookback(252) guard `len(series) < days + 1`
+            #     fired (250-252 rows < 253). Bumping the fetch window
+            #     gives the 252-day lookback plenty of headroom (~756 rows).
+            # (2) The new supercycle chart (v3.39.2) needs SK Hynix history
+            #     back to the Q4 2023 cycle trough — ~30 months. 3y covers
+            #     it with margin. Defense-in-depth: pct_change_lookback also
+            #     hardened in prices.py to fall back gracefully even when
+            #     the series is shorter than the requested window.
+            pool.submit(_run, "prices",    lambda: fetch_price_history(WIDER_BASKET, period="3y", collector=collector)),
             pool.submit(_run, "estimates", lambda: fetch_all_estimates(CORE_TICKERS, fmp_api_key=FMP_API_KEY, collector=collector)),
             # v3.38: edgar_feeds passed as kwarg — fetch_all_news signature is
             # (rss, google, hours_back, edgar_feeds, collector); positional
@@ -435,6 +451,44 @@ def run_fast_tier() -> int:
     # default title used.
     chart_b64 = generate_performance_chart(baseline_to_100(price_history))
 
+    # v3.39.2: new supercycle phase chart, replaces the 1Y performance chart
+    # as the lead visual in the email. The 1Y performance chart is no longer
+    # rendered into the email body (the performance table immediately below
+    # already carries 1D/1W/1M/3M/6M/1Y numbers — the chart was redundant).
+    # The 1Y chart is still generated above because other downstream code
+    # may consume it; current template just doesn't reference chart_b64.
+    # See email_module/template.py:build_email_html for the new layout.
+    supercycle_chart_b64 = None
+    if SUPERCYCLE_CHART_TICKER_NAME in price_history.columns:
+        try:
+            supercycle_chart_b64 = generate_supercycle_chart(
+                sk_hynix_price_history=price_history[SUPERCYCLE_CHART_TICKER_NAME],
+                executive_summary=analysis.executive_summary,
+                indicator_assessments=analysis.indicator_assessments,
+                indicators_config=INDICATORS,
+                trough_date_iso=CYCLE_TROUGH_DATE,
+                phase_durations_months=CYCLE_PHASE_DURATIONS_MONTHS,
+                phase_colors=CYCLE_PHASE_COLORS,
+                currency=SUPERCYCLE_CHART_TICKER_CURRENCY,
+            )
+            if supercycle_chart_b64:
+                logger.info(
+                    f"Supercycle chart rendered "
+                    f"({len(supercycle_chart_b64):,} base64 chars)"
+                )
+            else:
+                logger.warning("Supercycle chart generation returned None")
+        except Exception as e:
+            # Non-fatal: if the chart fails we still ship the email without it.
+            # Template handles supercycle_chart_base64=None by skipping the section.
+            logger.error(f"Supercycle chart generation failed: {e}")
+            supercycle_chart_b64 = None
+    else:
+        logger.warning(
+            f"Supercycle chart skipped: '{SUPERCYCLE_CHART_TICKER_NAME}' "
+            f"not in price_history columns ({list(price_history.columns)})"
+        )
+
     upcoming = get_upcoming_events(within_days=90)
     logger.info(f"Calendar: {len(upcoming)} upcoming events")
 
@@ -451,6 +505,7 @@ def run_fast_tier() -> int:
         analysis=analysis,
         performance=performance,
         chart_base64=chart_b64,
+        supercycle_chart_base64=supercycle_chart_b64,
         data_source_statuses=collector.all(),
         upcoming_events=upcoming,
         rel_strength_verdict=rel_strength_verdict,
@@ -468,7 +523,7 @@ def run_fast_tier() -> int:
     except Exception as e:
         logger.error(f"Email send failed: {e}")
         # Save HTML to repo for manual retrieval
-        failed_path = Path(f"state/failed_send_{datetime.utcnow().strftime('%Y%m%dT%H%M%S')}.html")
+        failed_path = Path(f"state/failed_send_{datetime.now(UTC).strftime('%Y%m%dT%H%M%S')}.html")
         failed_path.parent.mkdir(exist_ok=True)
         failed_path.write_text(html_body)
         logger.error(f"Saved failed-send body to {failed_path}")
@@ -478,7 +533,7 @@ def run_fast_tier() -> int:
     mark_brief_sent_today(today)
     save_state(analysis)
 
-    duration = (datetime.utcnow() - started_at).total_seconds()
+    duration = (datetime.now(UTC) - started_at).total_seconds()
     logger.info(f"=== FAST TIER COMPLETE in {duration:.0f}s ===")
     return 0
 
