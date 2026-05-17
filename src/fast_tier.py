@@ -34,6 +34,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
+import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 from datetime import date, datetime
@@ -69,7 +70,10 @@ from src.state import (
     PRIOR_STATE_FILE,
     STATE_DIR,
 )
-from src.diagnostics import DiagnosticsCollector, SourceFetchStatus
+from src.diagnostics import (
+    DiagnosticsCollector, SourceFetchStatus,
+    status_from_retry_meta, statuses_from_dict_list,
+)
 from src.data.prices import (
     baseline_to_100,
     calculate_performance,
@@ -146,45 +150,99 @@ def run_fast_tier() -> int:
     logger.info("Fetching from concurrent source pool...")
     fetch_results: dict[str, Any] = {}
 
+    # v3.38: descriptive labels per fetcher so a FAIL row is unambiguous
+    # about which subsystem died. Maps to source_name + source_type used
+    # when this branch crashes top-level (before any inner instrumentation).
+    _LABEL_META = {
+        "prices":    ("Yahoo Finance / yfinance batch (prices)",  "yfinance"),
+        "estimates": ("Estimates (yfinance + FMP)",               "yfinance"),
+        "news":      ("News aggregator (RSS + Google News + EDGAR)", "rss"),
+        "naver":     ("Naver Finance (Korean broker scraper)",    "scraper"),
+        "finnhub":   ("Finnhub (US analyst actions)",             "api"),
+        "dart":      ("DART (Korean regulatory filings)",         "api"),
+    }
+
     def _run(label, fn):
+        """Run a fetcher; on exception, record a FAIL row in the collector
+        so a top-level crash is visible in the email validation table rather
+        than vanishing silently. (Sub-source rows that completed before the
+        crash remain — you'll see a partial picture plus a FAIL row for the
+        aggregator, which is the right outcome.)"""
         try:
             return label, fn()
         except Exception as e:
             logger.error(f"{label} fetch raised: {e}")
+            src_name, src_type = _LABEL_META.get(label, (label, "scraper"))
+            collector.record(SourceFetchStatus(
+                source_name=src_name, source_type=src_type,
+                reached=False, items_returned=0, latency_ms=0,
+                error=f"{type(e).__name__}: {e}",
+                detail="aggregator-level crash (sub-source rows above may be partial)",
+            ))
             return label, None
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         futures = [
-            pool.submit(_run, "prices", lambda: fetch_price_history(WIDER_BASKET, collector=collector)),
+            pool.submit(_run, "prices",    lambda: fetch_price_history(WIDER_BASKET, collector=collector)),
             pool.submit(_run, "estimates", lambda: fetch_all_estimates(CORE_TICKERS, fmp_api_key=FMP_API_KEY, collector=collector)),
-            pool.submit(_run, "news", lambda: fetch_all_news(RSS_FEEDS, GOOGLE_NEWS_QUERIES, EDGAR_FEEDS, collector=collector)),
-            pool.submit(_run, "naver", fetch_naver_with_retry),
-            pool.submit(_run, "finnhub", fetch_finnhub_with_retry),
-            pool.submit(_run, "dart", fetch_dart_with_retry),
+            # v3.38: edgar_feeds passed as kwarg — fetch_all_news signature is
+            # (rss, google, hours_back, edgar_feeds, collector); positional
+            # placement of EDGAR_FEEDS lands in hours_back. See CHANGES.md.
+            pool.submit(_run, "news",      lambda: fetch_all_news(RSS_FEEDS, GOOGLE_NEWS_QUERIES, edgar_feeds=EDGAR_FEEDS, collector=collector)),
+            pool.submit(_run, "naver",     fetch_naver_with_retry),
+            pool.submit(_run, "finnhub",   fetch_finnhub_with_retry),
+            pool.submit(_run, "dart",      fetch_dart_with_retry),
         ]
         for fut in as_completed(futures):
             label, result = fut.result()
             fetch_results[label] = result
 
-    price_history = fetch_results.get("prices") or {}
+    # v3.38: prices returns a pd.DataFrame, not a dict — `... or {}` triggers
+    # DataFrame truthiness which pandas refuses to evaluate. Explicit None check.
+    _prices_raw = fetch_results.get("prices")
+    price_history = _prices_raw if _prices_raw is not None else pd.DataFrame()
     estimates_map = fetch_results.get("estimates") or {}
     news_items = fetch_results.get("news") or []
-    naver_data = fetch_results.get("naver", (None, {}))[0] if isinstance(fetch_results.get("naver"), tuple) else fetch_results.get("naver")
-    finnhub_data = fetch_results.get("finnhub", (None, {}))[0] if isinstance(fetch_results.get("finnhub"), tuple) else fetch_results.get("finnhub")
-    dart_data = fetch_results.get("dart", (None, {}))[0] if isinstance(fetch_results.get("dart"), tuple) else fetch_results.get("dart")
+    # naver/finnhub/dart return (payload, meta) tuples; legacy code also handled bare payload
+    naver_result   = fetch_results.get("naver")
+    finnhub_result = fetch_results.get("finnhub")
+    dart_result    = fetch_results.get("dart")
 
-    # Record source fetches in collector
-    if naver_data:
-        collector.add(SourceFetchStatus("Naver Finance", "scraper", True,
-                                        sum(t.get("n_actions", 0) for t in naver_data.get("tickers", {}).values()),
-                                        0, detail=f"{len(naver_data.get('tickers', {}))} tickers"))
-    if finnhub_data:
-        collector.add(SourceFetchStatus("Finnhub", "api", True,
-                                        len(finnhub_data.get("tickers", {})), 0))
-    if dart_data:
-        collector.add(SourceFetchStatus("DART API", "api", True,
-                                        sum(t.get("n_disclosures", 0) for t in dart_data.get("tickers", {}).values()),
-                                        0))
+    def _split(res):
+        """(payload, meta) tuple → (payload, meta); bare payload → (payload, {}); None → (None, {})."""
+        if isinstance(res, tuple) and len(res) == 2:
+            return res
+        return (res, {})
+
+    naver_data,   naver_meta   = _split(naver_result)
+    finnhub_data, finnhub_meta = _split(finnhub_result)
+    dart_data,    dart_meta    = _split(dart_result)
+
+    # v3.38: ALWAYS record a row — failure must be visible, not silent.
+    # `status_from_retry_meta` interprets the meta from fetch_with_retry:
+    # status=ok → green; cached_stale → green-with-loud-detail; failed → FAIL row.
+    # The aggregator-crash path in _run() above has already emitted a FAIL row
+    # if the wrapper itself threw, so we skip recording here when the meta is
+    # empty AND payload is None (that means _run() already covered it).
+    if not (naver_data is None and not naver_meta):
+        collector.record(status_from_retry_meta(
+            "Naver Finance (Korean broker scraper)", "scraper",
+            naver_data, naver_meta,
+            items_count=sum(t.get("n_actions", 0) for t in (naver_data or {}).get("tickers", {}).values()),
+            items_detail=f"{len((naver_data or {}).get('tickers', {}))} tickers" if naver_data else None,
+        ))
+    if not (finnhub_data is None and not finnhub_meta):
+        collector.record(status_from_retry_meta(
+            "Finnhub (US analyst actions)", "api",
+            finnhub_data, finnhub_meta,
+            items_count=len((finnhub_data or {}).get("tickers", {})),
+        ))
+    if not (dart_data is None and not dart_meta):
+        collector.record(status_from_retry_meta(
+            "DART (Korean regulatory filings)", "api",
+            dart_data, dart_meta,
+            items_count=sum(t.get("n_disclosures", 0) for t in (dart_data or {}).get("tickers", {}).values()),
+        ))
 
     # ----- Step 1b: Relevance filter on news (keyword + Haiku) -----
     # Two-pass filter: keyword match against tracked analysts/brokers/companies,
@@ -207,7 +265,7 @@ def run_fast_tier() -> int:
                 log_dropped_path=dropped_log,
                 tracked_concepts=TRACKED_CONCEPTS,
             )
-            collector.add(SourceFetchStatus(
+            collector.record(SourceFetchStatus(
                 "News relevance filter", "llm", True,
                 len(news_items), 0,
                 detail=f"{pre_filter_count} → {len(news_items)} (min_score=3)",
@@ -215,7 +273,7 @@ def run_fast_tier() -> int:
             logger.info(f"News relevance filter: {pre_filter_count} → {len(news_items)} items")
         except Exception as e:
             logger.warning(f"Relevance filter failed, proceeding with unfiltered news: {e}")
-            collector.add(SourceFetchStatus(
+            collector.record(SourceFetchStatus(
                 "News relevance filter", "llm", False, 0, 1,
                 detail=f"filter error: {e}",
             ))
@@ -231,6 +289,15 @@ def run_fast_tier() -> int:
         _surface_transcript_status(collector)
     except Exception as e:
         logger.warning(f"Could not surface transcript status: {e}")
+
+    # v3.38: ingest deep-tier diagnostics (state/deep_tier_diagnostics.json).
+    # Adds rows for each transcript source (Motley Fool, Yahoo, IR), Korean
+    # broker feeds (Mirae, NH, Samsung Securities), and the Haiku digester.
+    # Without this, a deep-tier source failure overnight would be silent.
+    try:
+        _surface_deep_tier_diagnostics(collector)
+    except Exception as e:
+        logger.warning(f"Could not surface deep-tier diagnostics: {e}")
 
     # ----- Step 3: Performance + big movers + sharpened signal evaluators -----
     performance = calculate_performance(price_history, WIDER_BASKET)
@@ -402,7 +469,7 @@ def _surface_transcript_status(collector) -> None:
     status_path = Path("state") / "transcript_status.json"
     if not status_path.exists():
         # Deep tier hasn't run yet, or ran before v3.31 — note it once, don't fail.
-        collector.add(SourceFetchStatus(
+        collector.record(SourceFetchStatus(
             source_name="Earnings transcripts (IR + Motley Fool)",
             source_type="scraper",
             reached=False,
@@ -415,7 +482,7 @@ def _surface_transcript_status(collector) -> None:
     try:
         data = json.loads(status_path.read_text())
     except Exception as e:
-        collector.add(SourceFetchStatus(
+        collector.record(SourceFetchStatus(
             source_name="Earnings transcripts (IR + Motley Fool)",
             source_type="scraper",
             reached=False,
@@ -427,7 +494,7 @@ def _surface_transcript_status(collector) -> None:
 
     results = data.get("results", [])
     if not results:
-        collector.add(SourceFetchStatus(
+        collector.record(SourceFetchStatus(
             source_name="Earnings transcripts (IR + Motley Fool)",
             source_type="scraper",
             reached=True,
@@ -444,7 +511,7 @@ def _surface_transcript_status(collector) -> None:
         note = r.get("note") or ""
 
         if availability == "full_transcript":
-            collector.add(SourceFetchStatus(
+            collector.record(SourceFetchStatus(
                 source_name=f"Transcript: {company} ({source_name})",
                 source_type="scraper",
                 reached=True,
@@ -453,7 +520,7 @@ def _surface_transcript_status(collector) -> None:
                 detail="Full call commentary captured",
             ))
         elif availability == "materials_only":
-            collector.add(SourceFetchStatus(
+            collector.record(SourceFetchStatus(
                 source_name=f"Transcript: {company} ({source_name})",
                 source_type="scraper",
                 reached=True,
@@ -463,7 +530,7 @@ def _surface_transcript_status(collector) -> None:
                 detail=note[:200],
             ))
         else:  # nothing
-            collector.add(SourceFetchStatus(
+            collector.record(SourceFetchStatus(
                 source_name=f"Transcript: {company} ({source_name})",
                 source_type="scraper",
                 reached=True,
@@ -471,6 +538,67 @@ def _surface_transcript_status(collector) -> None:
                 latency_ms=0,
                 detail=f"No transcript or materials found. {note[:160]}",
             ))
+
+
+def _surface_deep_tier_diagnostics(collector) -> None:
+    """v3.38 — read state/deep_tier_diagnostics.json (written by the deep tier)
+    and merge its rows into the fast-tier collector.
+
+    Without this, deep-tier source failures (Motley Fool down, Yahoo proxy
+    auth flap, Mirae broker site outage, Haiku digester rate-limited into
+    silence) would never appear in the email — the fast tier doesn't run the
+    deep-tier fetchers itself, it only consumes their digest outputs.
+
+    Staleness check: if the file is from a previous day, emit a single WARN
+    row pointing that out. Means the deep tier didn't run today, which is
+    itself a signal worth surfacing.
+    """
+    diag_path = Path("state") / "deep_tier_diagnostics.json"
+    if not diag_path.exists():
+        collector.record(SourceFetchStatus(
+            source_name="Deep tier diagnostics",
+            source_type="transcript",
+            reached=False,
+            items_returned=0,
+            latency_ms=0,
+            error="No deep_tier_diagnostics.json — deep tier hasn't run since v3.38 deploy",
+            detail="Expected after first deep-tier run; one-time on first v3.38 day",
+        ))
+        return
+
+    try:
+        data = json.loads(diag_path.read_text())
+    except Exception as e:
+        collector.record(SourceFetchStatus(
+            source_name="Deep tier diagnostics",
+            source_type="transcript",
+            reached=False,
+            items_returned=0,
+            latency_ms=0,
+            error=f"deep_tier_diagnostics.json unreadable: {e}",
+        ))
+        return
+
+    # Staleness check: deep tier runs at 06:00 UTC, fast tier at 11:00 UTC.
+    # Same calendar date = fresh; older = warn (deep tier didn't run today).
+    run_date_str = data.get("run_date", "")
+    today_str = date.today().isoformat()
+    if run_date_str and run_date_str != today_str:
+        collector.record(SourceFetchStatus(
+            source_name="Deep tier freshness",
+            source_type="transcript",
+            reached=True,
+            items_returned=0,
+            latency_ms=0,
+            error=f"STALE — deep tier last ran {run_date_str}, expected {today_str}",
+            detail="Check deep-tier workflow run; transcripts/brokers/Haiku rows below "
+                   "reflect that older run, not today",
+        ))
+
+    deep_statuses = statuses_from_dict_list(data.get("statuses", []))
+    for s in deep_statuses:
+        collector.record(s)
+    logger.info(f"Surfaced {len(deep_statuses)} deep-tier diagnostic rows from {run_date_str or 'unknown date'}")
 
 
 if __name__ == "__main__":
