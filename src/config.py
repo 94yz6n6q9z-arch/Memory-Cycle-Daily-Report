@@ -1139,10 +1139,21 @@ SCRAPE_TARGETS = {
 IR_SOURCES = {
     "SK Hynix": {
         "ticker": "000660.KS",
-        "ir_url": "https://www.skhynix.com/ir/UI-FR-IR15",
+        "ir_url": "https://news.skhynix.com/feed/rss/",
         "transcript_reliability": "low",   # Korean call; English transcript often days late or webcast-only
         "transcript_capable": False,       # v3.32 — IR site is materials/webcast only; Yahoo Finance is the transcript source
         "lang": "ko/en",
+        # v3.36 — switched from skhynix.com/ir/UI-FR-IR15 (wrong page) and
+        # skhynix.com/ir/UI-FR-IR06 (correct earnings landing but JS shell —
+        # PDF links resolve to /webundefined placeholders only client-side)
+        # to the news.skhynix.com WordPress newsroom RSS feed. WordPress
+        # feeds are fully server-rendered and standard across the platform;
+        # earnings posts use the URL pattern q{N}-{YYYY}-business-results/
+        # (e.g. q1-2026-business-results/ for the Apr 23, 2026 release).
+        # The RSS path in _scrape_ir_site picks the newest earnings post and
+        # extracts the full release text (revenue, op profit, op margin,
+        # forward commentary, capex). Capped at materials_only by
+        # transcript_capable=False; Yahoo HY9H.MU is the transcript source.
     },
     "Samsung Electronics": {
         "ticker": "005930.KS",
