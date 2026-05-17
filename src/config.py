@@ -1475,6 +1475,20 @@ TRACKED_CONCEPTS = [
 from datetime import date as _date
 
 CALENDAR_OF_EVENTS = [
+    # ----- AI demand reads (NVIDIA earnings — Tier 2 catalyst, hyperscaler-adjacent) -----
+    # v3.39: NVIDIA Q1 FY27 confirmed for May 20, 2026 after US close (press
+    # release ~4:20pm ET, call 5pm ET). The earnings drive hyperscaler buying-
+    # intent signal: NVIDIA's data center commentary informs t2_capex_parabolic
+    # ("AI infrastructure orders accelerating / decelerating") and provides the
+    # earliest read on HBM pull-through demand, feeding all memory pure-plays.
+    # Was missing from the hand-curated calendar through v3.38.x; added now.
+    ("2026-05-20", "Earnings", "NVIDIA Q1 FY27 earnings (after US close)",
+     "AI demand pull-through read for HBM and memory cycle. Data center revenue + commentary on hyperscaler buying intent are the leading signal for t2_capex_parabolic and Tier 1 HBM demand. Watch CFO Kress's prepared commentary (1:20pm PT release) for forward color.",
+     "t2_capex_parabolic"),
+    ("2026-08-19", "Earnings", "NVIDIA Q2 FY27 earnings (approx)",
+     "Next NVIDIA print — typical reporting cadence is ~3 months. Confirms or contradicts Q1 narrative on hyperscaler buying intent. Approximate date; refine when confirmed.",
+     "t2_capex_parabolic"),
+
     # ----- Memory maker earnings (Tier 3 catalysts) -----
     ("2026-06-24", "Earnings", "Micron Q3 FY26 earnings",
      "Single largest catalyst for t3_eps_miss_guidance. Watch beat magnitude (prior 41.86%); first sub-10% beat is signal.",
@@ -1641,21 +1655,29 @@ HAIKU_MAX_TOKENS = 16000
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for
 # marginal quality gain on this structured task.
 SONNET_MODEL = os.environ.get("SONNET_MODEL_OVERRIDE") or "claude-sonnet-4-6"
-# v3.39: bumped 16000 → 24000. The streaming refactor in llm_summarizer.py
-# (messages.create → messages.stream context manager) bypasses the SDK's
-# client-side wall-time guard that fired the v3.38.5 reduction. The 17:43
-# May 17 run truncated Sonnet output at ~33K chars / ~16K tokens mid-string,
-# json_repair recovered only 12/22 indicators — dropping Tier 3, Tier 4,
-# top-5 deep dive, and selected_news sections from the email entirely.
-# 24K gives headroom for the full 22-indicator output (Sonnet typically
-# uses ~18-20K tokens for this prompt's worst-case output) plus exec summary,
-# top-5, scenarios, and selected news. If we ever truncate at 24K again,
-# json_repair fallback still kicks in as last-resort recovery.
+# v3.39.1: bumped 24000 → 48000. The 20:30 May 17 run (first with v3.39
+# streaming) used the full 24K cap and still truncated at char 47369, with
+# json_repair recovering 14/22 indicators. The 14th was partial, missing
+# `latest_developments`, which crashed the parse step. Output need is
+# ~46-50K tokens for the full prompt response: ~22 indicators × ~2K each
+# (with five getting deep-dive depth) + exec_summary ~3K + market_summary
+# ~1K + key_news_summary ~3K + cycle_position_call ~2K. 48K cap leaves
+# margin for variance.
 #
-# Prior history kept for context:
-#   v3.38.5: 24000 → 16000 (dodged SDK guard, at cost of truncation)
-#   v3.38.4: 8000 → 24000 (handle full 22-indicator output)
-SONNET_MAX_TOKENS = 24000
+# Sonnet 4.6 supports up to 64K max output, so 48K is well under the model
+# ceiling. Streaming bypasses the SDK wall-time guard. At observed ~45
+# tokens/sec streaming throughput, 48K tokens = ~18 min Sonnet phase,
+# which still fits the workflow timeout (now 35 min — see fast_tier.yml).
+#
+# Defensive parsing in _safe_indicator_assessment ensures that even if we
+# do truncate at 48K, recovery doesn't crash — partial indicator dicts get
+# safe defaults instead of TypeError.
+#
+# Prior history:
+#   v3.39:    16K → 24K (with streaming bypassing SDK guard) — still truncated
+#   v3.38.5:  24K → 16K (dodged SDK guard at cost of truncation)
+#   v3.38.4:  8K → 24K (handle full 22-indicator output)
+SONNET_MAX_TOKENS = 48000
 
 LLM_TEMPERATURE = 0.3  # low for analytical work
 
