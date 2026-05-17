@@ -62,6 +62,18 @@ jobs:
           git config --global user.name "memory-cycle-brief-bot"
           git config --global user.email "bot@memory-cycle-brief"
           git add -A state/digests/ state/cache/
+          # v3.38.5: these two files are written by deep_tier.py since v3.38
+          # (DiagnosticsCollector persistence + transcript_status), but they
+          # live in state/ directly — not under state/digests/ or state/cache/
+          # — so the prior `git add` line missed them. They were generated on
+          # the runner each day and destroyed at runner shutdown. The fast
+          # tier (separate run, fresh checkout) reported FAIL "deep tier hasn't
+          # run since v3.38 deploy" — misleading; deep tier DID run, but its
+          # diagnostics were never committed. File-existence guards so the
+          # workflow doesn't break on the rare run where deep_tier.py errored
+          # before writing one of the files.
+          [ -f state/deep_tier_diagnostics.json ] && git add state/deep_tier_diagnostics.json
+          [ -f state/transcript_status.json ] && git add state/transcript_status.json
           if git diff --staged --quiet; then
             echo "No state changes to commit."
           else
