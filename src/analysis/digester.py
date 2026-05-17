@@ -227,8 +227,11 @@ Only output the JSON object."""
 
 
 # Cap input length to keep Haiku context safe + costs sane.
-# 60k chars ≈ 15-20k tokens, well within Haiku's window with room for the prompt.
-MAX_INPUT_CHARS = 60_000
+# v3.37: bumped 60k → 80k after three v3.36 transcripts (Meta 60,304 / Dell
+# 61,428 / HPE 60,883) just clipped the cap, losing ~1-2% of content each.
+# 80k chars ≈ 20-25k tokens, still well within Haiku's 200k context window
+# with ample room for the prompt and structured output.
+MAX_INPUT_CHARS = 80_000
 
 
 def digest_document(
