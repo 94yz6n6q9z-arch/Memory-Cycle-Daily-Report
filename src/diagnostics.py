@@ -138,3 +138,89 @@ class DiagnosticsCollector:
             "ok": ok, "warn": warn, "fail": fail, "skipped": skipped,
             "total": len(self.statuses),
         }
+
+
+# ============================================================
+# v3.38 — helpers for the (payload, meta) wrapper convention
+# ============================================================
+
+def status_from_retry_meta(
+    source_name: str,
+    source_type: str,
+    payload,
+    meta: dict,
+    items_count: int = 0,
+    items_detail: Optional[str] = None,
+) -> SourceFetchStatus:
+    """Build a SourceFetchStatus from a fetch_with_retry-style (payload, meta) result.
+
+    Wrappers like fetch_naver_with_retry / fetch_finnhub_with_retry /
+    fetch_dart_with_retry / fetch_*_with_retry in korean_brokers return
+    (payload_or_None, meta_dict) where meta has:
+      - status: "ok" | "cached_stale" | "failed" | "skipped" | "error"
+      - attempts: int
+      - cache_age_days: int (if cached_stale)
+      - error: str (if failed)
+      - reason: str (if skipped)
+
+    This converts that into a SourceFetchStatus with the right health flag.
+
+    Note on cached_stale: classified as health="ok" because we have data,
+    but the detail field makes the stale fetch loud — "USING STALE CACHE (N
+    days old)" — so the validation table reader sees it. The fail count
+    stays clean for genuine failures.
+    """
+    status = meta.get("status", "unknown")
+    attempts = meta.get("attempts", 1)
+
+    if status == "ok":
+        return SourceFetchStatus(
+            source_name=source_name, source_type=source_type,
+            reached=True, items_returned=items_count, latency_ms=0,
+            detail=items_detail or (f"{attempts} attempt(s)" if attempts > 1 else None),
+        )
+    if status == "cached_stale":
+        live_err = (meta.get("error") or "")[:80]
+        return SourceFetchStatus(
+            source_name=source_name, source_type=source_type,
+            reached=True, items_returned=items_count, latency_ms=0,
+            detail=(f"USING STALE CACHE — {meta.get('cache_age_days', '?')} day(s) old"
+                    f" (live fetch failed: {live_err})"),
+        )
+    if status == "skipped":
+        return SourceFetchStatus(
+            source_name=source_name, source_type=source_type,
+            reached=False, items_returned=0, latency_ms=0,
+            detail=f"skipped: {meta.get('reason', 'no reason given')}",
+            skipped=True,
+        )
+    # status in {"failed", "error", anything else}
+    return SourceFetchStatus(
+        source_name=source_name, source_type=source_type,
+        reached=False, items_returned=0, latency_ms=0,
+        error=(meta.get("error") or meta.get("reason") or status),
+        detail=f"failed after {attempts} attempt(s)",
+    )
+
+
+def statuses_to_dict_list(statuses: list[SourceFetchStatus]) -> list[dict]:
+    """Serialize a list of statuses for cross-tier JSON persistence."""
+    return [s.to_dict() for s in statuses]
+
+
+def statuses_from_dict_list(payload: list[dict]) -> list[SourceFetchStatus]:
+    """Re-hydrate a list of statuses written by `statuses_to_dict_list`.
+
+    Drops the computed `health` key (recomputed from the other fields).
+    Tolerates missing keys (returns empty list if shape is wrong).
+    """
+    out: list[SourceFetchStatus] = []
+    for d in payload or []:
+        if not isinstance(d, dict):
+            continue
+        try:
+            kwargs = {k: v for k, v in d.items() if k != "health"}
+            out.append(SourceFetchStatus(**kwargs))
+        except (TypeError, ValueError):
+            continue
+    return out
