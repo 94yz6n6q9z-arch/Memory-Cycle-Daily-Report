@@ -1,8 +1,76 @@
 # Memory Cycle Brief — Changelog
 
-This release consolidates v3.1 through v3.36 plus v3.37 (Haiku input cap 60k→80k + IR URL cache extension). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
+This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensive diagnostics across both pipelines). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
 
-> **A note on version numbering.** v3.31 through v3.37 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+> **A note on version numbering.** v3.31 through v3.38 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+
+---
+
+## v3.38 — Pipeline crash fixes + comprehensive diagnostics across fast tier + deep tier
+
+**Why**: The 11:30 UTC fast-tier run on May 17 (this morning) crashed with exit 1. Two real bugs and one latent. Investigation also surfaced that the silent-failure surface was much larger than the email's validation table reflected — three fast-tier sources only recorded successes (Naver, Finnhub, DART), and the entire deep tier (8 sources: Yahoo / Motley Fool / IR scrapers / Mirae / NH / Samsung Securities / Haiku digester) produced **zero diagnostic rows**. Per Raul's commitment to check the brief only periodically once stable, silent failure = data loss without notification — unacceptable. Package B from the v3.38 design discussion: fix the crash, close every silent-failure path.
+
+**Changes:**
+
+1. **`src/fast_tier.py` line 160 — news kwarg fix.** `fetch_all_news(RSS_FEEDS, GOOGLE_NEWS_QUERIES, EDGAR_FEEDS, collector=collector)` passed `EDGAR_FEEDS` (a dict) into the third positional parameter `hours_back: int`, producing `TypeError: unsupported type for timedelta hours component: dict` inside the RSS feed fetcher's `cutoff = datetime.now() - timedelta(hours=hours_back)`. Fixed with explicit kwarg `edgar_feeds=EDGAR_FEEDS`. Bug pre-dates v3.37; was caught by `_run()` so news ran empty rather than crashing the pipeline — but news being silently empty for an indeterminate number of past runs is itself the silent-failure problem this release exists to solve.
+
+2. **`src/fast_tier.py` line 169 — pandas DataFrame None-fallback.** `fetch_results.get("prices") or {}` triggered `ValueError: The truth value of a DataFrame is ambiguous` because `fetch_price_history()` returns a `pd.DataFrame`, not a dict. The `or` operator forces a truthiness check pandas refuses to evaluate. Rewritten to `_prices = fetch_results.get("prices"); price_history = _prices if _prices is not None else pd.DataFrame()`. Added `import pandas as pd` to fast_tier imports. **This was the line that actually killed today's run.**
+
+3. **`.github/workflows/fast_tier.yml` — `issues: write` permission.** The "Create issue on critical failure" step at the end of the workflow uses `github.rest.issues.create` but the workflow only declared `contents: write`. So when the run crashed today, the fallback issue-creation step *also* failed with `HttpError: Resource not accessible by integration`. Net effect: pipeline died with zero notification — neither a brief nor an issue. Added `issues: write` so the fallback hook actually fires.
+
+4. **`src/fast_tier.py` — 8 `collector.add(...)` → `collector.record(...)` fixes (latent bug).** `DiagnosticsCollector` only exposes `record()`, not `add()`. Eight calls would have raised `AttributeError` if reached; the surrounding `try/except` blocks would have swallowed them, meaning validation-table rows that *should* have been recorded for Naver / Finnhub / DART / transcript availability / hyperscaler capex have likely been silently missing for some unknown number of past runs. Caught while editing the same surface; safer to fix now than leave latent.
+
+5. **`src/fast_tier.py` `_run()` — record FAIL row on top-level fetcher crash.** Previously, when a fetcher lambda threw, `_run()` logged the error and returned `None`. Nothing was written to the collector, so the email's validation table showed *no row at all* for that subsystem — a silent loss. Now records a `SourceFetchStatus(reached=False, error=...)` with a descriptive `source_name` per label (e.g. `"News aggregator (RSS + Google News + EDGAR)"`, `"Yahoo Finance / yfinance batch (prices)"`) so a top-level crash is unambiguous in the table. Sub-source rows recorded *before* the crash remain visible too — you get a partial picture plus a FAIL row for the aggregator, which is the right outcome.
+
+6. **`src/fast_tier.py` — Naver / Finnhub / DART record FAIL when wrapper returns None.** The previous pattern `if naver_data: collector.add(...)` only recorded rows on success. Failures (when `fetch_X_with_retry` returns `(None, {status: "failed", ...})`) produced zero rows — silent again. Now every wrapper result emits a row via the new `status_from_retry_meta()` helper, which interprets the `(payload, meta)` tuple from `fetch_with_retry`: `status="ok"` → green; `status="cached_stale"` → green-with-loud-detail (`"USING STALE CACHE — N day(s) old"`); `status="failed"` → red FAIL row; `status="skipped"` → grey skipped row.
+
+7. **`src/diagnostics.py` — three new helpers for cross-tier diagnostics.**
+   - `status_from_retry_meta(source_name, source_type, payload, meta, items_count, items_detail)` — the converter described above. Used by both fast tier and deep tier for any `fetch_*_with_retry` call.
+   - `statuses_to_dict_list(statuses)` — serialize a list of `SourceFetchStatus` for JSON persistence across pipeline tiers.
+   - `statuses_from_dict_list(payload)` — re-hydrate. Tolerates missing/malformed entries (returns empty list rather than raising).
+
+8. **`src/deep_tier.py` — full `DiagnosticsCollector` wiring (no prior instrumentation existed).** The deep tier ran with zero diagnostic rows surfaced — `transcript_status.json` covered per-company transcript availability but missed everything else. Now:
+   - One `DiagnosticsCollector` per deep-tier run.
+   - `_record_transcript_source_rows()` decomposes the transcript cascade by source (`Motley Fool`, `Yahoo Finance`, `IR scrapers (SK Hynix / Samsung / Micron)`) with detail showing per-source breakdown (`13 co · 13 full / 0 materials-only / 0 cached / 0 nothing`). If the wrapper itself fails, one FAIL row with the wrapper's error.
+   - Per-broker rows from `fetch_mirae_with_retry` / `fetch_nh_with_retry` / `fetch_samsung_securities_with_retry` (each one independently failable; not interchangeable — Samsung Securities is the only Gmail-IMAP source).
+   - Haiku digester roll-up row with three health states: `ok` (digests written), `fail` (sources had content but zero digests — digester died), `ok` (quiet day, zero digests but zero source content too — legitimate).
+   - All rows persisted to `state/deep_tier_diagnostics.json` via `_write_deep_tier_diagnostics()`. Schema: `{written_at_iso, run_date, summary_counts, statuses: [...]}`. Written unconditionally so the fast tier can detect "deep tier didn't run today" vs "deep tier ran and everything failed."
+
+9. **`src/fast_tier.py` — `_surface_deep_tier_diagnostics()` ingests deep-tier rows.** Reads `state/deep_tier_diagnostics.json`, re-hydrates via `statuses_from_dict_list()`, appends to fast-tier collector. Staleness check: if `run_date != today`, emits a single WARN row pointing that out (deep tier didn't run today — itself a signal). Called right after `_surface_transcript_status()` so all transcript-related rows appear together in the validation table.
+
+10. **`src/email_module/template.py` — three new `_SOURCE_TYPE_LABELS` entries.** `api` → "External API" (Finnhub, DART), `transcript` → "Earnings transcript source" (Yahoo / Motley Fool / IR), `broker_pdf` → "Korean broker note feed" (Mirae, NH, Samsung Securities). Without these the new rows would group under raw lowercase type-string headings.
+
+**Files changed:**
+
+| File | Changes |
+|---|---|
+| `src/fast_tier.py` | news kwarg fix; pd.DataFrame None-fallback; `_LABEL_META` + `_run()` FAIL recording; naver/finnhub/dart record-on-failure via `status_from_retry_meta`; `_surface_deep_tier_diagnostics()` function; 8 `.add` → `.record`; new imports (pd, helpers) |
+| `src/deep_tier.py` | `DiagnosticsCollector` wiring; `_record_transcript_source_rows()` per-source decomposition; per-broker rows; Haiku roll-up row; `_write_deep_tier_diagnostics()` persistence |
+| `src/diagnostics.py` | new helpers `status_from_retry_meta`, `statuses_to_dict_list`, `statuses_from_dict_list` |
+| `src/email_module/template.py` | added `api` / `transcript` / `broker_pdf` to `_SOURCE_TYPE_LABELS` |
+| `.github/workflows/fast_tier.yml` | added `issues: write` permission |
+
+**Validation:**
+
+Empirically tested locally before zip:
+- Syntax check (ast.parse) on all four edited files — pass.
+- Import check on `fast_tier`, `deep_tier`, `diagnostics` — pass.
+- `status_from_retry_meta` classification across all 5 status paths (ok / cached_stale / failed / skipped / unknown) — correct health flag in each.
+- Round-trip serialization via `statuses_to_dict_list` → `statuses_from_dict_list` preserves failure error messages.
+- Today's exact bug reproduced (`fetch_all_news` with `EDGAR_FEEDS` as positional 3rd arg) confirmed signature in `news.py` — kwarg fix is the right shape.
+- DataFrame None-fallback verified for both populated DataFrame and `None`.
+- `_run()` failure path verified with a lambda that raises the exact `TypeError` from today's logs — FAIL row written with descriptive source_name and full error message.
+- Cross-tier persistence: deep_tier_diagnostics.json round-trip preserves FAIL rows including error fields.
+- Staleness check: `run_date != today` correctly detected.
+
+**Not yet validated empirically:**
+- Actual deep-tier run end-to-end (requires Anthropic API + proxy + real network — needs production workflow_dispatch).
+- Email rendering of new source rows in the validation table (requires real send).
+
+**Recommended deploy sequence:**
+1. Push v3.38, manual `workflow_dispatch` on `deep_tier.yml` first → produces `state/deep_tier_diagnostics.json`.
+2. Then manual `workflow_dispatch` on `fast_tier.yml` → email should arrive with the new rows in the validation table.
+3. First few cron runs: check the table carefully (per Raul: "the first runs i will certainly look all the way") — confirm Mirae/NH/Samsung Securities/Haiku rows all appear with sensible items_returned counts.
 
 ---
 
