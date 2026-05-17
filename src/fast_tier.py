@@ -372,36 +372,39 @@ def run_fast_tier() -> int:
     logger.info(f"Layer 2 produced {len(signal_reasonings)} signal reasonings")
 
     # ----- Step 5: Layer 3 (Sonnet) synthesis -----
+    # v3.39 NOTE: Earlier code constructed a `layer3_input` dict and passed it
+    # as `layer2_input=` to analyze_with_llm. That kwarg has never existed on
+    # the function — call was pre-existing broken since at least v3.37, masked
+    # by the v3.37 upstream crashes that prevented Layer 3 from running at all.
+    # Removed: dead `layer3_input` dict, bogus `layer2_input` kwarg.
+    # Renamed: estimates → estimates_data, performance → performance_data
+    # (matching analyze_with_llm's actual signature).
+    #
+    # Architectural note: this means Sonnet does NOT receive signal_reasonings,
+    # naver_summary, finnhub_summary, or dart_summary today. That's the
+    # pre-existing condition — the data has never reached Sonnet. Threading
+    # it through is a follow-up architectural decision, not a bug fix.
     logger.info("Running Layer 3 (Sonnet) synthesis...")
-    layer3_input = {
-        "signal_reasonings": [r.to_dict() for r in signal_reasonings],
-        "performance": [asdict(p) for p in performance],
-        "big_movers": [asdict(m) for m in big_movers],
-        "naver_summary": naver_data,
-        "finnhub_summary": finnhub_data,
-        "dart_summary": dart_data,
-        "prior_state": prior_state,
-    }
     analysis = analyze_with_llm(
+        api_key=ANTHROPIC_API_KEY,
+        performance_data=performance,
+        estimates_data=estimates_map,
         news_items=news_items,
-        estimates=estimates_map,
-        performance=performance,
         big_movers=big_movers,
         prior_state=prior_state,
-        api_key=ANTHROPIC_API_KEY,
         collector=collector,
-        layer2_input=layer3_input,  # backward-compatible — old llm_summarizer ignores if None
     )
     if analysis is None:
         logger.error("Layer 3 (Sonnet) returned None; using fallback analysis")
         analysis = fallback_analysis(news_items, performance, big_movers)
 
     # ----- Step 6: Chart + email -----
-    chart_b64 = generate_performance_chart(
-        baseline_to_100(price_history),
-        WIDER_BASKET,
-        collector=collector,
-    )
+    # v3.39: generate_performance_chart takes (history_baseline100, title=...).
+    # Old call passed WIDER_BASKET as positional 2 (landed in title:str — would
+    # render chart titled "['NVDA', 'MU', ...]") and collector=collector (kwarg
+    # doesn't exist — TypeError next after analyze_with_llm). Both removed;
+    # default title used.
+    chart_b64 = generate_performance_chart(baseline_to_100(price_history))
 
     upcoming = get_upcoming_events(within_days=90)
     logger.info(f"Calendar: {len(upcoming)} upcoming events")
@@ -427,10 +430,11 @@ def run_fast_tier() -> int:
 
     # Send
     try:
+        # v3.39: send_email takes (subject, html_body, recipient=None).
+        # Old call passed collector=collector — kwarg doesn't exist, TypeError.
         send_email(
-            html_body=html_body,
             subject=f"Memory Cycle Brief — {today.strftime('%a %b %d')}",
-            collector=collector,
+            html_body=html_body,
         )
     except Exception as e:
         logger.error(f"Email send failed: {e}")
