@@ -1,12 +1,22 @@
-# Memory Cycle Brief — Deployment Guide (v3.33)
+# Memory Cycle Brief — Deployment Guide (v3.38.5)
 
 <!--
 CHANGELOG (this file):
-  v3.33  (2026-05-16) — Section 2.3 rewritten: Motley Fool primary, Yahoo via Bright Data residential proxy; full proxy setup walkthrough; troubleshooting + tuning notes updated for cascade architecture
-  v3.32  (2026-05-14) — Section 2.3: Yahoo Finance added as primary transcript source; troubleshooting + tuning notes updated
-  v3.31  (2026-05-14) — Section 2.3 rewritten — no Quartr signup/key; transcript troubleshooting rows; transcript-sources tuning notes
-  v3.3   (2026-05-12) — extraction_log review steps; GitHub-connect + @claude workflow section
-  v3.1   (2026-05-12) — News relevance filter calibration + dropped-items log
+  v3.38.5 (2026-05-17) — Title bumped from v3.38.4. No walkthrough changes (the v3.38.5 fixes are internal: real Haiku root-cause fix in `_strip_code_fence`, Sonnet max_tokens lowered to 16K to stay under SDK's 10-min streaming guard, deep_tier.yml commit step fixed to stage state/deep_tier_diagnostics.json + state/transcript_status.json — previously these were written to the runner but never pushed). One troubleshooting row added below for the deep-tier-ran-but-didn't-commit failure mode.
+  v3.38.4 (2026-05-17) — Title bumped from v3.32. Troubleshooting table gains one row: "Workflow canceled at ~12 min" → check `timeout-minutes` in `fast_tier.yml`. The walkthrough steps themselves did NOT change across v3.34→v3.38.4 (no new secrets, no new accounts to create, no manual install steps); all release work was internal (scraper resilience, diagnostics, throttling, JSON repair, dead-URL pruning). v3.38.4 specifically: workflow timeout 12→25 min + json_repair LLM fallback + Damnang/Investing.com x4 dropped (Cloudflare TLS fingerprint).
+  v3.38.3 (2026-05-17) — fallback_analysis kwarg fix; scripts/audit_signatures.py audit script added (optional CI gate, see "Where to make adjustments"); HAIKU/SONNET_MAX_TOKENS bumps; 13 dead-URL feeds pruned. No deployment step changes.
+  v3.38.2 (2026-05-17) — RSS fetcher now uses requests + plain Chrome UA instead of feedparser's default UA (which Cloudflare-fronted sites were 403-ing). No deployment step changes.
+  v3.38.1 (2026-05-17) — Layer 2 sequential throttle (7s spacing) replaces concurrent fan-out. Total pipeline runtime moved from ~5 min to ~12-15 min; the workflow timeout was raised to compensate in v3.38.4. No new secrets or setup steps.
+  v3.38   (2026-05-17) — Deep tier writes state/deep_tier_diagnostics.json which the fast tier ingests for the email validation table. No deployment step changes; new diagnostics rows surface automatically in the brief.
+  v3.37   (2026-05-17) — IR scrapers now respect the transcripts_seen URL cache (no more daily re-digest of stale earnings posts until next quarter). No deployment step changes.
+  v3.36   (2026-05-17) — SK Hynix IR switched to news.skhynix.com WordPress RSS (server-rendered, stable). Motley Fool body selector pinned to <div id="article-body-transcript">. No deployment step changes.
+  v3.35   (2026-05-17) — Yahoo Finance transcript parser rewritten (DOM-based paragraph extraction + Scout AI analysis capture). No deployment step changes.
+  v3.34   (2026-05-16) — Motley Fool URL regex fix + Yahoo diagnostic logging. No deployment step changes.
+  v3.33   (2026-05-16) — Section 2.3 rewritten: Motley Fool primary, Yahoo via Bright Data residential proxy; full proxy setup walkthrough; troubleshooting + tuning notes updated for cascade architecture
+  v3.32   (2026-05-14) — Section 2.3: Yahoo Finance added as primary transcript source; troubleshooting + tuning notes updated
+  v3.31   (2026-05-14) — Section 2.3 rewritten — no Quartr signup/key; transcript troubleshooting rows; transcript-sources tuning notes
+  v3.3    (2026-05-12) — extraction_log review steps; GitHub-connect + @claude workflow section
+  v3.1    (2026-05-12) — News relevance filter calibration + dropped-items log
 -->
 
 Step-by-step setup from zip file → first brief in your inbox. Takes ~90 minutes if everything goes smoothly. You don't need to write any code or install anything on your computer — everything runs on GitHub's free tier.
@@ -367,6 +377,9 @@ GitHub disables scheduled workflows in inactive repos after 60 days. The pipelin
 | Got GitHub issue notification "pipeline failed" | Email send failed but brief was generated | Look in repo for `state/failed_send_*.html` |
 | Brief looks light on news / missing a story you expected | News relevance filter may be too aggressive | Check `state/news_dropped_YYYY-MM-DD.json` — if real signal was dropped, add the missing keyword to `TRACKED_COMPANIES` / `TRACKED_BROKERS` in `src/config.py`, or lower `min_score` from 3 to 2 in `src/fast_tier.py` |
 | News section shows obvious noise | Filter too permissive | Raise `min_score` from 3 to 4 in `src/fast_tier.py` |
+| Workflow canceled at ~12 min mark | `timeout-minutes` in `.github/workflows/fast_tier.yml` set below the pipeline's actual runtime (~12-15 min after v3.38.1 throttle). Comment in the file may say "15-min hard cap" — that's wrong; GitHub Actions hard cap is 6 hours | Bump `timeout-minutes` to 25 (current setting since v3.38.4). If runs creep above 20 min after adding new work, revisit |
+| Log says "Haiku JSON parse failed... attempting json_repair recovery" | LLM emitted unescaped quote/newline in a string field, or response was truncated mid-string | This is the v3.38.4 fallback firing as intended. If the next INFO line says "json_repair recovered N items" the brief is fine. If the ERROR follows ("json_repair also failed"), bump `HAIKU_MAX_TOKENS` / `SONNET_MAX_TOKENS` in `src/config.py` |
+| Validation table says "state/deep_tier_diagnostics.json missing on origin/main" or "state/transcript_status.json missing" — but you DID run the deep tier today | Pre-v3.38.5 bug: `deep_tier.yml` commit step only staged `state/digests/` + `state/cache/`, missing the two root-level JSONs written by `deep_tier.py` since v3.38. Files generated on the runner, destroyed at shutdown, never pushed to main | Fixed in v3.38.5 — commit step now stages both. Re-run the deep tier (Actions tab → workflow_dispatch) after pushing v3.38.5; the next fast tier will pick the files up. Confirm by looking at the deep-tier run's "Commit digests + caches" step output |
 
 ---
 
