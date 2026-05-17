@@ -66,5 +66,11 @@ jobs:
             echo "No state changes to commit."
           else
             git commit -m "Deep tier digests $(date -u +%Y-%m-%d)"
-            git push
+            # v3.34: rebase onto remote main before pushing — handles the case
+            # where Raul (or another commit) pushed to main while this run was
+            # in flight (3-5 minutes), making our local checkout stale. Without
+            # rebase, push is rejected with "fetch first" and the digests are
+            # lost. Retry once with a fresh pull if the first push still fails.
+            git pull --rebase origin main || true
+            git push || (sleep 5 && git pull --rebase origin main && git push)
           fi
