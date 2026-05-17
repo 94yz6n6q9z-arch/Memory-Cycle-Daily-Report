@@ -173,35 +173,42 @@ def fetch_google_news(
     for query in queries:
         url = f"https://news.google.com/rss/search?q={quote_plus(query)}+when:2d&hl=en&gl=US&ceid=US:en"
         per_query_items: list[NewsItem] = []
+
+        # v3.38.2: same UA fix as _safe_parse_rss_feed — fetch with requests +
+        # HEADERS then feedparser.parse on bytes. Google News is more tolerant
+        # of feedparser's default UA than Substack/Cloudflare sites, but
+        # consistency is worth it: we lose the same way everywhere if Google
+        # ever tightens its filter.
+        def _fetch_and_parse() -> list[NewsItem]:
+            try:
+                resp = requests.get(url, headers=HEADERS, timeout=20)
+                resp.raise_for_status()
+            except requests.RequestException as e:
+                raise RuntimeError(f"HTTP fetch failed: {e}")
+            parsed = feedparser.parse(resp.content)
+            local: list[NewsItem] = []
+            for entry in parsed.entries[:15]:
+                published = _entry_published(entry)
+                if published and published < cutoff:
+                    continue
+                local.append(NewsItem(
+                    title=entry.get("title", "(no title)").strip(),
+                    url=entry.get("link", ""),
+                    source=f"Google News ({query})",
+                    published=published,
+                    summary=_clean_summary(entry.get("summary", "")),
+                ))
+            if not parsed.entries and getattr(parsed, "bozo_exception", None):
+                raise RuntimeError(f"feed parse error: {parsed.bozo_exception}")
+            return local
+
         try:
             if collector is not None:
                 with collector.track(f"Google News: {query}", "google_news") as t:
-                    parsed = feedparser.parse(url)
-                    for entry in parsed.entries[:15]:
-                        published = _entry_published(entry)
-                        if published and published < cutoff:
-                            continue
-                        per_query_items.append(NewsItem(
-                            title=entry.get("title", "(no title)").strip(),
-                            url=entry.get("link", ""),
-                            source=f"Google News ({query})",
-                            published=published,
-                            summary=_clean_summary(entry.get("summary", "")),
-                        ))
+                    per_query_items = _fetch_and_parse()
                     t.items_returned = len(per_query_items)
             else:
-                parsed = feedparser.parse(url)
-                for entry in parsed.entries[:15]:
-                    published = _entry_published(entry)
-                    if published and published < cutoff:
-                        continue
-                    per_query_items.append(NewsItem(
-                        title=entry.get("title", "(no title)").strip(),
-                        url=entry.get("link", ""),
-                        source=f"Google News ({query})",
-                        published=published,
-                        summary=_clean_summary(entry.get("summary", "")),
-                    ))
+                per_query_items = _fetch_and_parse()
         except Exception as e:
             logger.warning(f"Failed to parse Google News for '{query}': {e}")
             continue
@@ -524,11 +531,35 @@ def _safe_parse_rss_feed(
     source_type: str,
     collector: Optional[DiagnosticsCollector],
 ) -> list[NewsItem]:
-    """Shared RSS-parsing path with optional diagnostics tracking."""
+    """Shared RSS-parsing path with optional diagnostics tracking.
+
+    v3.38.2: fetch with proper browser-style User-Agent via `requests`, then
+    pass the bytes to `feedparser.parse(content)`. The earlier pattern
+    `feedparser.parse(url)` used feedparser's default UA
+    (`UniversalFeedParser/6.x +https://github.com/kurtmckee/feedparser/`)
+    which Substack, Cloudflare-fronted sites, and various anti-bot middleware
+    treat as a bot — they respond with an HTML "are you human" page (or just
+    silently 200 with HTML body), and feedparser then raises one of:
+      - "...is not an XML media type"
+      - "<unknown>:2:0: syntax error"  (HTML parsed as XML, fails at line 2)
+      - "<unknown>:N:M: not well-formed (invalid token)"
+    The 13:42 UTC May 17 run had ~15/20 feeds fail with exactly this set of
+    error messages. Routing through `requests` with our existing HEADERS
+    (Mozilla-prefixed UA also used by the chosun_biz / trendforce scrapers)
+    fixes the class of failures in one stroke.
+
+    EDGAR was already doing this correctly (lines 124/140 use resp.content).
+    """
     out: list[NewsItem] = []
 
     def _parse() -> list[NewsItem]:
-        parsed = feedparser.parse(feed_url)
+        try:
+            resp = requests.get(feed_url, headers=HEADERS, timeout=20)
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            raise RuntimeError(f"HTTP fetch failed: {e}")
+
+        parsed = feedparser.parse(resp.content)
         items_local: list[NewsItem] = []
         for entry in parsed.entries:
             published = _entry_published(entry)
