@@ -1049,57 +1049,74 @@ EPS_REVISIONS_TICKERS = ["000660.KS", "MU", "005930.KS"]  # SK Hynix, Micron, Sa
 # ============================================================
 
 # RSS feeds (preferred when available)
+#
+# v3.38.3 RSS audit (2026-05-17 14:31 UTC run):
+#   13 of 28 feeds returned 404/DNS failures with no clear public RSS alternative.
+#   Many AI-lab/Korean-press sites have retired RSS in favor of email newsletters
+#   or never had stable feeds. Pruned to stop generating FAIL noise in the
+#   diagnostics table. The same signals are still picked up by:
+#     - Google News queries (KV cache compression, inference efficiency, DDR5
+#       spot price, TrendForce DRAM contract, broker-name combos, etc.)
+#     - The TrendForce news scraper
+#     - The ChosunBiz scraper
+#   Pruned this release (will revisit in v3.39 — see TODO at bottom of file):
+#     ✗ Yonhap English Business     (404)
+#     ✗ Anthropic News              (404 — Anthropic has no official RSS)
+#     ✗ Meta AI Blog                (404 — no public RSS)
+#     ✗ SEMI press releases         (404)
+#     ✗ Reuters Technology          (DNS — feed retired; Reuters paywalled news in 2024)
+#     ✗ Seeking Alpha Semiconductors (404)
+#     ✗ The Elec English            (404 — wrong path; correct one TBD)
+#     ✗ Nikkei Asia Companies       (404)
+#     ✗ Pulse by Maeil Business     (404 — but ChosunBiz scraper covers Korean press)
+#     ✗ vLLM Blog                   (404 — redirect chain broken)
+#     ✗ SGLang / LMSYS Blog         (404)
+#     ✗ DeepSeek API News           (404)
+#     ✗ Artificial Analysis         (404)
+#   Kept after 403 → 200 (fixed via UA change in news.py HEADERS):
+#     ✓ Damnang Memory Substack     (Substack/Cloudflare blocked old "compatible;" UA)
+#     ✓ Investing.com MU/NVDA/AMAT/ASML (same UA issue)
 RSS_FEEDS = {
-    # Korean press (existing)
+    # Korean press
     "Korea Times Business": "https://www.koreatimes.co.kr/www/rss/biz.xml",
-    "Yonhap English Business": "https://en.yna.co.kr/RSS/business.xml",
-    # Korean press (NEW — closes the gap flagged in v1 audit)
+    # NOTE: Yonhap, Korea Herald, Pulse all 404 — Korean press signal still flows
+    # via ChosunBiz scraper, KED Global (when not 502), and Korean-name Google News.
     "KED Global (Korea Economic Daily English)": "https://www.kedglobal.com/rss/all.xml",
     "Korea Herald Business": "https://www.koreaherald.com/rss/020000000000.xml",
-    # Memory / semi industry (existing)
+    # Memory / semi industry
     "TrendForce": "https://www.trendforce.com/news/feed",
     "Tom's Hardware RAM": "https://www.tomshardware.com/feeds/all",
-    "AnandTech": "https://www.anandtech.com/rss/",
-    # AI labs (NEW — covers t1_efficiency_shock TurboQuant-class signal at source)
+    "AnandTech": "https://www.anandtech.com/rss/",  # invalid-token errors but recoverable
+    # AI labs (only ones with confirmed-stable RSS — others pruned, covered by Google News)
     "Google Research Blog": "https://research.google/blog/rss/",
     "OpenAI Blog": "https://openai.com/blog/rss.xml",
-    "Anthropic News": "https://www.anthropic.com/news/rss.xml",
-    "Meta AI Blog": "https://ai.meta.com/blog/rss/",
-    # Equipment (NEW — covers t3_wfe_orders_crack)
-    "SEMI press releases": "https://www.semi.org/en/news-resources/news-releases/feed",
-    # US analyst rationale (NEW — Benzinga free RSS gives the 'why' layer)
+    # US analyst rationale
     "Benzinga Analyst Ratings": "https://www.benzinga.com/feed",
-    # Per-ticker fallback for US (NEW — Investing.com)
+    # Per-ticker fallback for US (anti-bot UA fix in news.py HEADERS handles 403s)
     "Investing.com MU": "https://www.investing.com/equities/micron-tech-inc-news/feed/",
     "Investing.com NVDA": "https://www.investing.com/equities/nvidia-corp-news/feed/",
     "Investing.com AMAT": "https://www.investing.com/equities/applied-matls.-news/feed/",
     "Investing.com ASML": "https://www.investing.com/equities/asml-holding-news/feed/",
-    # US financial / tech media (NEW — catches MS/GS thematic notes syndicated to Yahoo/Investing.com)
-    "Reuters Technology": "https://feeds.reuters.com/reuters/technologyNews",
+    # US financial / tech media
     "CNBC Technology": "https://www.cnbc.com/id/19854910/device/rss/rss.html",
-    "Seeking Alpha Semiconductors": "https://seekingalpha.com/feed/sectors/technology/semiconductors",
     "Investing.com Asia Equities": "https://www.investing.com/rss/news_301.rss",
-    # Asia trade press (NEW — The Elec covers Korean memory deep-dive; Nikkei covers Samsung/Hynix from Japan angle)
-    "The Elec English": "https://www.thelec.net/feed/",
-    "Nikkei Asia Companies": "https://asia.nikkei.com/rss/feed/section/companies",
-    # Pulse by Maeil — moved from scrape target to proper RSS
-    "Pulse by Maeil Business": "https://pulse.mk.co.kr/rss/030000000.xml",
     # v3.2 — Architectural sensing feeds (leading indicators for HBM captive ratio shifts)
-    # Quality analyst commentary — Damnang covers the memory cycle from a quant/architectural angle
+    # Damnang covers memory cycle from quant/architectural angle — 403 fixed via UA change
     "Damnang Memory Substack": "https://damnang2.substack.com/feed",
-    # Inference framework releases — where research efficiency techniques become production-deployable
-    "vLLM Blog": "https://blog.vllm.ai/feed.xml",
-    "SGLang / LMSYS Blog": "https://lmsys.org/rss.xml",
+    # HuggingFace publishes a working RSS for model + research drops
     "HuggingFace Blog": "https://huggingface.co/blog/feed.xml",
-    # AI lab research (DeepSeek pioneered MLA + KV cache compression — pattern-setter for inference efficiency)
-    "DeepSeek API News": "https://api-docs.deepseek.com/news/rss.xml",
     # CXL / memory disaggregation canary — Astera Labs is the pure-play
     "Astera Labs Newsroom": "https://www.asteralabs.com/category/news/feed/",
-    # Inference cost benchmarks
-    "Artificial Analysis": "https://artificialanalysis.ai/rss",
     # SemiAnalysis free posts (the rest is paywalled but headlines + intros are useful)
     "SemiAnalysis Free": "https://semianalysis.com/feed/",
 }
+# TODO v3.39 — feed URL hunt: find working replacements for sources pruned above
+# where Google News coverage proves insufficient. Candidates to investigate:
+#   - vLLM blog: real RSS may live at a different path under blog.vllm.ai/
+#   - The Elec: switched RSS index location, needs investigation
+#   - SGLang/LMSYS: confirm whether they ever publish RSS or only Twitter
+#   - Anthropic / Meta AI: officially no RSS; third-party scrapers exist but
+#     are unstable (single-maintainer GitHub repos)
 
 # URLs to scrape directly
 SCRAPE_TARGETS = {
@@ -1605,14 +1622,24 @@ def get_upcoming_events(within_days: int = 90, today: Optional[_date] = None) ->
 # Currently resolves to Haiku 4.5; will roll forward as Anthropic ships
 # new Haiku-tier models.
 HAIKU_MODEL = os.environ.get("HAIKU_MODEL_OVERRIDE") or "claude-haiku-4-5"
-HAIKU_MAX_TOKENS = 4000
+# v3.38.3: bumped 4000 → 8000. The 14:31 UTC May 17 run truncated Haiku triage
+# output around char 6839 (unterminated string), failing JSON parse and forcing
+# fallback. Triaging 46 news items × ~80-150 tokens of structured output each =
+# ~5500-7000 tokens minimum. 4000 was clearly too low. 8000 is well within
+# Haiku 4.5's 64K cap. Per Anthropic docs, max_tokens does not factor into
+# rate-limit calculations — no cost downside to setting higher.
+HAIKU_MAX_TOKENS = 8000
 
 # Stage 2 — mid-tier reasoning model for tier classification, probability
 # synthesis, exec summary composition. Currently resolves to Sonnet 4.6;
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for
 # marginal quality gain on this structured task.
 SONNET_MODEL = os.environ.get("SONNET_MODEL_OVERRIDE") or "claude-sonnet-4-6"
-SONNET_MAX_TOKENS = 8000
+# v3.38.3: bumped 8000 → 16000. Same run truncated Sonnet around char 27099.
+# Synthesis output covers 22 indicator assessments (~300-500 tokens each =
+# 6,600-11,000) + exec summary + scenarios + news synthesis. 8000 was below
+# the floor; 16000 gives ~50% headroom while still well under the 64K cap.
+SONNET_MAX_TOKENS = 16000
 
 LLM_TEMPERATURE = 0.3  # low for analytical work
 
