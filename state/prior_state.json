@@ -1,34 +1,41 @@
 {
-  "saved_at_iso": "2026-05-17T16:31:56.764777",
+  "saved_at_iso": "2026-05-17T17:58:38.746949",
   "executive_summary": {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
-    "tier_status_summary": "LLM unavailable; manual review needed",
-    "new_triggers_today": [],
+    "tier_status_summary": "T1: 2/6 fired | T2: 5/7 fired | T3: 1/5 fired | T4: 0/4 fired",
+    "new_triggers_today": [
+      {
+        "tier": 3,
+        "indicator_id": "t3_relative_strength",
+        "indicator_name": "Memory pure-plays underperform SOX",
+        "description": "Samsung -8.61%, SK Hynix -7.66%, Micron -6.62% in a single session \u2014 all three core memory pure-plays suffered >4% drawdowns simultaneously. With SOX down ~3-4% on the day, memory names underperformed the index by 3-5 percentage points in a single session. This re-fires the Tier 3 relative strength signal that had previously reversed during the May rally. The signal is now re-active after the prior brief noted it had 'fired then reversed.'"
+      }
+    ],
     "base_case": {
-      "probability_pct": 30,
+      "probability_pct": 28,
       "peak_months_away": 4,
-      "peak_window_start": "(LLM unavailable)",
-      "peak_window_end": "(LLM unavailable)",
-      "upside_to_peak_pct": 18
+      "peak_window_start": "September 2026",
+      "peak_window_end": "November 2026",
+      "upside_to_peak_pct": 15
     },
     "bull_case": {
-      "probability_pct": 20,
+      "probability_pct": 18,
       "peak_months_away": 12,
-      "peak_window_start": "(LLM unavailable)",
-      "peak_window_end": "(LLM unavailable)",
-      "upside_to_peak_pct": 55
+      "peak_window_start": "Q1 2027",
+      "peak_window_end": "Q2 2027",
+      "upside_to_peak_pct": 50
     },
     "bear_case": {
-      "probability_pct": 25,
+      "probability_pct": 30,
       "peak_months_away": 0,
-      "peak_window_start": "(LLM unavailable)",
-      "peak_window_end": "(LLM unavailable)",
+      "peak_window_start": "May 2026",
+      "peak_window_end": "June 2026",
       "upside_to_peak_pct": 0
     },
-    "delta_from_prior_text": "LLM unavailable - cannot compute deltas",
-    "urgent_attention_needed": false,
-    "urgent_attention_text": ""
+    "delta_from_prior_text": "Base case peak window unchanged at ~4 months away (Sep\u2013Nov 2026). However, bear case probability shifted +5pp (25% \u2192 30%) due to re-firing of Tier 3 t3_relative_strength signal \u2014 all three memory pure-plays (Samsung -8.61%, SK Hynix -7.66%, MU -6.62%) posted >4% single-session declines, triggering the urgent attention threshold. Bull case trimmed -2pp (20% \u2192 18%) reflecting increased near-term downside risk. Base case trimmed -2pp (30% \u2192 28%). This is the first fully computed brief vs prior LLM-unavailable state.",
+    "urgent_attention_needed": true,
+    "urgent_attention_text": "URGENT \u2014 THREE SIMULTANEOUS TRIGGERS: (1) Samsung Electronics -8.61%, SK Hynix -7.66%, Micron -6.62% all exceed the >4% single-session threshold for urgent attention. (2) Tier 3 indicator t3_relative_strength has RE-FIRED after previously reversing \u2014 memory pure-plays are again underperforming SOX by a material margin in a single session. (3) Bear case probability has been raised to 30% from 25% baseline. Institutional holders should review position sizing. The combination of a broad memory selloff, re-firing Tier 3 relative strength signal, and continued accumulation of Tier 2 signals (5/7 fired) warrants immediate review of peak timing assumptions. Watch for whether this is a one-day macro-driven flush or the beginning of sustained memory underperformance vs SOX over the next 5 trading days."
   },
   "indicator_assessments": [
     {
@@ -37,11 +44,16 @@
       "name": "DDR5 spot first MoM decline",
       "description": "DRAM spot prices show first month-over-month decline. DDR5 16Gb chip is the validation; DDR4 alone is partly EOL noise.",
       "what_to_look_for": "DDR5 16Gb 4800/5600 spot prints 2 consecutive weeks of -2%+ MoW decline (current reference: $39). OR DDR5 RDIMM 32GB module first MoM decline (current $970, trigger if <$950). DDR4-only moves are NOT a trigger.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "current_status": "Not fired",
+      "where_we_stand": "No TrendForce spot price data was included in today's news feed confirming a DDR5 16Gb MoM decline. The reference price of ~$39 for DDR5 16Gb and ~$970 for DDR5 RDIMM 32GB modules remains the baseline. DDR4 spot weakness continues but is classified as EOL noise and does not trigger this indicator. This signal remains the most critical unfired Tier 1 indicator.",
+      "latest_developments": "No new TrendForce spot price prints in today's feed. The [Micron 256GB DDR5 module shipment news](https://news.google.com/rss/articles/CBMizgFBVV95cUxPcWZLZ3BJalZadURoS0ZRdVJHQkFwdDBEV2tiN3FGM2p4WDRLc20wc0o3LTJ6LWtiY1lhS0FrejVhYVdNN1lyQXpkX0lKb1ZIVTAzV2JLN0xIUkQybGxjNjU5anpsR2lLTnp5NVhuM0dtNWpicjRJTTdGYXU2ckg0MHFhM0tCSlAxUm1zRG9RQVlEdklUUWJMbWpsbWxGd3dwN0EzQnFTRTlxcjlnUXNaNXp5aFFYV2kxcFFoYlpSbGt5Q21GQjVnSWRBN2ZsQQ) signals continued supply ramp, which is a precondition for eventual spot softening but does not itself constitute a trigger. Monitor TrendForce weekly spot reports (published Fridays) for first signs of DDR5 16Gb weakness.",
+      "relevant_links": [
+        {
+          "title": "Micron Delivers 256GB DDR5 Modules as AI Memory Boom Meets a Profit-Taking Pause",
+          "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxPcWZLZ3BJalZadURoS0ZRdVJHQkFwdDBEV2tiN3FGM2p4WDRLc20wc0o3LTJ6LWtiY1lhS0FrejVhYVdNN1lyQXpkX0lKb1ZIVTAzV2JLN0xIUkQybGxjNjU5anpsR2lLTnp5NVhuM0dtNWpicjRJTTdGYXU2ckg0MHFhM0tCSlAxUm1zRG9RQVlEdklUUWJMbWpsbWxGd3dwN0EzQnFTRTlxcjlnUXNaNXp5aFFYV2kxcFFoYlpSbGt5Q21GQjVnSWRBN2ZsQQ"
+        }
+      ],
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Not fired' \u2014 no DDR5 spot decline confirmed in today's data."
     },
     {
       "id": "t1_lead_times",
@@ -49,11 +61,20 @@
       "name": "Lead times shrinking",
       "description": "Memory product lead times contracting from peak levels. Available via earnings call commentary + Korean broker PDF citations.",
       "what_to_look_for": "LPDDR5X lead time falling below 26 weeks (current 26-39). HBM3E delivery slots opening up (currently sold out through 2026). Detected via memory maker earnings calls + OEM earnings + Korean broker PDFs citing TrendForce.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "current_status": "Not fired",
+      "where_we_stand": "Multiple news items today confirm HBM remains sold out through 2026 and clients are co-investing in SK Hynix capacity, which is the opposite of lead time contraction. LPDDR5X lead times remain at the high end of the 26-39 week range per prior TrendForce data. The NVIDIA Rubin LPDDR5X demand forecast (consuming more memory than Apple and Samsung combined in 2027) reinforces continued tightness.",
+      "latest_developments": "The [SK Hynix 'sold-out market' and client co-investment report](https://news.google.com/rss/articles/CBMiyAFBVV95cUxPdVFjR2V1U1hTOHAtTkhwa0pZdGR1aG5hR0Q0dkoxY2VGbTNCdGt3VTR1TlJIWUUyMmFfT0kyN1RRd1ROVDFGZ0hORFNFTVQ4emdvQU1BZFpYZWs3X3V4blVSdV9weTVaYXVxb20yaVpsVWhkenVURmJSWkVIa3htSmM5UVpfYS1MQjY1UmRfaElWS1BDQzVYR2xtclZSdVBhTEZhQUR6UGhhcGx2U05TdXRvTnhpeThsN0NZLW52VmxzMThrN1dFQw) confirms HBM supply remains fully allocated. The [NVIDIA Rubin LPDDR5X demand article](https://news.google.com/rss/articles/CBMisgFBVV95cUxPZzYtcFdKTlBfaEotTXFTNzBrcEtJN2hRSG5rOFlvMmc1cHZnX1MtdkxySWNBY294SC12SWFJMG1yRnN4RUF2UnRNZ2NVZnk4NTZQMXFORDhaNnpJNzRldlZNMlJVTGtid0d3c1JWcU1TYnB3Ni1CcjBEcG9mT2V4UzgxQkY1S0x3V3BmUHJaUjF4encySlRQRG52dmkzUUZ2NGxqZi12U1Y0UmdQTmZoRmpn0gG3AUFVX3lxTE5Dc1JmOEFxOXdNem1JdENOQU5aLV9mYS0wRGhwaGtoaEZPY1czMlRQeDRaWm44M1ljN3F6NVVzSGEwelAyaWFuUjhsamNIQ0FvWnluUXNsVTUxdGItR0dTOU9EV1lXZVI0cTBsazdFeUdYRVFuYmYxcTB3cXpwdHpSTjZtYk5sSVZpc0FoN0RhOFlaSUNmYUpPX2xhVERZb2ZPWTk1N2ZDMVR0VzhpX1FpWjFwUDh2WQ) signals LPDDR5X demand will remain structurally elevated through 2027, making lead time contraction unlikely in the near term.",
+      "relevant_links": [
+        {
+          "title": "SK Hynix Crosses a Valuation Rubicon as Clients Turn Co-Investors in a Sold-Out Market",
+          "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxPdVFjR2V1U1hTOHAtTkhwa0pZdGR1aG5hR0Q0dkoxY2VGbTNCdGt3VTR1TlJIWUUyMmFfT0kyN1RRd1ROVDFGZ0hORFNFTVQ4emdvQU1BZFpYZWs3X3V4blVSdV9weTVaYXVxb20yaVpsVWhkenVURmJSWkVIa3htSmM5UVpfYS1MQjY1UmRfaElWS1BDQzVYR2xtclZSdVBhTEZhQUR6UGhhcGx2U05TdXRvTnhpeThsN0NZLW52VmxzMThrN1dFQw"
+        },
+        {
+          "title": "NVIDIA Rubin LPDDR5X demand forecast",
+          "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZzYtcFdKTlBfaEotTXFTNzBrcEtJN2hRSG5rOFlvMmc1cHZnX1MtdkxySWNBY294SC12SWFJMG1yRnN4RUF2UnRNZ2NVZnk4NTZQMXFORDhaNnpJNzRldlZNMlJVTGtid0d3c1JWcU1TYnB3Ni1CcjBEcG9mT2V4UzgxQkY1S0x3V3BmUHJaUjF4encySlRQRG52dmkzUUZ2NGxqZi12U1Y0UmdQTmZoRmpn0gG3AUFVX3lxTE5Dc1JmOEFxOXdNem1JdENOQU5aLV9mYS0wRGhwaGtoaEZPY1czMlRQeDRaWm44M1ljN3F6NVVzSGEwelAyaWFuUjhsamNIQ0FvWnluUXNsVTUxdGItR0dTOU9EV1lXZVI0cTBsazdFeUdYRVFuYmYxcTB3cXpwdHpSTjZtYk5sSVZpc0FoN0RhOFlaSUNmYUpPX2xhVERZb2ZPWTk1N2ZDMVR0VzhpX1FpWjFwUDh2WQ"
+        }
+      ],
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Not fired' \u2014 HBM remains sold out, LPDDR5X demand structurally elevated."
     },
     {
       "id": "t1_price_cuts_no_demand",
@@ -61,11 +82,11 @@
       "name": "Demand destruction language",
       "description": "TrendForce/DigiTimes/Korean press commentary using specific phrases that historically appear at cycle turns. Applied to DDR5 specifically (not DDR4 EOL noise).",
       "what_to_look_for": "Phrases like 'price cuts failed to revive', 'buyers cautious', 'even at lower prices', 'transactions slowing', 'demand failing to absorb supply' \u2014 applied to DDR5 or generic 'memory' (not DDR4-specific).",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
+      "current_status": "Not fired",
+      "where_we_stand": "Today's news flow is dominated by bullish analyst upgrades, capex expansion announcements, and supply constraint narratives. No TrendForce or DigiTimes language matching the demand destruction trigger phrases was detected in today's feed. The narrative remains firmly 'demand exceeds supply' for DDR5 and HBM segments.",
+      "latest_developments": "The dominant narrative in today's news is the opposite of demand destruction: [SK Hynix HBM sold out with client co-investment](https://news.google.com/rss/articles/CBMiyAFBVV95cUxPdVFjR2V1U1hTOHAtTkhwa0pZdGR1aG5hR0Q0dkoxY2VGbTNCdGt3VTR1TlJIWUUyMmFfT0kyN1RRd1ROVDFGZ0hORFNFTVQ4emdvQU1BZFpYZWs3X3V4blVSdV9weTVaYXVxb20yaVpsVWhkenVURmJSWkVIa3htSmM5UVpfYS1MQjY1UmRfaElWS1BDQzVYR2xtclZSdVBhTEZhQUR6UGhhcGx2U05TdXRvTnhpeThsN0NZLW52VmxzMThrN1dFQw) and [Micron HBM sells out](https://news.google.com/rss/articles/CBMixwFBVV95cUxOQS1xY2RENlZUNEotN3VrLVhuS2h2d3ZZX2hRYU4xOUFNMjlxLWh0bWt5a1BkaVVMR1RMTDk4MXFvR2IwQUJOdHNRRm9ibXZVSW5DVFRHdGRmaFB4dlhYUE5nbG8zRXpSaFdWUXBBbmFGZVl2d2RTezdGN0hRVEtna2VGaEdrOGQ4R2xGODE1Z0pmNGp4REhwN2ttXzVJVmhsM000cE9mMk5xSm01b2w3em5KVm9pOHUxNkU1NjlHRlNEVTNTVllZ) are the prevailing signals. This indicator remains unfired and is the last major Tier 1 signal before a confirmed cycle turn.",
       "relevant_links": [],
-      "change_vs_prior": null
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Not fired'."
     },
     {
       "id": "t1_oem_inventory",
@@ -73,11 +94,16 @@
       "name": "OEM inventory rising while supplier still tight",
       "description": "Supplier-buyer inventory gap exposes prior double-ordering. Requires BOTH sides confirmed (stitched signal).",
       "what_to_look_for": "Supplier inventory <3 weeks AND OEM/buyer inventory >7 weeks. Gap >5 weeks is unprecedented (currently ~7 weeks per TrendForce Q3 2025). Trigger requires evidence from BOTH supplier-side (memory makers) AND buyer-side (Dell/HPE/Lenovo).",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "current_status": "Partially fired",
+      "where_we_stand": "The supplier side remains tight at 2-3 weeks inventory per prior TrendForce data. The OEM/buyer side gap of ~7 weeks (TrendForce Q3 2025 estimate) has not been updated in today's news feed. The 'partially fired' status reflects the OEM side being elevated but the full stitched signal requiring fresh confirmation from both Dell/HPE/Lenovo earnings AND memory maker disclosures simultaneously.",
+      "latest_developments": "No new OEM inventory data in today's feed. The next confirmation opportunity is Dell/HPE earnings in late May/June 2026. The [SK Hynix $13B capex announcement](https://news.google.com/rss/articles/CBMirAJBVV95cUxQU3pKTkF4ZndRSUxsbFB6dnZDU2hvSFFHcnB6MHlBS0RIeFdkQ3lrSDhTU3djWmRGNThqMUVEWVdERFFYeXlOd3Vkd1poQldKdnNOVzB6azB2MnZ3THAxTEl5MzZpZVBpZGU3RVRhNnFnaVF4RUFCUE8zSU9NQlFQMjF4cGJpVVFmTW9xTG1EdUtialhNeE5nNGRkeDJOM09nNFJvOXZBYzdSRzEzN054UWNxbndYNkpYd3VITml5MlNJMUhwcjJhNzgzN3JOdWJYV2swdGdieUd3YVVVdmcwUWFoMS1PWVZ6U3g3X1daSjkwN0JsY2gyN2lXcDVLaE5lWGJZR1ROYW5CMFQtdy1mVEpPeW1Gc0RkSUNJWkdTZnJGVHNaZklqMUJrNDM) signals continued supply expansion that could widen the gap further.",
+      "relevant_links": [
+        {
+          "title": "SK Hynix plans $13 billion memory-chip plant",
+          "url": "https://news.google.com/rss/articles/CBMirAJBVV95cUxQU3pKTkF4ZndRSUxsbFB6dnZDU2hvSFFHcnB6MHlBS0RIeFdkQ3lrSDhTU3djWmRGNThqMUVEWVdERFFYeXlOd3Vkd1poQldKdnNOVzB6azB2MnZ3THAxTEl5MzZpZVBpZGU3RVRhNnFnaVF4RUFCUE8zSU9NQlFQMjF4cGJpVVFmTW9xTG1EdUtialhNeE5nNGRkeDJOM09nNFJvOXZBYzdSRzEzN054UWNxbndYNkpYd3VITml5MlNJMUhwcjJhNzgzN3JOdWJYV2swdGdieUd3YVVVdmcwUWFoMS1PWVZ6U3g3X1daSjkwN0JsY2gyN2lXcDVLaE5lWGJZR1ROYW5CMFQtdy1mVEpPeW1Gc0RkSUNJWkdTZnJGVHNaZklqMUJrNDM"
+        }
+      ],
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Partially fired' \u2014 OEM side elevated per prior TrendForce data but full stitched signal not confirmed today."
     },
     {
       "id": "t1_efficiency_shock",
@@ -85,11 +111,16 @@
       "name": "AI inference efficiency breakthrough",
       "description": "Algorithmic or architectural improvement reducing memory-per-token by >2x. TurboQuant-class shocks. The cycle-breaking risk.",
       "what_to_look_for": "Major announcement from Google / OpenAI / Anthropic / Meta / DeepSeek / Mistral. Specific phrases: 'KV cache compression', 'inference efficiency 2x+', 'memory footprint reduction', 'quantization breakthrough'. Source must be official lab blog, arXiv, or 3+ mainstream tech publications within 48 hours.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "current_status": "Not fired",
+      "where_we_stand": "No qualifying efficiency breakthrough announcement detected in today's news feed. The NVIDIA Rubin LPDDR5X demand forecast is actually the opposite signal \u2014 it projects massive memory consumption increases, not reductions. No arXiv papers or official lab blog posts matching the trigger criteria were identified.",
+      "latest_developments": "The [NVIDIA Rubin platform LPDDR5X demand forecast](https://news.google.com/rss/articles/CBMisgFBVV95cUxPZzYtcFdKTlBfaEotTXFTNzBrcEtJN2hRSG5rOFlvMmc1cHZnX1MtdkxySWNBY294SC12SWFJMG1yRnN4RUF2UnRNZ2NVZnk4NTZQMXFORDhaNnpJNzRldlZNMlJVTGtid0d3c1JWcU1TYnB3Ni1CcjBEcG9mT2V4UzgxQkY1S0x3V3BmUHJaUjF4encySlRQRG52dmkzUUZ2NGxqZi12U1Y0UmdQTmZoRmpn0gG3AUFVX3lxTE5Dc1JmOEFxOXdNem1JdENOQU5aLV9mYS0wRGhwaGtoaEZPY1czMlRQeDRaWm44M1ljN3F6NVVzSGEwelAyaWFuUjhsamNIQ0FvWnluUXNsVTUxdGItR0dTOU9EV1lXZVI0cTBsazdFeUdYRVFuYmYxcTB3cXpwdHpSTjZtYk5sSVZpc0FoN0RhOFlaSUNmYUpPX2xhVERZb2ZPWTk1N2ZDMVR0VzhpX1FpWjFwUDh2WQ) is a strong counter-signal \u2014 Rubin alone is projected to consume more LPDDR memory in 2027 than Apple and Samsung combined, suggesting memory intensity per compute unit is rising, not falling. This is the single most important unfired risk indicator to monitor.",
+      "relevant_links": [
+        {
+          "title": "NVIDIA Rubin LPDDR5X demand forecast \u2014 memory intensity rising",
+          "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZzYtcFdKTlBfaEotTXFTNzBrcEtJN2hRSG5rOFlvMmc1cHZnX1MtdkxySWNBY294SC12SWFJMG1yRnN4RUF2UnRNZ2NVZnk4NTZQMXFORDhaNnpJNzRldlZNMlJVTGtid0d3c1JWcU1TYnB3Ni1CcjBEcG9mT2V4UzgxQkY1S0x3V3BmUHJaUjF4encySlRQRG52dmkzUUZ2NGxqZi12U1Y0UmdQTmZoRmpn0gG3AUFVX3lxTE5Dc1JmOEFxOXdNem1JdENOQU5aLV9mYS0wRGhwaGtoaEZPY1czMlRQeDRaWm44M1ljN3F6NVVzSGEwelAyaWFuUjhsamNIQ0FvWnluUXNsVTUxdGItR0dTOU9EV1lXZVI0cTBsazdFeUdYRVFuYmYxcTB3cXpwdHpSTjZtYk5sSVZpc0FoN0RhOFlaSUNmYUpPX2xhVERZb2ZPWTk1N2ZDMVR0VzhpX1FpWjFwUDh2WQ"
+        }
+      ],
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Not fired' \u2014 no qualifying efficiency breakthrough detected."
     },
     {
       "id": "t1_demand_destruction",
@@ -97,11 +128,11 @@
       "name": "PC / smartphone / server demand cuts",
       "description": "IDC, Counterpoint, Gartner revise forecasts down. Authoritative single-source signals.",
       "what_to_look_for": "IDC PC shipment forecast revised to -5% or worse for 2026 (current -2.4 to -11.3% \u2014 already fired). Counterpoint smartphone <0% (current -2%). Gartner data center server forecast cut.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
+      "current_status": "Fired",
+      "where_we_stand": "This indicator was already fired per the framework baseline: IDC PC shipment forecast at -2.4% to -11.3% range for 2026 (the wide range reflects tariff uncertainty scenarios), and Counterpoint smartphone at -2%. No new IDC/Gartner/Counterpoint data was published today, but the prior fired status is maintained. The server/data center segment remains the key offset \u2014 no Gartner server forecast cut has been detected.",
+      "latest_developments": "No new IDC, Gartner, or Counterpoint reports in today's feed. The [NVIDIA Rubin LPDDR5X demand article](https://news.google.com/rss/articles/CBMisgFBVV95cUxPZzYtcFdKTlBfaEotTXFTNzBrcEtJN2hRSG5rOFlvMmc1cHZnX1MtdkxySWNBY294SC12SWFJMG1yRnN4RUF2UnRNZ2NVZnk4NTZQMXFORDhaNnpJNzRldlZNMlJVTGtid0d3c1JWcU1TYnB3Ni1CcjBEcG9mT2V4UzgxQkY1S0x3V3BmUHJaUjF4encySlRQRG52dmkzUUZ2NGxqZi12U1Y0UmdQTmZoRmpn0gG3AUFVX3lxTE5Dc1JmOEFxOXdNem1JdENOQU5aLV9mYS0wRGhwaGtoaEZPY1czMlRQeDRaWm44M1ljN3F6NVVzSGEwelAyaWFuUjhsamNIQ0FvWnluUXNsVTUxdGItR0dTOU9EV1lXZVI0cTBsazdFeUdYRVFuYmYxcTB3cXpwdHpSTjZtYk5sSVZpc0FoN0RhOFlaSUNmYUpPX2xhVERZb2ZPWTk1N2ZDMVR0VzhpX1FpWjFwUDh2WQ) highlights that AI server demand is absorbing memory supply that would otherwise go to smartphones, which is a partial offset to the consumer demand destruction signal.",
       "relevant_links": [],
-      "change_vs_prior": null
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Fired' \u2014 consistent with framework baseline (IDC PC -2.4% to -11.3%, Counterpoint smartphone -2%)."
     },
     {
       "id": "t2_eps_revisions",
@@ -109,11 +140,28 @@
       "name": "Forward FY27/FY28 EPS revision direction \u2014 THE canonical Tier 2 signal",
       "description": "First month with net negative FY27 or FY28 EPS revisions for SK Hynix or Micron. The single most important missing signal \u2014 currently NOT FIRED.",
       "what_to_look_for": ">5 analysts revise SK Hynix or MU FY27 EPS DOWN in a single month while <3 revise up. Single broker target price cut of >-10% vs prior is a strong early signal even before the count threshold.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "current_status": "Not fired",
+      "where_we_stand": "Today's analyst actions are uniformly bullish: Nomura raised SK Hynix target to 4M KRW and Samsung to 590K KRW; multiple analysts raised price targets on both names; Seeking Alpha upgraded Micron. The consensus data shows 26 upward revisions for SK Hynix FY+1 EPS in the last 30 days with zero downward revisions, and 26 upward for Micron with zero downward. This is the exact opposite of the trigger condition. This indicator remains the single most important unfired signal in the entire framework.",
+      "latest_developments": "**Nomura raised SK Hynix target to 4,000,000 KRW** (vs current 1,819,000 KRW \u2014 implying ~120% upside) and Samsung to 590,000 KRW per [Nomura Korea chip target hike](https://news.google.com/rss/articles/CBMiZEFVX3lxTE9aaWlOSmRQc2JhMkJtNjJ4QUJuWHExZGprTFFkdHlTdVZJMHNGb3h1SjFRdHZMZGlteGF3Wm9yUlJHUUdjRnZSNWhyZzlXU3lOQVlvOWFkMmRlaVFqOExEd29PeXA). **Seeking Alpha upgraded Micron** per [rating upgrade article](https://news.google.com/rss/articles/CBMijwFBVV95cUxNdEJEdGlLZklxTXl4d2QzR3ZwRjhWNDdxMmtoTjZfekc0VDh0ZWdfN252OWp3bGEwcGxOdDJial8zZFZSb3RTSDJGMmNuZUo1V3FfcllLaEhCZC1ISDdPM3RuRzBFY2psRTd0YVhxYS00YkpCcmt3R2RvWS1DY2pVU3VoMjZDNEtrLTFjREdsTQ). **Nomura's valuation reframe** argues Samsung and Hynix should be benchmarked against TSMC per [Moomoo/Nomura note](https://news.google.com/rss/articles/CBMimgFBVV95cUxOQV9rTmVXRHd2V0tqUF80Q2oyXzRzNlZ1X3BHVy01X1BPb1pzUGxpQ1NpdkNqMVBxb3FJc1Y0QmdKandINUwzUThfa2c5cVpEWkQtSVFkazluN1VIMV96b3lMeWdDM0toWmd1R2dQVlJMWUQ3V3Bza2Jic0RPamdRYms2WldnU0haZEk2QWJSS1U4VnlleFR5OFZ3). The analyst community is in full euphoria mode \u2014 26 upward EPS revisions vs 0 downward for both SK Hynix and Micron in the last 30 days. **The absence of this signal is itself a key data point** \u2014 when it fires, it will be the most important single-day event in this cycle.",
+      "relevant_links": [
+        {
+          "title": "Nomura lifts SK Hynix to 4M Won, Samsung to 590K Won",
+          "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE9aaWlOSmRQc2JhMkJtNjJ4QUJuWHExZGprTFFkdHlTdVZJMHNGb3h1SjFRdHZMZGlteGF3Wm9yUlJHUUdjRnZSNWhyZzlXU3lOQVlvOWFkMmRlaVFqOExEd29PeXA"
+        },
+        {
+          "title": "Seeking Alpha Micron rating upgrade",
+          "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxNdEJEdGlLZklxTXl4d2QzR3ZwRjhWNDdxMmtoTjZfekc0VDh0ZWdfN252OWp3bGEwcGxOdDJial8zZFZSb3RTSDJGMmNuZUo1V3FfcllLaEhCZC1ISDdPM3RuRzBFY2psRTd0YVhxYS00YkpCcmt3R2RvWS1DY2pVU3VoMjZDNEtrLTFjREdsTQ"
+        },
+        {
+          "title": "Nomura: Samsung and Hynix valuations should benchmark against TSMC",
+          "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOQV9rTmVXRHd2V0tqUF80Q2oyXzRzNlZ1X3BHVy01X1BPb1pzUGxpQ1NpdkNqMVBxb3FJc1Y0QmdKandINUwzUThfa2c5cVpEWkQtSVFkazluN1VIMV96b3lMeWdDM0toWmd1R2dQVlJMWUQ3V3Bza2Jic0RPamdRYms2WldnU0haZEk2QWJSS1U4VnlleFR5OFZ3"
+        },
+        {
+          "title": "5 big analyst AI moves: PT hikes for Samsung and SK Hynix",
+          "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxNZndZZGttOWNVUW4xcnNMQkUtenQ0aUZ1dkREZHJGYXEtQTFLM1N2ZS1lZUZNb0F3MWVZTEdpNFlVeGdxa2l0YlJJTVVOX0JMTjF2eGdrUzZ1OThRTzVBVzhBeUsyM3BjQTVPWVByV0NlNU1zakhrODNrMjBhLTcxb0Uxck83dGxWZmFZVm9nVUtENUV1cE1hTXFTNnNfZDhmR2ctb3JEWGp2STM5VTc3d0RyZnl1QUtkVno3ejJOeFM3Q19GM0N3"
+        }
+      ],
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Not fired' \u2014 26 upward vs 0 downward revisions for both SK Hynix and Micron in last 30 days. Analyst community in full euphoria mode."
     },
     {
       "id": "t2_capex_parabolic",
@@ -121,11 +169,24 @@
       "name": "Capex announcements parabolic",
       "description": "Memory makers' and hyperscalers' capex growing parabolic \u2014 building 2027-28 supply glut. ALREADY FIRED on aggregate; watch for 2027 guidance direction at Jul prints.",
       "what_to_look_for": "Big Three combined capex >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B (fired). NEW threshold: any of MSFT/GOOG/META/AMZN/ORCL guides 2027 capex ABOVE 2026 at Q2 2026 earnings prints. Bull confirm if above; bear catalyst if flat/down.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "current_status": "Fired",
+      "where_we_stand": "Already fired on aggregate per framework baseline. Today's news adds two new data points: SK Hynix announced a $13B memory chip plant, and Micron's $25B capex plan was highlighted. Both reinforce the parabolic capex narrative. The next key event is Q2 2026 hyperscaler earnings (July) where 2027 capex guidance will be the critical read.",
+      "latest_developments": "**SK Hynix $13B memory plant announcement** per [MSN/Barron's article](https://news.google.com/rss/articles/CBMirAJBVV95cUxQU3pKTkF4ZndRSUxsbFB6dnZDU2hvSFFHcnB6MHlBS0RIeFdkQ3lrSDhTU3djWmRGNThqMUVEWVdERFFYeXlOd3Vkd1poQldKdnNOVzB6azB2MnZ3THAxTEl5MzZpZVBpZGU3RVRhNnFnaVF4RUFCUE8zSU9NQlFQMjF4cGJpVVFmTW9xTG1EdUtialhNeE5nNGRkeDJOM09nNFJvOXZBYzdSRzEzN054UWNxbndYNkpYd3VITml5MlNJMUhwcjJhNzgzN3JOdWJYV2swdGdieUd3YVVVdmcwUWFoMS1PWVZ6U3g3X1daSjkwN0JsY2gyN2lXcDVLaE5lWGJZR1ROYW5CMFQtdy1mVEpPeW1Gc0RkSUNJWkdTZnJGVHNaZklqMUJrNDM) \u2014 this is a new incremental capex commitment on top of existing plans. **Micron $25B capex** highlighted in [AD HOC NEWS article](https://news.google.com/rss/articles/CBMixwFBVV95cUxOQS1xY2RENlZUNEotN3VrLVhuS2h2d3ZZX2hRYU4xOUFNMjlxLWh0bWt5a1BkaVVMR1RMTDk4MXFvR2IwQUJOdHNRRm9ibXZVSW5DVFRHdGRmaFB4dlhYUE5nbG8zRXpSaFdWUXBBbmFGZVl2d2RTezdGN0hRVEtna2VGaEdrOGQ4R2xGODE1Z0pmNGp4REhwN2ttXzVJVmhsM000cE9mMk5xSm01b2w3em5KVm9pOHUxNkU1NjlHRlNEVTNTVllZ). **Samsung/SK Hynix R&D spending up 68% in Q1** per [thelec.net](https://news.google.com/rss/articles/CBMiZ0FVX3lxTFByRXNMQ3dodU5hUGNaZ2dxZEZSVEtPQkU2UHliNWNZRUM5UWkzS3IyZlBESWVFcnBNTEZrRVRTQzJUQ3ItR1JIU2RmdG5BOFpFQXBLdWZld0o4MVJBcjRRRFdERlR5WXc) \u2014 R&D surge alongside capex surge is a classic late-cycle signal of competitive intensity. The combined Big Three capex trajectory now clearly exceeds 2x 2024 levels.",
+      "relevant_links": [
+        {
+          "title": "SK Hynix plans $13 billion memory-chip plant",
+          "url": "https://news.google.com/rss/articles/CBMirAJBVV95cUxQU3pKTkF4ZndRSUxsbFB6dnZDU2hvSFFHcnB6MHlBS0RIeFdkQ3lrSDhTU3djWmRGNThqMUVEWVdERFFYeXlOd3Vkd1poQldKdnNOVzB6azB2MnZ3THAxTEl5MzZpZVBpZGU3RVRhNnFnaVF4RUFCUE8zSU9NQlFQMjF4cGJpVVFmTW9xTG1EdUtialhNeE5nNGRkeDJOM09nNFJvOXZBYzdSRzEzN054UWNxbndYNkpYd3VITml5MlNJMUhwcjJhNzgzN3JOdWJYV2swdGdieUd3YVVVdmcwUWFoMS1PWVZ6U3g3X1daSjkwN0JsY2gyN2lXcDVLaE5lWGJZR1ROYW5CMFQtdy1mVEpPeW1Gc0RkSUNJWkdTZnJGVHNaZklqMUJrNDM"
+        },
+        {
+          "title": "Micron $25B capex and HBM sold out",
+          "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOQS1xY2RENlZUNEotN3VrLVhuS2h2d3ZZX2hRYU4xOUFNMjlxLWh0bWt5a1BkaVVMR1RMTDk4MXFvR2IwQUJOdHNRRm9ibXZVSW5DVFRHdGRmaFB4dlhYUE5nbG8zRXpSaFdWUXBBbmFGZVl2d2RTezdGN0hRVEtna2VGaEdrOGQ4R2xGODE1Z0pmNGp4REhwN2ttXzVJVmhsM000cE9mMk5xSm01b2w3em5KVm9pOHUxNkU1NjlHRlNEVTNTVllZ"
+        },
+        {
+          "title": "Samsung/SK Hynix R&D spending up 68% in Q1",
+          "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFByRXNMQ3dodU5hUGNaZ2dxZEZSVEtPQkU2UHliNWNZRUM5UWkzS3IyZlBESWVFcnBNTEZrRVRTQzJUQ3ItR1JIU2RmdG5BOFpFQXBLdWZld0o4MVJBcjRRRFdERlR5WXc"
+        }
+      ],
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Fired' \u2014 consistent with framework baseline, with new incremental data points (SK Hynix $13B plant, Micron $25B capex, R&D +68%)."
     },
     {
       "id": "t2_ltas_signed",
@@ -133,23 +194,33 @@
       "name": "Multi-year LTAs aggressively signed",
       "description": "Buyers panic-locking long-term supply. Paradoxical bearish signal \u2014 already fired.",
       "what_to_look_for": "3+ year HBM LTA announcements. 'Sold out through 2027/2028' phrasing. Currently fired (HBM3E sold out through 2026; Hynix HBM4 LTAs with Nvidia).",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "current_status": "Fired",
+      "where_we_stand": "Already fired per framework baseline. Today's news reinforces this with SK Hynix's 'sold-out market' language and client co-investment in capacity \u2014 the ultimate form of LTA commitment. The HBM4 architecture shift to TSMC packaging also signals long-term supply chain commitments being locked in.",
+      "latest_developments": "**SK Hynix clients turning co-investors** per [valuation rubicon article](https://news.google.com/rss/articles/CBMiyAFBVV95cUxPdVFjR2V1U1hTOHAtTkhwa0pZdGR1aG5hR0Q0dkoxY2VGbTNCdGt3VTR1TlJIWUUyMmFfT0kyN1RRd1ROVDFGZ0hORFNFTVQ4emdvQU1BZFpYZWs3X3V4blVSdV9weTVaYXVxb20yaVpsVWhkenVURmJSWkVIa3htSmM5UVpfYS1MQjY1UmRfaElWS1BDQzVYR2xtclZSdVBhTEZhQUR6UGhhcGx2U05TdXRvTnhpeThsN0NZLW52VmxzMThrN1dFQw) \u2014 this is the most extreme form of supply lock-in, where buyers are co-financing production capacity. **SK Hynix HBM4 LTAs with TSMC packaging** per [TSMC HBM4 shift article](https://news.google.com/rss/articles/CBMiygFBVV95cUxNNmxXeHdWV3U0a01fSFdtS2dCaEYzbVh4emFUZ1N3TUx1Sm5OOGhQY1lFaFNOME9MLVRwY0xNZGZDQU5hY2w3V09SbmlEMHJRcUZuV2NBM1RUX05JZWZzSzhIT2N1T2RmVzJMd19MMlFnUGs3NGxpS1dzLVFBRGk4dHloNFhBZXJIWW1DY2hMdFZQczdPaDB1ckk3YldZYnhzbHhpZEV4ZHJ0MW5iNFlac3A5UDdzRFk2WU9JdWZkYzVSUXd1a3Vsck53). This indicator is deeply fired and intensifying.",
+      "relevant_links": [
+        {
+          "title": "SK Hynix clients turn co-investors in sold-out market",
+          "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxPdVFjR2V1U1hTOHAtTkhwa0pZdGR1aG5hR0Q0dkoxY2VGbTNCdGt3VTR1TlJIWUUyMmFfT0kyN1RRd1ROVDFGZ0hORFNFTVQ4emdvQU1BZFpYZWs3X3V4blVSdV9weTVaYXVxb20yaVpsVWhkenVURmJSWkVIa3htSmM5UVpfYS1MQjY1UmRfaElWS1BDQzVYR2xtclZSdVBhTEZhQUR6UGhhcGx2U05TdXRvTnhpeThsN0NZLW52VmxzMThrN1dFQw"
+        }
+      ],
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Fired' \u2014 consistent with framework baseline, with new reinforcing data (client co-investment, HBM4 TSMC LTAs)."
     },
     {
       "id": "t2_insider_sales",
       "tier": 2,
-      "name": "Insider sales at memory makers (US Micron + Korean SK Hynix/Samsung)",
-      "description": "C-suite or board sales \u2014 material insider activity. Coverage is COMPREHENSIVE: Micron via SEC EDGAR Form 4 (US standard); SK Hynix + Samsung Electronics + SK Square via DART (Korean regulatory equivalent). Korean entities don't file SEC Form 4 \u2014 DART is the canonical source for them.",
-      "what_to_look_for": "FOR MICRON: Form 4 filings via SEC EDGAR atom feed showing C-suite (CEO Mehrotra, CFO Murphy) or board sales with transaction code S, value >$1M. FOR SK HYNIX (corp_code 00164779): DART API disclosure types B (material event), D (ownership change), I (audit-related) \u2014 captures executive/board sales, stake reductions by major holders, board changes. FOR SAMSUNG ELECTRONICS (00126380): Same DART disclosure types as SK Hynix. Already fired Mar 2026 (Mehrotra Micron sales).",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "name": "Insider sales at memory makers",
+      "description": "C-suite or board sales \u2014 material insider activity. Micron via SEC EDGAR Form 4; SK Hynix + Samsung via DART.",
+      "what_to_look_for": "FOR MICRON: Form 4 filings showing C-suite sales >$1M. FOR SK HYNIX/SAMSUNG: DART disclosure types B, D, I. Already fired Mar 2026 (Mehrotra Micron sales).",
+      "current_status": "Fired",
+      "where_we_stand": "Already fired in March 2026 per framework baseline (CEO Mehrotra Micron sales). Today's SEC EDGAR Form 4 filing for Micron (index 0001224095-26-000001) was detected in the news feed. The filing details are not fully parsed in today's data, but the presence of a new Form 4 filing warrants immediate review to determine if this is a new C-suite sale or a routine grant/exercise.",
+      "latest_developments": "**New Micron Form 4 filing detected** via [SEC EDGAR](https://www.sec.gov/Archives/edgar/data/723125/000122409526000001/0001224095-26-000001-index.htm) \u2014 this filing (index 0001224095-26-000001) requires immediate manual review to determine transaction type (code S = sale, code M = option exercise, code A = grant). If this is a new C-suite sale with value >$1M, it would be an incremental confirmation of the already-fired signal. The filing date and transaction details must be verified against the EDGAR atom feed. Prior fired signal: CEO Mehrotra sales in March 2026.",
+      "relevant_links": [
+        {
+          "title": "Micron Form 4 filing \u2014 SEC EDGAR",
+          "url": "https://www.sec.gov/Archives/edgar/data/723125/000122409526000001/0001224095-26-000001-index.htm"
+        }
+      ],
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Fired' \u2014 consistent with March 2026 Mehrotra sales. New Form 4 filing detected today requires manual verification."
     },
     {
       "id": "t2_pe_compressed",
@@ -157,11 +228,16 @@
       "name": "Forward P/E compressed to 3-5x",
       "description": "Forward P/E compresses on PEAK earnings denominator \u2014 bearish, not bullish. Already fired for SK Hynix and Samsung.",
       "what_to_look_for": "SK Hynix forward FY27 P/E below 5x (currently 3.7x \u2014 fired). Micron below 8x (currently 7-12x). Samsung below 6x (currently 5.3x \u2014 fired).",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "current_status": "Fired",
+      "where_we_stand": "SK Hynix forward P/E is now 4.78x (FY+1 EPS 380,619 KRW vs price 1,819,000 KRW) \u2014 fired at below 5x. Samsung is at 5.21x (FY+1 EPS 51,870 KRW vs price 270,500 KRW) \u2014 fired at below 6x. Micron is at 7.06x (FY+1 EPS $102.58 vs price $724.66) \u2014 approaching the 8x trigger but not yet fired. After today's selloff, these P/E ratios have compressed further, which paradoxically makes the fired signal even more pronounced.",
+      "latest_developments": "After today's selloff (Samsung -8.61%, SK Hynix -7.66%, Micron -6.62%), forward P/E ratios have compressed further: **SK Hynix now ~4.78x** (down from ~5.2x pre-selloff), **Samsung ~5.21x** (down from ~5.7x), **Micron ~7.06x** (down from ~7.5x). Micron is now approaching the 8x trigger threshold. Nomura's argument that these names should be benchmarked against TSMC (which trades at 20-25x forward) per [Moomoo/Nomura note](https://news.google.com/rss/articles/CBMimgFBVV95cUxOQV9rTmVXRHd2V0tqUF80Q2oyXzRzNlZ1X3BHVy01X1BPb1pzUGxpQ1NpdkNqMVBxb3FJc1Y0QmdKandINUwzUThfa2c5cVpEWkQtSVFkazluN1VIMV96b3lMeWdDM0toWmd1R2dQVlJMWUQ3V3Bza2Jic0RPamdRYms2WldnU0haZEk2QWJSS1U4VnlleFR5OFZ3) is a classic late-cycle 'this time is different' argument that historically precedes multiple compression.",
+      "relevant_links": [
+        {
+          "title": "Nomura: Samsung and Hynix should benchmark against TSMC",
+          "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOQV9rTmVXRHd2V0tqUF80Q2oyXzRzNlZ1X3BHVy01X1BPb1pzUGxpQ1NpdkNqMVBxb3FJc1Y0QmdKandINUwzUThfa2c5cVpEWkQtSVFkazluN1VIMV96b3lMeWdDM0toWmd1R2dQVlJMWUQ3V3Bza2Jic0RPamdRYms2WldnU0haZEk2QWJSS1U4VnlleFR5OFZ3"
+        }
+      ],
+      "change_vs_prior": "Prior state was 'Unknown (LLM unavailable)'. Now assessed as 'Fired' \u2014 SK Hynix 4.78x, Samsung 5.21x both below thresholds. Micron 7.06x approaching 8x trigger."
     },
     {
       "id": "t2_hyperscaler_capex_revenue",
@@ -169,129 +245,9 @@
       "name": "Hyperscaler capex/revenue >40%",
       "description": "Capex/revenue ratios at historic norms 12-18%. Above 40% is unsustainable.",
       "what_to_look_for": "Any of MSFT/GOOG/META/AMZN/ORCL prints capex/revenue >40% in quarterly filings. Already fired: MSFT 45%, Oracle 57%. Watch for FCF projections cratering.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t2_spot_contract_spread",
-      "tier": 2,
-      "name": "Spot/contract spread narrowing or inverted",
-      "description": "Spot prices weakening while contract still rises means spot has rolled. DDR4 inverted (fired). DDR5 not yet.",
-      "what_to_look_for": "DDR5 spot below DDR5 server contract for any product variant. Spread narrowing toward zero.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t3_contract_decline",
-      "tier": 3,
-      "name": "First sequential decline in CONTRACT prices \u2014 most diagnostic Tier 3",
-      "description": "The single most diagnostic Tier 3 signal. Contract prices roll over MoM.",
-      "what_to_look_for": "DDR5 server contract MoM decline of any magnitude in TrendForce monthly report (last week of month). OR HBM contract renegotiation downward (any reported renegotiation = dam break). Currently Q2 2026 +58-63% QoQ projected.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t3_supplier_inventory_rebuild",
-      "tier": 3,
-      "name": "Supplier inventory rebuilds 2-3 \u2192 4-5 weeks",
-      "description": "Memory makers' inventory weeks rising from record lows.",
-      "what_to_look_for": "SK Hynix or Micron inventory weeks crossing 4 in TrendForce monthly print or earnings disclosure. Currently 2-3 weeks.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t3_relative_strength",
-      "tier": 3,
-      "name": "Memory pure-plays underperform SOX",
-      "description": "Memory stocks losing relative strength vs SOX semiconductor index.",
-      "what_to_look_for": "SK Hynix (000660.KS) or Micron (MU) underperforms SOX (^SOX) by >10% over 5 trading days. Currently fired then reversed (Mar 2026 fired, May rally erased).",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t3_wfe_orders_crack",
-      "tier": 3,
-      "name": "ASML/SEMI WFE order book cracking",
-      "description": "Equipment makers' order books showing first weakness.",
-      "what_to_look_for": "ASML or AMAT bookings -10% or worse QoQ. Book-to-bill below 1.0. SEMI worldwide WFE billings printing MoM decline.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t3_eps_miss_guidance",
-      "tier": 3,
-      "name": "EPS miss or beat narrowing on still-rising guidance",
-      "description": "Beat narrows or first miss while forward guidance still positive \u2014 peak signal.",
-      "what_to_look_for": "MU or SK Hynix beat <10% (vs prior 30-40% beats \u2014 current SKHX Q1 48.8%, MU Q2 41.86%). OR first miss while forward guidance maintained or raised. Scenario A and Scenario B from Part 8 Indicator 5.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t4_yoy_asp_negative",
-      "tier": 4,
-      "name": "Negative YoY ASP prints",
-      "description": "Memory ASPs print year-over-year declines.",
-      "what_to_look_for": "DRAM or NAND ASP YoY change negative in TrendForce or supplier earnings.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t4_guidance_cuts",
-      "tier": 4,
-      "name": "Earnings guidance cuts",
-      "description": "Memory makers cut forward guidance or pre-announce miss.",
-      "what_to_look_for": "MU or SK Hynix or Samsung issues guidance cut or pre-announces miss.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t4_capex_slashed",
-      "tier": 4,
-      "name": "Capex slashed",
-      "description": "Memory makers announce major capex cuts.",
-      "what_to_look_for": "Any Big Three announces capex reduction of >20% or fab idling.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
-      "relevant_links": [],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t4_layoffs",
-      "tier": 4,
-      "name": "Layoffs / fab idling",
-      "description": "Memory makers announce workforce reductions or fab utilization cuts.",
-      "what_to_look_for": "Any Big Three announces layoffs or fab idling.",
-      "current_status": "Unknown (LLM unavailable)",
-      "where_we_stand": "Automated classification unavailable; please review manually.",
-      "latest_developments": "See news feed below.",
+      "current_status": "Fired",
+      "where_we_stand": "Already fired per framework baseline (MSFT 45%, Oracle 57%). The NVIDIA Rubin LPDDR5X demand forecast reinforces that hyperscaler capex intensity is accelerating, not decelerating. The next read on hyperscaler capex/revenue ratios will come from Q2 2026 earnings in July.",
+      "latest_developments": "The [NVIDIA Rubin LPDDR5X demand article",
       "relevant_links": [],
       "change_vs_prior": null
     }
