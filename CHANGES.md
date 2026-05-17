@@ -6,6 +6,161 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39 — Sonnet streaming + scenario invariants + relative-strength tiering + transcript cache recognition + email layout
+
+**Why this release.** The 17:43 May 17 run sent a brief, but with five real problems that became apparent on inspection: (1) Sonnet's output truncated at ~33K chars / ~16K tokens mid-string, json_repair recovered only 12/22 indicators — Tier 3, Tier 4, top-5 deep dive and selected_news sections dropped silently from the email; (2) executive summary showed bear 30% / base 28% / bull 18% summing to 76% with bear > base; (3) the Tier 3 relative-strength signal fired on a single-session move that fired-and-unfired daily; (4) ~28 false WARN rows in the data-source table for transcripts that were cached and available; (5) "Where we stand" column visually squeezed because long Google News URLs in "Latest developments" weren't wrapping.
+
+All five addressed in this release as a coordinated bundle. The Sonnet streaming work was the v3.39 deferred item from v3.38.5 — now done.
+
+## Fix 1 — Sonnet streaming (unblocks Tier 3 / Tier 4 / top-5 / news sections)
+
+`_call_sonnet_with_retry` switched from `client.messages.create()` to `client.messages.stream()` using the SDK's streaming context manager. Streaming has no client-side wall-time guard, so `SONNET_MAX_TOKENS` returns from 16000 to **24000**. Truncation was the root cause of the missing email sections; streaming + 24K cap removes the cap-based truncation entirely. json_repair fallback remains in place as last-resort recovery, but should rarely trigger now.
+
+| Field | Old | New |
+|---|---|---|
+| `SONNET_MAX_TOKENS` | 16000 (v3.38.5) | 24000 (v3.39) |
+| API method | `client.messages.create(...)` | `with client.messages.stream(...) as s: response = s.get_final_message()` |
+| Wall-time guard | Fired at 24K → forced 16K | None (streaming bypasses it) |
+
+Downstream parsing is unchanged: `response.content[0].text` is identical between the streaming and non-streaming paths.
+
+## Fix 2 — Scenario probability + framing invariants
+
+Three coordinated changes so the executive summary is internally consistent under all signal regimes:
+
+**(a) Drop `neutral_case`.** Was 25% in `CYCLE_BASELINE` and absorbed by the LLM but never displayed in the email. Caused the visible 76% sum. Three scenarios only now.
+
+**(b) Rename `upside_to_peak_pct` → `return_to_peak_pct` (signed).** Bear case can legitimately carry a negative number (peak already in → downside from current price). Template now renders "upside" or "downside" based on sign. Backwards-compat: `_build_case_scenario()` migrates old prior_state.json files with the legacy field name.
+
+**(c) Post-LLM invariant enforcement (`_enforce_scenario_invariants`).** Five rules applied deterministically every run:
+
+| # | Invariant |
+|---|---|
+| 1 | Probabilities are integers summing to exactly 100 |
+| 2 | `base.probability_pct > bear.probability_pct` (strict) |
+| 3 | `base.probability_pct > bull.probability_pct` (strict) |
+| 4 | `base.return_to_peak_pct >= 0` |
+| 5 | `bull.return_to_peak_pct > base.return_to_peak_pct` |
+| 6 | `bear.return_to_peak_pct <= base.return_to_peak_pct` |
+
+Algorithm: proportional renormalization to sum=100, then cap-and-redistribute (any scenario >= base steals the excess back into base), then integer rounding with a pp-by-pp safety loop. Validated against 15 cases including extremes (1/1/98 → 98/1/1) and the actual May 17 input (28/18/30 → 40/24/36).
+
+Framing baked into the prompt: bull case requires signals to **un-fire or delay materially**; bear case requires signals to **accelerate beyond expectation**; base case is the **expected scenario given current signals continuing**, and its peak shortens / return-to-peak trims as signals fire (rather than letting bear probability overtake).
+
+## Fix 3 — Relative-strength two-tier (yellow / red)
+
+`evaluate_relative_strength_signal` redesigned. Previous structure had three sub-triggers — (a) 5d < -10pp, (b) any single-day < -5pp, (c) DRAM ETF vs SMH 5d < -5pp — and (b) whipsawed daily because a single rough session is normal volatility, not a Tier 3 signal.
+
+New structure on the same 5-day metric:
+
+| Sub-trigger | Threshold | Severity | Effect |
+|---|---|---|---|
+| (a) SK Hynix or Micron 5d − SOX 5d < **−10pp** | RED | Full Tier 3 fire; bear probability bumped; urgent_attention=True |
+| (b) SK Hynix or Micron 5d − SOX 5d < **−5pp** | YELLOW | Informational banner only; does NOT trip urgent_attention |
+| (c) DRAM ETF vs SMH 5d < −5pp (yellow) / < −10pp (red) | YELLOW or RED | Same tiering applied to the pure-memory ETF cross-check |
+
+Banner builder updated to render the two severities with appropriate styling. `get_single_day_max_underperformance` removed (no longer called).
+
+xlsx audit (`memory_cycle_data_source_audit_v3_39.xlsx`) regenerated to document the new (a)/(b)/(c) sub-trigger definitions on the t3_relative_strength row — v3.33 only documented sub-trigger (a), so the doc was out of sync with the code since v3.36.
+
+## Fix 4 — Transcript `already_processed` recognition
+
+`_surface_transcript_status` had branches for `full_transcript` → OK, `materials_only` → WARN, else → WARN with detail "No transcript or materials found". The deep tier emits a fourth status, `already_processed`, for transcripts cached from prior runs via the `transcripts_seen.json` URL cache (v3.36/v3.37 work). On May 17, 28 of 30 transcripts were in this state and all 28 were generating false WARN rows in the validation table — even though the digests *are* available and *were used* in this brief.
+
+Added the missing branch:
+
+```python
+elif availability == "already_processed":
+    collector.record(SourceFetchStatus(
+        ...,
+        items_returned=1,
+        detail="Cached from prior run — digest available, no re-fetch needed",
+    ))
+```
+
+Removes ~28 WARN rows from the validation table on a typical steady-state day.
+
+## Fix 5 — Email column widths + URL wrapping
+
+Indicator table column widths rebalanced and URL wrapping enforced:
+
+| Column | Old width | New width |
+|---|---|---|
+| Indicator | 18% | 16% |
+| What we're looking for | 25% | 22% |
+| Status | 10% | 9% |
+| **Where we stand** | **22%** | **28%** |
+| Latest developments | 25% | 25% |
+
+Plus CSS hardening to stop long Google News RSS URLs from stretching their column:
+```css
+table { table-layout: fixed; }
+td { word-break: break-word; overflow-wrap: anywhere; }
+td a { word-break: break-all; }
+```
+
+`table-layout: fixed` is the key one — without it `th[style='width:X%']` is a hint that gets overridden by content width.
+
+## Validation done locally
+
+- Python syntax + YAML lint clean on all modified files (5 .py files, 0 yml changes)
+- AST signature audit: zero mismatches
+- `_enforce_scenario_invariants` unit-tested against 15 cases (5 normal, 10 edge), all invariants hold
+- `_strip_code_fence` (v3.38.5 fix) still passes its 7-pattern test
+- Audit xlsx regenerated and verified
+
+## Files changed
+
+| File | Change |
+|---|---|
+| `src/analysis/llm_summarizer.py` | Sonnet streaming; `_build_case_scenario` + `_enforce_scenario_invariants`; updated prompt with framing + invariants; field rename in `CaseScenario` |
+| `src/config.py` | `SONNET_MAX_TOKENS` 16K → 24K; dropped `neutral_case_*` from `CYCLE_BASELINE`; renamed `*_upside_pct` → `*_return_to_peak_pct` |
+| `src/data/prices.py` | Two-tier severity rewrite of `evaluate_relative_strength_signal`; `get_single_day_max_underperformance` removed |
+| `src/email_module/template.py` | Column widths; word-break CSS; upside/downside labeling for `return_to_peak_pct`; yellow-vs-red banner styling |
+| `src/fast_tier.py` | `_surface_transcript_status` recognizes `already_processed` |
+| `CHANGES.md` | this entry |
+| `memory_cycle_data_source_audit_v3_39.xlsx` | t3_relative_strength row updated to document all three sub-triggers; summary sheet noted |
+
+---
+
+# v3.38.6 — manual dispatch bypasses idempotency
+
+**Why this release**: After pushing v3.38.5, manually re-running the fast tier to validate the fix bundle was a no-op — the morning 16:25 UTC run had already marked `state/brief_sent_dates.json` for 2026-05-17, and the Step 0 idempotency check exited early in ~1.5s. Validating the release required hand-editing the JSON to remove today's date, committing, and dispatching again. That friction shouldn't exist.
+
+**The fix** (two-file, ~20 LOC):
+
+1. **`.github/workflows/fast_tier.yml`** — added `FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}` to the run-fast-tier step env. Manual dispatch → `FORCE_RUN=1`. Scheduled cron → empty.
+
+2. **`src/fast_tier.py`** — Step 0 idempotency check now reads `FORCE_RUN` and bypasses if set. New log line `"...but FORCE_RUN is set — bypassing idempotency check and running full pipeline."` so the override is explicit in the run output. `os` added to imports (was missing).
+
+**Truth table** (verified locally across 10 cases including edge values "0", "false", whitespace):
+
+| Trigger | Already sent today? | Behavior |
+|---|---|---|
+| Scheduled cron | yes | NO_OP (preserved — fallback/safety crons still no-op when primary succeeded) |
+| Scheduled cron | no  | Normal run |
+| Manual dispatch | yes | Bypass + run, with explicit log line |
+| Manual dispatch | no  | Normal run |
+
+**What does NOT change**:
+- Scheduled cron behavior is unchanged. The 11:00 / 11:30 / 12:05 UTC coordination still relies on `state/brief_sent_dates.json` exactly as before — only the first cron to succeed sends a brief.
+- `mark_brief_sent_today` is still called after a successful send, including on forced runs (it's idempotent against duplicate dates), so a forced run today still updates the marker.
+- No new workflow_dispatch input parameter. Manual dispatch always bypasses — no checkbox to remember. Rationale: I cannot think of a realistic case where a manual dispatch should respect the same-day lockout. If one comes up, a `force: false` input could be added later.
+
+**Files changed**:
+
+| File | Change |
+|---|---|
+| `.github/workflows/fast_tier.yml` | added `FORCE_RUN` env var derived from `github.event_name` |
+| `src/fast_tier.py` | added `os` import; rewrote Step 0 check to respect `FORCE_RUN` |
+| `CHANGES.md` | this entry |
+
+**Validation done locally**:
+- Python syntax + YAML lint clean on both files
+- Truth-table test (10 cases) — all four real combinations + edge env values behave as designed
+
+---
+
 ## v3.38.5 — real Haiku root cause + Sonnet streaming guard + missing deep-tier commit
 
 **Why this release**: The 16:25 UTC May 17 run completed in 358s (under the 25min timeout from v3.38.4 ✓), delivered an email (via fallback path ✓), and confirmed throttling holds (22/22 signals ✓). But three new issues showed up that I missed in prior releases:
