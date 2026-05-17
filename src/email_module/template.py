@@ -64,6 +64,11 @@ def build_email_html(
     rel_strength_verdict: Optional[dict] = None,
     eps_scoring_verdict: Optional[dict] = None,
     brief_datetime: Optional[datetime] = None,
+    # v3.39.2: new supercycle chart. When provided, renders as its own
+    # section between "Performance overview" and "Tier indicators". When
+    # None (chart generation failed or SK Hynix data missing), the section
+    # is silently skipped so the email still ships.
+    supercycle_chart_base64: Optional[str] = None,
 ) -> str:
     """Assemble the full HTML email."""
 
@@ -180,32 +185,60 @@ def build_email_html(
         )
 
     # 3. Performance section
+    #
+    # v3.39.2: dropped inline 1Y performance chart. The chart was visually
+    # redundant with the performance table immediately below (which already
+    # shows 1D / 1W / 1M / 3M / 6M / 1Y returns numerically). The lead visual
+    # is now the supercycle phase chart (section 2 below). chart_base64 is
+    # still computed upstream but no longer embedded here.
     parts.append("<h2>1. Performance overview</h2>")
-    parts.append(
-        f"<img class='chart' src='data:image/png;base64,{chart_base64}' alt='1Y performance chart' />"
-    )
     parts.append(_build_performance_table(performance))
 
-    # 4. Tier indicators
-    parts.append("<h2>2. Tier indicators — daily status</h2>")
+    # 4. Where we stand in the cycle (supercycle phase chart) — v3.39.2
+    #
+    # Skipped silently if supercycle_chart_base64 is None (chart generation
+    # failed upstream, or SK Hynix data unavailable). Email still ships with
+    # the rest of the content; renumbering downstream is not necessary
+    # because section numbers below this one are stable regardless.
+    if supercycle_chart_base64:
+        parts.append("<h2>2. Where we stand in the cycle</h2>")
+        parts.append(
+            "<p style='font-size:12px;color:#5F5E5A;margin-top:0'>"
+            "SK Hynix mapped against the universal 5-phase memory-supercycle "
+            "framework. Phase boundaries are anchored to the base-case peak "
+            "window from the executive summary above and scaled to fit the "
+            "actual cycle pace; today's position therefore moves day-to-day "
+            "as the LLM updates the projection. The three projection curves "
+            "trace each scenario's path from today's price to its respective "
+            "peak; the side panels list fired Tier 1 and Tier 2 indicators "
+            "and the remaining T2/T3 watch list."
+            "</p>"
+        )
+        parts.append(
+            f"<img class='chart' src='data:image/png;base64,{supercycle_chart_base64}' "
+            f"alt='Supercycle phase chart — SK Hynix vs 5-phase framework' />"
+        )
+
+    # 5. Tier indicators
+    parts.append("<h2>3. Tier indicators — daily status</h2>")
     parts.append(_build_indicators_section(analysis.indicator_assessments))
 
-    # 5. Top 5 deep dives
-    parts.append("<h2>3. Top 5 indicators — deep dive</h2>")
+    # 6. Top 5 deep dives
+    parts.append("<h2>4. Top 5 indicators — deep dive</h2>")
     parts.append(_build_top5_section(analysis.top_5_deep_dives))
 
-    # 6. Latest news
-    parts.append("<h2>4. Latest news from the memory & semi market</h2>")
+    # 7. Latest news
+    parts.append("<h2>5. Latest news from the memory & semi market</h2>")
     parts.append(_build_news_section(analysis.key_news_summary))
 
-    # 6b. EPS Revisions Watch — detailed section when signal fired/approaching
+    # 7b. EPS Revisions Watch — detailed section when signal fired/approaching
     if eps_scoring_verdict and eps_scoring_verdict.get("overall_status") in ("FIRED", "EARLY_WARNING", "BULLISH_CONFIRM"):
-        parts.append("<h2>4b. EPS Revisions Watch — t2_eps_revisions weighted scoring</h2>")
+        parts.append("<h2>5b. EPS Revisions Watch — t2_eps_revisions weighted scoring</h2>")
         parts.append(_build_eps_revisions_section(eps_scoring_verdict))
 
-    # 7. Calendar of events (next 90 days)
+    # 8. Calendar of events (next 90 days)
     if upcoming_events:
-        parts.append("<h2>5. Calendar of events — next 90 days</h2>")
+        parts.append("<h2>6. Calendar of events — next 90 days</h2>")
         parts.append(
             "<p style='font-size:12px;color:#5F5E5A;margin-top:0'>"
             "Forward-looking calendar across the core 7 indicators and wider industry. "
@@ -218,7 +251,7 @@ def build_email_html(
 
     # 8. Data source assessment (per-source fetch status)
     if data_source_statuses:
-        parts.append("<h2>6. Data source assessment</h2>")
+        parts.append("<h2>7. Data source assessment</h2>")
         parts.append(
             "<p style='font-size:12px;color:#5F5E5A;margin-top:0'>"
             "Per-source diagnostics for this run. Written confirmation that each configured "
