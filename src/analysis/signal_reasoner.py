@@ -39,6 +39,7 @@ import json
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import time  # v3.38.1 — for Layer 2 inter-call throttling
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
@@ -350,30 +351,55 @@ def reason_all_signals(
     edgar_items: list[dict],
     computed_metrics: dict,
     prior_status_map: Optional[dict] = None,
-    max_workers: int = 6,
+    max_workers: int = 6,  # v3.38.1: kept for backward-compat, no longer used (was ThreadPoolExecutor count)
+    inter_call_delay_seconds: float = 7.0,
 ) -> list[SignalReasoning]:
-    """Run Layer 2 across every indicator concurrently."""
+    """Run Layer 2 across every indicator — sequentially, with throttling.
+
+    v3.38.1: changed from concurrent ThreadPoolExecutor(max_workers=6) to
+    sequential with a per-call delay. The concurrent path burst input tokens
+    at ~120k/min (vs Haiku 4.5's 50k tokens/min org limit), saturated the
+    bucket in ~8s, then got 429s for the back half — losing 3/22 signals
+    permanently on the May 17 13:42 UTC run (t3_wfe_orders_crack,
+    t4_guidance_cuts, t3_eps_miss_guidance).
+
+    Math:
+      • per-call input tokens ≈ 5,000 (system + indicator + digests + news + signal_specific)
+      • 50,000 tokens/min ÷ 5,000 tokens/call = 10 calls/min ceiling
+      • 60s/min ÷ 10 calls/min = 6.0s minimum spacing
+      • Using 7.0s spacing for safety margin against per-call token variance
+
+    Wall-time impact: 22 signals × ~2s latency + 21 gaps × 7s = ~3.2 min for
+    Layer 2 (was ~37s concurrent). Total fast-tier runtime moves from ~2min
+    to ~5min. Per Raul: 'makes it a bit slower which is not an issue but we
+    get the data'. Reliability > speed.
+
+    `max_workers` kwarg retained for backward-compat with any callers passing
+    it — it's now ignored. `inter_call_delay_seconds` is the new lever.
+    """
     prior_status_map = prior_status_map or {}
     results: list[SignalReasoning] = []
+    n = len(INDICATORS)
+    logger.info(
+        f"Layer 2: running {n} signals sequentially with {inter_call_delay_seconds}s "
+        f"inter-call delay (est. {((n-1) * inter_call_delay_seconds + n * 2):.0f}s total)"
+    )
 
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {
-            pool.submit(
-                reason_one_signal,
+    for i, ind in enumerate(INDICATORS):
+        # Throttle before every call except the first one
+        if i > 0 and inter_call_delay_seconds > 0:
+            time.sleep(inter_call_delay_seconds)
+        try:
+            result = reason_one_signal(
                 ind, digests, fast_tier_news, naver_data, finnhub_data,
                 edgar_items, computed_metrics, prior_status_map.get(ind.id),
-            ): ind for ind in INDICATORS
-        }
-        for fut in as_completed(futures):
-            ind = futures[fut]
-            try:
-                result = fut.result()
-                if result is not None:
-                    results.append(result)
-                else:
-                    logger.warning(f"Layer 2 returned None for {ind.id}")
-            except Exception as e:
-                logger.error(f"Layer 2 future for {ind.id} raised: {e}")
+            )
+            if result is not None:
+                results.append(result)
+            else:
+                logger.warning(f"Layer 2 returned None for {ind.id}")
+        except Exception as e:
+            logger.error(f"Layer 2 raised for {ind.id}: {e}")
     # Sort by tier then signal id for stable output
     results.sort(key=lambda r: (r.tier, r.signal_id))
     return results
