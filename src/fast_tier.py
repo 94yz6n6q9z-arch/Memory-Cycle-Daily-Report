@@ -24,6 +24,10 @@ Failure modes — see src/state.py for retry/cache policy. Critical sources
 sources use cached payload tagged STALE; nice-to-have just skip.
 
 CHANGELOG (this file):
+  v3.38.5 (2026-05-17) — Two error-message strings rewrote to reflect real causes. The previous strings ("deep tier hasn't run since v3.38 deploy" / "deep tier may not have run yet") implied the deep tier didn't run, when in practice the deep tier DID run but the v3.38 root-level state JSONs (state/deep_tier_diagnostics.json, state/transcript_status.json) weren't in the deep_tier.yml workflow's `git add` line. Files generated on the runner, destroyed at shutdown, never reached origin/main. Fixed in the deep_tier.yml workflow in same release. Error messages now name both possibilities: tier didn't run, OR tier ran but didn't commit.
+  v3.38.3 (2026-05-17) — Fixed `fallback_analysis` call site (line 399): was passing 3 positional args (news_items, performance, big_movers) to a function with 4 required parameters in different order (performance_data, estimates_data, news_items, big_movers). Pre-existing v3.37 bug masked by upstream crashes; surfaced when Sonnet JSON parse failed → fallback path activated → TypeError. Now uses kwarg form with all four. Caught by the expanded scripts/audit_signatures.py audit (positional + kwargs + arg count).
+  v3.38.1 (2026-05-17) — Three pre-existing signature mismatches fixed (all crashed when v3.38 unblocked upstream errors). (a) `analyze_with_llm` call: renamed kwargs `estimates`→`estimates_data`, `performance`→`performance_data`; dropped non-existent `layer2_input=` kwarg and unused `layer3_input` dict. (b) `generate_performance_chart` call: dropped spurious WIDER_BASKET positional that landed in `title:str`, dropped non-existent `collector=` kwarg. (c) `send_email` call: dropped non-existent `collector=` kwarg.
+  v3.38   (2026-05-17) — Bug fixes from the 11:30 UTC crash log: (a) news kwarg fix at fetch_all_news call — EDGAR_FEEDS now passed as `edgar_feeds=` kwarg, was landing in `hours_back:int` and causing TypeError. (b) DataFrame None-fallback for prices: `_prices if _prices is not None else pd.DataFrame()` (was `or {}` which triggered pandas truthiness ValueError). (c) Latent bug fixed: 8 `collector.add()` calls changed to `collector.record()` (the .add method doesn't exist on DiagnosticsCollector; calls would have raised AttributeError, silently swallowed by surrounding try/except — meaning some validation rows have been missing from past briefs). (d) `_run()` now records a FAIL row in the collector when a fetcher lambda throws (was silent before). (e) Naver/Finnhub/DART always record via status_from_retry_meta (was only recording on success). (f) New `_surface_deep_tier_diagnostics()` reads state/deep_tier_diagnostics.json and merges deep-tier rows into the fast-tier collector; includes staleness check (warn row if run_date != today). Imports added: pandas as pd, status_from_retry_meta, statuses_from_dict_list. v3.38.1 throttle (in signal_reasoner.py) bundled into same release.
   v3.31  (2026-05-14) — Added _surface_transcript_status() — commentary availability shown in email validation table
   v3.2   (2026-05-12) — Passes TRACKED_CONCEPTS to relevance filter
   v3.1   (2026-05-12) — Wired relevance filter as Step 1b (post-fetch, pre-digest-load)
@@ -482,14 +486,26 @@ def _surface_transcript_status(collector) -> None:
 
     status_path = Path("state") / "transcript_status.json"
     if not status_path.exists():
-        # Deep tier hasn't run yet, or ran before v3.31 — note it once, don't fail.
+        # v3.38.5: rephrased. Previously said "deep tier may not have run yet"
+        # which masked the v3.38 bug where the deep tier DID run but its
+        # output JSONs weren't in the workflow's `git add` line, so they
+        # were destroyed at runner shutdown. Real cause now reflected in
+        # the message: file missing on origin/main, either because (a) deep
+        # tier hasn't run today, or (b) it ran but didn't push the file.
         collector.record(SourceFetchStatus(
             source_name="Earnings transcripts (IR + Motley Fool)",
             source_type="scraper",
             reached=False,
             items_returned=0,
             latency_ms=0,
-            error="No transcript_status.json — deep tier may not have run yet",
+            error=(
+                "state/transcript_status.json missing on origin/main. "
+                "Either the deep tier hasn't run today, OR it ran but the file "
+                "wasn't committed (pre-v3.38.5 bug: deep_tier.yml only staged "
+                "state/digests/ + state/cache/, missing the v3.38 root-level "
+                "JSON files). Check the deep tier workflow's most recent run "
+                "and its commit step."
+            ),
         ))
         return
 
@@ -569,14 +585,25 @@ def _surface_deep_tier_diagnostics(collector) -> None:
     """
     diag_path = Path("state") / "deep_tier_diagnostics.json"
     if not diag_path.exists():
+        # v3.38.5: rephrased — old message "deep tier hasn't run since v3.38
+        # deploy" was wrong in practice. The actual common cause through
+        # v3.38.4 was the deep_tier.yml workflow not committing this file
+        # (only `state/digests/` and `state/cache/` were in its `git add`).
+        # File present on the runner, never pushed to origin. Fixed in v3.38.5
+        # by adding `[ -f state/deep_tier_diagnostics.json ] && git add ...`.
         collector.record(SourceFetchStatus(
             source_name="Deep tier diagnostics",
             source_type="transcript",
             reached=False,
             items_returned=0,
             latency_ms=0,
-            error="No deep_tier_diagnostics.json — deep tier hasn't run since v3.38 deploy",
-            detail="Expected after first deep-tier run; one-time on first v3.38 day",
+            error=(
+                "state/deep_tier_diagnostics.json missing on origin/main. "
+                "Either the deep tier hasn't run since the v3.38.5 workflow "
+                "fix landed, OR a pre-v3.38.5 deep tier run wrote this file "
+                "on its runner but never committed it (bug fixed in v3.38.5)."
+            ),
+            detail="Trigger deep tier from Actions tab; confirm its commit step now includes both root-level state JSONs",
         ))
         return
 
