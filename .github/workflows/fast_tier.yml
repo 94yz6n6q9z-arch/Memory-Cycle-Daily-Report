@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write  # commits state back to repo
+  issues: write    # v3.38 — needed for "Create issue on critical failure" step below
 
 concurrency:
   group: memory-cycle-brief-fast
