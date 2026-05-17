@@ -34,11 +34,16 @@ jobs:
     timeout-minutes: 35
 
     steps:
+      # v3.39.2: bumped actions to their Node.js 24 versions ahead of the
+      # June 2, 2026 deprecation (the prior versions ran on Node 20). Each
+      # successor release confirmed available: checkout v5.0.0 (Aug 2025),
+      # setup-python v6.0.0 (Sep 2025), github-script v8 (late 2025) — all
+      # are stable major releases, not pre-releases.
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -91,7 +96,7 @@ jobs:
 
       - name: Create issue on critical failure
         if: failure()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const today = new Date().toISOString().slice(0, 10);
