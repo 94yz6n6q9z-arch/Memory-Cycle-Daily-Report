@@ -11,6 +11,9 @@ Builds the email with:
 6. Latest news
 7. DATA SOURCE VALIDATION (per-source fetch status — confirms each source
    was actually reached and parsed during this run)
+
+CHANGELOG (this file):
+  v3.38  (2026-05-17) — Added three new `_SOURCE_TYPE_LABELS` entries used by the deep tier diagnostics rows: "api" → "External API" (Finnhub, DART), "transcript" → "Earnings transcript source" (Yahoo / Motley Fool / IR scrapers), "broker_pdf" → "Korean broker note feed" (Mirae, NH, Samsung Securities). Without these, the new deep-tier rows would group under raw lowercase type-strings in the validation table.
 """
 
 from __future__ import annotations
@@ -90,9 +93,16 @@ def build_email_html(
       .new-trigger { background: #FFEBA1; border-left: 3px solid #C68A2A; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
       .big-movers { background: #fff; border: 1px solid #e0ddd4; padding: 12px 16px; margin: 12px 0; border-radius: 4px; font-size: 13px; }
       .market-summary { background: #f5f3ed; padding: 10px 14px; margin: 12px 0; font-size: 13px; border-radius: 4px; border-left: 3px solid #888780; }
-      table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 12px; background: #fff; }
+      table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 12px; background: #fff; table-layout: fixed; }
       th { background: #534AB7; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; }
-      td { padding: 8px 10px; border-bottom: 1px solid #e0ddd4; vertical-align: top; }
+      td { padding: 8px 10px; border-bottom: 1px solid #e0ddd4; vertical-align: top; word-break: break-word; overflow-wrap: anywhere; }
+      /* v3.39: long Google News RSS URLs were stretching the "Latest
+         developments" column and squeezing "Where we stand". break-all on
+         <a> ensures the URL itself wraps within its allotted column width
+         rather than forcing the column to widen. table-layout:fixed on the
+         parent table makes the column widths (set via th style) authoritative
+         instead of suggestion-only. */
+      td a { word-break: break-all; }
       tr:last-child td { border-bottom: none; }
       .perf-pos { color: #0F6E56; font-weight: 600; }
       .perf-neg { color: #A32D2D; font-weight: 600; }
@@ -271,6 +281,13 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
     bull = es.bull_case
     bear = es.bear_case
 
+    # v3.39: bear case can carry a NEGATIVE return when peak is already in.
+    # Label each scenario as "upside" or "downside" based on sign so the
+    # email reads naturally. The +/- formatter still includes the sign,
+    # so a -8% bear renders as "downside -8%".
+    def _ret_label(r: float) -> str:
+        return "downside" if r < 0 else "upside"
+
     peak_line = (
         f"<div class='exec-line' style='margin-top:14px'>"
         f"Based on latest information, our <strong>base case "
@@ -278,19 +295,22 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
         f"<strong>{base.peak_months_away:.0f} months away</strong>, "
         f"placing it between <strong>{html.escape(base.peak_window_start)}</strong> "
         f"and <strong>{html.escape(base.peak_window_end)}</strong>. "
-        f"On our base case the upside to peak is estimated at "
-        f"<strong>{base.upside_to_peak_pct:+.0f}%</strong>."
+        f"On our base case the {_ret_label(base.return_to_peak_pct)} to peak is estimated at "
+        f"<strong>{base.return_to_peak_pct:+.0f}%</strong>."
         f"</div>"
     )
 
     cases_line = (
         f"<div class='exec-line'>"
         f"<span class='case-block case-bear'>Bear case ({bear.probability_pct:.0f}%): "
-        f"peak in {bear.peak_months_away:.0f}mo, upside {bear.upside_to_peak_pct:+.0f}%</span>"
+        f"peak in {bear.peak_months_away:.0f}mo, "
+        f"{_ret_label(bear.return_to_peak_pct)} {bear.return_to_peak_pct:+.0f}%</span>"
         f"<span class='case-block case-base'>Base case ({base.probability_pct:.0f}%): "
-        f"peak in {base.peak_months_away:.0f}mo, upside {base.upside_to_peak_pct:+.0f}%</span>"
+        f"peak in {base.peak_months_away:.0f}mo, "
+        f"{_ret_label(base.return_to_peak_pct)} {base.return_to_peak_pct:+.0f}%</span>"
         f"<span class='case-block case-bull'>Bull case ({bull.probability_pct:.0f}%): "
-        f"peak in {bull.peak_months_away:.0f}mo, upside {bull.upside_to_peak_pct:+.0f}%</span>"
+        f"peak in {bull.peak_months_away:.0f}mo, "
+        f"{_ret_label(bull.return_to_peak_pct)} {bull.return_to_peak_pct:+.0f}%</span>"
         f"</div>"
     )
 
@@ -370,10 +390,10 @@ def _build_indicators_section(assessments: list[IndicatorAssessment]) -> str:
         parts.append("<table>")
         parts.append(
             "<thead><tr>"
-            "<th style='width:18%'>Indicator</th>"
-            "<th style='width:25%'>What we're looking for</th>"
-            "<th style='width:10%'>Status</th>"
-            "<th style='width:22%'>Where we stand</th>"
+            "<th style='width:16%'>Indicator</th>"
+            "<th style='width:22%'>What we're looking for</th>"
+            "<th style='width:9%'>Status</th>"
+            "<th style='width:28%'>Where we stand</th>"
             "<th style='width:25%'>Latest developments</th>"
             "</tr></thead><tbody>"
         )
@@ -671,18 +691,51 @@ def _build_calendar_section(events: list[dict]) -> str:
 # ============================================================
 
 def _build_relative_strength_banner(verdict: dict) -> str:
-    """🚨 banner fires when any of 3 sub-triggers (5d, single-day, DRAM ETF) breach."""
+    """Render the relative-strength banner. v3.39: two severity levels.
+    - red:    full Tier 3 fire — bold red banner, 🚨
+    - yellow: informational watch (5d spread between -5 and -10pp) — soft
+              amber banner, 🟡. Does NOT trip urgent_attention.
+    - none:   no banner.
+
+    Back-compat: handles older verdict dicts that only had `fired_sub_triggers`
+    (list of strings) and `overall_fired` (bool). For those, treat as red.
+    """
     triggers = verdict.get("fired_sub_triggers", [])
     if not triggers:
         return ""
-    bullets = "".join(f"<li>{html.escape(t)}</li>" for t in triggers)
-    return (
-        "<div class='urgent-banner' style='background:#FCEBEB;border:2px solid #A32D2D'>"
-        "<span class='label'>🚨 RELATIVE STRENGTH ALERT</span><br/>"
-        "<span class='text'>Memory pure-plays underperforming semis — Tier 3 signal active</span>"
-        f"<ul style='margin:8px 0 0 0;color:#791F1F;font-size:13px'>{bullets}</ul>"
-        "</div>"
-    )
+
+    severity = verdict.get("overall_severity")
+    # Normalize triggers: v3.39 emits (sev, desc) tuples; older versions emit
+    # plain strings. Extract description regardless.
+    descs = []
+    for t in triggers:
+        if isinstance(t, (list, tuple)) and len(t) == 2:
+            descs.append(t[1])
+        else:
+            descs.append(t)
+    bullets = "".join(f"<li>{html.escape(d)}</li>" for d in descs)
+
+    # Older verdicts without overall_severity default to red (preserves v3.38
+    # behavior when an old prior_state.json is in scope).
+    if severity is None:
+        severity = "red" if verdict.get("overall_fired") else "yellow"
+
+    if severity == "red":
+        return (
+            "<div class='urgent-banner' style='background:#FCEBEB;border:2px solid #A32D2D'>"
+            "<span class='label'>🚨 RELATIVE STRENGTH RED FIRE</span><br/>"
+            "<span class='text'>Memory pure-plays underperforming semis by &gt;10pp over 5d — Tier 3 signal active</span>"
+            f"<ul style='margin:8px 0 0 0;color:#791F1F;font-size:13px'>{bullets}</ul>"
+            "</div>"
+        )
+    else:  # yellow
+        return (
+            "<div class='urgent-banner' style='background:#FFF6E0;border:2px solid #B58A1A'>"
+            "<span class='label' style='color:#7A5500'>🟡 RELATIVE STRENGTH YELLOW WATCH</span><br/>"
+            "<span class='text' style='color:#5A3F00'>Memory pure-plays underperforming semis by 5-10pp over 5d — informational, not a full fire</span>"
+            f"<ul style='margin:8px 0 0 0;color:#5A3F00;font-size:13px'>{bullets}</ul>"
+            "</div>"
+        )
 
 
 def _build_eps_revisions_banner(verdict: dict) -> str:
