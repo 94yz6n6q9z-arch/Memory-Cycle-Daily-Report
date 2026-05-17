@@ -396,7 +396,17 @@ def run_fast_tier() -> int:
     )
     if analysis is None:
         logger.error("Layer 3 (Sonnet) returned None; using fallback analysis")
-        analysis = fallback_analysis(news_items, performance, big_movers)
+        # v3.38.3: fallback_analysis signature is (performance_data, estimates_data,
+        # news_items, big_movers). Old call passed (news_items, performance, big_movers)
+        # — 3 positional args in wrong order, missing estimates_data → TypeError.
+        # Pre-existing v3.37 bug, masked by previous crashes which prevented Sonnet
+        # from returning None (it errored at the call site itself).
+        analysis = fallback_analysis(
+            performance_data=performance,
+            estimates_data=estimates_map,
+            news_items=news_items,
+            big_movers=big_movers,
+        )
 
     # ----- Step 6: Chart + email -----
     # v3.39: generate_performance_chart takes (history_baseline100, title=...).
