@@ -65,6 +65,16 @@ jobs:
           # Model aliases
           HAIKU_MODEL_OVERRIDE: ${{ secrets.HAIKU_MODEL_OVERRIDE }}
           SONNET_MODEL_OVERRIDE: ${{ secrets.SONNET_MODEL_OVERRIDE }}
+          # v3.38.6: bypass the brief_sent_dates idempotency check when the
+          # workflow is triggered manually from the Actions UI. Scheduled
+          # cron runs (event_name == 'schedule') leave this empty and the
+          # check fires normally — which is correct, since the three crons
+          # (11:00 / 11:30 / 12:05 UTC) rely on idempotency to avoid sending
+          # duplicate briefs when the primary cron succeeds and the fallback
+          # still fires. Manual dispatch always means "I want this to run
+          # right now" — testing fixes, validating a release, recovering
+          # from a botched run — so auto-bypass is the right default.
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: |
           python -m src.fast_tier
 
