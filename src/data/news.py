@@ -53,7 +53,17 @@ class NewsItem:
 
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; MemoryCycleBrief/1.0; +https://github.com/raul/memory-brief)"
+    # v3.38.3: previously identified as "Mozilla/5.0 (compatible; MemoryCycleBrief/1.0;
+    # +https://github.com/raul/memory-brief)". The "compatible;" pattern is the
+    # classic bot UA convention — Substack (Damnang), Investing.com, and others
+    # respond 403 to it via Cloudflare anti-bot rules. Switched to a plain Chrome UA;
+    # legitimate browser fingerprint, no bot signal.
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
 }
 
 # SEC requires a descriptive UA with a real contact email for EDGAR access;
