@@ -6,6 +6,115 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.38.2 — RSS user-agent fix: ~15 feed failures from the 13:42 UTC run traced to a single root cause
+
+**Why**: 15 of 20 RSS feeds parse-failed in the 13:42 UTC May 17 run with three distinct error patterns (`"...is not an XML media type"`, `"<unknown>:2:0: syntax error"`, `"<unknown>:N:M: not well-formed (invalid token)"`). Investigation traced all three patterns to a single root cause: `feedparser.parse(url)` uses feedparser's library-default User-Agent (`UniversalFeedParser/6.x +https://github.com/kurtmckee/feedparser/`), which Substack, Cloudflare-fronted sites, and various anti-bot middleware treat as a bot — they respond with an HTML "are you human" page or just silently 200 with HTML body. feedparser then can't parse the HTML as XML and emits one of the three error families.
+
+Per Raul: "stocks ALWAYS have fresh data". The feeds aren't dry — we're being filtered out at the edge.
+
+The fix is one-line at root: route through `requests.get(url, headers=HEADERS, timeout=20)` (using the existing browser-UA HEADERS dict from `news.py`), then pass `resp.content` to `feedparser.parse(bytes)`. EDGAR was already doing this correctly (lines 124/140). RSS and Google News were not. Fixed both.
+
+**Why this should fix most-but-not-all of the failures:**
+
+| Failure pattern from 13:42 UTC log | Affected feeds | Fix |
+|---|---|---|
+| Server returns HTML page → `"...is not an XML media type"` | vLLM, SGLang, Artificial Analysis | UA fix; if URL also moved, will need separate fix |
+| Server returns 4xx with HTML body → `"<unknown>:2:0: syntax error"` | Yonhap, The Elec, Pulse, DeepSeek | UA fix |
+| Cloudflare challenge page → `"<unknown>:N:M: not well-formed (invalid token)"` | AnandTech, Anthropic, Meta AI, SEMI, Investing.com ×4, Damnang, Seeking Alpha, Nikkei | UA fix |
+| Pedantic content-type rejection → `"xml;charset=UTF-8 is not an XML media type"` | Korea Herald | UA fix may or may not help; if site sends weird content-type for everyone, needs explicit override |
+| `Name or service not known` | Reuters | DNS blip; transient, not a fix needed |
+
+So one fix likely covers ~18 of 20 failed feeds. Any remaining failures after the next run will be a small enough set to debug individually (likely some combination of: feed URL actually moved, requires JS rendering, or genuinely dead). At that point we go feed-by-feed per Raul's original plan.
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `src/data/news.py` | `_safe_parse_rss_feed`: replace `feedparser.parse(url)` with `requests.get(url, headers=HEADERS)` + `feedparser.parse(content)`. Same fix for `fetch_google_news`. Refactored Google News with/without-collector branches into a single `_fetch_and_parse` inner function for clarity. |
+| `CHANGES.md` | this entry |
+
+**Confidence statement:**
+
+This is a high-confidence root-cause fix for the *category* of failures, **not empirically tested feed-by-feed** — I couldn't fetch the failing URLs directly from the sandbox (network restricted). Tomorrow's first cron run is the empirical test. The hypothesis is strong because (1) the HEADERS dict was specifically added for this purpose and is already used by other scrapers in the same file; (2) the three error-message families match exactly what UA-based filtering produces; (3) Damnang's site was confirmed alive and posting via web search.
+
+**What this fix doesn't address:**
+
+- Feed URLs that have *genuinely moved* (e.g., a site switched RSS endpoints). The next run's diagnostics will identify which feeds are still failing, and those become the v3.39 manual-fix list.
+- The `Reuters Technology` DNS failure (transient — separate concern).
+- Feed `content-type` headers that some sites set in ways feedparser remains strict about even with browser UA (Korea Herald is the candidate). If still failing after this, we can pass `response_headers` override to feedparser.
+
+---
+
+## v3.38.1 — Three pre-existing signature mismatches in `fast_tier.py` (surfaced when v3.38 unblocked upstream crashes) + Layer 2 rate-limit throttling
+
+**Why**: First post-v3.38 run (13:42 UTC May 17) reached `analyze_with_llm(...)` at fast_tier.py:385 — further than any prior run since at least v3.37 — and crashed with `TypeError: analyze_with_llm() got an unexpected keyword argument 'estimates'`. Three pre-existing call-site bugs were sitting downstream of where the v3.37 pipeline used to crash. Classic bug cascade: an upstream crash was masking three downstream ones. None caused by the v3.38 edits — verified by diffing `/tmp/src/fast_tier.py` (v3.37 as deployed) against v3.38 working tree. Same broken call site at the same kwarg names in both.
+
+Plus the same run hit Haiku 4.5's 50,000 input-tokens/min rate limit during Layer 2: the concurrent `ThreadPoolExecutor(max_workers=6)` path burst at ~120k tokens/min, lost 3/22 signals to 429s after the SDK ran out of retries. Per Raul: "do the fix on throttling now, so it makes it a bit slower which is not an issue but we get the data." Bundled into this release rather than piecemealing.
+
+After the failures I ran a system-wide AST-level kwarg audit (would have caught all three call-site bugs pre-deploy). Kept it as `scripts/audit_signatures.py` — should run as a CI gate.
+
+**Four fixes:**
+
+1. **`fast_tier.py:385 → analyze_with_llm(...)`** — three kwarg names were wrong:
+   - `estimates=` → `estimates_data=` (matches function signature)
+   - `performance=` → `performance_data=`
+   - `layer2_input=layer3_input` → **dropped entirely**; the kwarg has never existed on `analyze_with_llm`. Also dropped the now-unused `layer3_input` dict construction (signal_reasonings, naver_summary, finnhub_summary, dart_summary, etc.) since nothing consumes it.
+
+   **Pre-existing architectural note worth surfacing**: Sonnet has *never* received signal_reasonings or the naver/finnhub/dart summaries. The `layer2_input=` kwarg was a TODO masquerading as working code ("backward-compatible — old llm_summarizer ignores if None") — but the function signature simply doesn't accept it, so the call has always raised TypeError. Pipeline always crashed earlier, so this never manifested. Sonnet has been making its executive summary based only on news triage + performance + estimates + big_movers + prior_state. If Sonnet should see Layer 2 reasonings, that's a follow-up feature decision, not a bug fix.
+
+2. **`fast_tier.py:400 → generate_performance_chart(...)`** — two problems:
+   - `collector=collector` kwarg doesn't exist on the function (signature is `(history_baseline100, title="...")`). Removed.
+   - `WIDER_BASKET` was a spurious positional arg that landed in `title:str` — would have rendered a chart titled `['NVDA', 'MU', 'SK Hynix', ...]`. Removed; default title used.
+
+3. **`fast_tier.py:430 → send_email(...)`** — `collector=collector` kwarg doesn't exist (signature is `(subject, html_body, recipient=None)`). Removed.
+
+4. **`signal_reasoner.py:reason_all_signals` — Layer 2 throttling.** Replaced `ThreadPoolExecutor(max_workers=6)` concurrent fan-out with sequential loop + `time.sleep(7.0)` between calls. Math:
+   - Per-call input tokens ≈ 5,000 (system + indicator + 10 digests + news + signal_specific cap)
+   - 50,000 tokens/min ÷ 5,000 tokens/call = 10 calls/min ceiling → 6s minimum spacing
+   - Using 7s for safety margin against per-call token variance
+   - 22 signals × ~2s Haiku latency + 21 gaps × 7s = ~191s ≈ 3.2 min for Layer 2 (was ~37s concurrent)
+   - Effective rate: ~34,555 tokens/min — comfortable 31% margin under the 50k limit
+   - Total fast-tier runtime moves from ~2 min to ~5 min. Worth it for not losing signals.
+   - `max_workers` kwarg retained for backward-compat; `inter_call_delay_seconds=7.0` is the new lever.
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `src/fast_tier.py` | analyze_with_llm / generate_performance_chart / send_email call sites corrected |
+| `src/analysis/signal_reasoner.py` | concurrent → sequential with 7s throttle; `time` import added |
+| `CHANGES.md` | this entry |
+| `scripts/audit_signatures.py` | **new** — pre-deploy AST audit |
+
+**Validation:**
+
+- System-wide AST audit of kwarg call sites: ZERO mismatches remaining
+- Live smoke test of all three fixed call sites — all bind successfully; `generate_performance_chart` produced valid 77KB PNG; `analyze_with_llm` returned None gracefully on no-API-key; `send_email` returned False gracefully on no-SMTP-creds
+- Throttle empirically tested with mocked Haiku at 0.5s spacing: 22 signals × 0.5s = exactly 10.5s elapsed, gap precision 500ms ±0ms
+- Throttle disabled (0s) confirmed as zero-overhead no-op
+- Syntax + import test on both edited files: clean
+
+**On the ~15 RSS feed failures from the 13:42 UTC run** (separate concern from this release, but worth tracking for v3.39):
+
+Yes, parse failure = zero items from that source today. Diagnostics now make this loud (v3.38), but the failures themselves are upstream — sites changing URLs, returning HTML instead of XML, encoding bugs, or DNS blips. Categorized by impact:
+
+| Source | Why failed | Impact |
+|---|---|---|
+| Damnang Memory Substack | invalid token | **UNIQUE source** — independent memory analyst; loss = real signal loss |
+| The Elec English | syntax error | **UNIQUE** — Korean memory industry press |
+| Anthropic News, Meta AI, DeepSeek, vLLM, SGLang, Artificial Analysis | wrong content-type / invalid token | **UNIQUE** — AI-lab efficiency signal (t1_efficiency_shock) |
+| SEMI press releases | invalid token | mostly redundant with Google News for SEMI announcements |
+| AnandTech | invalid token | partially redundant with Tom's Hardware RSS |
+| Yonhap, Korea Herald, Pulse | wrong content-type / syntax | redundant — Korean press covered by KED Global, Naver, ChosunBiz |
+| Investing.com MU/NVDA/AMAT/ASML | invalid token | redundant — each ticker covered by Google News + EDGAR + Finnhub |
+| Reuters Technology | DNS not found | transient (one-off blip) — retry tomorrow |
+| Seeking Alpha Semiconductors | invalid token | partial loss — some unique analyst commentary |
+| Nikkei Asia Companies | invalid token | redundant for memory news; Japan-specific business news partial loss |
+
+So out of ~15 failures, roughly half represent genuinely lost unique data today, half are redundantly covered. **Action item for v3.39 (not this release)**: walk every failed URL, decide replace / refresh / drop. Particularly Damnang and The Elec — both unique memory-industry sources.
+
+---
+
 ## v3.38 — Pipeline crash fixes + comprehensive diagnostics across fast tier + deep tier
 
 **Why**: The 11:30 UTC fast-tier run on May 17 (this morning) crashed with exit 1. Two real bugs and one latent. Investigation also surfaced that the silent-failure surface was much larger than the email's validation table reflected — three fast-tier sources only recorded successes (Naver, Finnhub, DART), and the entire deep tier (8 sources: Yahoo / Motley Fool / IR scrapers / Mirae / NH / Samsung Securities / Haiku digester) produced **zero diagnostic rows**. Per Raul's commitment to check the brief only periodically once stable, silent failure = data loss without notification — unacceptable. Package B from the v3.38 design discussion: fix the crash, close every silent-failure path.
