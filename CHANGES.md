@@ -1,8 +1,42 @@
 # Memory Cycle Brief — Changelog
 
-This release consolidates v3.1 (news relevance filter), v3.2 (architectural sensing feeds), v3.3 (earnings architecture extraction), v3.31 (transcript sources — Quartr replacement), v3.32 (Yahoo Finance added as transcript source), v3.33 (sequential cascade + Motley Fool primary + Yahoo via residential proxy), v3.34 (post-deploy fixes: Motley Fool URL regex + Yahoo diagnostic logging + workflow git push race fix), and v3.35 (Yahoo parser rewrite using stable test-id selectors + Scout AI capture + Motley Fool diagnostic logging). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
+This release consolidates v3.1 through v3.35 plus v3.36 (Motley Fool body selector + SK Hynix IR via WordPress RSS feed). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
 
-> **A note on version numbering.** v3.31, v3.32, v3.33, v3.34, v3.35 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+> **A note on version numbering.** v3.31 through v3.36 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+
+---
+
+## v3.36 — Motley Fool body selector + SK Hynix IR via WordPress RSS
+
+**Why**: v3.35 deep-tier run (May 17, 09:22 UTC) flipped Yahoo from 0/15 to 14/15 full transcripts (huge win), but Motley Fool stayed at 13/13 `nothing` and SK Hynix IR stayed at `nothing`. Both diagnosed empirically from live pages provided in-session:
+
+1. **Motley Fool — wrong body selector.** Raul pasted the DevTools view of the Applied Materials AMAT Q2 2026 transcript page. The transcript body wraps in `<div id="article-body-transcript" class="article-body transcript-content">` — a stable explicit ID. But the v3.34 selector was `psoup.find("article") or psoup.find("div", class_=re.compile("article|content|body"))`. The first call, `find("article")`, matches the FIRST `<article>` tag in the document — which on fool.com transcript pages is a "Read Next" recommendation card at the bottom (e.g. "Cheap Tech Stocks for 2026 and How to Invest", ~57 chars). That short text falls below the 400-char `materials_only` threshold and the result is `nothing`. The actual transcript body (~50K chars) was never reached because `find("article")` matched the wrong thing first. v3.35's diagnostic logging didn't fire because the URL regex IS finding transcript URLs at the quote-page stage — the failure was downstream at body parsing, an instrumentation gap. Locally validated v3.36 selector on a synthetic fixture mirroring the AMAT page: v3.34 selector → 57 chars; v3.36 selector → 3115 chars of clean transcript text (real pages will be ~50K chars).
+
+2. **SK Hynix IR — wrong URL + JS shell.** Two compounding bugs. (a) Config pointed at `skhynix.com/ir/UI-FR-IR15`, which is a different IR subsection; the correct earnings landing is `UI-FR-IR06`. (b) But fixing the URL alone doesn't help: `UI-FR-IR06` is a JS shell — the "Earnings Release" and "Conference Call" PDF buttons resolve to `/webundefined` placeholders in static HTML. Real URLs are injected by JavaScript only after page load. The win: `news.skhynix.com` is a fully server-rendered WordPress newsroom. Posts under category IR (e.g. `q1-2026-business-results/`) contain the entire earnings release in plain HTML: revenue, operating profit, operating margin, forward commentary on agentic AI / HBM4 / LPDDR6 / NAND, capex plans (M15X, Yongin cluster, EUV). And WordPress always exposes `/feed/rss/` as a standard RSS endpoint — confirmed live. v3.36 switches `IR_SOURCES["SK Hynix"]["ir_url"]` to that feed.
+
+**Local validation before commit** (continuing the empirical-validation commitment): synthetic AMAT fixture mirroring the live page → v3.36 MF selector extracts 3115 chars (real pages = ~50K). News.skhynix.com WordPress structure confirmed live via web fetch (server-rendered, no JS required).
+
+3. **`src/data/transcript_sources.py`**:
+   - `_scrape_motley_fool_ticker` body selector: replaces v3.34's `find("article") or find("div", class_=re.compile("article|content|body"))` with `find("div", id="article-body-transcript")` plus a fallback that anchors on the `article-body` + `transcript-content` class combination. If a future fool.com redesign breaks both anchors, the scraper degrades to `nothing` with logged warning rather than silently returning page-chrome text as it did in v3.34/v3.35.
+   - New `_scrape_ir_rss_feed(company, cfg)` helper above `_scrape_ir_site`. Detects RSS feeds by URL pattern (`/feed/` in path), uses feedparser, picks the newest feed entry matching earnings keywords (business-results, financial results, quarterly results, q1-q4, 1q-4q), pulls full content from `<content:encoded>` when present else falls back to fetching the post URL. Sets `event_date_iso` from `entry.published_parsed` for stable cross-run identity. Caps to `materials_only` via existing `transcript_capable=False` flag.
+   - `_scrape_ir_site` gets a small early-branch check: if `ir_url` is an RSS feed, dispatch to `_scrape_ir_rss_feed`. Existing logic for non-RSS IR pages unchanged — Samsung's path is untouched.
+
+4. **`src/config.py`**: `IR_SOURCES["SK Hynix"]["ir_url"]` changed from `https://www.skhynix.com/ir/UI-FR-IR15` to `https://news.skhynix.com/feed/rss/`. Inline comment block documents the two bugs and the WordPress-RSS rationale.
+
+| File | Changes |
+|---|---|
+| `src/data/transcript_sources.py` | `_scrape_motley_fool_ticker` body selector rewritten. New `_scrape_ir_rss_feed` helper added above `_scrape_ir_site`. `_scrape_ir_site` gets RSS-feed dispatch branch at the top. Changelog block updated |
+| `src/config.py` | `IR_SOURCES["SK Hynix"]["ir_url"]` switched to news.skhynix.com WordPress RSS feed. Inline comment documents the JS-shell rationale |
+| `CHANGES.md` | This entry |
+
+**Expected v3.36 deploy outcome:**
+- Motley Fool: flips from 13/13 `nothing` to most/all tickers returning `full_transcript`. MF becomes the primary US transcript source again (per v3.33 architectural plan), Yahoo demotes to fallback. Yahoo proxy bandwidth drops accordingly.
+- AMAT: now covered by MF (Yahoo's 404 on the stale article ID 543062 becomes irrelevant — MF has the May 14 Q2 2026 transcript).
+- SK Hynix IR: flips from `nothing` to `materials_only` with the actual earnings release text (revenue / op profit / forward commentary). The Yahoo HY9H.MU transcript is still the call commentary source; SK Hynix IR is the additive slide-deck / release signal.
+
+**Open items deliberately deferred:**
+- Daily re-digestion of unchanged IR materials. The IR scraper (both old path and new RSS path) re-fetches and re-digests the SK Hynix / Samsung IR pages every run, burning Haiku tokens on identical content until a new quarter lands. Same behavior as pre-v3.36 — not new. Fix would extend the `transcripts_seen.json` cache pattern to IR sources, keyed on post URL. Pre-existing issue.
+- AMAT quoteSummary URL discovery: removed from roadmap now that MF covers AMAT.
 
 ---
 
