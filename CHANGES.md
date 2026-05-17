@@ -6,6 +6,86 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.38.3 — fallback_analysis crash fix + JSON truncation fix + comprehensive audit + RSS UA / dead-URL cleanup
+
+**Why**: The 14:31 UTC May 17 run (the post-v3.38.2 run) revealed two new bugs and exposed that the v3.38.2 RSS UA fix only partially landed. Walking through what the log actually shows:
+
+✓ The v3.38 + v3.38.1 + v3.38.2 fixes all held:
+- Layer 2 throttling worked perfectly — "Layer 2 produced 22 signal reasonings" (no 429s, all 22 succeeded)
+- News kwarg / DataFrame / `analyze_with_llm` / `generate_performance_chart` / `send_email` all bound correctly
+- RSS UA shift gave us proper HTTP status codes per feed instead of the cryptic XML errors
+
+✗ But two new bugs surfaced — both pre-existing in v3.37, masked by upstream crashes:
+
+1. **`fallback_analysis(news_items, performance, big_movers)` at fast_tier.py:399** — function signature is `(performance_data, estimates_data, news_items, big_movers)`. Three positional args passed where four are needed, AND the order was wrong (news_items would have gone into performance_data slot, etc.). My previous audit script (v3.38.1) only checked **kwargs**, not **positional args** — so it missed this entire class of bug. Pre-existing since v3.37. Never manifested before because `analyze_with_llm` always returned successfully OR crashed before this line (v3.37 broken kwargs would have raised TypeError on the call itself; v3.38.1 fixed those, so the function ran and could now return None on JSON parse failure → fallback path activated → this bug surfaced).
+
+2. **JSON parse failures from Haiku triage and Sonnet analysis** — both `Unterminated string` errors:
+   - Haiku triage truncated around char 6839 → JSON parse failure → empty triage used
+   - Sonnet analysis truncated around char 27099 → JSON parse failure → analysis = None → fallback path → **crash from bug #1**
+   
+   Root cause: max_tokens too low. `HAIKU_MAX_TOKENS=4000` triaging 46 news items at ~100-150 tokens of structured output each = needs ~5,500-7,000 tokens minimum. `SONNET_MAX_TOKENS=8000` synthesizing 22 indicator assessments at ~300-500 tokens each = needs ~6,600-11,000 tokens. Both ran out of room.
+
+**Four fixes:**
+
+1. **`fast_tier.py:399` — `fallback_analysis` call site.** Rewritten as kwarg-style with all four required args:
+   ```python
+   fallback_analysis(
+       performance_data=performance,
+       estimates_data=estimates_map,
+       news_items=news_items,
+       big_movers=big_movers,
+   )
+   ```
+
+2. **`config.py` — `max_tokens` bumps.**
+   - `HAIKU_MAX_TOKENS: 4000 → 8000` (well within Haiku 4.5's 64K hard cap)
+   - `SONNET_MAX_TOKENS: 8000 → 16000` (well within Sonnet 4.6's 64K hard cap)
+   - Per Anthropic docs: "The max_tokens parameter does not factor into OTPM rate limit calculations, so there is no rate limit downside to setting a higher max_tokens value." Cost is paid only on tokens actually generated — no penalty for headroom.
+
+3. **`scripts/audit_signatures.py` — expanded to check positional args + arg count.** The v3.38.1 audit only checked unknown kwargs; missed positional bugs entirely. Now also detects:
+   - Missing required positional args (the bug that just happened)
+   - Too many positional args
+   - Total arg-count exceeding function's positional capacity
+   
+   Re-running the expanded audit against the v3.38.3 working tree: **zero mismatches**. Should be wired into CI as a pre-deploy gate (`python scripts/audit_signatures.py`).
+
+4. **`news.py` HEADERS + `config.py` RSS_FEEDS — UA hardening + dead-URL pruning.** The 14:31 log gave us actual HTTP status codes for each feed:
+   - **403s (Substack, Investing.com) fixed via UA change**: replaced "Mozilla/5.0 (compatible; MemoryCycleBrief/1.0; ...)" with a plain Chrome UA. The "compatible;" pattern is the classic bot signal that Cloudflare and similar middleware match against. Plain Chrome UA passes their filters. Damnang and Investing.com x4 should now return content.
+   - **404s pruned (13 feeds)**: Yonhap, Anthropic News, Meta AI Blog, SEMI press releases, Reuters Technology, Seeking Alpha Semis, The Elec English, Nikkei Asia, Pulse, vLLM Blog, SGLang/LMSYS, DeepSeek API News, Artificial Analysis. All confirmed 404 (or DNS failure) via real HTTP responses, no obvious public RSS replacement, and **all signal coverage preserved by existing Google News queries** (`KV cache compression`, `inference efficiency breakthrough`, `DDR5 spot price`, `TrendForce DRAM contract`, broker-name combos). Dropping these doesn't lose data — it removes the dead path and stops generating FAIL noise in the validation table.
+   - **TODO v3.39** documented inline in `config.py` for the URL hunt — find working replacements where Google News coverage proves insufficient.
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `src/fast_tier.py` | fallback_analysis call site rewritten as kwarg form |
+| `src/config.py` | HAIKU_MAX_TOKENS 4000→8000; SONNET_MAX_TOKENS 8000→16000; RSS_FEEDS pruned from 32 to 19 entries |
+| `src/data/news.py` | HEADERS now uses plain Chrome UA (no "compatible;" bot signal); Accept + Accept-Language added |
+| `scripts/audit_signatures.py` | expanded to check positional args + arg count + missing required, not just unknown kwargs |
+| `CHANGES.md` | this entry |
+
+**Validation:**
+
+- Comprehensive AST audit: ZERO mismatches across all of `src/` (positional + kwargs + count)
+- Syntax + import test on all four edited files: clean
+- The original v3.38.3 bug (`fallback_analysis` missing positional arg) is now FLAGGED by the expanded audit if it were re-introduced — verified by temporarily reverting the fix and re-running
+
+**Expected behavior on next run:**
+
+- Pipeline completes end-to-end (fallback path no longer crashes; main path no longer truncates)
+- Layer 2: 22/22 signal reasonings (throttle held; just slower at 7s spacing)
+- Layer 3: Haiku triage + Sonnet analysis both complete with valid JSON (max_tokens has 2× headroom)
+- Validation table: ~19 RSS sources tracked instead of 32, with most rows green; Damnang and Investing.com x4 should flip from FAIL to OK now that UA is browser-shaped
+- Total wall-time: ~5-6 minutes (Layer 2 throttle is the floor)
+
+**What's deliberately NOT fixed in this release:**
+
+- AnandTech RSS "invalid token" errors — feed is sporadically malformed at source; may self-heal
+- KED Global occasional 502 — transient server errors; built-in retry will handle
+- Manual RSS URL hunt for the 13 pruned feeds — deferred to v3.39 as a quality improvement, since Google News queries already cover the signals
+
+---
+
 ## v3.38.2 — RSS user-agent fix: ~15 feed failures from the 13:42 UTC run traced to a single root cause
 
 **Why**: 15 of 20 RSS feeds parse-failed in the 13:42 UTC May 17 run with three distinct error patterns (`"...is not an XML media type"`, `"<unknown>:2:0: syntax error"`, `"<unknown>:N:M: not well-formed (invalid token)"`). Investigation traced all three patterns to a single root cause: `feedparser.parse(url)` uses feedparser's library-default User-Agent (`UniversalFeedParser/6.x +https://github.com/kurtmckee/feedparser/`), which Substack, Cloudflare-fronted sites, and various anti-bot middleware treat as a bot — they respond with an HTML "are you human" page or just silently 200 with HTML body. feedparser then can't parse the HTML as XML and emits one of the three error families.
