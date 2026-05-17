@@ -1,0 +1,48 @@
+{
+  "source_id": "Yahoo Finance / Amazon / 2026-05-17",
+  "source_type": "earnings_transcript",
+  "published_date_iso": "2026-05-17",
+  "title": "Amazon earnings call 2026-05-17",
+  "char_count_input": 50788,
+  "key_metrics": {
+    "amzn_2026_capex_usd_b": 43.2,
+    "amzn_q1_2026_capex_usd_b": 43.2,
+    "aws_revenue_run_rate_usd_b": 150,
+    "aws_yoy_growth_pct": 28,
+    "aws_ai_revenue_run_rate_usd_b": 15,
+    "trainium_revenue_commitments_usd_b": 225,
+    "aws_backlog_usd_b": 364,
+    "anthropic_commitment_usd_b": 100,
+    "bedrock_token_throughput_improvement_pct": 400,
+    "trainium2_price_performance_vs_gpu_pct": 30,
+    "trainium3_price_performance_vs_trainium2_pct": 35,
+    "graviton_price_performance_vs_x86_pct": 40,
+    "bedrock_customers_count": 125000,
+    "memory_cost_skyrocketed_language": true,
+    "architecture_signals": {
+      "custom_silicon_named": "Trainium 2, Trainium 3, Trainium 4, Graviton",
+      "custom_silicon_memory_arch": "mixed",
+      "inference_cost_reduction_pct": 30,
+      "deployed_speculative_decoding": null,
+      "deployed_moe": null,
+      "deployed_quantization": null,
+      "cxl_production_deployment": null,
+      "architecture_freetext": "Amazon Trainium chips (training) and Graviton CPUs (inference) sold out through 2026; Trainium2 4x token throughput gains in 2025; Trainium3 30-40% better price performance; nearly 80% Fortune 100 using Bedrock on Trainium; Meta committed to tens of millions Graviton cores for agentic AI CPU workloads."
+    },
+    "_transcript_availability": "full_transcript"
+  },
+  "signal_relevance": [
+    "t2_capex_parabolic",
+    "t2_ltas_signed",
+    "t2_hyperscaler_capex_revenue"
+  ],
+  "key_quotes": [
+    "Trainium2 nearly fully sold out; Trainium3 nearly fully subscribed.",
+    "Memory cost skyrocketed; not enough capacity for demand.",
+    "AWS backlog $364 billion; $100 billion Anthropic deal not included."
+  ],
+  "target_price_action": null,
+  "fired_status_evidence": "supports_fire",
+  "raw_url": "https://finance.yahoo.com/quote/AMZN/earnings/AMZN-Q1-2026-earnings_call-552741.html",
+  "digested_at_iso": "2026-05-17T09:30:29.293906"
+}

@@ -1,0 +1,55 @@
+{
+  "source_id": "Yahoo Finance / Micron / 2026-05-17",
+  "source_type": "earnings_transcript",
+  "published_date_iso": "2026-05-17",
+  "title": "Micron earnings call 2026-05-17",
+  "char_count_input": 32196,
+  "key_metrics": {
+    "supplier_inventory_weeks": null,
+    "lead_time_weeks": null,
+    "asp_yoy_pct": null,
+    "contract_price_qoq_pct": null,
+    "capex_2027_guidance_usd_b": null,
+    "capex_2026_guidance_usd_b": 25.0,
+    "component_inventory_weeks": null,
+    "dram_bit_growth_guidance_pct": 20,
+    "nand_bit_growth_guidance_pct": 20,
+    "server_unit_growth_guidance_pct": "low teens",
+    "hbm_content_uplift_trend": "increasing per generation",
+    "architecture_signals": {
+      "hbm_capex_pct": null,
+      "lpddr_capex_pct": null,
+      "ddr_capex_pct": null,
+      "hbm_bit_share_pct": null,
+      "wafer_allocation_language": "favoring_hbm",
+      "memory_pct_of_capex": null,
+      "custom_silicon_memory_arch": "HBM",
+      "custom_silicon_named": null,
+      "inference_cost_reduction_pct": null,
+      "tokens_per_dollar_claim": null,
+      "deployed_quantization": null,
+      "deployed_moe": null,
+      "deployed_speculative_decoding": null,
+      "deployed_disaggregated_serving": null,
+      "cxl_production_deployment": false,
+      "lpddr_datacenter_design_win": null,
+      "hbf_mention": null,
+      "architecture_freetext": "CXL memory pooling being experimented with by customers but limited deployment scale; HBM content uplifts continuing with each GPU generation; LPDDR5 and DDR5 growing in AI systems alongside HBM."
+    },
+    "_transcript_availability": "full_transcript"
+  },
+  "signal_relevance": [
+    "t2_capex_parabolic",
+    "t3_supplier_inventory_rebuild",
+    "t4_yoy_asp_negative"
+  ],
+  "key_quotes": [
+    "Demand far exceeds supply; tight conditions continue beyond 2026.",
+    "HBM3E 12-high executing well; HBM4 showing even faster yield ramp.",
+    "Supply will not catch up with demand; escalation from robotics and other vectors phenomenal."
+  ],
+  "target_price_action": null,
+  "fired_status_evidence": "supports_fire",
+  "raw_url": "https://finance.yahoo.com/quote/MU/earnings/MU-Q2-2026-earnings_call-602875.html",
+  "digested_at_iso": "2026-05-17T09:27:41.663942"
+}

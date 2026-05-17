@@ -1,0 +1,63 @@
+{
+  "source_id": "Yahoo Finance / Alphabet / 2026-05-17",
+  "source_type": "earnings_transcript",
+  "published_date_iso": "2026-05-17",
+  "title": "Alphabet earnings call 2026-05-17",
+  "char_count_input": 52875,
+  "key_metrics": {
+    "capex_q1_2026_usd_b": 35.7,
+    "capex_fy2026_guidance_usd_b_low": 180,
+    "capex_fy2026_guidance_usd_b_high": 190,
+    "capex_2027_guidance_direction": "significantly_increase",
+    "cloud_revenue_q1_2026_usd_b": 20.0,
+    "cloud_revenue_growth_yoy_pct": 63,
+    "cloud_backlog_usd_b": 462,
+    "cloud_backlog_sequential_growth_pct": 100,
+    "cloud_operating_margin_pct": 32.9,
+    "cloud_operating_margin_prior_year_pct": 17.8,
+    "gemini_enterprise_paid_mau_growth_qoq_pct": 40,
+    "tokens_per_minute_billion": 16,
+    "tokens_per_minute_prior_quarter_billion": 10,
+    "ai_solutions_revenue_growth_yoy_pct": 800,
+    "capex_servers_pct": 60,
+    "capex_datacenters_networking_pct": 40,
+    "search_revenue_growth_yoy_pct": 19,
+    "search_query_growth_status": "all_time_high",
+    "ai_cost_reduction_pct": 30,
+    "search_latency_reduction_5yr_pct": 35,
+    "architecture_signals": {
+      "hbm_capex_pct": null,
+      "lpddr_capex_pct": null,
+      "ddr_capex_pct": null,
+      "hbm_bit_share_pct": null,
+      "wafer_allocation_language": null,
+      "memory_pct_of_capex": null,
+      "custom_silicon_memory_arch": "mixed",
+      "custom_silicon_named": "TPU 8t|TPU 8i|Axion CPU",
+      "inference_cost_reduction_pct": 30,
+      "tokens_per_dollar_claim": null,
+      "deployed_quantization": null,
+      "deployed_moe": null,
+      "deployed_speculative_decoding": null,
+      "deployed_disaggregated_serving": null,
+      "cxl_production_deployment": null,
+      "lpddr_datacenter_design_win": null,
+      "hbf_mention": null,
+      "architecture_freetext": "TPU 8t training 3x Ironwood, TPU 8i inference 80% better cost-per-dollar; Vera Rubin NVL72 GPU availability; TPU hardware sales to select customers in own datacenters beginning 2027"
+    },
+    "_transcript_availability": "full_transcript"
+  },
+  "signal_relevance": [
+    "t2_capex_parabolic",
+    "t2_hyperscaler_capex_revenue"
+  ],
+  "key_quotes": [
+    "2027 CapEx to significantly increase compared to 2026",
+    "Cloud backlog nearly doubled sequentially to over $460 billion",
+    "AI solutions revenue grew nearly 800% year-over-year"
+  ],
+  "target_price_action": null,
+  "fired_status_evidence": "supports_fire",
+  "raw_url": "https://finance.yahoo.com/quote/GOOGL/earnings/GOOGL-Q1-2026-earnings_call-551989.html",
+  "digested_at_iso": "2026-05-17T09:29:33.763025"
+}

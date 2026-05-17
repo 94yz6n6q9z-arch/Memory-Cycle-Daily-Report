@@ -1,0 +1,50 @@
+{
+  "source_id": "Yahoo Finance / Broadcom / 2026-05-17",
+  "source_type": "earnings_transcript",
+  "published_date_iso": "2026-05-17",
+  "title": "Broadcom earnings call 2026-05-17",
+  "char_count_input": 42043,
+  "key_metrics": {
+    "q1_fy26_revenue_usd_b": 19.3,
+    "q1_fy26_revenue_yoy_pct": 29,
+    "q1_fy26_ai_semiconductor_revenue_usd_b": 8.4,
+    "q1_fy26_ai_semiconductor_yoy_pct": 106,
+    "q2_fy26_guidance_revenue_usd_b": 22.0,
+    "q2_fy26_guidance_revenue_yoy_pct": 47,
+    "q2_fy26_guidance_ai_semiconductor_revenue_usd_b": 10.7,
+    "q2_fy26_guidance_ai_semiconductor_yoy_pct": 140,
+    "q1_fy26_gross_margin_pct": 77,
+    "q1_fy26_adjusted_ebitda_pct": 68,
+    "q1_fy26_inventory_days": 68,
+    "q1_fy26_inventory_days_prior_quarter": 58,
+    "q1_fy26_free_cash_flow_usd_b": 8.0,
+    "q1_fy26_capex_usd_m": 250,
+    "fy27_ai_revenue_visibility_usd_b_min": 100,
+    "fy27_custom_accelerator_gigawatts_estimated": 10,
+    "fy27_anthropic_compute_gw": 3.0,
+    "fy27_openai_compute_gw": 1.0,
+    "fy27_meta_compute_gw_min": 2.0,
+    "fy27_google_compute_gw_estimated": 3.0,
+    "architecture_signals": {
+      "custom_silicon_named": "Ironwood TPU (Google), MTIA (Meta), Anthropic TPU, OpenAI XPU",
+      "deployed_disaggregated_serving": true,
+      "deployed_moe": true,
+      "architecture_freetext": "Broadcom shipping custom XPUs for six customers; customers developing specialized training vs inference chips; Direct Attach Copper networking through 400G SerDes preferred over CPO; Ethernet scale-out standard; scale-up Ethernet emerging."
+    },
+    "_transcript_availability": "full_transcript"
+  },
+  "signal_relevance": [
+    "t2_capex_parabolic",
+    "t2_ltas_signed",
+    "t1_efficiency_shock"
+  ],
+  "key_quotes": [
+    "We have fully secured capacity of these components for 2026 through 2028.",
+    "We have line of sight to achieve AI revenue from chips in excess of $100 billion in 2027.",
+    "Custom accelerators across all our five customers progressing very well."
+  ],
+  "target_price_action": null,
+  "fired_status_evidence": "supports_fire",
+  "raw_url": "https://finance.yahoo.com/quote/AVGO/earnings/AVGO-Q1-2026-earnings_call-529911.html",
+  "digested_at_iso": "2026-05-17T09:27:58.116699"
+}
