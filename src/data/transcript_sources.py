@@ -71,6 +71,7 @@ never raises into the deep-tier orchestrator. Same maintenance posture as the
 Naver scraper (expect 1-2 fixes/year).
 
 CHANGELOG (this file):
+  v3.35  (2026-05-17) — Yahoo parser rewrite. The v3.34 bs4 selector (`psoup.find("article") or div.body|content|caas`) returned <400 chars on 3 MB pages because transcripts live in <p data-testid="typography"> tags, not inside an <article>. New helpers (`_yahoo_extract_paragraphs`, `_yahoo_paragraphs_to_text`, `_yahoo_extract_analysis`) inlined above `_scrape_yahoo_ticker` extract: (a) timestamp-paired paragraphs from the rendered DOM (anchored on stable test-id + class prefix, ignoring the volatile yf-XXXXXX runtime hash); (b) Yahoo Scout AI's structured analysis (TLDR, 12 key_insights sections, notable_quotes, analyst Q&A) from the embedded SvelteKit hydration block at `mad/v2/analyst/ect`. Validated locally on /tmp/yahoo_nvda.html before commit: 90 paragraphs / 52K chars text / Scout AI analysis intact. TranscriptResult gains optional `analysis_json` field (captures Scout AI for v3.5 brief rendering; current digester ignores). Motley Fool diagnostic logging added (page length + total hrefs + near-miss transcript hrefs) to give next deploy actionable signal on the 13/13 "nothing" result v3.34 produced.
   v3.34  (2026-05-16) — Motley Fool URL regex: exclude backslash from char class (HTML/JSON escape was leaking a stray backslash into URLs → all transcript fetches 404 in first v3.33 run). Yahoo via proxy: added HTTP-status + body-length + anchor-count diagnostic logging — first v3.33 run showed Yahoo returning 200 but bs4 finding 0 transcript links on most tickers; need data on whether Yahoo serves a JS shell through residential proxy vs. real HTML.
   v3.33  (2026-05-16) — Sequential cascade: Motley Fool primary → IR fill-ins → Yahoo fallback for gaps. Motley Fool scraper rewritten to use per-ticker /quote/{exchange}/{ticker}/ page (was global recent-index which rolled off in 24-48h, leaving no fallback). Yahoo routed through Bright Data residential proxy when RESIDENTIAL_PROXY_URL is set, with realistic Chrome headers, per-request session rotation, redirect-following, 3s inter-ticker delay, and one retry-on-429 with 10s backoff. transcripts_seen.json cache skips re-fetching/re-digesting URLs we've already processed.
   v3.32  (2026-05-14) — Added fetch_yahoo_finance_transcripts() as PRIMARY source; fetch_all_transcripts()/fetch_transcripts_with_retry() take yahoo_tickers; IR scraper honours transcript_capable (caps SK Hynix/Samsung at materials_only)
@@ -79,6 +80,7 @@ CHANGELOG (this file):
 
 from __future__ import annotations
 
+import html as html_module
 import json
 import logging
 import os
@@ -138,6 +140,7 @@ class TranscriptResult:
     source_name: str = ""                 # "SK Hynix IR" | "Motley Fool" | etc.
     source_url: Optional[str] = None
     note: Optional[str] = None            # human-readable explanation, esp. for materials_only / nothing
+    analysis_json: Optional[dict] = None  # v3.35: Yahoo Scout AI structured analysis (TLDR, key_insights, Q&A, quotes) — captured for v3.5 brief rendering, ignored by current digester
 
     def __post_init__(self):
         self.char_count = len(self.text or "")
@@ -525,6 +528,21 @@ def _scrape_motley_fool_ticker(
         date_tuple = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
         transcript_links.append((date_tuple, full_url))
 
+    # v3.35 diagnostic: mirror Yahoo's anchor-count log. If transcript_links is
+    # empty, we want to know whether the page was real HTML at all, how many
+    # anchors it had, and which hrefs were *close* to matching our pattern.
+    # v3.34 logged 13/13 "nothing" from MF with zero diagnostic output —
+    # this gives the next deploy actionable signal.
+    if not transcript_links:
+        all_hrefs = re.findall(r'href="([^"]+)"', page_html)
+        # Hrefs that mention "transcript" (case-insensitive) — what we were close to
+        near_misses = [h for h in all_hrefs if "transcript" in h.lower()][:5]
+        logger.info(
+            f"Motley Fool parse for {ticker}: page_html_len={len(page_html)}, "
+            f"total_hrefs={len(all_hrefs)}, "
+            f"near_miss_transcript_hrefs={near_misses}"
+        )
+
     if not transcript_links:
         return TranscriptResult(
             company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
@@ -642,8 +660,157 @@ def fetch_motley_fool_transcripts(
 # ============================================================
 # Source 3 — Yahoo Finance transcripts (PRIMARY — all names, incl. KRX)
 # ============================================================
+#
+# v3.35 PARSER STRATEGY
+# ---------------------
+# Yahoo's transcript pages embed BOTH the raw transcript paragraphs AND Yahoo
+# Scout AI's structured earnings analysis directly in the rendered HTML. We
+# extract both from the single page fetch (no headless browser, no separate
+# API call). The two helpers below are pure functions — they don't fetch
+# anything; _scrape_yahoo_ticker owns the HTTP layer and feeds them the HTML.
+#
+# 1) RAW PARAGRAPHS — rendered DOM. Each speaker turn renders as <p> elements
+#    with data-testid="typography" + a class containing the stable prefix
+#    type-paragraph-md-reg (followed by a volatile runtime hash like
+#    yf-gjjls9 which we deliberately ignore). Paragraphs come in alternating
+#    pairs of (timestamp, text). Each appears twice on the page — SSR'd DOM
+#    + SvelteKit hydration data — so we de-dupe by content.
+#
+# 2) YAHOO SCOUT AI ANALYSIS — SvelteKit hydration block. <script
+#    type="application/json" data-sveltekit-fetched data-url="...
+#    mad/v2/analyst/ect?event_id=..."> contains JSON of shape
+#    {"status":200,"body":"<JSON-encoded-string>"} where body is itself a
+#    JSON-encoded string (parse twice). Inner object: TLDR, 12 key_insights
+#    sections, notable_quotes, analyst Q&A with management responses.
+#
+# Stability notes:
+# - data-testid="typography" is a test-automation hook; very unlikely to change.
+# - type-paragraph-md-reg is the stable CSS class prefix; the yf-XXXXXX suffix
+#   is a runtime hash that changes between deploys — we anchor on the prefix.
+# - mad/v2/analyst/ect is a published Yahoo internal API path; stable.
+#
+# Empirical validation (NVDA Q4 FY2026 page, 3.6 MB, 2026-05-17):
+#   - 90 paragraphs extracted, all timestamp-paired, 52K chars text
+#   - Scout AI: 12 insight sections, 5 quotes, 11 Q&A exchanges
+#   - First paragraph: operator greeting at 0:00:00
+#   - Last paragraph: operator closing at 1:06:32
 
 YAHOO_EARNINGS_INDEX = "https://finance.yahoo.com/quote/{ticker}/earnings-calls/"
+
+# Yahoo Scout AI block: <script type="application/json"
+#   data-sveltekit-fetched data-url="...mad/v2/analyst/ect?event_id=...">{...}</script>
+# Anchored on the unique 'mad/v2/analyst/ect' substring of data-url to avoid
+# matching the other ~29 SvelteKit blocks on the page. The trailing
+# \s*</script> anchor constrains the non-greedy {.*?} to find the outer
+# JSON envelope (the only } followed by </script>).
+YAHOO_ECT_BLOCK_RE = re.compile(
+    r'<script type="application/json" data-sveltekit-fetched '
+    r'data-url="[^"]*mad/v2/analyst/ect[^"]*"[^>]*>\s*'
+    r'(\{.*?\})\s*</script>',
+    re.DOTALL,
+)
+
+# Transcript paragraph: <p data-testid="typography"
+#   class=" type-paragraph-md-reg     yf-gjjls9">...</p>
+# Anchored on two stable signals: the test-id and the stable class prefix.
+YAHOO_PARAGRAPH_RE = re.compile(
+    r'<p[^>]*data-testid="typography"[^>]*type-paragraph-md-reg[^>]*>(.*?)</p>',
+    re.DOTALL,
+)
+
+# Strip nested tags (e.g. <span>) from inside a captured <p>.
+_INNER_TAG_RE = re.compile(r'<[^>]+>')
+
+# Yahoo timestamps look like H:MM:SS, e.g. "0:00:00" or "1:06:32".
+_TIMESTAMP_RE = re.compile(r'^\d{1,2}:\d{2}:\d{2}$')
+
+
+def _yahoo_extract_paragraphs(html: str) -> list[dict]:
+    """Return [{"timestamp": "0:33:21", "text": "..."}, ...].
+
+    Empty list means no transcript paragraphs found (page may be a JS shell,
+    a 404, or Yahoo changed the DOM structure).
+    """
+    matches = YAHOO_PARAGRAPH_RE.findall(html)
+    raw_items = []
+    for raw in matches:
+        text = _INNER_TAG_RE.sub('', raw).strip()
+        text = html_module.unescape(text)
+        if text:
+            raw_items.append(text)
+
+    paired = []
+    seen_texts = set()
+    i = 0
+    while i < len(raw_items):
+        item = raw_items[i]
+        # Timestamp followed by text → pair them
+        if (_TIMESTAMP_RE.match(item)
+                and i + 1 < len(raw_items)
+                and not _TIMESTAMP_RE.match(raw_items[i + 1])):
+            text = raw_items[i + 1]
+            if text not in seen_texts:
+                seen_texts.add(text)
+                paired.append({"timestamp": item, "text": text})
+            i += 2
+        # Orphan timestamp → skip
+        elif _TIMESTAMP_RE.match(item):
+            i += 1
+        # Orphan text → keep with empty timestamp
+        else:
+            if item not in seen_texts:
+                seen_texts.add(item)
+                paired.append({"timestamp": "", "text": item})
+            i += 1
+    return paired
+
+
+def _yahoo_paragraphs_to_text(paragraphs: list[dict]) -> str:
+    """Render extracted paragraphs as plain text with timestamp headers.
+
+    Output shape (what the Haiku digester sees as TranscriptResult.text):
+        [0:00:00]
+        Good afternoon. My name is Sarah...
+
+        [0:00:32]
+        Welcome to NVIDIA's fourth quarter...
+    """
+    parts = []
+    for p in paragraphs:
+        ts = p.get("timestamp", "")
+        text = p.get("text", "")
+        if ts:
+            parts.append(f"[{ts}]\n{text}")
+        else:
+            parts.append(text)
+    return "\n\n".join(parts)
+
+
+def _yahoo_extract_analysis(html: str) -> Optional[dict]:
+    """Return Yahoo Scout AI's structured analysis dict, or None if absent.
+
+    Returned shape (top-level keys):
+        transcript_id, transcript_analysis, fiscal_year, fiscal_period, event_id
+
+    transcript_analysis carries TLDR, key_insights (12 named sections),
+    notable_quotes, and analyst_focus.key_questions_and_responses.
+    """
+    match = YAHOO_ECT_BLOCK_RE.search(html)
+    if not match:
+        return None
+    try:
+        wrapper = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return None
+    if wrapper.get("status") != 200:
+        return None
+    body = wrapper.get("body")
+    if not body:
+        return None
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError:
+        return None
 
 
 def _scrape_yahoo_ticker(company: str, ticker: str, days_back: int,
@@ -738,8 +905,26 @@ def _scrape_yahoo_ticker(company: str, ticker: str, days_back: int,
             )
 
         psoup = BeautifulSoup(page, "html.parser")
-        body = psoup.find("article") or psoup.find("div", class_=re.compile(r"body|content|caas", re.I))
-        text = _strip_html(str(body)) if body else _strip_html(page)
+
+        # v3.35: extract paragraphs from the rendered DOM (anchored on the
+        # stable data-testid="typography" + type-paragraph-md-reg class prefix)
+        # AND Yahoo Scout AI's structured analysis from the SvelteKit hydration
+        # block. Replaces the v3.34 bs4 selector (`psoup.find("article") or
+        # div.body|content|caas`) which returned <400 chars on a 3 MB page
+        # because the content lives in <p> tags with a stable test-id, not
+        # inside an <article> wrapper. Helpers defined above this function.
+        paragraphs = _yahoo_extract_paragraphs(page)
+        text = _yahoo_paragraphs_to_text(paragraphs)
+        analysis = _yahoo_extract_analysis(page)
+
+        # Diagnostic log so we can see at a glance whether the parser is finding
+        # the right shape on each ticker. Mirrors the v3.34 anchor-count log.
+        logger.info(
+            f"Yahoo parse for {ticker}: "
+            f"{len(paragraphs)} paragraphs, {len(text)} chars text, "
+            f"scout_ai_analysis={'yes' if analysis else 'no'}"
+        )
+
         availability = _classify_availability(text)
 
         note = None
@@ -761,6 +946,7 @@ def _scrape_yahoo_ticker(company: str, ticker: str, days_back: int,
             source_name="Yahoo Finance",
             source_url=match_href,
             note=note,
+            analysis_json=analysis,  # v3.35: Scout AI structured analysis for v3.5 brief rendering
         )
 
     except ImportError:
