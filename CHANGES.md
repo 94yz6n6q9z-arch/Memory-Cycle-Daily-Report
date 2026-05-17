@@ -6,6 +6,59 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.38.5 — real Haiku root cause + Sonnet streaming guard + missing deep-tier commit
+
+**Why this release**: The 16:25 UTC May 17 run completed in 358s (under the 25min timeout from v3.38.4 ✓), delivered an email (via fallback path ✓), and confirmed throttling holds (22/22 signals ✓). But three new issues showed up that I missed in prior releases:
+
+1. **Haiku triage failed with a brand-new error mode**: "Expecting value (char 0)" → json_repair returned `str` not `dict`. Investigation revealed the actual root cause: a latent bug in `_strip_code_fence`. When Haiku emitted a properly closed code fence (```json\n{...}\n```), the function returned an empty string. The line `text.split("```", 2)[-1]` grabbed the empty string AFTER the closing fence instead of the JSON content BETWEEN the fences. This was not a prompt issue, not a max_tokens issue — it was a 12-line function with broken indexing logic. Has probably been silently degrading Haiku output for a long time depending on which fence style the model emitted.
+
+2. **Sonnet was refused by the Anthropic SDK before making the call**: "Streaming is required for operations that may take longer than 10 minutes." The SDK has a client-side guard that demands streaming mode when max_tokens crosses an estimated 10-min wall-time threshold. My v3.38.4 bump to 24K crossed it. 16K stays comfortably under.
+
+3. **Deep tier diagnostics weren't reaching the fast tier**: The user manually triggered the deep tier 3 hours before the fast tier run; deep tier produced data; fast tier still reported FAIL "deep tier hasn't run since v3.38 deploy." Root cause: `deep_tier.yml` commit step only stages `state/digests/` and `state/cache/`, missing the two root-level JSONs (`state/deep_tier_diagnostics.json`, `state/transcript_status.json`) added by the v3.38 deep_tier.py persistence work. Files written to runner, destroyed at shutdown, never reached origin/main. **Owning this one — I added the write code in v3.38 but never updated the commit step in the workflow.**
+
+**Four fixes:**
+
+1. **`src/analysis/llm_summarizer.py` — `_strip_code_fence` rewritten**. Explicit handling of three patterns (raw / closed-fence / unclosed-fence). Verified locally on all five common LLM-output shapes; all parse cleanly via stdlib now (no json_repair fallback even needed for the formerly-failing closed-fence case).
+
+2. **`src/analysis/llm_summarizer.py` — Haiku prompt tightened**. Explicit "start with `{`, no markdown fences, no prose, no apologies" instructions. Belt-and-suspenders for the strip fix above.
+
+3. **`src/config.py` — `SONNET_MAX_TOKENS: 24000 → 16000`**. Stays under SDK's 10-min streaming guard. json_repair fallback (v3.38.4) handles truncation risk that motivated the original bump.
+
+4. **`.github/workflows/deep_tier.yml` — commit step now stages two missing JSONs**:
+   ```yaml
+   [ -f state/deep_tier_diagnostics.json ] && git add state/deep_tier_diagnostics.json
+   [ -f state/transcript_status.json ] && git add state/transcript_status.json
+   ```
+   File-existence guards so the workflow doesn't break on runs where deep_tier.py errored before writing one of the files. Also rewrote two misleading "deep tier hasn't run" error strings in `src/fast_tier.py` to name both possibilities (didn't run / ran but didn't commit).
+
+**To rescue this run's data**: trigger the deep tier manually after pushing v3.38.5. The fix will commit both JSONs on its first post-deploy run, and the next fast tier will pick them up.
+
+**Validation done locally:**
+
+- `_strip_code_fence` tested against all 5 common LLM output shapes — closed-fence case now passes stdlib parse cleanly (was returning empty string before)
+- Syntax + imports clean on all 3 modified Python files
+- Comprehensive AST signature audit: zero mismatches
+- The fix to the actual bug means most runs won't even need the json_repair fallback going forward — stdlib will succeed on properly-fenced output
+
+**Files changed:**
+
+| File | Change |
+|---|---|
+| `.github/workflows/deep_tier.yml` | commit step now stages both root-level state JSONs |
+| `src/analysis/llm_summarizer.py` | `_strip_code_fence` rewritten + Haiku prompt tightened |
+| `src/config.py` | SONNET_MAX_TOKENS 24K → 16K + CHANGELOG |
+| `src/fast_tier.py` | two error-message strings + CHANGELOG |
+| `CHANGES.md` | this entry |
+
+**What stays from prior releases:** json_repair fallback (still useful for truncation + unescaped chars in string values), fallback_analysis kwarg fix, expanded audit script, RSS pruning, plain Chrome UA, throttle, diagnostics wiring, 25-min workflow timeout.
+
+**What's deliberately NOT fixed this release:**
+- Sonnet streaming mode — deferred to v3.39. Would let us use 24K+ max_tokens. Bigger refactor.
+- curl-cffi for Damnang + Investing.com x4 — deferred to v3.39.
+- Migration to Anthropic tool_use for structured output — would eliminate the parse-fragility class of bug entirely.
+
+---
+
 ## v3.38.4 — workflow timeout + JSON repair fallback + Cloudflare-blocked feeds dropped
 
 **Why this release**: The 15:32 UTC May 17 run revealed two compounding bugs and exposed a misconfigured workflow timeout:
