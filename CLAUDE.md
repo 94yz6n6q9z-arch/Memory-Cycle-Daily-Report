@@ -2,6 +2,7 @@
 
 <!--
 CHANGELOG (this file):
+  v3.34  (2026-05-16) — Added v3.34 section (Motley Fool URL regex fix + Yahoo diagnostic logging + git push race fix); honest record of what the first v3.33 run showed
   v3.33  (2026-05-16) — Added v3.33 section (cascade architecture: Motley Fool primary + Yahoo via residential proxy + URL-seen cache); model name bug + first-run diagnosis recorded
   v3.32  (2026-05-14) — Added v3.32 section (Yahoo Finance transcript source); v3.31 section corrected re: IR-site coverage
   v3.31  (2026-05-14) — Version sections relabelled — transcript work = v3.31, deferred indicators reclaim v3.4
@@ -130,7 +131,7 @@ of deep tier. The split exists for runtime and cost reasons.
 
 ---
 
-## v3.1 → v3.33 — what's already built
+## v3.1 → v3.34 — what's already built
 
 ### v3.1 — News relevance filter
 Two-pass filter (`src/data/news.py`: `score_relevance` + `filter_relevant_news`)
@@ -250,6 +251,50 @@ Files touched: `config.py`, `transcript_sources.py`, `analysis/digester.py`,
 `deep_tier.py`, `.github/workflows/deep_tier.yml`, `CLAUDE.md`, `README.md`,
 `SETUP.md`, `DEPLOYMENT_GUIDE.md`, `CHANGES.md`, audit xlsx. Still .3x; v3.4
 keeps the captive-ratio label.
+
+### v3.34 — Post-v3.33 fixes (Motley Fool URL + Yahoo cross-listing tickers + diagnostics + git race) — BUILT
+First v3.33 run revealed three bugs. Diagnosing them surfaced a fourth fix
+(Yahoo ticker variant) that resolves the SK Hynix transcript coverage problem.
+
+1. **Motley Fool URL regex was capturing a trailing backslash** from
+   JSON-stringified blobs in the React-rendered quote page. Every fetch URL
+   ended in `/\` which URL-encodes to `%5C` → 404. The URLs the regex was
+   finding were *actually correct* — just had a stray escape char appended.
+   Fixed by excluding the backslash from the regex character class, plus an
+   `rstrip("\\")` + slash re-add as belt-and-suspenders. After v3.34, Motley
+   Fool should return `full_transcript` for all 13 US names.
+2. **Yahoo canonical ticker for SK Hynix / Samsung was wrong**. v3.32 picked
+   the KRX primary listings (000660.KS, 005930.KS) as canonical. Empirically
+   (Raul's screenshot of Yahoo Finance, 2026-05-16): Yahoo's transcript pages
+   are linked from the European cross-listing tickers (HY9H.MU, SSU.F etc.)
+   but NOT from the KRX primaries. Same transcript content under both —
+   Yahoo's UI just doesn't render the link on the KRX-ticker pages. Updated
+   canonical Yahoo ticker: SK Hynix → HY9H.MU (confirmed), Samsung → SSU.F
+   (likely; v3.34 diag logs will confirm). v3.32's note about "use ONE
+   canonical ticker per company to avoid double-counting" still applies —
+   the correction is which one to pick, not whether to pick one.
+3. **Yahoo for the US ticker variants returned 200 but 0 transcript anchors**
+   on parse (only AMAT found 1 URL, which 404'd). Could be the same wrong-
+   variant issue or a deeper JS-shell problem. Honest admission: my earlier
+   curl test "proved architecture works" was wrong; I only verified status
+   200, never inspected body content. v3.34 adds diagnostic logging (HTTP
+   status, body length, anchor count, sample hrefs) so the *next* run gives
+   us actual data on what Yahoo returns through the proxy, before I propose
+   a real fix.
+4. **Git push at end of deep-tier run was rejected** because main moved
+   forward during the 3-5 minute run (Raul committing v3.33 manually via web
+   UI). Workflow now does `git pull --rebase origin main` before push with
+   one retry, so state-file commits land even when the repo moved.
+
+What's pending for v3.35: depending on what the v3.34 Yahoo diagnostic logs
+show, either pivot per-ticker variant fallback chain (try multiple Yahoo
+listings per company until one returns content), swap to a different free
+transcript source, or accept Yahoo as best-effort and rely on Motley Fool +
+Korean broker PDFs. Decision deferred until empirical data is in hand.
+
+Files touched: `src/config.py`, `transcript_sources.py`,
+`.github/workflows/deep_tier.yml`, `CLAUDE.md`, `CHANGES.md`. Still .3x;
+v3.4 keeps the captive-ratio label.
 
 ### v3.4 — DEFERRED (see ROADMAP.md)
 Three new indicators (Inference Efficiency Shock, CXL Production Deployment,
