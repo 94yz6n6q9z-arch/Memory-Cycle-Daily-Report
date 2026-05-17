@@ -21,5 +21,11 @@ pdfplumber>=0.10.0
 # When updating: test locally first, then bump the upper bound here.
 anthropic>=0.39.0,<1.0
 
+# v3.38.4: drop-in fallback for stdlib json.loads when LLM output is malformed
+# (unescaped quotes/newlines in string fields, trailing commas, truncation).
+# Used by src/analysis/llm_summarizer.py for both Haiku triage and Sonnet
+# analysis. Pure-Python, no compilation, MIT, healthy maintenance cadence.
+json-repair>=0.39.0,<1.0
+
 # Optional: for FMP analyst estimates augmentation
 # (already covered by requests)
