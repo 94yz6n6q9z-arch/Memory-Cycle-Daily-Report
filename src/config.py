@@ -5,6 +5,7 @@ Defines the tickers tracked, the indicator framework (tiers 1-4),
 and the thresholds that classify each signal as fired vs not fired.
 
 CHANGELOG (this file):
+  v3.38.5 (2026-05-17) — SONNET_MAX_TOKENS 24000 → 16000. The 16:25 UTC May 17 run had the Anthropic SDK refuse the Sonnet call with "Streaming is required for operations that may take longer than 10 minutes" — client-side guard that demands streaming when max_tokens crosses an estimated 10-min wall-time threshold. 24K crossed it; 16K stays under. Truncation risk that originally motivated the bump is covered by the json_repair fallback (v3.38.4) — if Sonnet truncates at 16K, json_repair returns best-effort partial dict. Proper fix (streaming) deferred to v3.39. Two non-config v3.38.5 fixes bundled into this release (not config-affecting, see their files): src/analysis/llm_summarizer.py (real root cause of Haiku failure: broken `_strip_code_fence` returned empty string on closed fences); .github/workflows/deep_tier.yml (commit step now stages state/deep_tier_diagnostics.json + state/transcript_status.json, fixing the silent loss of these v3.38 files at runner shutdown).
   v3.38.4 (2026-05-17) — Two changes. (a) HAIKU_MAX_TOKENS 8000→16000 and SONNET_MAX_TOKENS 16000→24000. The 15:32 UTC run had Haiku triage of 50 news items fail JSON parse at char 13926; 8K cap was below floor for that volume. Sonnet didn't fail JSON this run but it was canceled mid-generation by the workflow timeout — bumping preemptively. Both well under each model's 64K hard cap. (b) RSS_FEEDS pruned 19→14 entries: dropped Damnang Substack + Investing.com MU/NVDA/AMAT/ASML. The v3.38.3 UA change to plain Chrome UA fixed ~12 other previously-403-ing feeds but Cloudflare-fronted sources stayed 403. Cloudflare uses TLS fingerprint (JA3/JA4) and HTTP/2 fingerprint in addition to UA — Python requests has a recognizable fingerprint regardless of UA string. Bypass would need curl-cffi (mimics Chrome TLS handshake). Deferred to v3.39 for Damnang (architectural-signal source Raul flagged as critical); Investing.com x4 dropped permanently since Yahoo Finance + Benzinga + broker-name Google News cover the same signals.
   v3.38.3 (2026-05-17) — Two changes. (a) HAIKU_MAX_TOKENS 4000→8000 and SONNET_MAX_TOKENS 8000→16000. The 14:31 UTC run's Haiku triage and Sonnet analysis both produced truncated JSON ("Unterminated string"). Math: 46 news items × ~100-150 output tokens/item ≈ 5,500-7,000 tokens (over 4k Haiku cap); 22 indicator assessments × ~300-500 tokens ≈ 6,600-11,000 (over 8k Sonnet cap). Both safely under each model's 64K hard cap. Per Anthropic docs, max_tokens doesn't factor into rate limits — no cost downside to headroom. (b) RSS_FEEDS pruned from 32 to 19 entries: dropped 13 URLs confirmed 404/DNS in the same run (Yonhap, Anthropic News, Meta AI Blog, SEMI press, Reuters Technology, Seeking Alpha, The Elec, Nikkei, Pulse, vLLM, SGLang, DeepSeek, Artificial Analysis). Signal coverage preserved by existing Google News queries (KV cache compression, DDR5 spot price, broker combos, etc.). TODO v3.39 inline at bottom of RSS_FEEDS for URL hunt.
   v3.33  (2026-05-16) — Model strings fixed: HAIKU_MODEL='claude-haiku-4-5', SONNET_MODEL='claude-sonnet-4-6' (was the literal "haiku"/"sonnet" which Anthropic API doesn't accept). MOTLEY_FOOL_TICKERS gains exchange field per ticker (needed for per-ticker URL pattern in v3.33 scraper rewrite).
@@ -1640,11 +1641,17 @@ HAIKU_MAX_TOKENS = 16000
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for
 # marginal quality gain on this structured task.
 SONNET_MODEL = os.environ.get("SONNET_MODEL_OVERRIDE") or "claude-sonnet-4-6"
-# v3.38.4: bumped 16000 → 24000. Sonnet synthesizes 22 indicator assessments
-# (~400-500 tokens each = ~10K) + executive summary (~1K) + bull/bear/base
-# scenarios (~2K) + news synthesis (~3K) + tier rollups (~1K) ≈ 17K floor.
-# 16000 was tight; 24000 gives ~40% headroom. Still well under 64K cap.
-SONNET_MAX_TOKENS = 24000
+# v3.38.5: lowered 24000 → 16000. The 16:25 UTC run had the Anthropic SDK
+# reject the Sonnet call with "Streaming is required for operations that may
+# take longer than 10 minutes" — the SDK has a client-side guard that demands
+# streaming when max_tokens is high enough to potentially exceed 10 min
+# wall-time. 24K crosses that threshold; 16K stays comfortably under.
+# Truncation risk that motivated the v3.38.4 bump is now covered by the
+# json_repair fallback added in the same release — if Sonnet does truncate
+# at 16K, json_repair recovers what was produced. Proper fix (streaming
+# mode in the API call) deferred to v3.39 — bigger code change, would let
+# us use 24K+ without the SDK guard firing.
+SONNET_MAX_TOKENS = 16000
 
 LLM_TEMPERATURE = 0.3  # low for analytical work
 
