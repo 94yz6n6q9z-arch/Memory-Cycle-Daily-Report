@@ -1,8 +1,41 @@
 # Memory Cycle Brief — Changelog
 
-This release consolidates v3.1 (news relevance filter), v3.2 (architectural sensing feeds), v3.3 (earnings architecture extraction), v3.31 (transcript sources — Quartr replacement), v3.32 (Yahoo Finance added as transcript source), and v3.33 (sequential cascade + Motley Fool primary + Yahoo via residential proxy). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
+This release consolidates v3.1 (news relevance filter), v3.2 (architectural sensing feeds), v3.3 (earnings architecture extraction), v3.31 (transcript sources — Quartr replacement), v3.32 (Yahoo Finance added as transcript source), v3.33 (sequential cascade + Motley Fool primary + Yahoo via residential proxy), and v3.34 (post-deploy fixes: Motley Fool URL regex + Yahoo diagnostic logging + workflow git push race fix). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
 
-> **A note on version numbering.** v3.31, v3.32, v3.33 are maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+> **A note on version numbering.** v3.31, v3.32, v3.33, v3.34 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+
+---
+
+## v3.34 — Post-v3.33 fixes (Motley Fool URL + Yahoo cross-listing tickers + Yahoo diagnostics + git push race)
+
+**Why**: First v3.33 deep-tier run (May 16, 16:08 UTC) showed three problems. While diagnosing, Raul also surfaced a critical empirical finding about Yahoo's ticker behavior that resolves the SK Hynix transcript coverage problem cleanly.
+
+1. **Motley Fool: 13/13 tickers returned `nothing`** because every URL the scraper tried had a stray `\` appended (e.g. `/transcript/\` → URL-encodes to `%5C` → 404). Root cause: my regex character class `[^\"\s'?#]+` excluded the closing quote but not the backslash. Motley Fool's React-rendered page embeds some URLs in JSON-stringified blobs where the closing quote is escaped — the regex greedily included the `\` before stopping at the `"`. All 13 URLs were *actually correct* once the backslash was stripped.
+
+2. **Yahoo: SK Hynix (000660.KS) returned `nothing` because the wrong ticker was canonical.** v3.32 picked the KRX primary listing (000660.KS) as the Yahoo canonical ticker for SK Hynix. Empirically that page does NOT have transcript anchors. The European cross-listing tickers (HY9H.MU / HY9H.F / HY9H.DU / HY9H.SG) DO — same transcript content, but Yahoo's UI only renders the link from those variants. Confirmed 2026-05-16 from Raul's Yahoo Finance app: the SK Hynix Q1 FY2026 transcript is at `/quote/HY9H.MU/earnings/HY9H.MU-Q1-2026-earnings_call-547968.html` ("Powered by Quartr, Apr 23, 2026 at 2:00 AM GMT+2"). Canonical Yahoo ticker for SK Hynix updated to HY9H.MU; Samsung updated to SSU.F (Frankfurt cross-listing, same pattern assumption — v3.34 diagnostic logging will confirm).
+
+3. **Yahoo: 14/15 US tickers also returned `nothing`** — 200 responses but bs4 found zero transcript-link anchors. Whether this is the same "wrong ticker variant" issue (e.g. Yahoo doesn't link transcripts from `/quote/AMAT/` index, only from a different variant) or a deeper JS-shell issue isn't yet known. v3.34 adds detailed logging (HTTP status, body length, anchor count, sample hrefs) so the *next* run gives us hard evidence on what Yahoo actually returns through the proxy for each ticker. AMAT specifically found 1 transcript link but it 404'd — could be a stale article ID in the static HTML.
+
+4. **Git push at end of run rejected**: `! [rejected] main -> main (fetch first)`. The runner cloned at commit `44801cb` at 16:08:15; Raul was pushing v3.33 commits via the web UI during the 3.5-minute run, so the runner's main was stale when it tried to push digests. All 30 digest files written but lost because the workflow doesn't pull-rebase before push.
+
+| File | Changes |
+|---|---|
+| `src/config.py` | `YAHOO_TRANSCRIPT_TICKERS["SK Hynix"]` changed from `000660.KS` to `HY9H.MU` (Munich cross-listing, empirically confirmed to have transcript link). `YAHOO_TRANSCRIPT_TICKERS["Samsung Electronics"]` changed from `005930.KS` to `SSU.F` (Frankfurt cross-listing, same pattern assumption pending v3.34 diagnostic logs). Comment block updated with the empirical correction and rationale for cross-listing canonical tickers |
+| `src/data/transcript_sources.py` | `MOTLEY_FOOL_TRANSCRIPT_PATTERN` character class extended to `[^\"\s'?#\\]+` (exclude backslash). Belt-and-suspenders: matched URLs additionally have trailing `\` stripped and `/` re-added defensively. **Yahoo diagnostic logging**: `_http_get` logs HTTP status + body length when `use_proxy=True`; `_scrape_yahoo_ticker` logs total anchor count + transcript-link match status + first 5 anchor hrefs |
+| `.github/workflows/deep_tier.yml` | Commit step now runs `git pull --rebase origin main` before `git push`; retries once after a 5-second sleep on push failure. Handles the race where main moves forward during the 3-5 minute deep-tier run |
+| `CHANGES.md`, `CLAUDE.md` | v3.34 entry added |
+
+**Honest read on the Yahoo episode**: I told Raul earlier that the AMAT curl test "proved the architecture works" based on a status 200. That was overclaiming — I only verified the status code, never inspected response body content. Production showed 200 responses without parseable transcript content. The Munich-listing correction (above) explains part of it for SK Hynix. The remaining "0 transcript anchors on US ticker pages" question remains open until v3.34 diagnostic logs come back from the next run.
+
+**What works after v3.34**:
+- Motley Fool: should return `full_transcript` for all 13 US names (URLs were always correct, just had a stray `\`).
+- IR scrapers: unchanged behavior — Micron `nothing`, Samsung `materials_only` (worked in the v3.33 run too).
+- Yahoo for SK Hynix: should now return `full_transcript` via HY9H.MU. If it doesn't, diagnostic logs will tell us why.
+- Yahoo for Samsung: SSU.F is a guess; diagnostic logs will confirm or point us at the right variant.
+- Yahoo for US names: still unreliable, but logs will now tell us *why*.
+- Git push: state file commits will land even if the repo moved during the run.
+
+**Not in scope (parked, see `ROADMAP.md`)**: Yahoo SPA workaround / per-ticker variant fallback chains → v3.35; transcript-memory + QoQ diff → v3.5; event dedup → v3.5.
 
 ---
 
