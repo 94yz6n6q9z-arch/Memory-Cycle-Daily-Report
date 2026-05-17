@@ -114,6 +114,32 @@ class ExecutiveSummary:
 # 100, base is strictly the highest, return_to_peak_pct signs make sense.
 
 
+def _safe_indicator_assessment(a: dict) -> IndicatorAssessment:
+    """Construct an IndicatorAssessment from a possibly-partial dict.
+
+    Used after Sonnet output is parsed (or json_repair-recovered). When
+    truncation hits mid-indicator, json_repair returns whatever it could
+    salvage, often missing required fields like `latest_developments`.
+    Prior code's `IndicatorAssessment(**a)` raised TypeError on missing
+    fields and crashed the whole pipeline — see v3.39.1 fix notes.
+
+    Every required field gets a safe default; `change_vs_prior` stays None
+    if absent. The caller filters out dicts without an `id` upstream.
+    """
+    return IndicatorAssessment(
+        id=str(a.get("id", "unknown")),
+        tier=int(a.get("tier", 0)) if str(a.get("tier", "")).strip().isdigit() else 0,
+        name=str(a.get("name", "")),
+        description=str(a.get("description", "")),
+        what_to_look_for=str(a.get("what_to_look_for", "")),
+        current_status=str(a.get("current_status", "Unknown (Sonnet output truncated)")),
+        where_we_stand=str(a.get("where_we_stand", "")),
+        latest_developments=str(a.get("latest_developments", "")),
+        relevant_links=a.get("relevant_links", []) if isinstance(a.get("relevant_links"), list) else [],
+        change_vs_prior=a.get("change_vs_prior") if a.get("change_vs_prior") else None,
+    )
+
+
 def _build_case_scenario(d: dict | None) -> CaseScenario:
     """Construct a CaseScenario from a dict, handling both the new field
     name (return_to_peak_pct) and the pre-v3.39 name (upside_to_peak_pct).
@@ -556,15 +582,21 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
       "change_vs_prior": "If status changed vs prior, describe; else null"
     }}
   ],
-  "top_5_deep_dives": [
-    // Same structure but deeper - one for each: t1_spot_decline, t2_capex_parabolic, t2_eps_revisions, t3_supplier_inventory_rebuild, t3_relative_strength
-  ],
   "market_summary": "2-3 sentence overview of today's memory/semi market action",
   "key_news_summary": [
     {{"headline": "...", "url": "...", "why_it_matters": "..."}}
   ],
   "cycle_position_call": "1 paragraph: where we are in cycle today, what changed since prior brief, what to watch next"
 }}
+
+DEEP-DIVE DEPTH (v3.39.1): The following indicator IDs should be written with
+EXTRA depth in their `where_we_stand` and `latest_developments` fields — 2-3
+fuller paragraphs vs 1-2 sentences for the rest. The client synthesizes the
+"Top 5 deep dives" section by plucking these IDs from indicator_assessments,
+so do NOT emit a separate top_5_deep_dives array (was costing ~10K tokens
+and triggering output truncation):
+  t1_spot_decline, t2_capex_parabolic, t2_eps_revisions,
+  t3_supplier_inventory_rebuild, t3_relative_strength
 
 SCENARIO FRAMING — READ CAREFULLY:
 The three scenarios are signal-CONDITIONAL probabilities for the length-to-peak
@@ -706,6 +738,24 @@ def sonnet_analyze(
         logger.error(f"Sonnet analysis streaming call failed: {e}")
         return None
 
+    # v3.39.1: surface Sonnet token usage in the run log. The 20:30 May 17
+    # run truncated silently — without this log we had to infer cap-hit
+    # from json_repair recovery counts. With usage logged, we can compare
+    # output_tokens directly to SONNET_MAX_TOKENS and know immediately if
+    # we're capping out.
+    try:
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            in_t = getattr(usage, "input_tokens", 0)
+            out_t = getattr(usage, "output_tokens", 0)
+            cap_hit = " (HIT MAX_TOKENS CAP)" if out_t >= SONNET_MAX_TOKENS - 100 else ""
+            logger.info(
+                f"Sonnet usage: {in_t:,} input + {out_t:,} output tokens"
+                f" (max_tokens={SONNET_MAX_TOKENS:,}){cap_hit}"
+            )
+    except Exception:
+        pass  # usage logging is non-essential; don't let it fail the run
+
     raw = _strip_code_fence(response.content[0].text)
     # v3.38.4: same json_repair fallback pattern as Haiku triage. Sonnet
     # produces a deeper nested structure (22 indicator assessments + exec
@@ -779,11 +829,39 @@ def sonnet_analyze(
         urgent_attention_text=exec_data.get("urgent_attention_text", ""),
     )
 
+    # v3.39.1: defensive construction of IndicatorAssessment objects from the
+    # (possibly json_repair-recovered) parsed dict. The 20:30 May 17 run had
+    # Sonnet truncate mid-14th-indicator, json_repair recovered 14 dicts but
+    # the 14th was missing `latest_developments` — the prior code did
+    # `IndicatorAssessment(**a)` which raised TypeError on the missing
+    # required field, crashing the whole pipeline (no email sent, GitHub
+    # issue auto-created). Helper fills every required field with a safe
+    # default so partial dicts produce a usable (if incomplete) row instead
+    # of crashing. Indicators without an `id` are dropped entirely.
+    #
+    # Separately: top_5_deep_dives no longer requested from Sonnet — it was
+    # duplicating 5 indicators with richer content, costing ~10K output
+    # tokens. Now synthesized client-side by plucking the TOP_5_INDICATORS
+    # IDs from indicator_assessments. The deep-dive ranking is fixed in
+    # config (TOP_5_INDICATORS), so client-side synthesis preserves intent.
+    raw_assessments = parsed.get("indicator_assessments", [])
+    assessments = [
+        _safe_indicator_assessment(a)
+        for a in raw_assessments
+        if isinstance(a, dict) and a.get("id")
+    ]
+    # Client-side top_5 synthesis from the same list (no separate Sonnet call)
+    top_5 = [a for a in assessments if a.id in TOP_5_INDICATORS]
+    if len(assessments) < len(raw_assessments):
+        logger.warning(
+            f"Dropped {len(raw_assessments) - len(assessments)} indicator(s) "
+            f"with missing or invalid id from Sonnet output."
+        )
     return BriefAnalysis(
         executive_summary=exec_summary,
         big_movers=big_movers,
-        indicator_assessments=[IndicatorAssessment(**a) for a in parsed.get("indicator_assessments", [])],
-        top_5_deep_dives=[IndicatorAssessment(**a) for a in parsed.get("top_5_deep_dives", [])],
+        indicator_assessments=assessments,
+        top_5_deep_dives=top_5,
         market_summary=parsed.get("market_summary", ""),
         key_news_summary=parsed.get("key_news_summary", []),
         cycle_position_call=parsed.get("cycle_position_call", ""),
