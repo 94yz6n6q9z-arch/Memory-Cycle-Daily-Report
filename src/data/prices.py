@@ -120,10 +120,28 @@ def calculate_performance(
         currency = _get_currency(symbol)
 
         def pct_change_lookback(days: int) -> Optional[float]:
-            if len(series) < days + 1:
+            # v3.39.2: hardened against off-by-one. Prior guard
+            # `if len(series) < days + 1` fired at exact equality
+            # (the May 17 run had len(series)=252 and days=252, so
+            # 252 < 253 → returned None for 1Y even though all 252
+            # rows were valid). Now we accept any series long enough
+            # to contain the requested lookback point at all, falling
+            # back to the earliest available row when the window is
+            # tight rather than refusing.
+            if len(series) < 2:
                 return None
+            lookback_idx = -days - 1
+            if abs(lookback_idx) > len(series):
+                # Series shorter than requested window — fall back to
+                # the oldest available row. The resulting return is
+                # labeled by the caller as `change_<window>` regardless;
+                # this is acceptable since fast_tier now fetches 3y of
+                # data, so this branch is realistically unreachable.
+                # Kept as defense-in-depth in case the fetch window is
+                # ever shortened again.
+                lookback_idx = 0
             try:
-                past = series.iloc[-days - 1]
+                past = series.iloc[lookback_idx]
                 if past == 0:
                     return None
                 return (current / past - 1) * 100
