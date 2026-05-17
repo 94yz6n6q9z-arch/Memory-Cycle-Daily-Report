@@ -12,6 +12,7 @@ summary with probability calculations, and cycle position synthesis.
 Falls back to deterministic synthesis if API unavailable.
 
 CHANGELOG (this file):
+  v3.38.5 (2026-05-17) — Real root cause of the 16:25 UTC May 17 Haiku triage failure found and fixed. The error pattern was "Failed to parse Haiku response as JSON: Expecting value (char 0)" → json_repair fallback returned str (not dict) → unrecoverable. This was NOT a prompt issue or a max_tokens issue. The bug was in `_strip_code_fence`: when the LLM returned a properly closed code fence (```json\n{...}\n```), the line `text.split("```", 2)[-1]` grabbed the empty string AFTER the closing fence instead of the JSON content BETWEEN the fences. The function returned `""`. json.loads("") fails with "Expecting value (char 0)"; json_repair.loads("") returns `""` (a str). Rewrote the function with explicit handling of three patterns (raw / closed-fence / unclosed-fence). Verified locally on all five common LLM-output shapes — all parse cleanly via stdlib now. Also tightened `build_haiku_triage_prompt` output format requirements (start with `{`, no markdown fences, no prose, no apologies) as belt-and-suspenders. The previous bump of HAIKU_MAX_TOKENS to 16000 and the json_repair fallback both remain — they fix related but distinct failure modes (truncation, unescaped chars).
   v3.38.4 (2026-05-17) — Both `haiku_triage_news` and `sonnet_analyze` now parse responses with a two-stage strategy: stdlib `json.loads(raw)` first (fast path for valid output), then `json_repair.loads(raw)` fallback on JSONDecodeError. Reason: the 15:32 UTC May 17 run had Haiku triage of 50 news items fail JSON parse at char 13926 (unterminated string — almost certainly unescaped quote/newline in a reasoning field), losing the entire triage. v3.38.3 had the same failure mode in Sonnet (char 27099) and Haiku (char 6839). Bumping max_tokens helps when the cause is truncation, but doesn't help when the cause is malformed string content — json_repair handles both. New explicit log at WARNING level when the fallback fires, with INFO-level confirmation of how much was recovered.
 """
 
@@ -159,7 +160,15 @@ YOUR TASKS:
 3. TrendForce / price commentary: Extract any DRAM, NAND, HBM, or memory pricing commentary. Pull out specific price levels, percentage moves, and demand language ("buyers cautious", "price cuts not stimulating demand", etc).
 4. Indicator mapping: For each remaining relevant news item, list which indicator IDs it informs.
 
-OUTPUT FORMAT - respond with ONLY a JSON object, no prose:
+OUTPUT FORMAT — STRICT REQUIREMENTS:
+- Your entire response must be a single valid JSON object.
+- Start your response with the opening `{{` character. End with the closing `}}`.
+- Do NOT wrap the JSON in markdown code fences (```).
+- Do NOT include any prose before or after the JSON.
+- Do NOT include comments, explanations, or apologies.
+- If you cannot triage some items, still return valid JSON — leave problematic items out of `relevant_news` rather than describing the problem in prose.
+
+JSON SCHEMA:
 {{
   "relevant_news": [
     {{"index": 5, "title": "...", "url": "...", "source": "...", "summary": "1-line takeaway"}}
@@ -708,15 +717,34 @@ def identify_big_movers(
 # ============================================================
 
 def _strip_code_fence(text: str) -> str:
-    """Strip markdown code fences from LLM response."""
+    """Strip markdown code fences from an LLM response.
+
+    Handles three patterns:
+      1. Raw JSON (no fence)               → returned unchanged
+      2. ```json\\n{...}\\n``` (closed)    → inner content
+      3. ```json\\n{...  (unclosed)        → body after the opening marker
+
+    v3.38.5: the previous implementation had a bug — on closed fences,
+    `text.split("```", 2)[-1]` returned the empty string AFTER the closing
+    fence (not the middle content), causing `json.loads` to fail at char 0
+    with "Expecting value", which then fed an empty string to json_repair
+    (which returned `""` rather than a dict). This was the actual root cause
+    of the 16:25 UTC May 17 Haiku failure, not a prompt issue.
+    """
     text = text.strip()
-    if text.startswith("```"):
-        text = text.split("```", 2)[-1] if text.count("```") >= 2 else text[3:]
+    if not text.startswith("```"):
+        return text
+    # Strip opening fence + optional language tag, up to the first newline.
+    first_nl = text.find("\n")
+    if first_nl >= 0:
+        text = text[first_nl + 1:]
+    else:
+        text = text[3:]
         if text.startswith("json"):
             text = text[4:]
-        elif text.startswith("\n"):
-            text = text[1:]
-        text = text.rsplit("```", 1)[0].strip()
+    # Strip trailing fence if present (closed-fence case).
+    if text.rstrip().endswith("```"):
+        text = text.rstrip()[:-3].rstrip()
     return text
 
 
