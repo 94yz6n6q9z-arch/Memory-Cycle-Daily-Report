@@ -71,6 +71,7 @@ never raises into the deep-tier orchestrator. Same maintenance posture as the
 Naver scraper (expect 1-2 fixes/year).
 
 CHANGELOG (this file):
+  v3.36  (2026-05-17) — Two post-v3.35 fixes empirically diagnosed against live pages. Motley Fool body selector rewrite: v3.34's `psoup.find("article") or psoup.find("div", class_=re.compile("article|content|body"))` matched the FIRST <article> tag on fool.com transcript pages — which is a "Read Next" recommendation card at the bottom (~57 chars of "Cheap Tech Stocks for 2026" text), falling below the 400-char threshold and returning `nothing` on all 13 US tickers in v3.34 + v3.35 runs. The actual transcript body uses <div id="article-body-transcript"> (stable explicit ID + `article-body transcript-content` class combo). New selector anchors there; validated locally on the May 15 AMAT transcript page Raul provided. SK Hynix IR: previously pointed at skhynix.com/ir/UI-FR-IR15 which is the wrong subsection; the right earnings landing is UI-FR-IR06, but THAT page is a JS shell whose PDF links resolve to `/webundefined` placeholders only client-side. Switched to news.skhynix.com WordPress newsroom RSS feed at /feed/rss/ — server-rendered, standard WordPress, contains the full earnings-release post text. New `_scrape_ir_rss_feed` helper routes feed URLs to feedparser, picks the newest entry matching earnings keywords (business-results / financial results / quarterly results / q1-q4), uses <content:encoded> when available else fetches the post URL, and tags event_date_iso from the entry's published_parsed for stable cross-run identity.
   v3.35  (2026-05-17) — Yahoo parser rewrite. The v3.34 bs4 selector (`psoup.find("article") or div.body|content|caas`) returned <400 chars on 3 MB pages because transcripts live in <p data-testid="typography"> tags, not inside an <article>. New helpers (`_yahoo_extract_paragraphs`, `_yahoo_paragraphs_to_text`, `_yahoo_extract_analysis`) inlined above `_scrape_yahoo_ticker` extract: (a) timestamp-paired paragraphs from the rendered DOM (anchored on stable test-id + class prefix, ignoring the volatile yf-XXXXXX runtime hash); (b) Yahoo Scout AI's structured analysis (TLDR, 12 key_insights sections, notable_quotes, analyst Q&A) from the embedded SvelteKit hydration block at `mad/v2/analyst/ect`. Validated locally on /tmp/yahoo_nvda.html before commit: 90 paragraphs / 52K chars text / Scout AI analysis intact. TranscriptResult gains optional `analysis_json` field (captures Scout AI for v3.5 brief rendering; current digester ignores). Motley Fool diagnostic logging added (page length + total hrefs + near-miss transcript hrefs) to give next deploy actionable signal on the 13/13 "nothing" result v3.34 produced.
   v3.34  (2026-05-16) — Motley Fool URL regex: exclude backslash from char class (HTML/JSON escape was leaking a stray backslash into URLs → all transcript fetches 404 in first v3.33 run). Yahoo via proxy: added HTTP-status + body-length + anchor-count diagnostic logging — first v3.33 run showed Yahoo returning 200 but bs4 finding 0 transcript links on most tickers; need data on whether Yahoo serves a JS shell through residential proxy vs. real HTML.
   v3.33  (2026-05-16) — Sequential cascade: Motley Fool primary → IR fill-ins → Yahoo fallback for gaps. Motley Fool scraper rewritten to use per-ticker /quote/{exchange}/{ticker}/ page (was global recent-index which rolled off in 24-48h, leaving no fallback). Yahoo routed through Bright Data residential proxy when RESIDENTIAL_PROXY_URL is set, with realistic Chrome headers, per-request session rotation, redirect-following, 3s inter-ticker delay, and one retry-on-429 with 10s backoff. transcripts_seen.json cache skips re-fetching/re-digesting URLs we've already processed.
@@ -278,6 +279,159 @@ def _strip_html(html: str) -> str:
 # Source 1 — Direct IR-site scrapers (SK Hynix, Samsung, Micron)
 # ============================================================
 
+def _scrape_ir_rss_feed(company: str, cfg: dict) -> list[TranscriptResult]:
+    """Scrape a WordPress RSS feed for the most recent earnings/results post.
+
+    Used when an IR site is a JS shell but the org has a WordPress newsroom
+    with a standard /feed/rss/ endpoint. As of v3.36 this is the path for
+    SK Hynix (news.skhynix.com/feed/rss/), where skhynix.com/ir/UI-FR-IR06's
+    PDF links resolve to /webundefined placeholders only after client-side
+    JS runs — but the news.skhynix.com WordPress posts under category "IR"
+    are fully server-rendered.
+
+    Feed entries are filtered by title and link for earnings/results keywords;
+    the most recent match is fetched (the WordPress post itself, also fully
+    server-rendered) and classified by text length. Capped at materials_only
+    per `transcript_capable` flag — these are press releases / earnings
+    releases, not call transcripts.
+    """
+    ir_url = cfg["ir_url"]
+    ticker = cfg.get("ticker", "")
+    transcript_capable = cfg.get("transcript_capable", True)
+
+    try:
+        import feedparser
+    except ImportError:
+        logger.warning(f"feedparser unavailable for {company} IR RSS path")
+        return [TranscriptResult(
+            company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+            event_type="unknown", availability="nothing",
+            source_name=f"{company} IR", source_url=ir_url,
+            note="feedparser library unavailable — cannot parse RSS feed.",
+        )]
+
+    # Fetch via _http_get so we get our timeout + UA, then feed bytes to feedparser.
+    feed_xml = _http_get(ir_url)
+    if feed_xml is None:
+        return [TranscriptResult(
+            company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+            event_type="unknown", availability="nothing",
+            source_name=f"{company} IR", source_url=ir_url,
+            note="IR RSS feed fetch failed (network or site down).",
+        )]
+
+    parsed = feedparser.parse(feed_xml)
+    entries = parsed.entries or []
+    logger.info(
+        f"IR RSS for {company}: {len(entries)} feed entries from {ir_url}"
+    )
+    if not entries:
+        return [TranscriptResult(
+            company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+            event_type="unknown", availability="nothing",
+            source_name=f"{company} IR", source_url=ir_url,
+            note="IR RSS feed parsed but contained zero entries.",
+        )]
+
+    # Score each entry for earnings-relatedness. Title keywords + link slug.
+    # WordPress entries are date-ordered newest-first by default; we keep that
+    # order and pick the first match.
+    earnings_kw = (
+        "business-results", "financial results", "earnings release",
+        "earnings results", "quarterly results", "results presentation",
+        "1q", "2q", "3q", "4q", "q1", "q2", "q3", "q4",
+    )
+
+    def is_earnings_entry(entry) -> bool:
+        title = (entry.get("title") or "").lower()
+        link = (entry.get("link") or "").lower()
+        return any(kw in title or kw in link for kw in earnings_kw)
+
+    matches = [e for e in entries if is_earnings_entry(e)]
+    if not matches:
+        # Log the first few entry titles so we can spot regressions
+        sample_titles = [e.get("title", "")[:80] for e in entries[:5]]
+        logger.info(
+            f"IR RSS for {company}: no earnings-related entries. "
+            f"First 5 titles: {sample_titles}"
+        )
+        return [TranscriptResult(
+            company=company, ticker=ticker, event_date_iso=date.today().isoformat(),
+            event_type="unknown", availability="nothing",
+            source_name=f"{company} IR", source_url=ir_url,
+            note=(
+                f"IR RSS feed returned {len(entries)} entries but none matched "
+                f"earnings keywords. Newsroom may have shifted naming conventions."
+            ),
+        )]
+
+    entry = matches[0]
+    entry_title = entry.get("title", "")
+    entry_link = entry.get("link", ir_url)
+    logger.info(f"IR RSS for {company}: matched newest earnings entry: {entry_title}")
+
+    # Prefer the full <content:encoded> if present (WordPress default);
+    # fall back to <description> / summary. Both are HTML.
+    content_html = ""
+    content_list = entry.get("content") or []
+    if content_list and isinstance(content_list, list):
+        content_html = content_list[0].get("value", "") or ""
+    if not content_html:
+        content_html = entry.get("summary", "") or entry.get("description", "") or ""
+
+    # If feed content is too thin (some sites publish summary-only feeds),
+    # fetch the post page directly — WordPress posts are server-rendered.
+    if len(content_html) < 4000 and entry_link:
+        logger.info(
+            f"IR RSS for {company}: feed content thin ({len(content_html)} chars), "
+            f"fetching full post at {entry_link}"
+        )
+        post_html = _http_get(entry_link)
+        if post_html:
+            content_html = post_html
+
+    text = _strip_html(content_html)
+    availability = _classify_availability(text)
+    # Cap to materials_only — these are press releases / earnings releases,
+    # not call transcripts. The transcript itself comes via Yahoo Finance.
+    if not transcript_capable and availability == "full_transcript":
+        availability = "materials_only"
+
+    # Prefer the entry's published date over today's date — keeps event_date_iso
+    # stable across daily runs so the digester can recognize a re-encounter of
+    # the same earnings event.
+    event_date_iso = date.today().isoformat()
+    pub = entry.get("published_parsed") or entry.get("updated_parsed")
+    if pub:
+        try:
+            event_date_iso = f"{pub[0]:04d}-{pub[1]:02d}-{pub[2]:02d}"
+        except (TypeError, IndexError):
+            pass
+
+    note = None
+    if availability == "materials_only":
+        note = (
+            f"From {company} newsroom RSS feed (the configured IR landing page "
+            f"is a JS shell — placeholder URLs resolve client-side). "
+            f"Latest earnings post: \"{entry_title}\". This is the earnings "
+            f"release / press release. Full call commentary comes from "
+            f"Yahoo Finance, not here."
+        )
+    elif availability == "nothing":
+        note = f"Matched entry \"{entry_title}\" but content was unusable ({len(text)} chars)."
+
+    return [TranscriptResult(
+        company=company, ticker=ticker,
+        event_date_iso=event_date_iso,
+        event_type="earnings_call",
+        availability=availability,
+        text=text if availability != "nothing" else "",
+        source_name=f"{company} IR (newsroom RSS)",
+        source_url=entry_link,
+        note=note,
+    )]
+
+
 def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptResult]:
     """Scrape one company's IR site for recent earnings events.
 
@@ -300,6 +454,15 @@ def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptR
             source_name=f"{company} IR",
             note="No IR URL configured.",
         )]
+
+    # v3.36: WordPress RSS feed path. Some IR sites (notably SK Hynix's
+    # news.skhynix.com newsroom) are WordPress installs whose IR landing pages
+    # are JS shells — PDF links and post listings only resolve client-side.
+    # The standard WordPress /feed/rss/ endpoint serves the same posts as
+    # server-rendered XML, including full HTML content in <content:encoded>.
+    # Detect by URL pattern and branch into the RSS-specific handler.
+    if "/feed/" in ir_url or ir_url.rstrip("/").endswith("/feed"):
+        return _scrape_ir_rss_feed(company, cfg)
 
     html = _http_get(ir_url)
     if html is None:
@@ -585,7 +748,19 @@ def _scrape_motley_fool_ticker(
     try:
         from bs4 import BeautifulSoup
         psoup = BeautifulSoup(page, "html.parser")
-        body = psoup.find("article") or psoup.find("div", class_=re.compile(r"article|content|body", re.I))
+        # v3.36: anchor on the stable explicit ID `article-body-transcript` that
+        # wraps the transcript body. The v3.34 selector
+        # (`psoup.find("article") or psoup.find("div", class_=re.compile("article|content|body"))`)
+        # matched the FIRST <article> tag on the page, which on fool.com is a
+        # "Read Next" recommendation card (~50-200 chars of "Cheap Tech Stocks
+        # for 2026" or similar) — fell below the 400-char threshold and
+        # returned `nothing` on every ticker. Validated locally on AMAT page
+        # 2026-05-17: old selector → 57 chars; new selector → full transcript.
+        body = psoup.find("div", id="article-body-transcript")
+        # Fallback: if the explicit ID disappears in a future redesign, try
+        # the class combination — both are stable on current templates.
+        if body is None:
+            body = psoup.find("div", class_=re.compile(r"\barticle-body\b.*\btranscript-content\b|\btranscript-content\b.*\barticle-body\b"))
         text = _strip_html(str(body)) if body else _strip_html(page)
     except ImportError:
         logger.warning("bs4 not available; Motley Fool scrape using regex stripper")
