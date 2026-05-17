@@ -23,7 +23,17 @@ concurrency:
 jobs:
   fast-tier:
     runs-on: ubuntu-latest
-    timeout-minutes: 12  # comfortable under GitHub's 15-min hard cap
+    # v3.38.4: bumped 12 → 25. GitHub Actions hard cap is 6 HOURS (360 min),
+    # not 15 min as the previous comment claimed — that was wrong and led to
+    # the 15:32 UTC May 17 cancellation. Post-v3.38.1 throttle made Layer 2
+    # alone ~4 min (was ~37s). Current run profile:
+    #   fetch + L1B Haiku relevance:  ~1.5 min
+    #   Layer 2 throttled:            ~4 min   (22 × 7s spacing floor)
+    #   Layer 3 Haiku triage:         ~2.5 min
+    #   Layer 3 Sonnet analysis:      ~3-5 min
+    #   chart + email:                ~30 sec
+    #   TOTAL:                        ~12-15 min, hence 25 with safety margin.
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repo
