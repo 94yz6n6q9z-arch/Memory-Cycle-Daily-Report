@@ -24,6 +24,7 @@ Failure modes — see src/state.py for retry/cache policy. Critical sources
 sources use cached payload tagged STALE; nice-to-have just skip.
 
 CHANGELOG (this file):
+  v3.38.6 (2026-05-17) — FORCE_RUN env var bypass for the Step 0 idempotency check. Set automatically by fast_tier.yml when event_name == 'workflow_dispatch' (manual run from the Actions UI); scheduled cron triggers leave it empty so the existing primary/fallback/safety cron coordination via state/brief_sent_dates.json continues to work. Motivation: after the v3.38.5 push, manually re-running the fast tier to validate the fix bundle was a no-op because the morning 16:25 UTC run had already marked today. Manual dispatch always means "I want this to run right now" (test/validate/recover) — auto-bypass is the right default. `os` added to imports. No behavior change for scheduled runs.
   v3.38.5 (2026-05-17) — Two error-message strings rewrote to reflect real causes. The previous strings ("deep tier hasn't run since v3.38 deploy" / "deep tier may not have run yet") implied the deep tier didn't run, when in practice the deep tier DID run but the v3.38 root-level state JSONs (state/deep_tier_diagnostics.json, state/transcript_status.json) weren't in the deep_tier.yml workflow's `git add` line. Files generated on the runner, destroyed at shutdown, never reached origin/main. Fixed in the deep_tier.yml workflow in same release. Error messages now name both possibilities: tier didn't run, OR tier ran but didn't commit.
   v3.38.3 (2026-05-17) — Fixed `fallback_analysis` call site (line 399): was passing 3 positional args (news_items, performance, big_movers) to a function with 4 required parameters in different order (performance_data, estimates_data, news_items, big_movers). Pre-existing v3.37 bug masked by upstream crashes; surfaced when Sonnet JSON parse failed → fallback path activated → TypeError. Now uses kwarg form with all four. Caught by the expanded scripts/audit_signatures.py audit (positional + kwargs + arg count).
   v3.38.1 (2026-05-17) — Three pre-existing signature mismatches fixed (all crashed when v3.38 unblocked upstream errors). (a) `analyze_with_llm` call: renamed kwargs `estimates`→`estimates_data`, `performance`→`performance_data`; dropped non-existent `layer2_input=` kwarg and unused `layer3_input` dict. (b) `generate_performance_chart` call: dropped spurious WIDER_BASKET positional that landed in `title:str`, dropped non-existent `collector=` kwarg. (c) `send_email` call: dropped non-existent `collector=` kwarg.
@@ -37,6 +38,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -142,9 +144,22 @@ def run_fast_tier() -> int:
     started_at = datetime.utcnow()
 
     # ----- Step 0: Idempotency check -----
-    if has_brief_been_sent_today(today):
+    # v3.38.6: FORCE_RUN env var bypasses this check. Set automatically by
+    # the fast_tier.yml workflow when event_name == 'workflow_dispatch' (i.e.
+    # manual run from Actions UI). Scheduled cron runs leave it empty and
+    # the check fires as before — important, since the three crons
+    # (11:00 / 11:30 / 12:05 UTC) explicitly rely on idempotency so that
+    # the fallback/safety crons no-op when the primary succeeded.
+    already_sent = has_brief_been_sent_today(today)
+    force_run = os.environ.get("FORCE_RUN", "").strip().lower() in ("1", "true", "yes")
+    if already_sent and not force_run:
         logger.info(f"Brief already sent today ({today.isoformat()}). Exiting early — no-op.")
         return 0
+    if already_sent and force_run:
+        logger.info(
+            f"Brief already sent today ({today.isoformat()}), "
+            "but FORCE_RUN is set — bypassing idempotency check and running full pipeline."
+        )
 
     logger.info(f"=== FAST TIER START — {today.isoformat()} {started_at.strftime('%H:%M')} UTC ===")
 
@@ -548,6 +563,27 @@ def _surface_transcript_status(collector) -> None:
                 items_returned=1,
                 latency_ms=0,
                 detail="Full call commentary captured",
+            ))
+        elif availability == "already_processed":
+            # v3.39: was falling through to the catch-all "nothing" branch
+            # below, producing false WARN rows reading "No transcript or
+            # materials found." But we DO have the transcript — it was
+            # fetched and Haiku-digested in a prior run, and the digest is
+            # already on disk in state/digests/. The deep tier emits this
+            # status from the URL cache (state/transcripts_seen.json) when
+            # the IR/Yahoo/Motley Fool URL has been seen before, skipping
+            # the body re-fetch and the Haiku call. Steady-state output
+            # for most days outside earnings season — ~28 of 30 transcripts
+            # are cached. Mapping to OK (items_returned=1) reflects reality:
+            # the commentary IS available for this brief, just not freshly
+            # fetched today.
+            collector.record(SourceFetchStatus(
+                source_name=f"Transcript: {company} ({source_name})",
+                source_type="scraper",
+                reached=True,
+                items_returned=1,
+                latency_ms=0,
+                detail="Cached from prior run — digest available, no re-fetch needed",
             ))
         elif availability == "materials_only":
             collector.record(SourceFetchStatus(
