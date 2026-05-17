@@ -5,6 +5,7 @@ Defines the tickers tracked, the indicator framework (tiers 1-4),
 and the thresholds that classify each signal as fired vs not fired.
 
 CHANGELOG (this file):
+  v3.39.3 (2026-05-18) — TrendForce ingestion repair. Three config-level changes; companion patches in news.py same release. (a) RSS_FEEDS: dropped "TrendForce": "https://www.trendforce.com/news/feed" — that URL no longer publishes XML, replaced by "DRAMeXchange Weekly Research": "https://www.dramexchange.com/rss.xml". DRAMeXchange is TrendForce's sister property and the RSS is well-formed, current (most-recent items within a few days), and carries TrendForce-authored weekly research commentary which is exactly the behavioral-signal language Tier 1 t1_price_cuts_no_demand and t1_oem_inventory look for. (b) SCRAPE_TARGETS: "TrendForce News" URL fixed from /news/category/dram to /news/category/semiconductors/dram/ (TrendForce restructured the path; old URL returned 200 with 0 matching <article> selectors → silent zero). news.py scrape_trendforce() updated to match. (c) SCRAPE_TARGETS: added "TrendForce DRAM Spot (price table)" → /price/dram/dram_spot — handled by new scrape_trendforce_prices() in news.py with table parsing + freshness guard (stale snapshots tagged [STALE] in NewsItem title so Layer 2 won't fire Tier 1 on them).
   v3.38.5 (2026-05-17) — SONNET_MAX_TOKENS 24000 → 16000. The 16:25 UTC May 17 run had the Anthropic SDK refuse the Sonnet call with "Streaming is required for operations that may take longer than 10 minutes" — client-side guard that demands streaming when max_tokens crosses an estimated 10-min wall-time threshold. 24K crossed it; 16K stays under. Truncation risk that originally motivated the bump is covered by the json_repair fallback (v3.38.4) — if Sonnet truncates at 16K, json_repair returns best-effort partial dict. Proper fix (streaming) deferred to v3.39. Two non-config v3.38.5 fixes bundled into this release (not config-affecting, see their files): src/analysis/llm_summarizer.py (real root cause of Haiku failure: broken `_strip_code_fence` returned empty string on closed fences); .github/workflows/deep_tier.yml (commit step now stages state/deep_tier_diagnostics.json + state/transcript_status.json, fixing the silent loss of these v3.38 files at runner shutdown).
   v3.38.4 (2026-05-17) — Two changes. (a) HAIKU_MAX_TOKENS 8000→16000 and SONNET_MAX_TOKENS 16000→24000. The 15:32 UTC run had Haiku triage of 50 news items fail JSON parse at char 13926; 8K cap was below floor for that volume. Sonnet didn't fail JSON this run but it was canceled mid-generation by the workflow timeout — bumping preemptively. Both well under each model's 64K hard cap. (b) RSS_FEEDS pruned 19→14 entries: dropped Damnang Substack + Investing.com MU/NVDA/AMAT/ASML. The v3.38.3 UA change to plain Chrome UA fixed ~12 other previously-403-ing feeds but Cloudflare-fronted sources stayed 403. Cloudflare uses TLS fingerprint (JA3/JA4) and HTTP/2 fingerprint in addition to UA — Python requests has a recognizable fingerprint regardless of UA string. Bypass would need curl-cffi (mimics Chrome TLS handshake). Deferred to v3.39 for Damnang (architectural-signal source Raul flagged as critical); Investing.com x4 dropped permanently since Yahoo Finance + Benzinga + broker-name Google News cover the same signals.
   v3.38.3 (2026-05-17) — Two changes. (a) HAIKU_MAX_TOKENS 4000→8000 and SONNET_MAX_TOKENS 8000→16000. The 14:31 UTC run's Haiku triage and Sonnet analysis both produced truncated JSON ("Unterminated string"). Math: 46 news items × ~100-150 output tokens/item ≈ 5,500-7,000 tokens (over 4k Haiku cap); 22 indicator assessments × ~300-500 tokens ≈ 6,600-11,000 (over 8k Sonnet cap). Both safely under each model's 64K hard cap. Per Anthropic docs, max_tokens doesn't factor into rate limits — no cost downside to headroom. (b) RSS_FEEDS pruned from 32 to 19 entries: dropped 13 URLs confirmed 404/DNS in the same run (Yonhap, Anthropic News, Meta AI Blog, SEMI press, Reuters Technology, Seeking Alpha, The Elec, Nikkei, Pulse, vLLM, SGLang, DeepSeek, Artificial Analysis). Signal coverage preserved by existing Google News queries (KV cache compression, DDR5 spot price, broker combos, etc.). TODO v3.39 inline at bottom of RSS_FEEDS for URL hunt.
@@ -95,6 +96,13 @@ class Indicator:
     cadence: Optional[str] = None  # e.g. "2 articles within 14 days", "MoM print", "single event"
     stitching: Optional[str] = None  # how multiple sources combine; None = single-source
     initial_status: str = "Not fired"
+    # v3.39.2: short_label for the supercycle chart's annotation boxes.
+    # The chart's "T1 fired (X/Y)" panels list indicators by short_label,
+    # not `name` — names like "DDR5 spot first MoM decline" are too long
+    # for the panel layout. Hand-curated to mirror the user-facing labels
+    # in the original supercycle chart screenshot (e.g. "Spot first decline",
+    # "Capex parabolic"). Falls back to `name` if unset.
+    short_label: Optional[str] = None
 
 
 INDICATORS: list[Indicator] = [
@@ -106,6 +114,7 @@ INDICATORS: list[Indicator] = [
         id="t1_spot_decline",
         tier=1,
         name="DDR5 spot first MoM decline",
+        short_label="Spot first decline",
         description=(
             "DRAM spot prices show first month-over-month decline. DDR5 16Gb chip is "
             "the validation; DDR4 alone is partly EOL noise."
@@ -142,6 +151,7 @@ INDICATORS: list[Indicator] = [
         id="t1_lead_times",
         tier=1,
         name="Lead times shrinking",
+        short_label="Lead times shrinking",
         description=(
             "Memory product lead times contracting from peak levels. "
             "Available via earnings call commentary + Korean broker PDF citations."
@@ -177,6 +187,7 @@ INDICATORS: list[Indicator] = [
         id="t1_price_cuts_no_demand",
         tier=1,
         name="Demand destruction language",
+        short_label="Demand destruction",
         description=(
             "TrendForce/DigiTimes/Korean press commentary using specific phrases that "
             "historically appear at cycle turns. Applied to DDR5 specifically (not DDR4 EOL noise)."
@@ -212,6 +223,7 @@ INDICATORS: list[Indicator] = [
         id="t1_oem_inventory",
         tier=1,
         name="OEM inventory rising while supplier still tight",
+        short_label="OEM inv mismatch",
         description=(
             "Supplier-buyer inventory gap exposes prior double-ordering. Requires "
             "BOTH sides confirmed (stitched signal)."
@@ -253,6 +265,7 @@ INDICATORS: list[Indicator] = [
         id="t1_efficiency_shock",
         tier=1,
         name="AI inference efficiency breakthrough",
+        short_label="AI efficiency shock",
         description=(
             "Algorithmic or architectural improvement reducing memory-per-token by >2x. "
             "TurboQuant-class shocks. The cycle-breaking risk."
@@ -295,6 +308,7 @@ INDICATORS: list[Indicator] = [
         id="t1_demand_destruction",
         tier=1,
         name="PC / smartphone / server demand cuts",
+        short_label="PC/smartphone cuts",
         description="IDC, Counterpoint, Gartner revise forecasts down. Authoritative single-source signals.",
         what_to_look_for=(
             "IDC PC shipment forecast revised to -5% or worse for 2026 (current -2.4 to "
@@ -329,6 +343,7 @@ INDICATORS: list[Indicator] = [
         id="t2_eps_revisions",
         tier=2,
         name="Forward FY27/FY28 EPS revision direction — THE canonical Tier 2 signal",
+        short_label="EPS revision flip",
         description=(
             "First month with net negative FY27 or FY28 EPS revisions for SK Hynix or "
             "Micron. The single most important missing signal — currently NOT FIRED."
@@ -371,6 +386,7 @@ INDICATORS: list[Indicator] = [
         id="t2_capex_parabolic",
         tier=2,
         name="Capex announcements parabolic",
+        short_label="Capex parabolic",
         description=(
             "Memory makers' and hyperscalers' capex growing parabolic — building 2027-28 "
             "supply glut. ALREADY FIRED on aggregate; watch for 2027 guidance direction at Jul prints."
@@ -409,6 +425,7 @@ INDICATORS: list[Indicator] = [
         id="t2_ltas_signed",
         tier=2,
         name="Multi-year LTAs aggressively signed",
+        short_label="LTAs aggressive",
         description="Buyers panic-locking long-term supply. Paradoxical bearish signal — already fired.",
         what_to_look_for=(
             "3+ year HBM LTA announcements. 'Sold out through 2027/2028' phrasing. "
@@ -431,6 +448,7 @@ INDICATORS: list[Indicator] = [
         id="t2_insider_sales",
         tier=2,
         name="Insider sales at memory makers (US Micron + Korean SK Hynix/Samsung)",
+        short_label="Insider sales",
         description=(
             "C-suite or board sales — material insider activity. "
             "Coverage is COMPREHENSIVE: Micron via SEC EDGAR Form 4 (US standard); "
@@ -482,6 +500,7 @@ INDICATORS: list[Indicator] = [
         id="t2_pe_compressed",
         tier=2,
         name="Forward P/E compressed to 3-5x",
+        short_label="Fwd P/E to 3-5×",
         description=(
             "Forward P/E compresses on PEAK earnings denominator — bearish, not bullish. "
             "Already fired for SK Hynix and Samsung."
@@ -505,6 +524,7 @@ INDICATORS: list[Indicator] = [
         id="t2_hyperscaler_capex_revenue",
         tier=2,
         name="Hyperscaler capex/revenue >40%",
+        short_label="Capex/rev >40%",
         description="Capex/revenue ratios at historic norms 12-18%. Above 40% is unsustainable.",
         what_to_look_for=(
             "Any of MSFT/GOOG/META/AMZN/ORCL prints capex/revenue >40% in quarterly "
@@ -528,6 +548,7 @@ INDICATORS: list[Indicator] = [
         id="t2_spot_contract_spread",
         tier=2,
         name="Spot/contract spread narrowing or inverted",
+        short_label="Spot/contract inverted",
         description=(
             "Spot prices weakening while contract still rises means spot has rolled. "
             "DDR4 inverted (fired). DDR5 not yet."
@@ -564,6 +585,7 @@ INDICATORS: list[Indicator] = [
         id="t3_contract_decline",
         tier=3,
         name="First sequential decline in CONTRACT prices — most diagnostic Tier 3",
+        short_label="Contract first decline",
         description="The single most diagnostic Tier 3 signal. Contract prices roll over MoM.",
         what_to_look_for=(
             "DDR5 server contract MoM decline of any magnitude in TrendForce monthly "
@@ -597,6 +619,7 @@ INDICATORS: list[Indicator] = [
         id="t3_supplier_inventory_rebuild",
         tier=3,
         name="Supplier inventory rebuilds 2-3 → 4-5 weeks",
+        short_label="Inventory rebuild",
         description="Memory makers' inventory weeks rising from record lows.",
         what_to_look_for=(
             "SK Hynix or Micron inventory weeks crossing 4 in TrendForce monthly print "
@@ -628,6 +651,7 @@ INDICATORS: list[Indicator] = [
         id="t3_relative_strength",
         tier=3,
         name="Memory pure-plays underperform SOX",
+        short_label="Pure-plays vs SOX",
         description="Memory stocks losing relative strength vs SOX semiconductor index.",
         what_to_look_for=(
             "SK Hynix (000660.KS) or Micron (MU) underperforms SOX (^SOX) by >10% over "
@@ -647,6 +671,7 @@ INDICATORS: list[Indicator] = [
         id="t3_wfe_orders_crack",
         tier=3,
         name="ASML/SEMI WFE order book cracking",
+        short_label="WFE order crack",
         description="Equipment makers' order books showing first weakness.",
         what_to_look_for=(
             "ASML or AMAT bookings -10% or worse QoQ. Book-to-bill below 1.0. SEMI "
@@ -677,6 +702,7 @@ INDICATORS: list[Indicator] = [
         id="t3_eps_miss_guidance",
         tier=3,
         name="EPS miss or beat narrowing on still-rising guidance",
+        short_label="EPS miss / beat narrows",
         description="Beat narrows or first miss while forward guidance still positive — peak signal.",
         what_to_look_for=(
             "MU or SK Hynix beat <10% (vs prior 30-40% beats — current SKHX Q1 48.8%, "
@@ -709,6 +735,7 @@ INDICATORS: list[Indicator] = [
         id="t4_yoy_asp_negative",
         tier=4,
         name="Negative YoY ASP prints",
+        short_label="YoY ASP negative",
         description="Memory ASPs print year-over-year declines.",
         what_to_look_for="DRAM or NAND ASP YoY change negative in TrendForce or supplier earnings.",
         sources=["Yahoo Finance earnings transcripts", "TrendForce press releases", "Mirae PDFs"],
@@ -728,6 +755,7 @@ INDICATORS: list[Indicator] = [
         id="t4_guidance_cuts",
         tier=4,
         name="Earnings guidance cuts",
+        short_label="Guidance cuts",
         description="Memory makers cut forward guidance or pre-announce miss.",
         what_to_look_for="MU or SK Hynix or Samsung issues guidance cut or pre-announces miss.",
         sources=["Press releases", "Yahoo Finance earnings", "Finnhub company news"],
@@ -745,6 +773,7 @@ INDICATORS: list[Indicator] = [
         id="t4_capex_slashed",
         tier=4,
         name="Capex slashed",
+        short_label="Capex slashed",
         description="Memory makers announce major capex cuts.",
         what_to_look_for="Any Big Three announces capex reduction of >20% or fab idling.",
         sources=["Press releases", "Yahoo Finance earnings", "Korean press / DART filings"],
@@ -761,6 +790,7 @@ INDICATORS: list[Indicator] = [
         id="t4_layoffs",
         tier=4,
         name="Layoffs / fab idling",
+        short_label="Layoffs / fab idling",
         description="Memory makers announce workforce reductions or fab utilization cuts.",
         what_to_look_for="Any Big Three announces layoffs or fab idling.",
         sources=["Press releases", "Korean press (KED, Korea Herald, ChosunBiz)"],
@@ -1087,7 +1117,17 @@ RSS_FEEDS = {
     "KED Global (Korea Economic Daily English)": "https://www.kedglobal.com/rss/all.xml",
     "Korea Herald Business": "https://www.koreaherald.com/rss/020000000000.xml",
     # Memory / semi industry
-    "TrendForce": "https://www.trendforce.com/news/feed",
+    # v3.39.3 — Dropped "TrendForce": "https://www.trendforce.com/news/feed".
+    # That URL returns no XML — TrendForce restructured their news section
+    # and the /feed path is no longer published. Replacement: DRAMeXchange
+    # RSS, which is TrendForce's sister property on the data side and DOES
+    # publish a well-formed RSS feed with TrendForce-authored weekly research
+    # commentary (the behavioral-signal language Tier 1 needs: "buyers
+    # cautious", "price cuts not stimulating demand", etc.). Items use
+    # relative <link> paths (/WeeklyResearch/Post/...) — _safe_parse_rss_feed
+    # passes them through; the relative URL still resolves under the
+    # dramexchange.com origin in the email's links.
+    "DRAMeXchange Weekly Research": "https://www.dramexchange.com/rss.xml",
     "Tom's Hardware RAM": "https://www.tomshardware.com/feeds/all",
     "AnandTech": "https://www.anandtech.com/rss/",  # invalid-token errors but recoverable
     # AI labs (only ones with confirmed-stable RSS — others pruned, covered by Google News)
@@ -1129,7 +1169,17 @@ RSS_FEEDS = {
 SCRAPE_TARGETS = {
     "ChosunBiz English": "https://biz.chosun.com/en/",
     "Pulse News (Maeil Business)": "https://pulse.mk.co.kr/list.php?ctcd=600002&sc=30000020",
-    "TrendForce News": "https://www.trendforce.com/news/category/dram",
+    # v3.39.3 — URL fixed. Old /news/category/dram returns 200 with no matching
+    # <article> selectors → 0 items silently. Correct path is
+    # /news/category/semiconductors/dram/ (with /semiconductors/ segment and
+    # trailing slash). news.py scrape_trendforce() also hardcoded the same URL
+    # and has been updated to match.
+    "TrendForce News": "https://www.trendforce.com/news/category/semiconductors/dram/",
+    # v3.39.3 — TrendForce public DRAM spot price table. Scraped by
+    # scrape_trendforce_prices() in news.py (separate code path from the
+    # news category scraper above — uses table parsing + freshness guard
+    # rather than article-link extraction).
+    "TrendForce DRAM Spot (price table)": "https://www.trendforce.com/price/dram/dram_spot",
 }
 
 # ============================================================
@@ -1716,6 +1766,64 @@ CYCLE_BASELINE = {
     "bear_case_probability_pct": 28,        # was 25; small bump
     "bear_case_return_to_peak_pct": 0,      # can go NEGATIVE as signals fire
 }
+
+
+# ============================================================
+# Supercycle chart constants (v3.39.2)
+# ============================================================
+# The "Where we stand in the cycle" chart in the email overlays the
+# generic 5-phase memory supercycle anatomy onto SK Hynix's actual
+# price history. These constants pin the timeline.
+#
+# Phase boundaries are computed at render time by anchoring the END
+# of Phase 4 to executive_summary.base_case.peak_window_start (so the
+# chart self-positions against the LLM's current peak projection) and
+# back-filling the earlier phases using CYCLE_PHASE_DURATIONS_MONTHS.
+# This means as the base case shifts month-to-month, the phase shading
+# on the chart shifts with it — preserving the visual relationship
+# "today is X months from end of Phase 4" no matter when the brief runs.
+#
+# Anchoring at the BASE case (not bull or bear) is intentional. The
+# base case is the most-probable scenario by invariant. Using it as
+# the phase anchor means the chart shows "the cycle we expect" as the
+# default visual context, with bull/bear as projection curves that
+# diverge from that anchor.
+
+# Cycle trough = Q4 2023. Pinned date; update if the cycle ever resets.
+# SK Hynix closing low in Q4 2023 was around October 31, 2023 (~120,000 KRW)
+# per the price record. Phase 1 (trough) extends from this date forward.
+CYCLE_TROUGH_DATE = "2023-10-31"
+
+# Generic memory-supercycle phase durations in months. From the
+# memory_supercycle_analysis.docx Part 1 — "The universal anatomy".
+# Total = 60 months across a full cycle. Real cycles vary by 20-30%,
+# but the sequence is consistent. v3.39.2 chart uses these as the
+# base shape and stretches/compresses to fit the actual base-case peak.
+CYCLE_PHASE_DURATIONS_MONTHS = {
+    "Phase 1 — Trough":      9,
+    "Phase 2 — Recovery":    12,
+    "Phase 3 — Expansion":   12,
+    "Phase 4 — Boom":        9,
+    "Phase 5 — Decline":     18,
+}
+
+# Phase colors for the chart shading. Soft pastels to match the
+# generic chart in the source document; harmonized with the email's
+# existing phase-tag palette (template.py).
+CYCLE_PHASE_COLORS = {
+    "Phase 1 — Trough":      "#F4F2EC",  # neutral cream
+    "Phase 2 — Recovery":    "#E8EEF6",  # pale blue
+    "Phase 3 — Expansion":   "#E5F0E9",  # pale green
+    "Phase 4 — Boom":        "#FAEEDA",  # warm amber (matches email phase-tag bg)
+    "Phase 5 — Decline":     "#F8DEDE",  # pale red
+}
+
+# The ticker whose price drives the supercycle chart. SK Hynix is the
+# single best vehicle to read the current cycle per the analysis doc
+# (60% global HBM share, ~60-70% revenue from DRAM). Centralized here
+# so chart_generator doesn't hard-code the lookup name.
+SUPERCYCLE_CHART_TICKER_NAME = "SK Hynix"
+SUPERCYCLE_CHART_TICKER_CURRENCY = "KRW"
 
 
 # ============================================================
