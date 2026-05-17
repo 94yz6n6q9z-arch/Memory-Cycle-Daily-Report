@@ -114,6 +114,33 @@ class ExecutiveSummary:
 # 100, base is strictly the highest, return_to_peak_pct signs make sense.
 
 
+def _tier_from_id(indicator_id: str) -> int:
+    """Infer tier (1-4) from an indicator id of the form `tN_…`.
+
+    v3.39.2: when Sonnet truncates mid-indicator and json_repair recovers
+    a partial dict missing the `tier` field, defaulting tier to 0 caused
+    the indicator to be silently dropped from the email — the template
+    iterates `for tier in (1, 2, 3, 4)` and filters strictly. Since every
+    indicator id is canonically prefixed `t1_…` through `t4_…`, we can
+    almost always recover the tier from the id even when the explicit
+    field is missing.
+
+    Returns 0 only if the id doesn't conform to the prefix scheme; the
+    caller defaults to that value (which still renders as a no-tier row
+    visible nowhere, matching the prior behavior on truly malformed ids).
+    """
+    if (
+        isinstance(indicator_id, str)
+        and len(indicator_id) >= 2
+        and indicator_id.startswith("t")
+        and indicator_id[1].isdigit()
+    ):
+        n = int(indicator_id[1])
+        if 1 <= n <= 4:
+            return n
+    return 0
+
+
 def _safe_indicator_assessment(a: dict) -> IndicatorAssessment:
     """Construct an IndicatorAssessment from a possibly-partial dict.
 
@@ -125,10 +152,23 @@ def _safe_indicator_assessment(a: dict) -> IndicatorAssessment:
 
     Every required field gets a safe default; `change_vs_prior` stays None
     if absent. The caller filters out dicts without an `id` upstream.
+
+    v3.39.2: tier now falls back to `_tier_from_id(id)` before defaulting
+    to 0. Previously a missing `tier` field meant the indicator was
+    constructed cleanly but then filtered out by the template's
+    `for tier in (1,2,3,4)` loop — defensive parsing produced a usable
+    object that the renderer silently dropped. Inferring from the id
+    prefix recovers the right tier in every realistic truncation case.
     """
+    indicator_id = str(a.get("id", "unknown"))
+    raw_tier = str(a.get("tier", "")).strip()
+    if raw_tier.isdigit():
+        tier = int(raw_tier)
+    else:
+        tier = _tier_from_id(indicator_id)
     return IndicatorAssessment(
-        id=str(a.get("id", "unknown")),
-        tier=int(a.get("tier", 0)) if str(a.get("tier", "")).strip().isdigit() else 0,
+        id=indicator_id,
+        tier=tier,
         name=str(a.get("name", "")),
         description=str(a.get("description", "")),
         what_to_look_for=str(a.get("what_to_look_for", "")),
