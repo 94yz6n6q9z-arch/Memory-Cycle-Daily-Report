@@ -6,6 +6,79 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.38.4 — workflow timeout + JSON repair fallback + Cloudflare-blocked feeds dropped
+
+**Why this release**: The 15:32 UTC May 17 run revealed two compounding bugs and exposed a misconfigured workflow timeout:
+
+1. **Workflow killed at 12 min mark** (not a pipeline crash — GitHub Actions cancellation). The `.github/workflows/fast_tier.yml` had `timeout-minutes: 12` with a comment claiming "comfortable under GitHub's 15-min hard cap". **That comment is wrong** — GitHub Actions' actual hard cap is 6 HOURS (360 min). The 12-min limit was below the pipeline's own floor after v3.38.1 added the Layer 2 throttle (~4 min). This is THE primary cause of cancellation in this run.
+
+2. **Haiku triage JSON parse failed again** at char 13926 — better than v3.38.3's char 6839, but still failing. After the v3.38.3 max_tokens bump (4K→8K), the news volume scaled to 50 items, requiring ~10K tokens of triage output. 8K was below floor. AND: char 13926 ≈ 3500 tokens is well under 8000 → likely NOT a truncation but malformed JSON (unescaped quote/newline in a string field).
+
+3. **Cloudflare-fronted feeds still 403**: the v3.38.3 plain-Chrome UA fixed ~12 other previously-failing feeds, but Damnang Substack and Investing.com x4 remained 403. Cloudflare's bot detection uses TLS fingerprint (JA3/JA4) and HTTP/2 fingerprint, not just the UA string. Python requests has a recognizable TLS fingerprint regardless of UA.
+
+**Five fixes:**
+
+1. **`fast_tier.yml` — `timeout-minutes: 12 → 25`**. Plus corrected the misleading comment. Hard cap is 6h, not 15min. Current run profile: ~12-15 min total. 25 gives ~60% safety margin.
+
+2. **`requirements.txt` — added `json-repair>=0.39.0,<1.0`**. Pure-Python, MIT, drop-in fallback for `json.loads()`.
+
+3. **`src/analysis/llm_summarizer.py` — two-stage JSON parsing in both `haiku_triage_news` and `sonnet_analyze`**:
+   ```python
+   try:
+       parsed = json.loads(raw)             # fast path
+   except json.JSONDecodeError:
+       parsed = json_repair.loads(raw)      # fallback: handles unescaped chars + truncation
+   ```
+   `json_repair` recovers from unescaped quotes/newlines in string fields (the v3.38.3 + v3.38.4 failure mode) AND from genuine truncation (returns best-effort partial dict). Functionally tested against the exact `"DDR5 prices "spike" 4% qoq"` malformation pattern that would have caused the v3.38.4 failure — all 3 items recovered.
+
+4. **`src/config.py` — bumped max_tokens further (defensive)**:
+   - `HAIKU_MAX_TOKENS: 8000 → 16000`
+   - `SONNET_MAX_TOKENS: 16000 → 24000`
+   - Both within each model's 64K hard cap. Per Anthropic docs, max_tokens doesn't factor into rate limits — no cost downside.
+
+5. **`src/config.py` — RSS_FEEDS pruned 19→14**. Dropped Damnang Substack + Investing.com MU/NVDA/AMAT/ASML. The TLS-fingerprint issue isn't fixable with HEADERS alone. `TODO v3.39` updated in config.py with curl-cffi as the proper bypass approach for Damnang (the only one Raul flagged as critical).
+
+**What stayed (working from prior releases):**
+- v3.38: diagnostics wiring + per-source-row visibility (deep_tier.py)
+- v3.38.1: Layer 2 sequential throttle (signal_reasoner.py) — 22/22 signal reasonings produced in this run, no 429s
+- v3.38.2: RSS UA shift to requests+feedparser — most feeds now succeed
+- v3.38.3: fallback_analysis kwarg fix, expanded audit script, dead-URL pruning
+
+**Files changed:**
+
+| File | Change | CHANGELOG updated? |
+|---|---|---|
+| `.github/workflows/fast_tier.yml` | `timeout-minutes: 12 → 25`, fixed comment | inline |
+| `requirements.txt` | added `json-repair>=0.39.0,<1.0` | inline |
+| `src/analysis/llm_summarizer.py` | json_repair fallback in two parse sites; new CHANGELOG block | yes (NEW block) |
+| `src/config.py` | max_tokens bumps; RSS_FEEDS pruning; updated TODO | yes |
+| `CHANGES.md` | this entry | — |
+
+**Validation done locally:**
+
+- Syntax + imports clean across all edited files
+- `json_repair` resolves via import chain
+- Functional test of exact failure mode: malformed JSON with unescaped quote inside string field → all items recovered
+- Comprehensive AST signature audit: zero mismatches
+- CHANGELOG freshness check: zero stale entries (every modified file with a CHANGELOG block now mentions v3.38.4)
+
+**Expected next-run behavior:**
+
+- Pipeline completes end-to-end within 25-min workflow budget
+- Layer 2 still ~4 min (throttle floor unchanged)
+- Layer 3 Haiku triage: max_tokens has 60% headroom; if output is malformed despite that, json_repair recovers
+- Layer 3 Sonnet analysis: max_tokens has 40% headroom; same fallback if needed
+- Validation table: 14 RSS sources tracked (was 19); Damnang + Investing.com x4 no longer generate 403s
+- json_repair fallback log messages will tell us if/when this path fires (WARNING level on activation, INFO level confirming what was recovered)
+
+**What's deliberately NOT fixed in this release:**
+
+- AnandTech RSS "invalid token" — feed sporadically malformed at source; may self-heal
+- Damnang Substack bypass via curl-cffi — deferred to v3.39 as a proper Cloudflare-bypass project (curl-cffi is a non-trivial dependency; needs benchmarking against requests for latency cost)
+- Migration to Anthropic tool_use for structured output — the rigorous fix that would eliminate JSON parse fragility entirely; deferred to v3.39 as it's a larger refactor of both `haiku_triage_news` and `sonnet_analyze` prompts
+
+---
+
 ## v3.38.3 — fallback_analysis crash fix + JSON truncation fix + comprehensive audit + RSS UA / dead-URL cleanup
 
 **Why**: The 14:31 UTC May 17 run (the post-v3.38.2 run) revealed two new bugs and exposed that the v3.38.2 RSS UA fix only partially landed. Walking through what the log actually shows:
