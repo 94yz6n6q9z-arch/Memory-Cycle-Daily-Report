@@ -66,12 +66,26 @@ class IndicatorAssessment:
 
 @dataclass
 class CaseScenario:
-    """Bull / base / bear case scenario."""
+    """Probability of a length-to-peak + price-to-peak scenario for SK Hynix.
+
+    v3.39: renamed `upside_to_peak_pct` → `return_to_peak_pct`. The previous
+    name implied a non-negative number, but the bear case legitimately needs
+    to express a NEGATIVE value (peak already in → downside from current
+    price). Now signed: positive = upside, zero = at peak, negative = downside.
+
+    Framing:
+      base — most probable scenario by invariant; signals continuing at
+             current pace; peak shortens and return trims as signals fire
+      bull — requires signals to un-fire or delay materially; longer peak,
+             higher return (always positive)
+      bear — requires faster degradation than expected; shorter peak (can
+             be 0), can carry a NEGATIVE return when peak is already in
+    """
     probability_pct: float
     peak_months_away: float
     peak_window_start: str  # e.g., "August 2026"
     peak_window_end: str
-    upside_to_peak_pct: float
+    return_to_peak_pct: float  # signed
 
 
 @dataclass
@@ -87,6 +101,141 @@ class ExecutiveSummary:
     delta_from_prior_text: str
     urgent_attention_needed: bool
     urgent_attention_text: str
+
+
+# ============================================================
+# v3.39 — Scenario invariant enforcement
+# ============================================================
+# The Sonnet prompt asks for three scenarios (base / bull / bear) with
+# probability_pct summing to 100 and base being the most probable. The LLM
+# usually obeys but can drift on either dimension — e.g., the 17:43 May 17
+# brief produced base 28% / bear 30% / bull 18% (sum 76%, bear > base). The
+# enforcer below normalizes deterministically: probabilities sum to exactly
+# 100, base is strictly the highest, return_to_peak_pct signs make sense.
+
+
+def _build_case_scenario(d: dict | None) -> CaseScenario:
+    """Construct a CaseScenario from a dict, handling both the new field
+    name (return_to_peak_pct) and the pre-v3.39 name (upside_to_peak_pct).
+    Used when loading prior_state.json which may have older format, and
+    when the LLM occasionally regresses to the older key name.
+    """
+    d = dict(d or {})
+    if "return_to_peak_pct" not in d and "upside_to_peak_pct" in d:
+        d["return_to_peak_pct"] = d.pop("upside_to_peak_pct")
+    return CaseScenario(
+        probability_pct=float(d.get("probability_pct", 0)),
+        peak_months_away=float(d.get("peak_months_away", 0)),
+        peak_window_start=str(d.get("peak_window_start", "")),
+        peak_window_end=str(d.get("peak_window_end", "")),
+        return_to_peak_pct=float(d.get("return_to_peak_pct", 0)),
+    )
+
+
+def _enforce_scenario_invariants(
+    base: CaseScenario, bull: CaseScenario, bear: CaseScenario
+) -> tuple[CaseScenario, CaseScenario, CaseScenario]:
+    """Apply hard invariants to the three scenarios:
+      1. Probabilities are integers in [1, 98] summing to exactly 100.
+      2. base.probability_pct is the strict maximum (> bear, > bull).
+      3. base.return_to_peak_pct >= 0 (base never assumes peak is past).
+      4. bull.return_to_peak_pct > base.return_to_peak_pct.
+      5. bear.return_to_peak_pct <= base.return_to_peak_pct.
+
+    Algorithm (probabilities):
+      a. Floor each at 1, then proportionally normalize sum to 100.
+      b. For any scenario whose probability >= base, cap it at base-1 and
+         redistribute the excess back into base (preserves sum=100, makes
+         base strictly the largest).
+      c. Round to integers; if rounding misses 100, adjust base for the
+         residual. Final loop guards against rounding flipping the inequality.
+    """
+    # --- Probability invariants ---
+    bp = max(1.0, float(base.probability_pct))
+    blp = max(1.0, float(bull.probability_pct))
+    brp = max(1.0, float(bear.probability_pct))
+
+    # Step a: proportional normalize to sum=100
+    total = bp + blp + brp
+    bp = bp * 100.0 / total
+    blp = blp * 100.0 / total
+    brp = brp * 100.0 / total
+
+    # Step b: cap bull/bear at base-1; redistribute excess into base
+    if blp >= bp:
+        excess = blp - (bp - 1.0)
+        blp = bp - 1.0
+        bp += excess
+    if brp >= bp:
+        excess = brp - (bp - 1.0)
+        brp = bp - 1.0
+        bp += excess
+    # After redistribution, re-floor in case capping pushed below 1
+    blp = max(1.0, blp)
+    brp = max(1.0, brp)
+    # Renormalize if floors changed the sum (very rare edge case)
+    total = bp + blp + brp
+    if total != 100.0:
+        # Absorb residual into base (which is now strictly largest, so
+        # this won't break the strict-max invariant)
+        bp = 100.0 - blp - brp
+
+    # Step c: round to integers, fix residual
+    b_i = int(round(bp))
+    bl_i = int(round(blp))
+    br_i = int(round(brp))
+    diff = 100 - (b_i + bl_i + br_i)
+    b_i += diff
+    # Final pp-by-pp loop in case rounding flipped strict inequalities
+    while b_i <= bl_i:
+        b_i += 1
+        bl_i -= 1
+    while b_i <= br_i:
+        b_i += 1
+        br_i -= 1
+    while bl_i < 1:
+        bl_i += 1
+        b_i -= 1
+    while br_i < 1:
+        br_i += 1
+        b_i -= 1
+
+    # --- Return-to-peak invariants ---
+    base_r = float(base.return_to_peak_pct)
+    bull_r = float(bull.return_to_peak_pct)
+    bear_r = float(bear.return_to_peak_pct)
+    # Base never assumes peak is past
+    base_r = max(0.0, base_r)
+    # Bull strictly above base (always positive upside)
+    if bull_r <= base_r:
+        bull_r = base_r + 5.0
+    # Bear no higher than base (can be negative when peak is in)
+    if bear_r > base_r:
+        bear_r = base_r
+
+    return (
+        CaseScenario(
+            probability_pct=float(b_i),
+            peak_months_away=base.peak_months_away,
+            peak_window_start=base.peak_window_start,
+            peak_window_end=base.peak_window_end,
+            return_to_peak_pct=base_r,
+        ),
+        CaseScenario(
+            probability_pct=float(bl_i),
+            peak_months_away=bull.peak_months_away,
+            peak_window_start=bull.peak_window_start,
+            peak_window_end=bull.peak_window_end,
+            return_to_peak_pct=bull_r,
+        ),
+        CaseScenario(
+            probability_pct=float(br_i),
+            peak_months_away=bear.peak_months_away,
+            peak_window_start=bear.peak_window_start,
+            peak_window_end=bear.peak_window_end,
+            return_to_peak_pct=bear_r,
+        ),
+    )
 
 
 @dataclass
@@ -386,9 +535,9 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
     "new_triggers_today": [
       {{"tier": 2, "indicator_id": "...", "indicator_name": "...", "description": "..."}}
     ],
-    "base_case": {{"probability_pct": 30, "peak_months_away": 4, "peak_window_start": "August 2026", "peak_window_end": "October 2026", "upside_to_peak_pct": 18}},
-    "bull_case": {{"probability_pct": 20, "peak_months_away": 12, "peak_window_start": "Q1 2027", "peak_window_end": "Q2 2027", "upside_to_peak_pct": 55}},
-    "bear_case": {{"probability_pct": 25, "peak_months_away": 0, "peak_window_start": "May 2026", "peak_window_end": "May 2026", "upside_to_peak_pct": 0}},
+    "base_case": {{"probability_pct": 50, "peak_months_away": 4, "peak_window_start": "August 2026", "peak_window_end": "October 2026", "return_to_peak_pct": 18}},
+    "bull_case": {{"probability_pct": 22, "peak_months_away": 12, "peak_window_start": "Q1 2027", "peak_window_end": "Q2 2027", "return_to_peak_pct": 55}},
+    "bear_case": {{"probability_pct": 28, "peak_months_away": 0, "peak_window_start": "May 2026", "peak_window_end": "May 2026", "return_to_peak_pct": -8}},
     "delta_from_prior_text": "Base case peak unchanged | OR shortened by X months due to ... | OR no prior data",
     "urgent_attention_needed": false,
     "urgent_attention_text": "Empty if not urgent. Otherwise: clear description of what to address."
@@ -417,14 +566,43 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
   "cycle_position_call": "1 paragraph: where we are in cycle today, what changed since prior brief, what to watch next"
 }}
 
-PROBABILITY CALCULATION RULES:
-- Base case: most likely peak window. Probability 25-35%.
-- Bull case: cycle extends, requires Tier B1 signals. Probability 15-25%.
-- Bear case: peak now or already in. Probability 20-30%.
-- Total of base+bull+bear+neutral should sum to ~100%.
-- If new Tier 2 trigger fired today: shift bear case probability +5-10%, base case forward in time.
-- If new Tier 3 trigger: bear case probability dominant, peak likely already in.
-- If bull confirms (hyperscaler capex up): shift bull case +5-10%.
+SCENARIO FRAMING — READ CAREFULLY:
+The three scenarios are signal-CONDITIONAL probabilities for the length-to-peak
+and price-to-peak in SK Hynix stock. They are NOT three symmetric outcomes.
+
+• base_case = the EXPECTED scenario given signals continuing at their current
+  pace. By definition the most probable scenario. As Tier 2/3/4 signals fire,
+  update base case's PARAMETERS (peak_months_away SHORTENS, return_to_peak_pct
+  TRIMS) — do NOT let bear probability exceed base.
+
+• bull_case = scenario where signals UN-FIRE (those that fired reverse) or
+  fire much later than expected. Requires abnormal positive surprise. Always
+  has positive return_to_peak_pct. Probability SHRINKS as more signals fire
+  (becomes less plausible).
+
+• bear_case = scenario where degradation accelerates BEYOND current signal
+  trajectory. Requires abnormal negative surprise. Peak shortens to 0; the
+  return_to_peak_pct can be NEGATIVE (peak already in → downside from here).
+  Probability GROWS as more signals fire — but capped strictly below base.
+
+HARD INVARIANTS (enforced post-output; produce values that already satisfy):
+  1. probability_pct sums to EXACTLY 100 across the three scenarios.
+  2. base_case.probability_pct > bear_case.probability_pct.
+  3. base_case.probability_pct > bull_case.probability_pct.
+  4. base_case.return_to_peak_pct >= 0 (positive — base never assumes peak passed).
+  5. bull_case.return_to_peak_pct > base_case.return_to_peak_pct (always higher upside).
+  6. bear_case.return_to_peak_pct <= base_case.return_to_peak_pct (lower; can be negative).
+
+PROBABILITY UPDATE RULES (signal-conditional):
+- New Tier 2 trigger fired today: bear probability +3-6pp, base shortens
+  peak_months_away by ~1mo and trims return_to_peak_pct by ~3-5pp. Bull -1-3pp.
+- New Tier 3 trigger fired today: bear probability +5-8pp (still under base),
+  base peak_months_away drops to ≤2mo, base return_to_peak_pct trims ~5-10pp.
+  Bull case shrinks meaningfully (-3-5pp).
+- New Tier 4 trigger: same magnitude as Tier 3 but with bear return_to_peak_pct
+  going negative (e.g., -5 to -15pp) — confirms peak is in.
+- Bull confirms (e.g., hyperscaler 2027 capex >2026): bull probability +3-5pp,
+  bear -2-4pp, base nudges peak_months_away by ~+1mo.
 
 PEAK MONTH ESTIMATE RULES:
 - Compare against prior_state.executive_summary.base_case.peak_months_away
@@ -481,30 +659,51 @@ def sonnet_analyze(
         triage, performance_data, estimates_data, big_movers, prior_state
     )
 
+    # v3.39: switch from messages.create to messages.stream. Two motivations:
+    #
+    # (1) Bypass the SDK's client-side wall-time guard. messages.create raises
+    #     "Streaming is required for operations that may take longer than 10
+    #     minutes" when SDK-estimated throughput * max_tokens exceeds 600s.
+    #     That threshold fired in the 16:25 May 17 run at max_tokens=24000,
+    #     prompting v3.38.5 to lower the cap to 16000 — which caused the
+    #     truncation seen in the 17:43 run (output cut at ~33K chars / ~16K
+    #     tokens mid-string; json_repair recovered only 12/22 indicators,
+    #     dropping Tier 3, Tier 4, top-5, and selected_news sections from
+    #     the email). Streaming has no such guard.
+    #
+    # (2) Stability under transient 503s. The 17:43 run hit one Anthropic
+    #     503 mid-call that the SDK auto-retried, but a streaming call lets
+    #     us observe partial progress and surfaces network issues earlier.
+    #
+    # We accumulate chunks into a final message via stream.get_final_message().
+    # The SDK exposes .content[0].text on that object identical to the
+    # non-streaming path, so downstream parsing is unchanged.
     response = None
     try:
         if collector is not None:
             with collector.track(
-                f"Anthropic API / {SONNET_MODEL} (stage 2 analysis)",
+                f"Anthropic API / {SONNET_MODEL} (stage 2 analysis, streaming)",
                 "llm",
             ) as t:
-                response = client.messages.create(
+                with client.messages.stream(
                     model=SONNET_MODEL,
                     max_tokens=SONNET_MAX_TOKENS,
                     temperature=LLM_TEMPERATURE,
                     messages=[{"role": "user", "content": prompt}],
-                )
-                t.items_returned = 1  # one analysis produced
-                t.detail = f"prompt: {len(prompt)} chars"
+                ) as stream:
+                    response = stream.get_final_message()
+                t.items_returned = 1
+                t.detail = f"prompt: {len(prompt)} chars, max_tokens={SONNET_MAX_TOKENS}"
         else:
-            response = client.messages.create(
+            with client.messages.stream(
                 model=SONNET_MODEL,
                 max_tokens=SONNET_MAX_TOKENS,
                 temperature=LLM_TEMPERATURE,
                 messages=[{"role": "user", "content": prompt}],
-            )
+            ) as stream:
+                response = stream.get_final_message()
     except Exception as e:
-        logger.error(f"Sonnet analysis call failed: {e}")
+        logger.error(f"Sonnet analysis streaming call failed: {e}")
         return None
 
     raw = _strip_code_fence(response.content[0].text)
@@ -545,14 +744,36 @@ def sonnet_analyze(
             return None
 
     exec_data = parsed.get("executive_summary", {})
+    # v3.39: build CaseScenario via the migration-aware helper (handles
+    # legacy upside_to_peak_pct from older prior_state.json files), then
+    # apply invariants so probabilities sum to 100 and base is the strict
+    # maximum. See _enforce_scenario_invariants for the full rule set.
+    base_raw = _build_case_scenario(exec_data.get("base_case"))
+    bull_raw = _build_case_scenario(exec_data.get("bull_case"))
+    bear_raw = _build_case_scenario(exec_data.get("bear_case"))
+    base_fixed, bull_fixed, bear_fixed = _enforce_scenario_invariants(
+        base_raw, bull_raw, bear_raw
+    )
+    # Log any non-trivial correction so it's visible during debugging.
+    if (
+        abs(base_fixed.probability_pct - base_raw.probability_pct) > 0.5
+        or abs(bull_fixed.probability_pct - bull_raw.probability_pct) > 0.5
+        or abs(bear_fixed.probability_pct - bear_raw.probability_pct) > 0.5
+    ):
+        logger.info(
+            f"Scenario invariants applied: "
+            f"base {base_raw.probability_pct:.0f}→{base_fixed.probability_pct:.0f}, "
+            f"bull {bull_raw.probability_pct:.0f}→{bull_fixed.probability_pct:.0f}, "
+            f"bear {bear_raw.probability_pct:.0f}→{bear_fixed.probability_pct:.0f}"
+        )
     exec_summary = ExecutiveSummary(
         current_phase=exec_data.get("current_phase", 4),
         current_phase_label=exec_data.get("current_phase_label", ""),
         tier_status_summary=exec_data.get("tier_status_summary", ""),
         new_triggers_today=exec_data.get("new_triggers_today", []),
-        base_case=CaseScenario(**exec_data.get("base_case", {})),
-        bull_case=CaseScenario(**exec_data.get("bull_case", {})),
-        bear_case=CaseScenario(**exec_data.get("bear_case", {})),
+        base_case=base_fixed,
+        bull_case=bull_fixed,
+        bear_case=bear_fixed,
         delta_from_prior_text=exec_data.get("delta_from_prior_text", ""),
         urgent_attention_needed=exec_data.get("urgent_attention_needed", False),
         urgent_attention_text=exec_data.get("urgent_attention_text", ""),
@@ -660,21 +881,21 @@ def fallback_analysis(
             peak_months_away=CYCLE_BASELINE["base_case_peak_months_away"],
             peak_window_start="(LLM unavailable)",
             peak_window_end="(LLM unavailable)",
-            upside_to_peak_pct=CYCLE_BASELINE["base_case_upside_pct"],
+            return_to_peak_pct=CYCLE_BASELINE["base_case_return_to_peak_pct"],
         ),
         bull_case=CaseScenario(
             probability_pct=CYCLE_BASELINE["bull_case_probability_pct"],
             peak_months_away=CYCLE_BASELINE["bull_case_peak_months_away"],
             peak_window_start="(LLM unavailable)",
             peak_window_end="(LLM unavailable)",
-            upside_to_peak_pct=CYCLE_BASELINE["bull_case_upside_pct"],
+            return_to_peak_pct=CYCLE_BASELINE["bull_case_return_to_peak_pct"],
         ),
         bear_case=CaseScenario(
             probability_pct=CYCLE_BASELINE["bear_case_probability_pct"],
             peak_months_away=CYCLE_BASELINE["bear_case_peak_months_away"],
             peak_window_start="(LLM unavailable)",
             peak_window_end="(LLM unavailable)",
-            upside_to_peak_pct=CYCLE_BASELINE["bear_case_upside_pct"],
+            return_to_peak_pct=CYCLE_BASELINE["bear_case_return_to_peak_pct"],
         ),
         delta_from_prior_text="LLM unavailable - cannot compute deltas",
         urgent_attention_needed=False,
