@@ -1641,17 +1641,21 @@ HAIKU_MAX_TOKENS = 16000
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for
 # marginal quality gain on this structured task.
 SONNET_MODEL = os.environ.get("SONNET_MODEL_OVERRIDE") or "claude-sonnet-4-6"
-# v3.38.5: lowered 24000 → 16000. The 16:25 UTC run had the Anthropic SDK
-# reject the Sonnet call with "Streaming is required for operations that may
-# take longer than 10 minutes" — the SDK has a client-side guard that demands
-# streaming when max_tokens is high enough to potentially exceed 10 min
-# wall-time. 24K crosses that threshold; 16K stays comfortably under.
-# Truncation risk that motivated the v3.38.4 bump is now covered by the
-# json_repair fallback added in the same release — if Sonnet does truncate
-# at 16K, json_repair recovers what was produced. Proper fix (streaming
-# mode in the API call) deferred to v3.39 — bigger code change, would let
-# us use 24K+ without the SDK guard firing.
-SONNET_MAX_TOKENS = 16000
+# v3.39: bumped 16000 → 24000. The streaming refactor in llm_summarizer.py
+# (messages.create → messages.stream context manager) bypasses the SDK's
+# client-side wall-time guard that fired the v3.38.5 reduction. The 17:43
+# May 17 run truncated Sonnet output at ~33K chars / ~16K tokens mid-string,
+# json_repair recovered only 12/22 indicators — dropping Tier 3, Tier 4,
+# top-5 deep dive, and selected_news sections from the email entirely.
+# 24K gives headroom for the full 22-indicator output (Sonnet typically
+# uses ~18-20K tokens for this prompt's worst-case output) plus exec summary,
+# top-5, scenarios, and selected news. If we ever truncate at 24K again,
+# json_repair fallback still kicks in as last-resort recovery.
+#
+# Prior history kept for context:
+#   v3.38.5: 24000 → 16000 (dodged SDK guard, at cost of truncation)
+#   v3.38.4: 8000 → 24000 (handle full 22-indicator output)
+SONNET_MAX_TOKENS = 24000
 
 LLM_TEMPERATURE = 0.3  # low for analytical work
 
@@ -1666,18 +1670,29 @@ CYCLE_BASELINE = {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
     "months_into_cycle": 31,  # from Q4 2023 trough
+    # v3.39: dropped neutral_case_*. Previously there were FOUR scenarios
+    # in the baseline summing to 100% (base 30 + bull 20 + bear 25 + neutral
+    # 25), but the email template only ever displayed three (base/bull/bear).
+    # The hidden neutral case absorbed 24-25% of probability mass invisibly,
+    # which is why the May 17 brief showed bear 30% + base 28% + bull 18%
+    # = 76% summed in the email — the 24% neutral was real but never shown.
+    # Now three scenarios only, summing to 100% by post-LLM invariant
+    # enforcement (see _enforce_scenario_invariants in llm_summarizer.py).
+    #
+    # Framing: probability of length-to-peak + return-to-peak scenario for
+    # SK Hynix. Base is the most-probable scenario (always > bear and bull
+    # by invariant); bull requires signals to un-fire or delay materially;
+    # bear requires faster degradation than expected, and can carry a
+    # NEGATIVE return-to-peak (peak already in → downside from here).
     "base_case_peak_months_away": 4,
-    "base_case_probability_pct": 30,
-    "base_case_upside_pct": 18,
+    "base_case_probability_pct": 50,        # was 30; absorbed neutral's share
+    "base_case_return_to_peak_pct": 18,     # signed: positive = upside
     "bull_case_peak_months_away": 12,
-    "bull_case_probability_pct": 20,
-    "bull_case_upside_pct": 55,
+    "bull_case_probability_pct": 22,        # was 20; small bump
+    "bull_case_return_to_peak_pct": 55,
     "bear_case_peak_months_away": 0,
-    "bear_case_probability_pct": 25,
-    "bear_case_upside_pct": 0,
-    "neutral_case_peak_months_away": 7,  # peak Q4 2026 - Q1 2027
-    "neutral_case_probability_pct": 25,
-    "neutral_case_upside_pct": 25,
+    "bear_case_probability_pct": 28,        # was 25; small bump
+    "bear_case_return_to_peak_pct": 0,      # can go NEGATIVE as signals fire
 }
 
 
