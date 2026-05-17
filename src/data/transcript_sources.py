@@ -71,6 +71,7 @@ never raises into the deep-tier orchestrator. Same maintenance posture as the
 Naver scraper (expect 1-2 fixes/year).
 
 CHANGELOG (this file):
+  v3.37  (2026-05-17) — Extend the `transcripts_seen.json` URL cache to IR scrapers. v3.36 successfully wired SK Hynix to the news.skhynix.com WordPress RSS feed and Samsung to its direct IR scraper, but both paths re-fetched and re-digested the same earnings post every daily run until a new quarter landed (~90 days of identical Haiku calls). v3.37 plumbs `seen_urls` through `fetch_ir_transcripts` → `_scrape_ir_site` → `_scrape_ir_rss_feed`. Cache checks added in both: RSS path checks the matched entry URL after keyword filtering; bs4 path checks each candidate href before fetching the body. Cache hits return `already_processed` stubs with no body fetch and no LLM call — same pattern Yahoo and Motley Fool already use. The existing persist block at the end of `fetch_all_transcripts` already covered IR URLs (it adds any source_url with availability in (full_transcript, materials_only)), so no persistence-side change.
   v3.36  (2026-05-17) — Two post-v3.35 fixes empirically diagnosed against live pages. Motley Fool body selector rewrite: v3.34's `psoup.find("article") or psoup.find("div", class_=re.compile("article|content|body"))` matched the FIRST <article> tag on fool.com transcript pages — which is a "Read Next" recommendation card at the bottom (~57 chars of "Cheap Tech Stocks for 2026" text), falling below the 400-char threshold and returning `nothing` on all 13 US tickers in v3.34 + v3.35 runs. The actual transcript body uses <div id="article-body-transcript"> (stable explicit ID + `article-body transcript-content` class combo). New selector anchors there; validated locally on the May 15 AMAT transcript page Raul provided. SK Hynix IR: previously pointed at skhynix.com/ir/UI-FR-IR15 which is the wrong subsection; the right earnings landing is UI-FR-IR06, but THAT page is a JS shell whose PDF links resolve to `/webundefined` placeholders only client-side. Switched to news.skhynix.com WordPress newsroom RSS feed at /feed/rss/ — server-rendered, standard WordPress, contains the full earnings-release post text. New `_scrape_ir_rss_feed` helper routes feed URLs to feedparser, picks the newest entry matching earnings keywords (business-results / financial results / quarterly results / q1-q4), uses <content:encoded> when available else fetches the post URL, and tags event_date_iso from the entry's published_parsed for stable cross-run identity.
   v3.35  (2026-05-17) — Yahoo parser rewrite. The v3.34 bs4 selector (`psoup.find("article") or div.body|content|caas`) returned <400 chars on 3 MB pages because transcripts live in <p data-testid="typography"> tags, not inside an <article>. New helpers (`_yahoo_extract_paragraphs`, `_yahoo_paragraphs_to_text`, `_yahoo_extract_analysis`) inlined above `_scrape_yahoo_ticker` extract: (a) timestamp-paired paragraphs from the rendered DOM (anchored on stable test-id + class prefix, ignoring the volatile yf-XXXXXX runtime hash); (b) Yahoo Scout AI's structured analysis (TLDR, 12 key_insights sections, notable_quotes, analyst Q&A) from the embedded SvelteKit hydration block at `mad/v2/analyst/ect`. Validated locally on /tmp/yahoo_nvda.html before commit: 90 paragraphs / 52K chars text / Scout AI analysis intact. TranscriptResult gains optional `analysis_json` field (captures Scout AI for v3.5 brief rendering; current digester ignores). Motley Fool diagnostic logging added (page length + total hrefs + near-miss transcript hrefs) to give next deploy actionable signal on the 13/13 "nothing" result v3.34 produced.
   v3.34  (2026-05-16) — Motley Fool URL regex: exclude backslash from char class (HTML/JSON escape was leaking a stray backslash into URLs → all transcript fetches 404 in first v3.33 run). Yahoo via proxy: added HTTP-status + body-length + anchor-count diagnostic logging — first v3.33 run showed Yahoo returning 200 but bs4 finding 0 transcript links on most tickers; need data on whether Yahoo serves a JS shell through residential proxy vs. real HTML.
@@ -279,7 +280,7 @@ def _strip_html(html: str) -> str:
 # Source 1 — Direct IR-site scrapers (SK Hynix, Samsung, Micron)
 # ============================================================
 
-def _scrape_ir_rss_feed(company: str, cfg: dict) -> list[TranscriptResult]:
+def _scrape_ir_rss_feed(company: str, cfg: dict, seen_urls: set[str]) -> list[TranscriptResult]:
     """Scrape a WordPress RSS feed for the most recent earnings/results post.
 
     Used when an IR site is a JS shell but the org has a WordPress newsroom
@@ -294,6 +295,10 @@ def _scrape_ir_rss_feed(company: str, cfg: dict) -> list[TranscriptResult]:
     server-rendered) and classified by text length. Capped at materials_only
     per `transcript_capable` flag — these are press releases / earnings
     releases, not call transcripts.
+
+    v3.37: takes seen_urls and returns `already_processed` if the matched
+    entry URL is in the cache — same pattern as Yahoo + Motley Fool. Avoids
+    re-digesting the same earnings post every day until a new quarter lands.
     """
     ir_url = cfg["ir_url"]
     ticker = cfg.get("ticker", "")
@@ -370,6 +375,29 @@ def _scrape_ir_rss_feed(company: str, cfg: dict) -> list[TranscriptResult]:
     entry_link = entry.get("link", ir_url)
     logger.info(f"IR RSS for {company}: matched newest earnings entry: {entry_title}")
 
+    # v3.37: cache check — if we've already digested this entry URL, return
+    # an already_processed stub WITHOUT fetching the post body. Saves daily
+    # re-digestion of the same SK Hynix Q1 materials until Q2 lands.
+    if entry_link in seen_urls:
+        # Try to preserve the original event_date_iso from the feed entry so
+        # downstream dedup is consistent across runs.
+        cached_event_date = date.today().isoformat()
+        pub = entry.get("published_parsed") or entry.get("updated_parsed")
+        if pub:
+            try:
+                cached_event_date = f"{pub[0]:04d}-{pub[1]:02d}-{pub[2]:02d}"
+            except (TypeError, IndexError):
+                pass
+        return [TranscriptResult(
+            company=company, ticker=ticker,
+            event_date_iso=cached_event_date,
+            event_type="earnings_call",
+            availability="already_processed",
+            source_name=f"{company} IR (newsroom RSS)",
+            source_url=entry_link,
+            note=f"Already digested in a previous deep-tier run (cache hit): \"{entry_title}\".",
+        )]
+
     # Prefer the full <content:encoded> if present (WordPress default);
     # fall back to <description> / summary. Both are HTML.
     content_html = ""
@@ -432,7 +460,8 @@ def _scrape_ir_rss_feed(company: str, cfg: dict) -> list[TranscriptResult]:
     )]
 
 
-def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptResult]:
+def _scrape_ir_site(company: str, cfg: dict, days_back: int,
+                    seen_urls: set[str]) -> list[TranscriptResult]:
     """Scrape one company's IR site for recent earnings events.
 
     Defensive by construction: if the page structure can't be parsed, returns a
@@ -440,6 +469,10 @@ def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptR
     than raising. The `transcript_reliability` hint in config tells us how hard
     to flag — "low" reliability companies get a louder note when only materials
     are found.
+
+    v3.37: takes seen_urls. Before fetching each candidate earnings page, check
+    the cache; if hit, return an already_processed stub to skip the body fetch
+    and avoid daily re-digestion. RSS-feed paths cache check inside the helper.
     """
     ir_url = cfg.get("ir_url")
     ticker = cfg.get("ticker", "")
@@ -462,7 +495,7 @@ def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptR
     # server-rendered XML, including full HTML content in <content:encoded>.
     # Detect by URL pattern and branch into the RSS-specific handler.
     if "/feed/" in ir_url or ir_url.rstrip("/").endswith("/feed"):
-        return _scrape_ir_rss_feed(company, cfg)
+        return _scrape_ir_rss_feed(company, cfg, seen_urls)
 
     html = _http_get(ir_url)
     if html is None:
@@ -512,6 +545,19 @@ def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptR
 
         # Pull the most promising candidates (cap at 4 to bound work)
         for label, href in candidates[:4]:
+            # v3.37: cache hit — skip body fetch, return already_processed stub.
+            # Mirrors the Yahoo + MF + RSS pattern.
+            if href in seen_urls:
+                results.append(TranscriptResult(
+                    company=company, ticker=ticker,
+                    event_date_iso=date.today().isoformat(),
+                    event_type="earnings_call",
+                    availability="already_processed",
+                    source_name=f"{company} IR",
+                    source_url=href,
+                    note=f"Already digested in a previous deep-tier run (cache hit): {label}.",
+                ))
+                continue
             page = _http_get(href)
             if page is None:
                 results.append(TranscriptResult(
@@ -604,12 +650,22 @@ def _scrape_ir_site(company: str, cfg: dict, days_back: int) -> list[TranscriptR
     return results
 
 
-def fetch_ir_transcripts(ir_sources: dict, days_back: int = 10) -> list[TranscriptResult]:
-    """Scrape all configured IR sites. Never raises — each company is isolated."""
+def fetch_ir_transcripts(ir_sources: dict, days_back: int = 10,
+                          seen_urls: Optional[set[str]] = None) -> list[TranscriptResult]:
+    """Scrape all configured IR sites. Never raises — each company is isolated.
+
+    v3.37: takes optional seen_urls cache. URLs already in the cache short-
+    circuit to `already_processed` without a body fetch, mirroring the
+    Yahoo + Motley Fool pattern. Particularly useful for SK Hynix where the
+    same q{N}-{YYYY}-business-results post stays the newest match for a
+    full quarter (~90 days).
+    """
+    if seen_urls is None:
+        seen_urls = set()
     all_results: list[TranscriptResult] = []
     for company, cfg in ir_sources.items():
         try:
-            company_results = _scrape_ir_site(company, cfg, days_back)
+            company_results = _scrape_ir_site(company, cfg, days_back, seen_urls)
             all_results.extend(company_results)
             states = [r.availability for r in company_results]
             logger.info(f"IR scrape {company}: {states}")
@@ -1237,7 +1293,7 @@ def fetch_all_transcripts(
 
     # Step 2 — IR scrapers
     logger.info("Transcript cascade step 2: IR-site scrapers")
-    ir_results = fetch_ir_transcripts(ir_sources, days_back=days_back)
+    ir_results = fetch_ir_transcripts(ir_sources, days_back=days_back, seen_urls=seen_urls)
 
     # Step 3 — figure out who still needs Yahoo
     # Build a per-company "best result so far" view from MF + IR
