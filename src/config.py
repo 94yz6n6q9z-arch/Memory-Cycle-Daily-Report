@@ -1160,40 +1160,48 @@ IR_SOURCES = {
     },
 }
 
-# Yahoo Finance earnings-call transcripts (v3.32) — the PRIMARY transcript
-# source. Verified to carry full call text (incl. Korean+English Q&A) for
-# every name in the basket, crucially including the KRX-listed memory makers
-# that the IR scrapers and Motley Fool cannot cover. Latest call is free;
-# historical is gated behind a Yahoo subscription — fine for a daily brief
-# that wants the most recent call.
+# Yahoo Finance earnings-call transcripts — the FALLBACK transcript source
+# (v3.33+). Carries full call text (incl. Korean+English Q&A) for the names
+# Motley Fool can't cover (SK Hynix, Samsung) and as a belt-and-suspenders
+# fallback for everything else. Latest call is free; historical is gated.
 #
-# Coverage verified May 2026: SK Hynix, Samsung, Micron, ASML, TSMC confirmed
-# full; US mega-caps (NVDA/MSFT/GOOGL/META/AMZN/ORCL/AVGO/DELL/HPE) expected
-# full (same syndication feed, all US-listed English calls).
+# v3.34 EMPIRICAL CORRECTION: Yahoo's transcript pages exist for SK Hynix /
+# Samsung, but the linking is asymmetric across ticker variants. The KRX
+# primary listings (000660.KS, 005930.KS) hit Yahoo earnings-calls index
+# pages that do NOT statically link the transcripts. The European cross-
+# listings DO. Raul confirmed 2026-05-16: SK Hynix Q1 FY2026 transcript is
+# reachable at /quote/HY9H.MU/earnings/HY9H.MU-Q1-2026-earnings_call-547968.html
+# while /quote/000660.KS/earnings-calls/ shows zero transcript anchors.
+# So we use the European cross-listing tickers as the canonical Yahoo ticker
+# for the two Korean memory makers, even though the underlying call (and
+# transcript content) is the same Korean call. The Yahoo "syndication" note
+# from v3.32 still applies — Yahoo serves the same transcript content under
+# every variant — but the UI/HTML rendering only links it from certain ones.
 #
-# IMPORTANT: Yahoo syndicates each transcript across many ticker variants
-# (SK Hynix also shows as HY9H.F/.DU/.SG; Samsung as SSU.F/SMSN.L/SSNLF;
-# etc.). These are the SAME transcript — use ONE canonical ticker per company
-# below, do not treat the variants as independent corroboration.
+# IMPORTANT: Even though Yahoo syndicates each transcript across many ticker
+# variants (SK Hynix as HY9H.F/.MU/.DU/.SG; Samsung as SSU.F/SMSN.L/SSNLF;
+# etc.), pick ONE canonical ticker per company — duplicate scrapes of the
+# same transcript content are wasted bandwidth and risk double-counting.
 YAHOO_TRANSCRIPT_TICKERS = {
     # Core memory makers — Yahoo is the ONLY working full-transcript source
-    # for the two Korean names.
-    "SK Hynix": "000660.KS",
-    "Samsung Electronics": "005930.KS",
-    "Micron": "MU",
+    # for the two Korean names. Canonical ticker MUST be a cross-listing
+    # variant (not KRX) because Yahoo's UI only links transcripts from those.
+    "SK Hynix":             "HY9H.MU",   # Munich listing — empirically confirmed has transcript link 2026-05-16
+    "Samsung Electronics":  "SSU.F",     # Frankfurt listing — likely same pattern; will confirm with v3.34 diag logs
+    "Micron":               "MU",
     # Wider basket — transcript-fed indicators (HBM4 / capex / WFE / OEM inventory)
-    "Nvidia": "NVDA",
-    "Broadcom": "AVGO",
-    "TSMC": "TSM",
-    "Applied Materials": "AMAT",
-    "ASML": "ASML",
-    "Microsoft": "MSFT",
-    "Alphabet": "GOOGL",
-    "Meta": "META",
-    "Amazon": "AMZN",
-    "Oracle": "ORCL",
-    "Dell": "DELL",
-    "HPE": "HPE",
+    "Nvidia":               "NVDA",
+    "Broadcom":             "AVGO",
+    "TSMC":                 "TSM",
+    "Applied Materials":    "AMAT",
+    "ASML":                 "ASML",
+    "Microsoft":            "MSFT",
+    "Alphabet":             "GOOGL",
+    "Meta":                 "META",
+    "Amazon":               "AMZN",
+    "Oracle":               "ORCL",
+    "Dell":                 "DELL",
+    "HPE":                  "HPE",
 }
 
 # Motley Fool transcript coverage — US-listed names with English earnings calls.
