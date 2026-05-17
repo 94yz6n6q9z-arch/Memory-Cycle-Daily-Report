@@ -5,6 +5,8 @@ Defines the tickers tracked, the indicator framework (tiers 1-4),
 and the thresholds that classify each signal as fired vs not fired.
 
 CHANGELOG (this file):
+  v3.38.4 (2026-05-17) — Two changes. (a) HAIKU_MAX_TOKENS 8000→16000 and SONNET_MAX_TOKENS 16000→24000. The 15:32 UTC run had Haiku triage of 50 news items fail JSON parse at char 13926; 8K cap was below floor for that volume. Sonnet didn't fail JSON this run but it was canceled mid-generation by the workflow timeout — bumping preemptively. Both well under each model's 64K hard cap. (b) RSS_FEEDS pruned 19→14 entries: dropped Damnang Substack + Investing.com MU/NVDA/AMAT/ASML. The v3.38.3 UA change to plain Chrome UA fixed ~12 other previously-403-ing feeds but Cloudflare-fronted sources stayed 403. Cloudflare uses TLS fingerprint (JA3/JA4) and HTTP/2 fingerprint in addition to UA — Python requests has a recognizable fingerprint regardless of UA string. Bypass would need curl-cffi (mimics Chrome TLS handshake). Deferred to v3.39 for Damnang (architectural-signal source Raul flagged as critical); Investing.com x4 dropped permanently since Yahoo Finance + Benzinga + broker-name Google News cover the same signals.
+  v3.38.3 (2026-05-17) — Two changes. (a) HAIKU_MAX_TOKENS 4000→8000 and SONNET_MAX_TOKENS 8000→16000. The 14:31 UTC run's Haiku triage and Sonnet analysis both produced truncated JSON ("Unterminated string"). Math: 46 news items × ~100-150 output tokens/item ≈ 5,500-7,000 tokens (over 4k Haiku cap); 22 indicator assessments × ~300-500 tokens ≈ 6,600-11,000 (over 8k Sonnet cap). Both safely under each model's 64K hard cap. Per Anthropic docs, max_tokens doesn't factor into rate limits — no cost downside to headroom. (b) RSS_FEEDS pruned from 32 to 19 entries: dropped 13 URLs confirmed 404/DNS in the same run (Yonhap, Anthropic News, Meta AI Blog, SEMI press, Reuters Technology, Seeking Alpha, The Elec, Nikkei, Pulse, vLLM, SGLang, DeepSeek, Artificial Analysis). Signal coverage preserved by existing Google News queries (KV cache compression, DDR5 spot price, broker combos, etc.). TODO v3.39 inline at bottom of RSS_FEEDS for URL hunt.
   v3.33  (2026-05-16) — Model strings fixed: HAIKU_MODEL='claude-haiku-4-5', SONNET_MODEL='claude-sonnet-4-6' (was the literal "haiku"/"sonnet" which Anthropic API doesn't accept). MOTLEY_FOOL_TICKERS gains exchange field per ticker (needed for per-ticker URL pattern in v3.33 scraper rewrite).
   v3.32  (2026-05-14) — Added YAHOO_TRANSCRIPT_TICKERS (primary transcript source); IR_SOURCES gains transcript_capable flag (SK Hynix/Samsung = False — IR sites are materials-only); scrubbed 24 stale "Quartr" refs in INDICATORS sources/stitching → "Yahoo Finance"
   v3.31  (2026-05-14) — Added IR_SOURCES, MOTLEY_FOOL_TICKERS, AI_LAB_IR_WATCH; OpenAI/Anthropic listing-watch queries
@@ -1092,17 +1094,21 @@ RSS_FEEDS = {
     "OpenAI Blog": "https://openai.com/blog/rss.xml",
     # US analyst rationale
     "Benzinga Analyst Ratings": "https://www.benzinga.com/feed",
-    # Per-ticker fallback for US (anti-bot UA fix in news.py HEADERS handles 403s)
-    "Investing.com MU": "https://www.investing.com/equities/micron-tech-inc-news/feed/",
-    "Investing.com NVDA": "https://www.investing.com/equities/nvidia-corp-news/feed/",
-    "Investing.com AMAT": "https://www.investing.com/equities/applied-matls.-news/feed/",
-    "Investing.com ASML": "https://www.investing.com/equities/asml-holding-news/feed/",
-    # US financial / tech media
+    # v3.38.4: Investing.com MU/NVDA/AMAT/ASML DROPPED. The v3.38.3 UA change
+    # (plain Chrome UA, dropped "compatible;" pattern) fixed ~12 other feeds but
+    # Investing.com x4 + Damnang Substack stayed 403. Cloudflare's bot detection
+    # uses TLS fingerprint (JA3/JA4) and HTTP/2 fingerprint, not just UA string.
+    # Python requests has a recognizable TLS fingerprint regardless of UA.
+    # Proper fix needs curl-cffi (mimics Chrome TLS handshake) — deferred to v3.39.
+    # For now, dropping these. Signal coverage: Investing.com ticker news flows
+    # via Yahoo Finance (deep tier) and Benzinga; broker actions via Naver and
+    # broker-name Google News queries.
     "CNBC Technology": "https://www.cnbc.com/id/19854910/device/rss/rss.html",
     "Investing.com Asia Equities": "https://www.investing.com/rss/news_301.rss",
-    # v3.2 — Architectural sensing feeds (leading indicators for HBM captive ratio shifts)
-    # Damnang covers memory cycle from quant/architectural angle — 403 fixed via UA change
-    "Damnang Memory Substack": "https://damnang2.substack.com/feed",
+    # v3.38.4: Damnang Substack DROPPED for same reason as Investing.com x4 —
+    # Cloudflare TLS fingerprint check, UA-only fix insufficient. Architectural
+    # signal coverage retained via Google News queries on KV cache compression,
+    # CXMT DDR5, HBM AI bottleneck, inference efficiency breakthrough.
     # HuggingFace publishes a working RSS for model + research drops
     "HuggingFace Blog": "https://huggingface.co/blog/feed.xml",
     # CXL / memory disaggregation canary — Astera Labs is the pure-play
@@ -1110,13 +1116,13 @@ RSS_FEEDS = {
     # SemiAnalysis free posts (the rest is paywalled but headlines + intros are useful)
     "SemiAnalysis Free": "https://semianalysis.com/feed/",
 }
-# TODO v3.39 — feed URL hunt: find working replacements for sources pruned above
-# where Google News coverage proves insufficient. Candidates to investigate:
+# TODO v3.39 — feed URL hunt + Cloudflare bypass: find working replacements for
+# sources pruned in v3.38.3 / v3.38.4. Candidates:
 #   - vLLM blog: real RSS may live at a different path under blog.vllm.ai/
 #   - The Elec: switched RSS index location, needs investigation
-#   - SGLang/LMSYS: confirm whether they ever publish RSS or only Twitter
-#   - Anthropic / Meta AI: officially no RSS; third-party scrapers exist but
-#     are unstable (single-maintainer GitHub repos)
+#   - Damnang Substack + Investing.com x4: try curl-cffi (Chrome TLS fingerprint)
+#     to bypass Cloudflare. Damnang in particular is the architectural-signal
+#     source Raul flagged as critical; worth the engineering investment.
 
 # URLs to scrape directly
 SCRAPE_TARGETS = {
@@ -1622,24 +1628,23 @@ def get_upcoming_events(within_days: int = 90, today: Optional[_date] = None) ->
 # Currently resolves to Haiku 4.5; will roll forward as Anthropic ships
 # new Haiku-tier models.
 HAIKU_MODEL = os.environ.get("HAIKU_MODEL_OVERRIDE") or "claude-haiku-4-5"
-# v3.38.3: bumped 4000 → 8000. The 14:31 UTC May 17 run truncated Haiku triage
-# output around char 6839 (unterminated string), failing JSON parse and forcing
-# fallback. Triaging 46 news items × ~80-150 tokens of structured output each =
-# ~5500-7000 tokens minimum. 4000 was clearly too low. 8000 is well within
-# Haiku 4.5's 64K cap. Per Anthropic docs, max_tokens does not factor into
-# rate-limit calculations — no cost downside to setting higher.
-HAIKU_MAX_TOKENS = 8000
+# v3.38.4: bumped 8000 → 16000. The 15:32 UTC May 17 run had Haiku triage
+# fail JSON parse at char 13926 (unterminated string). News volume scales:
+# 50 items × ~200 tokens output each = ~10K tokens. 8000 was below floor;
+# 16000 gives 60% headroom. Still well within Haiku 4.5's 64K cap. json_repair
+# in llm_summarizer.py covers the case where output IS valid but malformed.
+HAIKU_MAX_TOKENS = 16000
 
 # Stage 2 — mid-tier reasoning model for tier classification, probability
 # synthesis, exec summary composition. Currently resolves to Sonnet 4.6;
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for
 # marginal quality gain on this structured task.
 SONNET_MODEL = os.environ.get("SONNET_MODEL_OVERRIDE") or "claude-sonnet-4-6"
-# v3.38.3: bumped 8000 → 16000. Same run truncated Sonnet around char 27099.
-# Synthesis output covers 22 indicator assessments (~300-500 tokens each =
-# 6,600-11,000) + exec summary + scenarios + news synthesis. 8000 was below
-# the floor; 16000 gives ~50% headroom while still well under the 64K cap.
-SONNET_MAX_TOKENS = 16000
+# v3.38.4: bumped 16000 → 24000. Sonnet synthesizes 22 indicator assessments
+# (~400-500 tokens each = ~10K) + executive summary (~1K) + bull/bear/base
+# scenarios (~2K) + news synthesis (~3K) + tier rollups (~1K) ≈ 17K floor.
+# 16000 was tight; 24000 gives ~40% headroom. Still well under 64K cap.
+SONNET_MAX_TOKENS = 24000
 
 LLM_TEMPERATURE = 0.3  # low for analytical work
 
