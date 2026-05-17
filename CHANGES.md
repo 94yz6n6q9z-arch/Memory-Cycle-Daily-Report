@@ -6,6 +6,112 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39.2 — supercycle phase chart + 1Y bug fix + Node 24 actions + defensive parser hardening
+
+**Why this release.** The 21:19 May 17 fast-tier run validated v3.39.1 cleanly (Sonnet output 28,957/48,000 tokens, no crashes, full email shipped), but surfaced three observations:
+
+1. **Performance table 1Y column showed "n/a" for every ticker.** Off-by-one in `pct_change_lookback`: `fetch_price_history` defaulted to `period="1y"` (~252 trading days), but the guard `if len(series) < days + 1` evaluated `252 < 253` → True → returned None. Every other window had headroom; only 1Y sat exactly at the boundary.
+2. **GitHub Actions runner emitted a Node.js 20 deprecation warning** for `actions/checkout@v4`, `actions/setup-python@v5`, `actions/github-script@v7`. June 2, 2026 deadline. 16 days to act.
+3. **Defensive parser had a silent-drop gap.** v3.39.1's `_safe_indicator_assessment` defaulted missing `tier` to 0, but the template's `for tier in (1, 2, 3, 4)` filter would then drop the indicator from the email. A truncation-recovered partial dict that crossed the parser would still vanish from the user-facing output.
+
+Plus the headline feature: a new **supercycle phase chart** to lead the email, replacing the 1Y performance chart (which duplicated the numbers already in the performance table immediately below).
+
+## Fix 1 — Supercycle phase chart (new feature)
+
+Overlays the universal 5-phase memory-supercycle anatomy (from `memory_supercycle_analysis.docx` Part 1) onto SK Hynix's actual price history, with three dynamic annotation panels listing fired and pending indicators. Section 2 of the email, between Performance overview and Tier indicators.
+
+**Dynamic dimensions:**
+- **Phase boundaries** anchor Phase 4 END to `executive_summary.base_case.peak_window_start`, then back-fill earlier phases proportionally using `CYCLE_PHASE_DURATIONS_MONTHS` (Phase 1: 9mo, Phase 2: 12mo, Phase 3: 12mo, Phase 4: 9mo, Phase 5: 18mo). As the LLM updates the base case, the phase shading moves with it.
+- **Projection curves** (base/bull/bear) are smooth quadratic interpolations from today's price to each scenario's `(peak_window_start, return_to_peak_pct)` endpoint — not literal price extrapolations.
+- **Annotation panels** join `indicator_assessments` to `INDICATORS` by id to look up `short_label`, then bucket by status:
+  - Tier 1 fired (X/Y): list of T1 indicators with `current_status` starting with "Fired" (excluding "Fired then reversed")
+  - Tier 2 fired (X/Y): same for T2
+  - Not yet fired — T2/T3 watch: pending T2 + T3 indicators
+
+**New config:**
+- `CYCLE_TROUGH_DATE = "2023-10-31"` (Q4 2023 SK Hynix low)
+- `CYCLE_PHASE_DURATIONS_MONTHS` — generic 60-month phase template
+- `CYCLE_PHASE_COLORS` — pastel palette matching the generic chart
+- `SUPERCYCLE_CHART_TICKER_NAME / _CURRENCY` — pinned to SK Hynix / KRW
+- `Indicator.short_label` — new field on the Indicator dataclass; populated for all 22 indicators (e.g., "Spot first decline", "Capex parabolic", "EPS revision flip")
+
+**Implementation:**
+- New `generate_supercycle_chart()` in `chart_generator.py` (~250 lines including helpers)
+- `fast_tier.py` calls it after the existing performance chart, passes both into `build_email_html`
+- Email template gains `supercycle_chart_base64: Optional[str]` parameter; renders section 2 when present, silently skips when None (chart generation failure → email still ships)
+- Figure sized at 11×6.6 dpi=100 → ~113KB PNG / ~151KB base64. Together with the rest of the email, total body is ~180KB. Above Gmail's ~102KB clip threshold but still readable via "View entire message" (this was already the case in v3.39.1 with the 1Y chart at ~96KB base64).
+
+## Fix 2 — Email restructure: drop 1Y chart, add supercycle chart
+
+The 1Y performance chart was visually redundant with the performance table immediately below (which shows 1D / 1W / 1M / 3M / 6M / 1Y returns numerically). v3.39.2 drops the chart from the email body. The chart is still computed in `fast_tier.py` (passed as `chart_base64` to the template), but the template no longer renders it — kept in the codepath for future use.
+
+Sections renumbered:
+| # | v3.39.1 | v3.39.2 |
+|---|---|---|
+| 1 | Performance overview (chart + table) | Performance overview (table only) |
+| 2 | Tier indicators | **Where we stand in the cycle** (NEW) |
+| 3 | Top 5 deep dives | Tier indicators |
+| 4 | Latest news | Top 5 deep dives |
+| 5 | Calendar of events | Latest news |
+| 6 | Data source assessment | Calendar of events |
+| 7 | — | Data source assessment |
+
+## Fix 3 — 1Y return bug (off-by-one in pct_change_lookback)
+
+Two coordinated changes:
+- **`fast_tier.py`**: `fetch_price_history(WIDER_BASKET, period="3y", collector=collector)`. The 3y window also gives the supercycle chart the historical depth it needs (Q4 2023 trough → today is ~30 months). One change, two fixes.
+- **`prices.py:pct_change_lookback`**: hardened against the bug class. Prior `if len(series) < days + 1: return None` returned None on exact equality; now falls back to the oldest available row when the series is shorter than the requested window. With 3y fetch this branch is unreachable in practice, but kept as defense-in-depth in case the fetch window is ever shortened.
+
+## Fix 4 — Defensive parser: tier-from-id inference
+
+`_safe_indicator_assessment` now falls back to `_tier_from_id(id)` before defaulting tier to 0. Since every indicator id is canonically prefixed `t1_…` through `t4_…`, the tier can be recovered from the id even when the explicit `tier` field is missing or non-numeric. Previously a tier=0 indicator would render cleanly from the parser but then get filtered out by the template's `for tier in (1, 2, 3, 4)` loop — defensive parsing produced a usable object that the renderer silently dropped.
+
+New helper `_tier_from_id(indicator_id)` returns 1-4 for properly prefixed ids, 0 otherwise. Tested against 7 cases in the unit tests.
+
+## Fix 5 — Node.js 20 → 24 action version bumps
+
+GitHub will force Node 24 by default starting June 2, 2026. All three workflow files updated:
+- `actions/checkout@v4` → `@v5` (Aug 2025 release, Node 24)
+- `actions/setup-python@v5` → `@v6` (Sep 2025 release, Node 24)
+- `actions/github-script@v7` → `@v8` (late 2025 release, Node 24)
+
+Each successor version verified as a stable major release on GitHub before bumping. No breaking config changes expected from these majors.
+
+## Fix 6 — `datetime.utcnow()` deprecation in fast_tier.py
+
+Replaced all 4 occurrences in `fast_tier.py` (lines 132, 144, 471, 481) with `datetime.now(UTC)` (importing `UTC` from `datetime`). Eliminates the `DeprecationWarning` that fired on every run. Other modules (`main.py`, `state.py`, `priority_alerter.py`, etc.) have 20+ more occurrences; not touched this release since they don't trigger in the active fast-tier code path — deferred to a future cleanup pass.
+
+## Fix 7 — Unit tests persisted
+
+`tests/test_safe_indicator_assessment.py` codifies the 7 cases validated during v3.39.1 development plus 2 new cases for v3.39.2's tier-from-id inference (and 7 dedicated `_tier_from_id` cases). 16 cases total, all pass. Run with `python -m tests.test_safe_indicator_assessment`.
+
+## Validation done
+
+- Python syntax clean (`ast.parse` across all 27 .py files)
+- YAML lint clean (all 3 workflow files)
+- AST signature audit: zero mismatches
+- 16/16 unit tests pass
+- Smoke test of `generate_supercycle_chart` with synthetic data renders correctly
+- Integration test of `build_email_html` with both charts produces a 180KB HTML email with 7 sections in correct order
+
+## Files changed
+
+| File | Change |
+|---|---|
+| `src/analysis/chart_generator.py` | +500 lines: `generate_supercycle_chart` + helpers (`_parse_peak_window_start`, `_compute_phase_boundaries`, `_quadratic_curve`, `_categorize_indicators`, `_draw_annotation_panel`); deps `numpy`, `matplotlib.patches`; new module-level imports for `date`, `timedelta`, `Optional` |
+| `src/analysis/llm_summarizer.py` | New `_tier_from_id` helper; `_safe_indicator_assessment` now uses it to recover tier when the field is missing or non-numeric |
+| `src/config.py` | `Indicator.short_label` field added; populated for all 22 indicators; new constants `CYCLE_TROUGH_DATE`, `CYCLE_PHASE_DURATIONS_MONTHS`, `CYCLE_PHASE_COLORS`, `SUPERCYCLE_CHART_TICKER_NAME`, `SUPERCYCLE_CHART_TICKER_CURRENCY` |
+| `src/data/prices.py` | `pct_change_lookback` off-by-one fix with safe fallback to oldest available row |
+| `src/fast_tier.py` | New imports for cycle constants + `generate_supercycle_chart`; `fetch_price_history` called with `period="3y"`; `datetime.utcnow()` → `datetime.now(UTC)` × 4; supercycle chart generation block; `supercycle_chart_base64` passed to `build_email_html` |
+| `src/email_module/template.py` | `build_email_html` signature gains `supercycle_chart_base64`; performance section drops embedded chart; new "Where we stand in the cycle" section between sections 1 and 2; downstream sections renumbered |
+| `.github/workflows/fast_tier.yml` | `actions/checkout@v4` → `@v5`, `actions/setup-python@v5` → `@v6`, `actions/github-script@v7` → `@v8` |
+| `.github/workflows/deep_tier.yml` | Same Node 24 bumps as fast_tier.yml |
+| `.github/workflows/priority_alerts.yml` | Same Node 24 bumps |
+| `tests/test_safe_indicator_assessment.py` | NEW — 16 cases covering `_safe_indicator_assessment` and `_tier_from_id` |
+| `CHANGES.md` | This entry |
+
+---
+
 ## v3.39.1 — defensive parsing + 48K Sonnet cap + drop redundant top_5
 
 **Why this release.** The 20:30 May 17 fast-tier run (first with v3.39 in place) made it further than ever — Sonnet streaming reached **47,369 characters / ~24K tokens** of output, vs ~33K chars in the prior run — but still truncated at the new `SONNET_MAX_TOKENS=24000` cap. json_repair recovered 14/22 indicators; the 14th was mid-write and missing `latest_developments`. Parse code did `IndicatorAssessment(**a)` with no defensive handling → `TypeError: missing 1 required positional argument: 'latest_developments'` → unhandled exception → workflow exit code 1 → "Create issue on critical failure" auto-fired (a GitHub issue is in your repo).
