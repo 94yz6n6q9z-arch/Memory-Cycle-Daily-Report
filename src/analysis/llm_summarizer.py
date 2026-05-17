@@ -10,6 +10,9 @@ Stage 2 (Sonnet): take Haiku's structured output + price/estimate data
 summary with probability calculations, and cycle position synthesis.
 
 Falls back to deterministic synthesis if API unavailable.
+
+CHANGELOG (this file):
+  v3.38.4 (2026-05-17) — Both `haiku_triage_news` and `sonnet_analyze` now parse responses with a two-stage strategy: stdlib `json.loads(raw)` first (fast path for valid output), then `json_repair.loads(raw)` fallback on JSONDecodeError. Reason: the 15:32 UTC May 17 run had Haiku triage of 50 news items fail JSON parse at char 13926 (unterminated string — almost certainly unescaped quote/newline in a reasoning field), losing the entire triage. v3.38.3 had the same failure mode in Sonnet (char 27099) and Haiku (char 6839). Bumping max_tokens helps when the cause is truncation, but doesn't help when the cause is malformed string content — json_repair handles both. New explicit log at WARNING level when the fallback fires, with INFO-level confirmation of how much was recovered.
 """
 
 from __future__ import annotations
@@ -18,6 +21,8 @@ import json
 import logging
 from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
+
+import json_repair  # v3.38.4 — fallback when stdlib json.loads fails on LLM output
 
 from anthropic import Anthropic
 
@@ -226,11 +231,36 @@ def haiku_triage_news(
         return None
 
     raw = _strip_code_fence(response.content[0].text)
+    # v3.38.4: two-stage parse. Stdlib json first (fast path for valid output);
+    # json_repair fallback for the cases that broke runs at char 6839, 13926,
+    # 27099. json_repair recovers from unescaped quotes/newlines in string
+    # fields AND from truncation (returns best-effort dict for as much as
+    # parsed). If even json_repair returns empty/non-dict, log and bail.
+    parsed = None
     try:
         parsed = json.loads(raw)
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Haiku response as JSON: {e}")
-        return None
+        logger.warning(
+            f"Haiku JSON parse failed at {e.msg} (char {e.pos}); "
+            f"attempting json_repair recovery..."
+        )
+        try:
+            parsed = json_repair.loads(raw)
+            if not isinstance(parsed, dict):
+                logger.error(
+                    f"json_repair returned {type(parsed).__name__}, not dict — "
+                    f"Haiku triage unrecoverable"
+                )
+                return None
+            n_recovered = len(parsed.get("relevant_news", []))
+            logger.info(
+                f"json_repair recovered Haiku triage: {n_recovered} relevant_news items"
+            )
+        except Exception as repair_err:
+            logger.error(
+                f"json_repair also failed: {repair_err}; Haiku triage unrecoverable"
+            )
+            return None
 
     return NewsTriage(
         relevant_news=parsed.get("relevant_news", []),
@@ -469,12 +499,41 @@ def sonnet_analyze(
         return None
 
     raw = _strip_code_fence(response.content[0].text)
+    # v3.38.4: same json_repair fallback pattern as Haiku triage. Sonnet
+    # produces a deeper nested structure (22 indicator assessments + exec
+    # summary + scenarios + news synthesis) so it has more surface area for
+    # malformed-string failures. If json_repair returns an empty dict or
+    # something unrecognizable, bail to fallback_analysis (which IS now
+    # callable post v3.38.3 — the kwarg fix at fast_tier.py:399).
+    parsed = None
     try:
         parsed = json.loads(raw)
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Sonnet response as JSON: {e}")
-        logger.debug(f"Raw response (first 1500 chars): {raw[:1500]}")
-        return None
+        logger.warning(
+            f"Sonnet JSON parse failed at {e.msg} (char {e.pos}); "
+            f"attempting json_repair recovery..."
+        )
+        logger.debug(f"Raw response around fail point: ...{raw[max(0, e.pos-200):e.pos+200]}...")
+        try:
+            parsed = json_repair.loads(raw)
+            if not isinstance(parsed, dict) or not parsed:
+                logger.error(
+                    f"json_repair returned {type(parsed).__name__} (empty or wrong type) — "
+                    f"Sonnet analysis unrecoverable"
+                )
+                return None
+            n_indicators = len(parsed.get("indicator_assessments", []))
+            has_exec = bool(parsed.get("executive_summary"))
+            logger.info(
+                f"json_repair recovered Sonnet analysis: "
+                f"{n_indicators}/22 indicators, exec_summary present={has_exec}"
+            )
+        except Exception as repair_err:
+            logger.error(
+                f"json_repair also failed: {repair_err}; "
+                f"Sonnet analysis unrecoverable, will use fallback"
+            )
+            return None
 
     exec_data = parsed.get("executive_summary", {})
     exec_summary = ExecutiveSummary(
