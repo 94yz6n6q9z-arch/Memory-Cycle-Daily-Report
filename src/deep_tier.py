@@ -35,9 +35,11 @@ CHANGELOG (this file):
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 from src.config import IR_SOURCES, MOTLEY_FOOL_TICKERS, YAHOO_TRANSCRIPT_TICKERS
 from src.data.transcript_sources import fetch_transcripts_with_retry
@@ -51,6 +53,10 @@ from src.analysis.digester import (
     digest_korean_broker_notes,
 )
 from src.state import digests_dir_for
+from src.diagnostics import (
+    DiagnosticsCollector, SourceFetchStatus,
+    status_from_retry_meta, statuses_to_dict_list,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -66,6 +72,14 @@ def run_deep_tier() -> int:
     logger.info(f"=== DEEP TIER START — {today.isoformat()} ===")
 
     digests_dir_for(today)  # ensure directory exists
+
+    # v3.38: collector for deep-tier sources. Statuses are persisted to
+    # state/deep_tier_diagnostics.json at the end of the run; the fast tier
+    # reads that file next morning and includes the rows in the email's
+    # validation table. This closes the silent-failure surface for the
+    # deep tier — every transcript source, every Korean broker feed, and
+    # the Haiku digester all surface a row daily.
+    deep_collector = DiagnosticsCollector()
 
     # ----- Step 1: Earnings transcripts (Yahoo Finance + Motley Fool + IR scrapers) -----
     logger.info("Fetching earnings transcripts (Yahoo Finance + Motley Fool + IR scrapers)...")
@@ -85,6 +99,13 @@ def run_deep_tier() -> int:
         if yahoo_attempted:
             logger.info(f"  → Yahoo fallback invoked for: {yahoo_attempted}")
 
+    # v3.38: decompose the transcript cascade into per-source rows so the
+    # email validation table shows which of Yahoo / Motley Fool / IR scrapers
+    # actually delivered today. Without this you'd see ONE row for the whole
+    # cascade and a Yahoo-proxy outage would be invisible if MF + IR happened
+    # to cover the same companies.
+    _record_transcript_source_rows(deep_collector, transcript_payload, transcript_meta)
+
     transcript_digests = []
     if transcript_payload:
         transcript_digests = digest_transcript_results(transcript_payload)
@@ -96,25 +117,174 @@ def run_deep_tier() -> int:
 
     # ----- Step 2: Korean broker PDFs -----
     logger.info("Fetching Korean broker PDFs (Mirae + NH + Samsung Securities)...")
-    mirae_payload, mirae_meta = fetch_mirae_with_retry()
-    nh_payload, nh_meta = fetch_nh_with_retry()
+    mirae_payload,   mirae_meta   = fetch_mirae_with_retry()
+    nh_payload,      nh_meta      = fetch_nh_with_retry()
     samsung_payload, samsung_meta = fetch_samsung_securities_with_retry()
+
+    # v3.38: per-broker rows. Each broker independently fails / hits stale
+    # cache / returns N notes — they're not interchangeable (Mirae covers
+    # CXMT depth, Samsung Securities is the only Gmail-IMAP path).
+    deep_collector.record(status_from_retry_meta(
+        "Mirae Asset (EN broker PDFs)", "broker_pdf",
+        mirae_payload, mirae_meta,
+        items_count=len((mirae_payload or {}).get("notes", [])),
+    ))
+    deep_collector.record(status_from_retry_meta(
+        "NH Investment (broker PDFs)", "broker_pdf",
+        nh_payload, nh_meta,
+        items_count=len((nh_payload or {}).get("notes", [])),
+    ))
+    deep_collector.record(status_from_retry_meta(
+        "Samsung Securities (Gmail IMAP)", "broker_pdf",
+        samsung_payload, samsung_meta,
+        items_count=len((samsung_payload or {}).get("notes", [])),
+    ))
 
     broker_payloads = [p for p in (mirae_payload, nh_payload, samsung_payload) if p]
     broker_digests = digest_korean_broker_notes(broker_payloads)
     logger.info(f"Wrote {len(broker_digests)} Korean broker note digests")
 
+    # v3.38: roll-up status row for Anthropic Haiku digester. The digester
+    # makes one call per (uncached) transcript + one per broker note. We
+    # don't have inner instrumentation yet (would need to thread the
+    # collector through digester.py — out of scope for v3.38), so this is
+    # a single row counting digests written. Health flags:
+    #   • ok      = digests written
+    #   • warn    = zero digests AND zero sources reached (legitimate quiet day)
+    #   • fail    = zero digests but sources had content (digester died)
     total_digests = len(transcript_digests) + len(broker_digests)
+    sources_returned_content = any((transcript_payload, mirae_payload, nh_payload, samsung_payload))
+    if total_digests > 0:
+        deep_collector.record(SourceFetchStatus(
+            source_name="Anthropic Haiku (digester)", source_type="llm",
+            reached=True, items_returned=total_digests, latency_ms=0,
+            detail=f"{len(transcript_digests)} transcript + {len(broker_digests)} broker note digests",
+        ))
+    elif sources_returned_content:
+        deep_collector.record(SourceFetchStatus(
+            source_name="Anthropic Haiku (digester)", source_type="llm",
+            reached=False, items_returned=0, latency_ms=0,
+            error="Sources had content but 0 digests written — digester failed",
+            detail="check state/digests/{YYYY-MM-DD}/ and Anthropic API rate-limit logs",
+        ))
+    else:
+        deep_collector.record(SourceFetchStatus(
+            source_name="Anthropic Haiku (digester)", source_type="llm",
+            reached=True, items_returned=0, latency_ms=0,
+            detail="0 digests written — quiet day, no source content to digest",
+        ))
+
     logger.info(f"=== DEEP TIER COMPLETE — {total_digests} digests written ===")
+
+    # v3.38: persist deep-tier diagnostics for fast-tier ingestion. Written
+    # unconditionally so the fast tier can detect 'deep tier didn't run' vs
+    # 'deep tier ran and everything failed'.
+    _write_deep_tier_diagnostics(deep_collector)
 
     # Non-zero only on catastrophic failure (Anthropic API completely unreachable
     # AND every source failed). Note: transcript gap-records still count as digests,
     # so a normal "no earnings this week" day produces gap digests, not zero.
-    sources_ok = any((transcript_payload, mirae_payload, nh_payload, samsung_payload))
-    if total_digests == 0 and not sources_ok:
+    if total_digests == 0 and not sources_returned_content:
         logger.error("Deep tier produced 0 digests AND all sources failed — exit 1")
         return 1
     return 0
+
+
+def _record_transcript_source_rows(collector, transcript_payload, transcript_meta) -> None:
+    """v3.38 — emit per-source rows for the transcript cascade.
+
+    Groups TranscriptResults by source_name (Motley Fool / Yahoo Finance /
+    each "{company} IR" variant) and emits one SourceFetchStatus per group
+    with: how many companies the source covered, how many full transcripts,
+    materials-only, and gap (nothing) outcomes.
+
+    If the cascade itself failed (transcript_payload is None), emit one
+    FAIL row labeled with the wrapper error.
+    """
+    # Cascade-level failure first
+    if transcript_payload is None:
+        collector.record(SourceFetchStatus(
+            source_name="Transcript cascade (Yahoo + Motley Fool + IR)",
+            source_type="transcript",
+            reached=False, items_returned=0, latency_ms=0,
+            error=transcript_meta.get("reason", "unknown"),
+            detail=f"status={transcript_meta.get('status', 'unknown')}",
+        ))
+        return
+
+    results = transcript_payload.get("results", [])
+    if not results:
+        collector.record(SourceFetchStatus(
+            source_name="Transcript cascade (Yahoo + Motley Fool + IR)",
+            source_type="transcript",
+            reached=True, items_returned=0, latency_ms=0,
+            detail="cascade returned 0 results (no earnings window matched)",
+        ))
+        return
+
+    # Group by source_name — coalesce all "{company} IR" rows into "IR scrapers"
+    # for a sensible row count (5 IR rows is noise; 1 IR-aggregate is signal).
+    by_source: dict[str, list[dict]] = {}
+    for r in results:
+        sn = r.get("source_name", "(unknown)")
+        if sn.endswith(" IR") or "IR (newsroom RSS)" in sn or sn.endswith(" IR"):
+            key = "IR scrapers (SK Hynix / Samsung / Micron)"
+        else:
+            key = sn  # "Motley Fool", "Yahoo Finance"
+        by_source.setdefault(key, []).append(r)
+
+    for source_label, rs in by_source.items():
+        n_full = sum(1 for r in rs if r.get("availability") == "full_transcript")
+        n_mat  = sum(1 for r in rs if r.get("availability") == "materials_only")
+        n_done = sum(1 for r in rs if r.get("availability") == "already_processed")
+        n_none = sum(1 for r in rs if r.get("availability") == "nothing")
+        n_companies = len({r.get("company") for r in rs if r.get("company")})
+
+        detail = (f"{n_companies} co. · {n_full} full / {n_mat} materials-only / "
+                  f"{n_done} cached / {n_none} nothing")
+        # Items returned counts as full + materials (real new content).
+        items = n_full + n_mat
+        # Reached = the source was invoked. Even if 0 new content this run,
+        # we still want a row (it's not a failure). 'nothing' across the
+        # board with no cached hits is a warn signal.
+        all_nothing = (n_full == 0 and n_mat == 0 and n_done == 0 and n_none > 0)
+        if all_nothing:
+            collector.record(SourceFetchStatus(
+                source_name=source_label, source_type="transcript",
+                reached=True, items_returned=0, latency_ms=0,
+                detail=f"{detail} — investigate if expected coverage this window",
+            ))
+        else:
+            collector.record(SourceFetchStatus(
+                source_name=source_label, source_type="transcript",
+                reached=True, items_returned=items, latency_ms=0,
+                detail=detail,
+            ))
+
+
+def _write_deep_tier_diagnostics(collector) -> None:
+    """v3.38 — persist deep-tier collector to state/deep_tier_diagnostics.json
+    so the fast tier (separate run, hours later) can include these rows in the
+    email's validation table. Includes a written_at_iso so the fast tier can
+    detect stale files (deep tier didn't run today)."""
+    try:
+        state_dir = Path("state")
+        state_dir.mkdir(exist_ok=True)
+        out_path = state_dir / "deep_tier_diagnostics.json"
+        payload = {
+            "written_at_iso": datetime.now(timezone.utc).isoformat(),
+            "run_date": date.today().isoformat(),
+            "summary_counts": collector.summary_counts(),
+            "statuses": statuses_to_dict_list(collector.all()),
+        }
+        with open(out_path, "w") as f:
+            json.dump(payload, f, indent=2)
+        logger.info(
+            f"Wrote deep-tier diagnostics: {out_path} "
+            f"({len(collector.all())} rows, summary={payload['summary_counts']})"
+        )
+    except Exception as e:
+        logger.warning(f"Could not write deep-tier diagnostics: {e}")
 
 
 def _write_transcript_status(transcript_payload, transcript_meta) -> None:
