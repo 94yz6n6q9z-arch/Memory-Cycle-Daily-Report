@@ -6,7 +6,101 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
-## v3.39 — Sonnet streaming + scenario invariants + relative-strength tiering + transcript cache recognition + email layout
+## v3.39.1 — defensive parsing + 48K Sonnet cap + drop redundant top_5
+
+**Why this release.** The 20:30 May 17 fast-tier run (first with v3.39 in place) made it further than ever — Sonnet streaming reached **47,369 characters / ~24K tokens** of output, vs ~33K chars in the prior run — but still truncated at the new `SONNET_MAX_TOKENS=24000` cap. json_repair recovered 14/22 indicators; the 14th was mid-write and missing `latest_developments`. Parse code did `IndicatorAssessment(**a)` with no defensive handling → `TypeError: missing 1 required positional argument: 'latest_developments'` → unhandled exception → workflow exit code 1 → "Create issue on critical failure" auto-fired (a GitHub issue is in your repo).
+
+The streaming refactor itself is working — but four follow-on issues to fix in coordination:
+
+| # | Problem | Fix |
+|---|---|---|
+| 1 | Recovery crashes when json_repair returns a partial dict | `_safe_indicator_assessment` helper with field-by-field defaults |
+| 2 | `top_5_deep_dives` array in output duplicates 5 indicators with ~10K extra tokens | Drop from schema; synthesize client-side from `indicator_assessments` filtered by `TOP_5_INDICATORS` |
+| 3 | 24K max_tokens insufficient for full 22-indicator content | Bump to 48K (Sonnet 4.6 supports up to 64K) |
+| 4 | No visibility into Sonnet token consumption | Log `usage.input_tokens` / `usage.output_tokens` from the streaming response, flag if cap was hit |
+
+## Fix 1 — Defensive `IndicatorAssessment` construction
+
+New helper `_safe_indicator_assessment(d)` in `llm_summarizer.py`. Constructs from a possibly-partial dict using `.get()` with safe defaults for every required field. Indicators without a usable `id` are filtered out upstream (logged as a warning). Tested against 7 cases including the exact May 17 crash scenario (missing `latest_developments`) — all pass without exception.
+
+```python
+def _safe_indicator_assessment(a: dict) -> IndicatorAssessment:
+    return IndicatorAssessment(
+        id=str(a.get("id", "unknown")),
+        tier=int(a.get("tier", 0)) if str(a.get("tier","")).strip().isdigit() else 0,
+        ...
+        current_status=str(a.get("current_status", "Unknown (Sonnet output truncated)")),
+        ...
+    )
+```
+
+Parse site rewritten:
+
+```python
+raw_assessments = parsed.get("indicator_assessments", [])
+assessments = [
+    _safe_indicator_assessment(a)
+    for a in raw_assessments
+    if isinstance(a, dict) and a.get("id")
+]
+```
+
+If 14/22 indicators come back next time (or even 8/22), the pipeline now produces a brief with whatever was recovered, surfaces a warning in the run log, and continues. The brief will be incomplete but the user gets *something* — much better than a workflow crash and a GitHub issue.
+
+## Fix 2 — Drop `top_5_deep_dives` from Sonnet output
+
+The schema previously asked Sonnet for both `indicator_assessments` (all 22) AND `top_5_deep_dives` (5 specific IDs duplicated with "deeper" content). The duplication cost roughly 10K output tokens. v3.39.1 collapses this:
+
+- Sonnet emits the 22 indicators only, with a prompt directive to write **extra depth** (2-3 fuller paragraphs in `where_we_stand` and `latest_developments`) for the five IDs listed in `TOP_5_INDICATORS`.
+- The Python parse path synthesizes `top_5_deep_dives` by plucking those IDs from `indicator_assessments`. No information loss; the deep-dive set is fixed by config anyway.
+
+Saves ~10K output tokens per run, lowering truncation risk and reducing Sonnet cost by ~$0.15/run.
+
+## Fix 3 — `SONNET_MAX_TOKENS` 24000 → 48000
+
+Output budget at full richness:
+- 22 indicators × ~2K tokens each (5 with deep-dive depth): ~46K
+- `executive_summary`: ~3K
+- `market_summary` + `key_news_summary` + `cycle_position_call`: ~6K
+- **Total need: ~55K tokens**
+
+The Fix 2 drop of `top_5_deep_dives` brings the realistic need down to ~46K. 48K cap gives ~5% margin and stays well under Sonnet 4.6's 64K model ceiling.
+
+Wall-time projection at observed ~45 tok/sec streaming throughput: 48K tokens = ~18 min Sonnet phase. With workflow timeout now 35 min (Fix 5), this fits with margin.
+
+## Fix 4 — Token usage logging
+
+After `stream.get_final_message()`, log the response's `usage.input_tokens` and `usage.output_tokens`. Flag when output is within 100 of `SONNET_MAX_TOKENS` (cap-hit indicator). Now we see in the run log:
+
+```
+Sonnet usage: 47,832 input + 38,415 output tokens (max_tokens=48,000)
+```
+
+vs the previous opacity where we had to infer truncation from `json_repair`'s `12/22 indicators` count.
+
+## Fix 5 — Workflow timeout 25 → 35 min
+
+`fast_tier.yml`: `timeout-minutes: 25` → `35`. At 48K cap, worst-case run = fetch (1.5) + Layer 2 (4) + Haiku triage (3) + Sonnet streaming (18) + chart/email/commit (1.5) ≈ 28 min. 35 gives 7 min margin for Anthropic 503 retries and other transient delays.
+
+## Validation done
+
+- Python syntax + YAML lint clean
+- AST signature audit: zero mismatches
+- `_safe_indicator_assessment` tested against 7 cases (complete dict, truncated mid-indicator [the May 17 crash], non-numeric tier, wrong-type relevant_links, empty dict, real change_vs_prior, empty-string change_vs_prior) — all parse without exception
+- Confirmed top_5 synthesis uses the existing fallback-path `top_5 = [a for a in assessments if a.id in TOP_5_INDICATORS]` pattern, no new logic
+
+## Files changed
+
+| File | Change |
+|---|---|
+| `src/analysis/llm_summarizer.py` | `_safe_indicator_assessment` helper; parse path rewritten; `top_5_deep_dives` dropped from prompt; client-side top_5 synthesis; token usage logging |
+| `src/config.py` | `SONNET_MAX_TOKENS` 24000 → 48000 with rationale |
+| `.github/workflows/fast_tier.yml` | `timeout-minutes` 25 → 35 |
+| `CHANGES.md` | this entry |
+
+---
+
+# v3.39 — Sonnet streaming + scenario invariants + relative-strength tiering + transcript cache recognition + email layout
 
 **Why this release.** The 17:43 May 17 run sent a brief, but with five real problems that became apparent on inspection: (1) Sonnet's output truncated at ~33K chars / ~16K tokens mid-string, json_repair recovered only 12/22 indicators — Tier 3, Tier 4, top-5 deep dive and selected_news sections dropped silently from the email; (2) executive summary showed bear 30% / base 28% / bull 18% summing to 76% with bear > base; (3) the Tier 3 relative-strength signal fired on a single-session move that fired-and-unfired daily; (4) ~28 false WARN rows in the data-source table for transcripts that were cached and available; (5) "Where we stand" column visually squeezed because long Google News URLs in "Latest developments" weren't wrapping.
 
