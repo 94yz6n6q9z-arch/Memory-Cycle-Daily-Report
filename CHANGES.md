@@ -1,8 +1,41 @@
 # Memory Cycle Brief — Changelog
 
-This release consolidates v3.1 through v3.35 plus v3.36 (Motley Fool body selector + SK Hynix IR via WordPress RSS feed). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
+This release consolidates v3.1 through v3.36 plus v3.37 (Haiku input cap 60k→80k + IR URL cache extension). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
 
-> **A note on version numbering.** v3.31 through v3.36 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+> **A note on version numbering.** v3.31 through v3.37 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+
+---
+
+## v3.37 — Haiku input cap bumped to 80k + IR URL cache (no more daily re-digestion of unchanged materials)
+
+**Why**: v3.36 deploy (May 17, 10:25 UTC) succeeded — Motley Fool flipped to 13/13 full_transcript, SK Hynix IR returned materials_only via the new WordPress RSS path, Yahoo proxy bandwidth dropped ~95% as the cascade demoted Yahoo to fallback for Korean names only. Two follow-ups flagged in the v3.36 review:
+
+1. **Three transcripts just clipped the 60k char cap**: Meta (60,304 → 60,000), Dell (61,428 → 60,000), HPE (60,883 → 60,000). Loss of ~0.5-2.4% of content each — small but unnecessary, since Haiku's 200k window has ample room.
+
+2. **IR materials get re-digested every daily run.** Samsung's earnings release and SK Hynix's `q1-2026-business-results/` post are unchanged content but the IR scrapers re-fetch and re-digest them every day until a new quarter lands. That's ~90 days × 2 companies = ~180 wasted Haiku calls per cycle. The Yahoo + Motley Fool path already has a URL cache (`state/cache/transcripts_seen.json` from v3.33) that returns `already_processed` for known URLs — IR was never wired in.
+
+**Changes:**
+
+1. **`src/analysis/digester.py`** — `MAX_INPUT_CHARS` bumped from `60_000` to `80_000`. Comment updated to reflect the cycle's growing transcript sizes (some now 60-65k after the v3.35 Yahoo paragraph parser captures the full call rather than a stub). 80k ≈ 20-25k tokens, still well within Haiku's 200k context with room for the prompt and structured output.
+
+2. **`src/data/transcript_sources.py`** — extend `seen_urls` cache to IR scrapers:
+   - `_scrape_ir_rss_feed(company, cfg, seen_urls)` — new `seen_urls` parameter. After matching the newest earnings feed entry, check if `entry_link` is in the cache. If yes, return an `already_processed` stub immediately (preserves `event_date_iso` from the feed entry's `published_parsed` for cross-run identity).
+   - `_scrape_ir_site(company, cfg, days_back, seen_urls)` — new `seen_urls` parameter. Inside the per-candidate fetch loop, cache check before `_http_get(href)`. Mirrors the v3.33 Motley Fool / Yahoo pattern.
+   - `fetch_ir_transcripts(ir_sources, days_back, seen_urls=None)` — optional `seen_urls` parameter, defaults to empty set for backward compatibility. Forwards to `_scrape_ir_site`.
+   - `fetch_all_transcripts` aggregator — already loads `seen_urls`; now passes it to `fetch_ir_transcripts` (was the missing wire).
+   - The existing persist block (`for r in results: if r.availability in ("full_transcript", "materials_only"): seen_urls.add(r.source_url)`) already covered IR URLs — no change needed there.
+
+| File | Changes |
+|---|---|
+| `src/analysis/digester.py` | `MAX_INPUT_CHARS` 60_000 → 80_000, comment updated |
+| `src/data/transcript_sources.py` | `_scrape_ir_rss_feed`, `_scrape_ir_site`, `fetch_ir_transcripts` take `seen_urls`. Cache-hit branches added in both IR paths. Aggregator wires `seen_urls` through. Changelog block updated |
+| `CHANGES.md` | This entry |
+
+**Expected v3.37 deploy outcome:**
+- Day 1 (next deploy): SK Hynix IR cache-hits the `q1-2026-business-results/` URL persisted by v3.36's run. Returns `already_processed`, no Haiku call. Samsung IR cache-hits its two materials URLs. Aggregate flips to roughly `13 full, 0 materials-only, 4-5 already-processed, 1 nothing`.
+- Day until Q2 reports (~late July 2026): IR materials stay cached, ~zero Haiku tokens spent on unchanged content.
+- Day N (Q2 release lands): WordPress feed surfaces new `q2-2026-business-results/` post, URL not in cache, fresh digest. Cache updates. Resumes ~90 day quiet period.
+- Three previously-truncated transcripts (Meta, Dell, HPE) now fit under 80k → no truncation.
 
 ---
 
