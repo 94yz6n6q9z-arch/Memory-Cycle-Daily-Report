@@ -6,7 +6,7 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
-## v3.39.3 — Naver broker scraper restored via WiseReport iframe target
+## v3.39.3 — Naver broker scraper restored + schedule reliability rework
 
 **Why this release.** The 22:54 May 17 fast-tier run shipped cleanly on v3.39.2 (Sonnet 34,648/48,000 output, supercycle chart rendered, full email delivered), but the Data Source Assessment confirmed two consecutive runs with `Naver Finance (Korean broker scraper) → WARN, 0 rows × 3 tickers`. Naver Finance is the source that closes the canonical Tier 2 signal (`t2_eps_revisions`) — without it, our weighted broker scoring runs blind and the brief had to fall back on Google News + analyst color leaking through. Material signal loss.
 
@@ -49,6 +49,61 @@ What changed internally:
 
 All 42 tests run in ~13ms.
 
+## Fix 3 — Schedule reliability: spread triggers + idempotency + cascade gate (Mon-Sat)
+
+Background. On May 17-18 the scheduled deep_tier run hit catastrophic cron drift — Sunday's 08:00 UTC trigger fired at 09:25 UTC (1h 25m late) and failed (13m 36s hanging on broken Korean broker URLs). Monday's scheduled triggers were never visible for either tier. Diagnostic confirmed deep_tier eventually fired ~11:35 UTC Monday (3h 35m late) and succeeded in 2m 31s, but by then fast_tier had no clean trigger window and the email never sent. GitHub Actions cron during peak periods is unreliable for single triggers on `:00` minute marks; the docs warn about 60-min drift but real-world peaks reach 3+ hours.
+
+Three coordinated changes to make the schedule resilient:
+
+**deep_tier.yml — 5 cron triggers spread across 10:03-11:03 UTC at odd minute marks.** Off-peak minute slots (`:03`, `:17`, `:33`, `:47`) avoid the GitHub-wide cron contention spikes at `:00`/`:15`/`:30`/`:45`. The 60-minute window provides statistical safety against drift on any single trigger.
+
+**fast_tier.yml — 7 cron triggers spread across 11:13-12:43 UTC at odd minute marks.** Same logic, wider window. Last trigger 12:43 UTC is ~47 min before US market open (13:30 UTC) — drift on the final trigger still lands the email before 14:30 UTC (~16:30 Munich) which is when post-open commentary starts flowing and the brief loses freshness value.
+
+**Both schedules now run Mon-Sat (1-6) per user preference**, up from deep_tier daily and fast_tier weekdays. Saturday adds a catch-up brief for the Friday close + weekend reading. Sunday remains skipped (no fresh market data, would just digest stale content).
+
+**`src/deep_tier.py` — idempotency check at top of `run_deep_tier()`.** If `state/deep_tier_diagnostics.json` already exists and is dated today, exits cleanly in ~10s. So only the first triggered cron of the day does real work; the remaining 4 see the diagnostics file and no-op. Manual `workflow_dispatch` users wanting to force a re-run delete the file first.
+
+**`src/fast_tier.py` — cascade gate at top of `run_fast_tier()`, after the existing idempotency check.** Before doing any pipeline work, checks that `state/deep_tier_diagnostics.json` exists AND has `run_date == today`. If not, exits cleanly with a log message — the next scheduled fast_tier trigger (max 30 min later) will check again. This makes fast_tier "self-defeating until deep_tier ran today" which is the correct behavior — running fast_tier on stale deep_tier data produces a degraded brief that misleadingly looks healthy.
+
+The `FORCE_RUN` env var (set automatically when `event_name == 'workflow_dispatch'`) bypasses BOTH the idempotency check AND the cascade gate. Manual dispatches always run the full pipeline for testing/recovery scenarios.
+
+Cost analysis. Each no-op trigger uses ~30 seconds of GitHub Actions minutes. Worst-case daily cost: 5 deep_tier (1 real × 5 min + 4 no-op × 0.5 min) + 7 fast_tier (1 real × 15 min + 6 no-op × 0.5 min) = ~25 min/day × 26 weekdays-saturdays/month = ~650 min/month, within the 2,000-min free tier budget.
+
+Behavior on a clean day:
+- 10:03 UTC: deep_tier fires → writes diagnostics → commits
+- 10:17-11:03: deep_tier fires → sees diagnostics dated today → exits in 10s × 4
+- 11:13 UTC: fast_tier fires → deep ran today + brief not sent → runs full pipeline → email sent
+- 11:27-12:43: fast_tier fires → brief already sent today → exits in 5s × 6
+
+Behavior on a drift day (today's pattern, May 18):
+- 10:03-10:33 UTC: scheduled but doesn't actually fire (GitHub queue backlog)
+- 10:47 UTC: drift catches up → deep_tier runs → success
+- 11:13 UTC: fast_tier fires → deep ran today → runs → email sent
+
+Out-of-scope (deferred): a separate "panic" trigger at 12:53 UTC that sends a DEGRADED brief without deep_tier content if deep_tier never ran. Trade-off: avoids the silent failure where neither tier completed all day, at the cost of occasionally emailing low-quality briefs. Re-evaluate after observing the new schedule for 1 week.
+
+---
+
+## Fix 4 — fast_tier.yml git push: rebase + retry to handle in-flight race
+
+Observed live during v3.39.3 deployment validation. The 12:26 UTC manual fast_tier dispatch ran successfully end-to-end (email sent at 12:49 UTC ✓), but the final `git push` of state files failed with:
+
+```
+! [rejected]        main -> main (fetch first)
+error: failed to push some refs
+```
+
+Root cause: fast_tier's pipeline runs for ~20 min (Layer 2 + Sonnet streaming). During that window, the user pushed v3.39.3 to main via GitHub web UI, advancing the remote past the runner's checkout SHA. When fast_tier finished and tried to push `state/brief_sent_dates.json` + `state/prior_state.json` + `state/cache/`, the push was rejected.
+
+This was a known issue already fixed in `deep_tier.yml` since v3.34 (rebase + retry), but `fast_tier.yml` was never given the same treatment. Now it has:
+
+```yaml
+git pull --rebase origin main || true
+git push || (sleep 5 && git pull --rebase origin main && git push)
+```
+
+Consequence of the race we caught: today's `brief_sent_dates.json` was NOT pushed to main. Idempotency for the *next* run still works correctly (date will have rolled over), but `prior_state.json` was lost — tomorrow's change-tracking diff will compare against the previous day's state rather than today's. Cosmetic impact only; the brief will say "no comparable prior assessment" for one day and re-establish the baseline naturally.
+
 ## Validation completed
 
 ✅ Python AST clean (27 .py files in `src/`)
@@ -66,7 +121,6 @@ Per-run: +25s in worst case (12s politeness × 3 tickers — was 7s × 3 = 21s, 
 - **Samsung Securities Gmail IMAP** — credentials not set in GitHub Secrets (confirmed empty env vars in diagnostic run). Pure config fix on the user side.
 - **`signal_scoring.actions_from_naver` upgrade/downgrade classification using `prior_rating`** — fields are now in the dict; consumer logic upgrade is a separate, scoped change.
 
----
 
 ## v3.39.2 — supercycle phase chart + 1Y bug fix + Node 24 actions + defensive parser hardening
 
