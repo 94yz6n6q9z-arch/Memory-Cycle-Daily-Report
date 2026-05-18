@@ -9,11 +9,12 @@ beautifulsoup4>=4.12.0
 feedparser>=6.0.10
 lxml>=4.9.0
 
-# PDF parsing — Korean broker English research notes (Mirae / NH / Samsung Securities)
-# Approx 20% of broker PDFs are scanned images; pdfplumber handles text-based PDFs
-# natively. Scanned PDFs fall through to Haiku with partial extract; we don't yet
-# OCR locally (tesseract install would inflate the Action image considerably).
-pdfplumber>=0.10.0
+# v3.39.4: pdfplumber removed. The Korean broker PDF download path was
+# replaced by Mirae's HTML detail page (researchReportsView.jsp?messageId=N)
+# which renders the full ~600-word analytical body server-side. NH Investment
+# and Samsung Securities were deleted in v3.39.3.1 (closed source / never
+# configured), so Mirae is now the sole Korean broker note source and it no
+# longer needs PDF parsing. Removed dependency: pdfplumber>=0.10.0.
 
 # LLM — pinned to a forward-compatible range. Major version bumps (e.g. 1.x)
 # can introduce breaking API changes; we'll opt into them deliberately rather
