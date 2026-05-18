@@ -2,24 +2,23 @@ name: Memory Cycle Brief — Deep Tier (overnight)
 
 on:
   schedule:
-    # 10:00 UTC daily (12:00 CEST / 11:00 CET = 19:00 KST). v3.39.3+:
-    # moved 08:00 → 10:00 to align with the END of the Korean broker
-    # publishing window. Korean desks publish post-close notes between
-    # KRX close (06:30 UTC = 15:30 KST) and ~19:00 KST (10:00 UTC),
-    # so firing at 10:00 UTC catches them all rather than missing the
-    # final 1-2 hours of broker output. Note: this tightens the buffer
-    # before fast_tier (11:00 UTC) to ~1 hour. With Korean broker PDF
-    # scrapers temporarily inert (NH/Samsung dead; Mirae pending v3.39.4
-    # HTML rewrite), the Layer 1 digester load is lighter — current
-    # runtime is ~4-6 min so 1 hour is adequate. If Mirae HTML scraper
-    # adds back substantial digester load in v3.39.4, revisit this.
+    # v3.39.3: spread triggers + idempotency. Five attempts in a 60-minute
+    # window at odd minute marks (avoiding :00, :15, :30, :45 which are
+    # GitHub Actions' peak contention). First successful run writes
+    # state/deep_tier_diagnostics.json; later triggers see the file dated
+    # today and exit cleanly in ~10s (idempotency check in deep_tier.py).
+    # Mon-Sat (1-6) — Korean exchange and US markets active Mon-Fri,
+    # Saturday added per user pref for Saturday catch-up briefs.
     #
-    # The original 08:00 UTC was optimized for US after-hours transcript
-    # availability (~94% scrape-able by 6.5h post-call median). That
-    # bias was sub-optimal for the Korean signals which are the higher
-    # weight in this brief — US transcripts are mostly available from
-    # Yahoo Finance by 10:00 UTC anyway (~98% per same curve).
-    - cron: "0 10 * * *"
+    # Timing: 10:00 UTC = 12:00 Munich CEST = 19:00 KST — end of Korean
+    # business day. Captures the FULL Korean broker post-close publishing
+    # window (15:30 KST KRX close → 19:00 KST desk close). US transcript
+    # availability ~98% by this time (vs 94% at 08:00 UTC original).
+    - cron: "3 10 * * 1-6"     # 10:03 UTC
+    - cron: "17 10 * * 1-6"    # 10:17 UTC
+    - cron: "33 10 * * 1-6"    # 10:33 UTC
+    - cron: "47 10 * * 1-6"    # 10:47 UTC
+    - cron: "3 11 * * 1-6"     # 11:03 UTC — last safety attempt
   workflow_dispatch: {}
 
 permissions:
