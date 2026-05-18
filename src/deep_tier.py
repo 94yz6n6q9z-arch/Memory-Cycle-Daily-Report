@@ -10,7 +10,7 @@ What this does:
          is set; covers SK Hynix / Samsung that no other free source covers)
      (Replaced Quartr API in v3.31; Yahoo added v3.32; cascade order in v3.33.
      See transcript_sources.py for the full picture.)
-  2. Fetch Korean broker English PDFs (Mirae + NH + Samsung Securities)
+  2. Fetch Korean broker English PDFs (Mirae)
   3. Run Layer 1 digester (Haiku) over each new document
   4. Persist digests to state/digests/{YYYY-MM-DD}/
 
@@ -28,6 +28,24 @@ instead of silently omitting a company. Getting commentary right is the point;
 a missing transcript is a tracked fact.
 
 CHANGELOG (this file):
+  v3.39.3.1 (2026-05-18) — Removed NH Investment and Samsung Securities from
+    Step 2 (Korean broker PDFs). NH is closed source and Samsung's IMAP
+    setup was never configured; both produced perpetual WARN rows in the
+    email's Data Source Assessment with zero items. NH's target/rating
+    still flows via WiseReport's cTB24 (Naver path), so Tier 2 scoring is
+    unaffected — only the analytical text behind NH's calls is lost, and
+    NH's text was never publicly available anyway. Touches: imports drop
+    `fetch_nh_with_retry` and `fetch_samsung_securities_with_retry`; Step 2
+    calls Mirae only; `deep_collector.record(...)` blocks for the two
+    deleted sources removed; `broker_payloads` and `sources_returned_content`
+    references simplified. Companion changes in `src/data/korean_brokers.py`
+    (function deletions) and `.github/workflows/deep_tier.yml` (env var
+    deletions).
+  v3.39.3 (2026-05-18) — Idempotency check at top of `run_deep_tier()` so the
+    new 5-trigger cron spread (10:03/:17/:33/:47 + 11:03 UTC) is safe: first
+    successful run today writes state/deep_tier_diagnostics.json; later
+    triggers see it and exit cleanly in ~10s instead of re-running the full
+    pipeline.
   v3.38  (2026-05-17) — Added full DiagnosticsCollector wiring (no prior instrumentation existed for the deep tier). Imports DiagnosticsCollector, SourceFetchStatus, status_from_retry_meta, statuses_to_dict_list from src.diagnostics. New helpers `_record_transcript_source_rows()` decomposes the transcript cascade into per-source rows (Motley Fool / Yahoo Finance / IR scrapers aggregated) with per-availability detail; per-broker rows for Mirae / NH / Samsung Securities each via status_from_retry_meta; roll-up status row for the Haiku digester distinguishing ok / fail / quiet-day; `_write_deep_tier_diagnostics()` persists collector to state/deep_tier_diagnostics.json so the fast tier (separate run, hours later) can ingest into the email validation table.
   v3.33  (2026-05-16) — Step 1 docstring updated for sequential cascade; datetime.utcnow() → datetime.now(timezone.utc) (Python 3.12+ deprecation fix); transcript_payload now also surfaces `already_processed` results which the digester should skip
   v3.32  (2026-05-14) — Step 1 now passes YAHOO_TRANSCRIPT_TICKERS to fetch_transcripts_with_retry (Yahoo Finance is primary transcript source)
@@ -46,8 +64,6 @@ from src.config import IR_SOURCES, MOTLEY_FOOL_TICKERS, YAHOO_TRANSCRIPT_TICKERS
 from src.data.transcript_sources import fetch_transcripts_with_retry
 from src.data.korean_brokers import (
     fetch_mirae_with_retry,
-    fetch_nh_with_retry,
-    fetch_samsung_securities_with_retry,
 )
 from src.analysis.digester import (
     digest_transcript_results,
@@ -149,31 +165,23 @@ def run_deep_tier() -> int:
     _write_transcript_status(transcript_payload, transcript_meta)
 
     # ----- Step 2: Korean broker PDFs -----
-    logger.info("Fetching Korean broker PDFs (Mirae + NH + Samsung Securities)...")
-    mirae_payload,   mirae_meta   = fetch_mirae_with_retry()
-    nh_payload,      nh_meta      = fetch_nh_with_retry()
-    samsung_payload, samsung_meta = fetch_samsung_securities_with_retry()
+    # v3.39.3.1: NH Investment + Samsung Securities removed. NH's site is
+    # closed source (no public English research), Samsung's IMAP was never
+    # configured. Both produced perpetual WARN/0-items rows. Mirae is the
+    # only Korean broker PDF source now.
+    logger.info("Fetching Korean broker PDFs (Mirae)...")
+    mirae_payload, mirae_meta = fetch_mirae_with_retry()
 
-    # v3.38: per-broker rows. Each broker independently fails / hits stale
-    # cache / returns N notes — they're not interchangeable (Mirae covers
-    # CXMT depth, Samsung Securities is the only Gmail-IMAP path).
+    # v3.38: per-broker row. Mirae covers CXMT depth via 23-page English
+    # research PDFs — the only Tier-1 Korean broker with a public scrape
+    # path for the analytical text behind the Naver target/rating.
     deep_collector.record(status_from_retry_meta(
         "Mirae Asset (EN broker PDFs)", "broker_pdf",
         mirae_payload, mirae_meta,
         items_count=len((mirae_payload or {}).get("notes", [])),
     ))
-    deep_collector.record(status_from_retry_meta(
-        "NH Investment (broker PDFs)", "broker_pdf",
-        nh_payload, nh_meta,
-        items_count=len((nh_payload or {}).get("notes", [])),
-    ))
-    deep_collector.record(status_from_retry_meta(
-        "Samsung Securities (Gmail IMAP)", "broker_pdf",
-        samsung_payload, samsung_meta,
-        items_count=len((samsung_payload or {}).get("notes", [])),
-    ))
 
-    broker_payloads = [p for p in (mirae_payload, nh_payload, samsung_payload) if p]
+    broker_payloads = [mirae_payload] if mirae_payload else []
     broker_digests = digest_korean_broker_notes(broker_payloads)
     logger.info(f"Wrote {len(broker_digests)} Korean broker note digests")
 
@@ -186,7 +194,7 @@ def run_deep_tier() -> int:
     #   • warn    = zero digests AND zero sources reached (legitimate quiet day)
     #   • fail    = zero digests but sources had content (digester died)
     total_digests = len(transcript_digests) + len(broker_digests)
-    sources_returned_content = any((transcript_payload, mirae_payload, nh_payload, samsung_payload))
+    sources_returned_content = any((transcript_payload, mirae_payload))
     if total_digests > 0:
         deep_collector.record(SourceFetchStatus(
             source_name="Anthropic Haiku (digester)", source_type="llm",
