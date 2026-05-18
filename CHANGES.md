@@ -6,6 +6,191 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39.4 — Mirae HTML scraper rewrite (Phase D-driven)
+
+**Why this release.** The Mirae Asset PDF scraper has been emitting `WARN, 0 notes` in every deep_tier run since v3.39.3 confirmed Mirae's listing page restructured away from inline PDF download links. v3.39.3 deferred the fix pending a Phase D diagnostic to identify the new selector format. Phase D ran 15:23 UTC May 18 on production network and the listing came back rich:
+
+- HTTP 200, 106,541 chars, EUC-KR encoding (matches Phase C exactly).
+- 20 unique `data-message-id` values across 10 rows (each row carries the message-id on two anchors — `_sub` for the title, `_main` for the subtitle).
+- 10 unique `data-attachment-id` values, one per row.
+- Zero `goView()` / `goLink()` / `goDetail()` / `messageId=` URL params on row links — rows wire clicks via `<a href="javascript:void(0);">` plus the hidden form, which we bypass entirely.
+
+Companion verification: fetched `messageId=2334442` (SK Inc., Sep 8 2025, Young-gun Kim) via Anthropic web_fetch and confirmed the detail page exposes Author / Date / Stock Code as discrete fields plus the full ~600-word analytical body with target price stated in the opening "Recommendation and valuation" paragraph (W279,000, raised from W275,000).
+
+## Fix 1 — Rewrite `src/data/korean_brokers.py:fetch_mirae_notes` for HTML
+
+The whole module is replaced (205 → 484 lines). Public interface preserved: `fetch_mirae_notes`, `fetch_mirae_with_retry`, `BrokerNote`, and the Mirae constants all still importable. `deep_tier.py` works without changes. `digester.digest_korean_broker_notes` reads `extracted_text` / `title` / `published_date_iso` / `url` from each note dict — all four populated identically by the new scraper.
+
+What changed internally:
+- **URL pattern**: `MIRAE_RESEARCH_DETAIL_EN_TEMPLATE = .../researchReportsView.jsp?messageId={message_id}`. We construct the detail URL ourselves from the listing's `data-message-id` attribute; no JavaScript execution needed.
+- **Listing parsing**: BeautifulSoup walks `<tr>` elements; each row's `<a data-message-id="N" id="message_N_sub">` is the primary handle. Defensively skips rows that don't match the pattern (header rows, separator rows).
+- **Detail parsing**: extracts title via h1/h2/h3 regex matching the `(NNNNNN KS/Rating)` pattern; pulls Author / Date / Stock Code by walking `<strong>` labels and reading the following sibling nodes; body extraction picks the largest leaf-ish content container (heuristic: skip wrappers with >80 descendant tags) and trims everything after the Prev/Next/List navigation.
+- **Target price extraction**: regex `(?:target price|TP)[^\d]{1,20}W\s*([\d,]+)` against body. Validates against 4 representative phrasings ("raise our target price to W279,000", "lower our target price to W137,000", "target price of W2,700,000", "12-month TP of W1,370,000").
+- **Pre-filter on the listing**: keep rows that match EITHER a tracked Korean ticker code (000660 / 005930 / 034730) OR one of the topic keywords (hynix, memory, dram, hbm, samsung, semiconductor). Cheap; runs before any detail fetch is attempted. Cap of 5 detail fetches per run preserved.
+- **HTML caching**: each fetched detail page is saved to `state/cache/broker_html/mirae_{date}_{message_id}_{title}.html` for debugging. Not consumed by the digester; analogous to the old `state/cache/broker_pdfs/` path.
+
+## Fix 2 — Drop `pdfplumber` dependency
+
+`requirements.txt` no longer includes `pdfplumber>=0.10.0`. With NH and Samsung Securities deleted in v3.39.3.1 and Mirae now on HTML, no source needs PDF parsing. Saves ~12 MB from the GitHub Actions Python install and removes the ~20% OCR-fallback path that produced low-quality digests for scanned-image PDFs.
+
+## Fix 3 — Unit tests for the Mirae pipeline (NEW)
+
+`tests/test_mirae_asset.py` — 43 cases, runs entirely offline against embedded HTML fixtures modeled on the Phase D listing snapshot and the web_fetched SK Inc. detail page. No network calls. Coverage:
+
+- Helper parsers: listing date (`MM.DD.YYYY` → ISO), KST detail date (`Mon Sep 08 00:00:00 KST 2025` → ISO), Korean ticker extraction from titles (positive + negative cases)
+- Listing parser: 3-row fixture yields 3 rows with full metadata; malformed row skipped; missing table returns empty list
+- Relevance filter: tracked ticker passes, untracked Korean ticker rejected unless title contains a keyword, industry/sector notes pass via keyword, unrelated (cosmetics, K-Beauty) rejected
+- Detail parser: title / category / author / date / stock code / rating / target price all extracted from the SK Inc. fixture
+- Body extraction: Prev/Next nav correctly trimmed, short pages fall back to body text, digester minimum (200 chars) met
+- Target price regex: 4 positive phrasings + 1 negative
+- Anti-drift guard: `TRACKED_KOREAN_TICKER_CODES` must equal `{000660, 005930, 034730}` (will fail loudly if anyone bumps it without also updating Naver)
+
+All 55 tests run in ~50ms.
+
+## Fix 4 — Phase E pre-deployment dry-run harness (NEW)
+
+`scripts/dry_run_mirae_v3_39_4.py` + `.github/workflows/dry_run_mirae_v3_39_4.yml`. Workflow_dispatch only; writes nothing to repo state. Two modes:
+
+- **Default mode** (no input) — fetches today's listing, parses all rows, runs the date filter at `days_back=14` (widened from production's 3 so a known-good note like May 11 is in range if still on page 1), runs the relevance filter, then fetches detail pages for ALL surviving rows (5-cap lifted for visibility). Dumps every intermediate result: listing HTTP status, row-by-row parse, date-filter verdict per row, relevance-filter verdict per row WITH the reason (ticker-match vs keyword-match vs rejected), per-detail extraction (title / author / date / stock_code / rating / target_price / body preview), and a final summary table.
+
+- **Targeted mode** (`messageId` input set) — skips the listing and fetches one specific detail page. Useful for validating against a known note like `messageId=2335435` (SK Hynix Oct 30 2025) before trusting the parser end-to-end. Also accepts a `daysBack` workflow input for tuning the default-mode window.
+
+The script imports and invokes the SAME internal helpers production uses (`_parse_mirae_listing`, `_row_is_relevant`, `_fetch_mirae_detail`) — no re-implementation, no parallel code path. The only divergence from production: the 5-cap is lifted (so we see everything in the window), and `src.state.fetch_with_retry` is stubbed out (so transient errors surface raw instead of being masked by retry).
+
+Runtime: ~30s in targeted mode, ~2-3 min in default mode if there are many relevant rows. Locally smoke-tested against a synthetic listing + detail pair — all 7 verbose-output sections render correctly, and the target-price regex fix is exercised on a "raise by 25% to W2,000,000" phrasing.
+
+**Recommended pre-deployment sequence:**
+
+1. Drop the v3.39.4 zip into the repo and push to main.
+2. In the Actions tab, manually dispatch "Phase E — Mirae v3.39.4 dry-run" with messageId left blank. Read the Actions log:
+   - Confirm listing returns HTTP 200 with ~100K chars, EUC-KR encoding (Phase D baseline).
+   - Confirm rows parse cleanly with sensible dates, ticker codes, authors.
+   - Confirm the relevance filter explains its decisions (look for ticker-match on any 000660/005930/034730, keyword-match on any "DRAM"/"HBM"/etc note).
+   - Confirm at least one detail fetch returns title, author, date, stock_code, rating, target_price, and a body ≥200 chars.
+3. Optional: dispatch again with `messageId=2335435` to confirm the SK Hynix Oct 30 note parses with target_price=680000.
+4. ONLY if those look right, let deep_tier run on the next cron tick.
+
+If Phase E surfaces a parser problem, no deep_tier run has been affected — the cron schedule keeps using whatever Mirae behavior was in place before the merge (which is "WARN, 0 notes"). Reverting is a single commit.
+
+## Validation completed
+
+✅ Python AST clean — all 28 `.py` files in `src/` parse
+✅ Signature audit: zero mismatches
+✅ All 55 new Mirae tests pass; all 42 existing Naver tests still pass unchanged
+✅ YAML clean on all 4 workflows including the Phase D diagnostic
+
+## Mid-release bug catch (live validation found this — kept for posterity)
+
+After Phase D output landed and the scraper was first written, Raul asked for explicit confirmation that the May 11 2026 SK Hynix note would be extracted correctly. To validate, I fetched (a) the SK Hynix May 11 PDF directly via the attachment-ID URL pattern Raul provided, and (b) a same-shape live detail page at `messageId=2335435` (SK Hynix Oct 30 2025, "Capacity fully booked", Young-gun Kim).
+
+The second fetch surfaced a regex bug. My initial target-price regex was `(?:target price|TP)[^\d]{1,20}W\s*([\d,]+)` — required non-digit chars between the trigger and the `W{number}`. The May 11 phrasing "We maintain our target price for SK Hynix at W2,700,000" has no digits between trigger and W and would have worked. But the Oct 30 phrasing "We raise our target price for SK Hynix by **30.7%** to W680,000" has digits ("30.7%") between the trigger and the W — which broke the regex. v3.39.4 would have silently extracted no target price on raise-by-X% / lower-by-X% notes, which is roughly half of Mirae's typical phrasings on rating changes.
+
+**Fixed before ship:** regex changed to `(?:target price|\bTP\b)[\s\S]{1,40}?W\s*([\d,]+)` — allows any character (lazy match, up to 40) between trigger and `W`, with `\bTP\b` word boundary to prevent false matches against ASP/OTP/GTP. Validated against six representative phrasings: maintain-at, raise-to, lower-to, of-W, TP-shorthand, raise-by-X%-to. New test `test_raise_by_percentage_to_w` is the regression guard. A new `TestParseSkHynixDetailEndToEnd` class runs an 8-case end-to-end pass against a faithful SK Hynix detail-page HTML fixture modeled on the live Oct 30 2025 fetch.
+
+This is exactly the bug class that wouldn't have shown up in synthetic unit tests but bit the first production note with a percentage-change phrasing. Worth recording the catch.
+
+## Cost / runtime impact
+
+Per deep_tier run when Mirae has relevant rows: 1 listing fetch + up to 5 detail fetches × 5s politeness = ~25-30s. Each detail page is ~30 KB vs ~3 MB for an old PDF, so total transfer ~150 KB vs the prior ~15 MB. Faster, smaller, and the body extraction is more reliable than pdfplumber on scanned PDFs. Email's Data Source Assessment row for "Mirae Asset (EN broker PDFs)" should flip from `WARN, 0 items` to `OK, 1-5 items` on days when Mirae publishes anything matching our filter (~2-3 days/week empirically).
+
+## Files changed
+
+| File | Change |
+|---|---|
+| `src/data/korean_brokers.py` | Full rewrite. 205 → 570 lines. New helpers `_parse_mirae_listing`, `_parse_mirae_detail`, `_fetch_mirae_detail`, `_extract_largest_text_block`, `_parse_mirae_kst_date`, `_parse_mirae_date_cell`, `_extract_korean_ticker_from_title`, `_row_is_relevant`. New `MiraeListingRow` dataclass. PDF/pdfplumber/BytesIO imports removed. `_extract_pdf_text` helper deleted. Public interface preserved verbatim. Target-price regex corrected mid-release after live SK Hynix Oct 30 validation. |
+| `requirements.txt` | `pdfplumber>=0.10.0` dependency removed. |
+| `tests/test_mirae_asset.py` | NEW. 55 offline unit tests against embedded fixtures including the live-fetched SK Hynix Oct 30 detail-page fixture. |
+| `scripts/dry_run_mirae_v3_39_4.py` | NEW. Phase E pre-deployment harness — runs the scraper end-to-end against production Mirae with full verbosity, no state writes. |
+| `.github/workflows/dry_run_mirae_v3_39_4.yml` | NEW. Workflow_dispatch wrapper for the dry-run, with optional `messageId` and `daysBack` inputs. |
+| `CHANGES.md` | This entry. |
+| `CLAUDE.md` | v3.39.4 entry in the top-of-file changelog. |
+
+## Out of scope (deferred)
+
+- **`signal_scoring.actions_from_naver`** upgrade to consume the new `prior_rating` field for proper upgrade/downgrade classification (currently still labels everything `"maintained"`). Contained ~30-line change in `signal_scoring.py`.
+- **Doc refresh** of the stale cron times (11:00/11:30/12:05 UTC) still present in `CLAUDE.md` lines 63-78, the locked-decision text at line 130, and `DEPLOYMENT_GUIDE.md` line 356. These are accurate to v3.39.2 but pre-v3.39.3; defer to a dedicated doc-only pass.
+
+---
+
+
+
+**Why this release.** Three obsolete sources were producing perpetual WARN/0-items rows in every email's Data Source Assessment table or daily error log noise, with no recoverable signal:
+
+- **NH Investment** — investigation in v3.39.3 confirmed nhsec.com is closed source; all `/research/` and `/CC/research/` paths return 404, the public site is a 1990s-style frameset, and `site:nhsec.com` Google searches return zero results from nhsec.com itself. NH's research moved fully behind their subscriber paywall mid-2025. NH's target price and rating still appear in WiseReport's cTB24 alongside the other 24 Korean brokers, so Tier 2 EPS revision scoring is unaffected — only the analytical text behind the call is lost, and that text was never publicly available anyway.
+- **Samsung Securities (Gmail IMAP)** — the `SAMSUNG_GMAIL_USER` and `SAMSUNG_GMAIL_APP_PW` GitHub Secrets were never configured; `fetch_samsung_securities_notes` returned immediately with an empty payload every run. Registering for samsungpop.com/global PDF distribution is friction-laden and the user had previously chosen to skip the setup.
+- **AnandTech RSS** — feedparser has been throwing `feed parse error: not well-formed (invalid token)` in every run since at least v3.39.1 (visible in today's fast_tier log at 13:42:12 UTC). The site now publishes ~5 articles/month, down sharply from its 2010s heyday — Tom's Hardware + DRAMeXchange + Google News cover the same beat, and the maintenance cost of fixing AnandTech's malformed XML doesn't pay back.
+
+## Fix 1 — Delete NH Investment from the Korean broker pipeline
+
+Removed from `src/data/korean_brokers.py`:
+- `fetch_nh_notes(days_back)` function (~52 lines)
+- `fetch_nh_with_retry()` wrapper (~7 lines)
+- Module constants `NH_PORTAL_BASE`, `NH_RESEARCH_LISTING_EN`
+
+Removed from `src/deep_tier.py`:
+- `fetch_nh_with_retry` import
+- `nh_payload, nh_meta = fetch_nh_with_retry()` call in Step 2
+- The `deep_collector.record(...)` block for the `"NH Investment (broker PDFs)"` row
+
+## Fix 2 — Delete Samsung Securities from the Korean broker pipeline
+
+Removed from `src/data/korean_brokers.py`:
+- `fetch_samsung_securities_notes(days_back)` function (~70 lines)
+- `fetch_samsung_securities_with_retry()` wrapper (~7 lines)
+- Module constants `SAMSUNG_SECURITIES_GMAIL_USER`, `SAMSUNG_SECURITIES_GMAIL_APP_PW`, `SAMSUNG_SECURITIES_FROM_FILTER`
+- Now-unused imports: `imaplib`, `email`, `os`
+
+Removed from `src/deep_tier.py`:
+- `fetch_samsung_securities_with_retry` import
+- `samsung_payload, samsung_meta = fetch_samsung_securities_with_retry()` call in Step 2
+- The `deep_collector.record(...)` block for the `"Samsung Securities (Gmail IMAP)"` row
+
+Removed from `.github/workflows/deep_tier.yml`:
+- `SAMSUNG_GMAIL_USER: ${{ secrets.SAMSUNG_GMAIL_USER }}` env var
+- `SAMSUNG_GMAIL_APP_PW: ${{ secrets.SAMSUNG_GMAIL_APP_PW }}` env var
+
+Note: the underlying `SAMSUNG_GMAIL_USER` and `SAMSUNG_GMAIL_APP_PW` repo secrets (in GitHub Settings → Secrets and variables → Actions) are now orphaned. They were empty strings anyway so leaving them in place is harmless, but they can be deleted in the UI for tidiness.
+
+## Fix 3 — Simplify Step 2 housekeeping in `deep_tier.py`
+
+With NH and Samsung gone, the `broker_payloads` list comprehension that filtered out None payloads from a 3-tuple becomes a trivial one-element list, and `sources_returned_content` no longer needs to OR across three broker payloads. Both simplified inline. Net: ~25 fewer lines in `src/deep_tier.py`.
+
+## Fix 4 — Delete AnandTech from `RSS_FEEDS`
+
+Removed from `src/config.py:RSS_FEEDS`:
+- `"AnandTech": "https://www.anandtech.com/rss/"` — one-line removal.
+
+Eliminates the daily `[WARNING] src.data.news: Failed to parse AnandTech RSS: feed parse error: <unknown>:113:62: not well-formed (invalid token)` log line.
+
+## Validation completed
+
+✅ Python AST clean across all 25 `.py` files in `src/`
+✅ Signature audit: zero mismatches
+✅ Existing 42 Naver tests pass unchanged
+✅ `from src.data import korean_brokers` imports cleanly; export surface narrowed to `BrokerNote`, `fetch_mirae_notes`, `fetch_mirae_with_retry`, plus the Mirae constants
+
+## Cost / runtime impact
+
+Per deep_tier run: ~30-60s saved (no NH listing fetch, no Samsung IMAP login attempt). Email Data Source Assessment table loses 2 perpetual WARN rows; daily log loses 1 RSS parse error. Zero LLM cost change.
+
+## Files changed
+
+| File | Change |
+|---|---|
+| `src/data/korean_brokers.py` | Top docstring rewritten; CHANGELOG block added; NH section deleted; Samsung Securities section deleted; both `with_retry` wrappers deleted; `imaplib`/`email`/`os` imports dropped. 354 → 206 lines. |
+| `src/deep_tier.py` | Step 2 simplified to Mirae only; 2 imports + 2 call sites + 2 diagnostics blocks removed; `broker_payloads` and `sources_returned_content` simplified; CHANGELOG entry added. |
+| `.github/workflows/deep_tier.yml` | `SAMSUNG_GMAIL_USER` + `SAMSUNG_GMAIL_APP_PW` env vars removed. |
+| `src/config.py` | `AnandTech` removed from `RSS_FEEDS`; CHANGELOG entry added. |
+| `CHANGES.md` | This entry. |
+| `CLAUDE.md` | Module-map note updated. |
+
+## Out of scope (deferred to v3.39.4)
+
+- **Mirae HTML scraper rewrite.** Phase D diagnostic ships alongside this release: `scripts/diagnose_mirae_listing.py` + `.github/workflows/diagnose_mirae_listing.yml`. Once Phase D output reveals the new listing-row selector format (likely `javascript:goView(...)`, `data-seq=...`, or POST-based), Mirae's `fetch_mirae_notes` will be rewritten to use HTML body extraction instead of PDF download — faster, no pdfplumber, no OCR fallback.
+- **`signal_scoring.actions_from_naver`** upgrade to consume the new `prior_rating` field for proper upgrade/downgrade classification (currently still labels everything `"maintained"`). Contained ~30-line change in `signal_scoring.py`.
+
+---
+
 ## v3.39.3.1 — Cleanup: drop NH Investment, Samsung Securities, AnandTech RSS
 
 **Why this release.** Three obsolete sources were producing perpetual WARN/0-items rows in every email's Data Source Assessment table or daily error log noise, with no recoverable signal:
@@ -82,6 +267,8 @@ Per deep_tier run: ~30-60s saved (no NH listing fetch, no Samsung IMAP login att
 
 - **Mirae HTML scraper rewrite.** Phase D diagnostic ships alongside this release: `scripts/diagnose_mirae_listing.py` + `.github/workflows/diagnose_mirae_listing.yml`. Once Phase D output reveals the new listing-row selector format (likely `javascript:goView(...)`, `data-seq=...`, or POST-based), Mirae's `fetch_mirae_notes` will be rewritten to use HTML body extraction instead of PDF download — faster, no pdfplumber, no OCR fallback.
 - **`signal_scoring.actions_from_naver`** upgrade to consume the new `prior_rating` field for proper upgrade/downgrade classification (currently still labels everything `"maintained"`). Contained ~30-line change in `signal_scoring.py`.
+
+---
 
 ---
 
