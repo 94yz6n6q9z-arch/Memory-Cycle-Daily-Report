@@ -1,0 +1,40 @@
+name: Diagnose Korean Brokers — Phase 2 (URL hunt)
+
+# Throwaway diagnostic, like Phase 1 but for the URL-hunt step.
+# Crawls Mirae's and NH's English homepages to find their new research paths.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run URL hunt
+        run: |
+          python scripts/diagnose_korean_brokers_phase2.py
+
+      - name: Upload diagnostic artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: korean-broker-diagnostic-phase2
+          path: |
+            scripts/diagnose_korean_brokers_phase2_output.txt
+            scripts/_diag_fixtures_phase2/
+          retention-days: 14
