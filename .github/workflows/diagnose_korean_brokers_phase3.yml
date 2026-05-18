@@ -1,0 +1,40 @@
+name: Diagnose Korean Brokers — Phase 3 (WiseReport probe)
+
+# Throwaway diagnostic. Probes the navercomp.wisereport.co.kr iframe URL
+# that Naver's coinfo page embeds for per-ticker broker consensus.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run WiseReport probe
+        run: |
+          python scripts/diagnose_korean_brokers_phase3.py
+
+      - name: Upload diagnostic artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: korean-broker-diagnostic-phase3
+          path: |
+            scripts/diagnose_korean_brokers_phase3_output.txt
+            scripts/_diag_fixtures_phase3/
+          retention-days: 14
