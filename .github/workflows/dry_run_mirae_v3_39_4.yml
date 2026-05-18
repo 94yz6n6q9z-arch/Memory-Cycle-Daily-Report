@@ -1,0 +1,61 @@
+name: Phase E — Mirae v3.39.4 dry-run
+
+# Pre-deployment validation harness for v3.39.4. Runs the actual scraper
+# code path against production Mirae and dumps every intermediate result
+# to the Actions log. Two modes selected by the optional messageId input:
+#
+#   Empty messageId (default):
+#     - GET the listing page
+#     - Parse all rows
+#     - Apply date filter at days_back=14 (so May 11 is in range if still on page 1)
+#     - Apply relevance filter (ticker codes + memory/HBM/DRAM keywords)
+#     - Fetch detail page for every survivor (no 5-cap)
+#     - Dump title, author, date, stock_code, rating, target_price, body preview
+#
+#   Targeted messageId:
+#     - Skip the listing
+#     - Fetch + parse only that one detail page
+#     - Useful for verifying a specific known note like SK Hynix Oct 30 (2335435)
+#       before trusting the parser end-to-end
+#
+# The script writes NOTHING to repo state. Safe to run repeatedly.
+# Runtime: ~30s (default) to ~2-3 min (default mode with many relevant rows).
+
+on:
+  workflow_dispatch:
+    inputs:
+      messageId:
+        description: 'Optional: messageId to fetch directly (skips listing). Leave blank for default-mode listing walkthrough.'
+        required: false
+        default: ''
+      daysBack:
+        description: 'Default mode only: days_back date window (default 14, prod uses 3).'
+        required: false
+        default: '14'
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies (requests + beautifulsoup4 only)
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run Phase E dry-run
+        env:
+          DRY_RUN_MESSAGE_ID: ${{ inputs.messageId }}
+          DRY_RUN_DAYS_BACK: ${{ inputs.daysBack }}
+        run: |
+          python scripts/dry_run_mirae_v3_39_4.py
