@@ -26,11 +26,17 @@ Output: workflow log only. No artifact upload. Paste the log back.
 from __future__ import annotations
 
 import re
+import sys
 import time
 from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
+
+# Force line-buffered stdout so progress is visible incrementally on a
+# non-TTY runner. Without this, GitHub Actions buffers all output and
+# we see nothing if the workflow is canceled.
+sys.stdout.reconfigure(line_buffering=True)
 
 # ---------------------------------------------------------------------------
 # Setup
