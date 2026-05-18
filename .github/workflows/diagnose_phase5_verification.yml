@@ -1,0 +1,35 @@
+name: Diagnose - Phase C verification (Mirae + WiseReport)
+
+# Phase C verification before v3.39.3:
+#   Part 1 — Mirae listing reliability (3 successive fetches) + detail-page parse
+#   Part 2 — WiseReport production-posture stress test (12s politeness, 60s timeout, retry)
+#
+# Output: workflow log only. No artifact upload, no repo writes.
+# Dispatch manually from the Actions tab. Paste the log back when done.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run Phase C verification
+        run: python scripts/diagnose_phase5_verification.py
