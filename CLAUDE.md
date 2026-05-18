@@ -2,6 +2,7 @@
 
 <!--
 CHANGELOG (this file):
+  v3.39.3 (2026-05-18) — Section header bumped (v3.34 → v3.39.3) to reflect that CHANGES.md is now authoritative for v3.35+. v3.39.3 itself ships the Naver Finance scraper restoration via WiseReport iframe — three Korean broker scrapers (Mirae/NH/Samsung) remain inert pending v3.39.4; signal flow restored through the Naver path alone.
   v3.34  (2026-05-16) — Added v3.34 section (Motley Fool URL regex fix + Yahoo diagnostic logging + git push race fix); honest record of what the first v3.33 run showed
   v3.33  (2026-05-16) — Added v3.33 section (cascade architecture: Motley Fool primary + Yahoo via residential proxy + URL-seen cache); model name bug + first-run diagnosis recorded
   v3.32  (2026-05-14) — Added v3.32 section (Yahoo Finance transcript source); v3.31 section corrected re: IR-site coverage
@@ -131,7 +132,7 @@ of deep tier. The split exists for runtime and cost reasons.
 
 ---
 
-## v3.1 → v3.34 — what's already built
+## v3.1 → v3.39.3 — what's already built
 
 ### v3.1 — News relevance filter
 Two-pass filter (`src/data/news.py`: `score_relevance` + `filter_relevant_news`)
