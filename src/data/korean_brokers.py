@@ -51,7 +51,9 @@ We narrow with two complementary filters applied to the LISTING row title
 (cheap pre-filter, no detail fetch wasted on irrelevant notes):
   1. Korean ticker code match: `(\\d{6})\\s*KS` against our tracked codes
      (SK Hynix 000660, Samsung Electronics 005930, SK Square 034730).
-  2. Keyword match: hynix, memory, dram, hbm, samsung, semiconductor.
+  2. Keyword match: hynix, memory, dram, hbm, semiconductor. ("samsung" was
+     dropped in v3.39.4.1 — false-matched Samsung Fire & Marine etc; Samsung
+     Electronics is captured by ticker-match on 005930 anyway.)
 A row passing EITHER filter is fetched.
 
 We cap at 5 detail fetches per run (same as pre-v3.39.4) so a busy publishing
@@ -60,6 +62,18 @@ day doesn't blow out the deep_tier budget.
 Mirae is IMPORTANT criticality — stale cache acceptable on failure.
 
 CHANGELOG (this file):
+  v3.39.4.1 (2026-05-18) — Tighten the relevance filter. "samsung" removed from
+    TRACKED_TITLE_KEYWORDS after Phase E dry-run output showed it pulling in
+    Samsung Fire & Marine (000810, insurance) as a false positive on today's
+    listing. The same too-loose keyword would have also caught Samsung SDI
+    (006400, batteries), Samsung Biologics (207940, pharma), Samsung SDS
+    (018260, IT services), and Samsung Heavy Industries (010140, shipbuilding)
+    — none of which belong in a memory-cycle digest. Samsung Electronics
+    (the one we DO want) keeps flowing through via ticker-match on its
+    005930 KS code; Mirae's title template universally includes the ticker
+    parenthetical, so no signal is lost. Net effect: ~1 false-positive
+    note/day stripped from the deep_tier output, ~$0.05/day Haiku cost saved,
+    digester output stays on-topic.
   v3.39.4   (2026-05-18) — Mirae HTML scraper rewrite. fetch_mirae_notes
     rebuilt against the v3.39.3-era page redesign uncovered by Phase D.
     Selector switched from PDF href regex to `data-message-id` attribute on
@@ -125,8 +139,13 @@ TRACKED_KOREAN_TICKER_CODES = {
 # Keyword filter on row titles. Catches industry/sector notes that don't carry
 # one of our tracked tickers in the title but cover memory broadly. Lowercased
 # for case-insensitive matching.
+# v3.39.4.1: "samsung" removed — it false-matched Samsung Fire & Marine
+# (insurance, 000810), Samsung SDI (batteries, 006400), Samsung Biologics
+# (pharma, 207940), etc. Samsung Electronics (the one we DO want) is captured
+# by ticker-match on 005930 instead, since Mirae's title template always
+# includes "(005930 KS/Rating)". See Phase E dry-run output 2026-05-18 17:22 UTC.
 TRACKED_TITLE_KEYWORDS = (
-    "hynix", "memory", "dram", "hbm", "samsung", "semiconductor",
+    "hynix", "memory", "dram", "hbm", "semiconductor",
 )
 
 # Headers: same UA pattern as src/data/naver_finance.py — Mirae returned 200
