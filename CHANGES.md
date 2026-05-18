@@ -6,6 +6,85 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39.3.1 — Cleanup: drop NH Investment, Samsung Securities, AnandTech RSS
+
+**Why this release.** Three obsolete sources were producing perpetual WARN/0-items rows in every email's Data Source Assessment table or daily error log noise, with no recoverable signal:
+
+- **NH Investment** — investigation in v3.39.3 confirmed nhsec.com is closed source; all `/research/` and `/CC/research/` paths return 404, the public site is a 1990s-style frameset, and `site:nhsec.com` Google searches return zero results from nhsec.com itself. NH's research moved fully behind their subscriber paywall mid-2025. NH's target price and rating still appear in WiseReport's cTB24 alongside the other 24 Korean brokers, so Tier 2 EPS revision scoring is unaffected — only the analytical text behind the call is lost, and that text was never publicly available anyway.
+- **Samsung Securities (Gmail IMAP)** — the `SAMSUNG_GMAIL_USER` and `SAMSUNG_GMAIL_APP_PW` GitHub Secrets were never configured; `fetch_samsung_securities_notes` returned immediately with an empty payload every run. Registering for samsungpop.com/global PDF distribution is friction-laden and the user had previously chosen to skip the setup.
+- **AnandTech RSS** — feedparser has been throwing `feed parse error: not well-formed (invalid token)` in every run since at least v3.39.1 (visible in today's fast_tier log at 13:42:12 UTC). The site now publishes ~5 articles/month, down sharply from its 2010s heyday — Tom's Hardware + DRAMeXchange + Google News cover the same beat, and the maintenance cost of fixing AnandTech's malformed XML doesn't pay back.
+
+## Fix 1 — Delete NH Investment from the Korean broker pipeline
+
+Removed from `src/data/korean_brokers.py`:
+- `fetch_nh_notes(days_back)` function (~52 lines)
+- `fetch_nh_with_retry()` wrapper (~7 lines)
+- Module constants `NH_PORTAL_BASE`, `NH_RESEARCH_LISTING_EN`
+
+Removed from `src/deep_tier.py`:
+- `fetch_nh_with_retry` import
+- `nh_payload, nh_meta = fetch_nh_with_retry()` call in Step 2
+- The `deep_collector.record(...)` block for the `"NH Investment (broker PDFs)"` row
+
+## Fix 2 — Delete Samsung Securities from the Korean broker pipeline
+
+Removed from `src/data/korean_brokers.py`:
+- `fetch_samsung_securities_notes(days_back)` function (~70 lines)
+- `fetch_samsung_securities_with_retry()` wrapper (~7 lines)
+- Module constants `SAMSUNG_SECURITIES_GMAIL_USER`, `SAMSUNG_SECURITIES_GMAIL_APP_PW`, `SAMSUNG_SECURITIES_FROM_FILTER`
+- Now-unused imports: `imaplib`, `email`, `os`
+
+Removed from `src/deep_tier.py`:
+- `fetch_samsung_securities_with_retry` import
+- `samsung_payload, samsung_meta = fetch_samsung_securities_with_retry()` call in Step 2
+- The `deep_collector.record(...)` block for the `"Samsung Securities (Gmail IMAP)"` row
+
+Removed from `.github/workflows/deep_tier.yml`:
+- `SAMSUNG_GMAIL_USER: ${{ secrets.SAMSUNG_GMAIL_USER }}` env var
+- `SAMSUNG_GMAIL_APP_PW: ${{ secrets.SAMSUNG_GMAIL_APP_PW }}` env var
+
+Note: the underlying `SAMSUNG_GMAIL_USER` and `SAMSUNG_GMAIL_APP_PW` repo secrets (in GitHub Settings → Secrets and variables → Actions) are now orphaned. They were empty strings anyway so leaving them in place is harmless, but they can be deleted in the UI for tidiness.
+
+## Fix 3 — Simplify Step 2 housekeeping in `deep_tier.py`
+
+With NH and Samsung gone, the `broker_payloads` list comprehension that filtered out None payloads from a 3-tuple becomes a trivial one-element list, and `sources_returned_content` no longer needs to OR across three broker payloads. Both simplified inline. Net: ~25 fewer lines in `src/deep_tier.py`.
+
+## Fix 4 — Delete AnandTech from `RSS_FEEDS`
+
+Removed from `src/config.py:RSS_FEEDS`:
+- `"AnandTech": "https://www.anandtech.com/rss/"` — one-line removal.
+
+Eliminates the daily `[WARNING] src.data.news: Failed to parse AnandTech RSS: feed parse error: <unknown>:113:62: not well-formed (invalid token)` log line.
+
+## Validation completed
+
+✅ Python AST clean across all 25 `.py` files in `src/`
+✅ Signature audit: zero mismatches
+✅ Existing 42 Naver tests pass unchanged
+✅ `from src.data import korean_brokers` imports cleanly; export surface narrowed to `BrokerNote`, `fetch_mirae_notes`, `fetch_mirae_with_retry`, plus the Mirae constants
+
+## Cost / runtime impact
+
+Per deep_tier run: ~30-60s saved (no NH listing fetch, no Samsung IMAP login attempt). Email Data Source Assessment table loses 2 perpetual WARN rows; daily log loses 1 RSS parse error. Zero LLM cost change.
+
+## Files changed
+
+| File | Change |
+|---|---|
+| `src/data/korean_brokers.py` | Top docstring rewritten; CHANGELOG block added; NH section deleted; Samsung Securities section deleted; both `with_retry` wrappers deleted; `imaplib`/`email`/`os` imports dropped. 354 → 206 lines. |
+| `src/deep_tier.py` | Step 2 simplified to Mirae only; 2 imports + 2 call sites + 2 diagnostics blocks removed; `broker_payloads` and `sources_returned_content` simplified; CHANGELOG entry added. |
+| `.github/workflows/deep_tier.yml` | `SAMSUNG_GMAIL_USER` + `SAMSUNG_GMAIL_APP_PW` env vars removed. |
+| `src/config.py` | `AnandTech` removed from `RSS_FEEDS`; CHANGELOG entry added. |
+| `CHANGES.md` | This entry. |
+| `CLAUDE.md` | Module-map note updated. |
+
+## Out of scope (deferred to v3.39.4)
+
+- **Mirae HTML scraper rewrite.** Phase D diagnostic ships alongside this release: `scripts/diagnose_mirae_listing.py` + `.github/workflows/diagnose_mirae_listing.yml`. Once Phase D output reveals the new listing-row selector format (likely `javascript:goView(...)`, `data-seq=...`, or POST-based), Mirae's `fetch_mirae_notes` will be rewritten to use HTML body extraction instead of PDF download — faster, no pdfplumber, no OCR fallback.
+- **`signal_scoring.actions_from_naver`** upgrade to consume the new `prior_rating` field for proper upgrade/downgrade classification (currently still labels everything `"maintained"`). Contained ~30-line change in `signal_scoring.py`.
+
+---
+
 ## v3.39.3 — Naver broker scraper restored + schedule reliability rework
 
 **Why this release.** The 22:54 May 17 fast-tier run shipped cleanly on v3.39.2 (Sonnet 34,648/48,000 output, supercycle chart rendered, full email delivered), but the Data Source Assessment confirmed two consecutive runs with `Naver Finance (Korean broker scraper) → WARN, 0 rows × 3 tickers`. Naver Finance is the source that closes the canonical Tier 2 signal (`t2_eps_revisions`) — without it, our weighted broker scoring runs blind and the brief had to fall back on Google News + analyst color leaking through. Material signal loss.
