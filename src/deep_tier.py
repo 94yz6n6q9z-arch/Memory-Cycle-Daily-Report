@@ -28,6 +28,7 @@ instead of silently omitting a company. Getting commentary right is the point;
 a missing transcript is a tracked fact.
 
 CHANGELOG (this file):
+  v3.38  (2026-05-17) — Added full DiagnosticsCollector wiring (no prior instrumentation existed for the deep tier). Imports DiagnosticsCollector, SourceFetchStatus, status_from_retry_meta, statuses_to_dict_list from src.diagnostics. New helpers `_record_transcript_source_rows()` decomposes the transcript cascade into per-source rows (Motley Fool / Yahoo Finance / IR scrapers aggregated) with per-availability detail; per-broker rows for Mirae / NH / Samsung Securities each via status_from_retry_meta; roll-up status row for the Haiku digester distinguishing ok / fail / quiet-day; `_write_deep_tier_diagnostics()` persists collector to state/deep_tier_diagnostics.json so the fast tier (separate run, hours later) can ingest into the email validation table.
   v3.33  (2026-05-16) — Step 1 docstring updated for sequential cascade; datetime.utcnow() → datetime.now(timezone.utc) (Python 3.12+ deprecation fix); transcript_payload now also surfaces `already_processed` results which the digester should skip
   v3.32  (2026-05-14) — Step 1 now passes YAHOO_TRANSCRIPT_TICKERS to fetch_transcripts_with_retry (Yahoo Finance is primary transcript source)
   v3.31  (2026-05-14) — Step 1 rewired to transcript_sources (was Quartr); writes state/transcript_status.json
@@ -67,9 +68,41 @@ logger = logging.getLogger("memory_cycle_brief.deep_tier")
 
 
 def run_deep_tier() -> int:
-    """Execute the deep-tier pipeline. Returns exit code (0 = success)."""
+    """Execute the deep-tier pipeline. Returns exit code (0 = success).
+
+    v3.39.3: idempotency check. The workflow now schedules 5 cron triggers
+    in a 60-minute window (10:03 / 10:17 / 10:33 / 10:47 / 11:03 UTC) to
+    dodge GitHub Actions cron drift. First successful run writes
+    state/deep_tier_diagnostics.json; subsequent triggers see today's
+    diagnostics file and exit cleanly without re-running expensive
+    transcript fetches and Haiku digester calls.
+    """
     today = date.today()
     logger.info(f"=== DEEP TIER START — {today.isoformat()} ===")
+
+    # v3.39.3: idempotency check — if today's diagnostics file exists,
+    # this is a duplicate trigger (one of the later cron slots after a
+    # prior trigger already succeeded). Exit cleanly in ~10s instead of
+    # re-running the full ~4-6 min pipeline. Manual workflow_dispatch
+    # users wanting to force a re-run should delete the file first
+    # (or just touch it forward).
+    diagnostics_path = Path("state") / "deep_tier_diagnostics.json"
+    if diagnostics_path.exists():
+        try:
+            with open(diagnostics_path) as f:
+                existing = json.load(f)
+            if existing.get("run_date") == today.isoformat():
+                logger.info(
+                    f"Idempotent no-op: state/deep_tier_diagnostics.json already "
+                    f"dated {today.isoformat()} (prior trigger today succeeded). "
+                    f"Exiting cleanly."
+                )
+                return 0
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(
+                f"Could not parse existing diagnostics file ({e}); "
+                f"proceeding with fresh run."
+            )
 
     digests_dir_for(today)  # ensure directory exists
 
