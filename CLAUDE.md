@@ -2,6 +2,7 @@
 
 <!--
 CHANGELOG (this file):
+  v3.39.4   (2026-05-18) — Mirae HTML scraper restored end-to-end. Phase D diagnostic identified `data-message-id` as the selector format (not `messageId=` URL params or `goView()` handlers as initially hypothesized); fetch_mirae_notes rewritten to construct detail URLs from message IDs and parse the HTML body directly. pdfplumber dependency dropped. Mirae is now the sole Korean broker note source (NH and Samsung Securities deleted in v3.39.3.1) and is back to producing notes daily. Architecture diagram in this file remains pre-v3.39.3 wording; full refresh deferred.
   v3.39.3.1 (2026-05-18) — Module map note: src/data/korean_brokers.py is now Mirae-only after the v3.39.3.1 cleanup pass deleted NH Investment (closed source) and Samsung Securities (IMAP never configured). NH and Samsung's target/rating signals still flow into Tier 2 scoring via WiseReport's cTB24 (Naver path) — the locked Tier-B broker decision at line ~108 remains accurate. AnandTech also removed from RSS_FEEDS. Schedule + cron diagram below remain pre-v3.39.3 wording; full refresh deferred.
   v3.39.3 (2026-05-18) — Section header bumped (v3.34 → v3.39.3) to reflect that CHANGES.md is now authoritative for v3.35+. v3.39.3 itself ships the Naver Finance scraper restoration via WiseReport iframe — three Korean broker scrapers (Mirae/NH/Samsung) remain inert pending v3.39.4; signal flow restored through the Naver path alone.
   v3.34  (2026-05-16) — Added v3.34 section (Motley Fool URL regex fix + Yahoo diagnostic logging + git push race fix); honest record of what the first v3.33 run showed
@@ -93,7 +94,9 @@ src/
 ├── data/                # source modules: prices, estimates, news, transcript_sources,
 │                        #   naver_finance, finnhub, dart, korean_brokers
 │                        #   (korean_brokers is Mirae-only since v3.39.3.1;
-│                        #    NH and Samsung Securities deleted as inert)
+│                        #    NH and Samsung Securities deleted as inert.
+│                        #    Mirae rebuilt as HTML scraper in v3.39.4 after
+│                        #    Phase D identified the data-message-id selector.)
 ├── analysis/            # digester, signal_reasoner, signal_scoring,
 │                        #   llm_summarizer, chart_generator
 └── email_module/        # template + sender
