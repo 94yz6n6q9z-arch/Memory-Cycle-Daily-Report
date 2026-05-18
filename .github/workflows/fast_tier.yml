@@ -2,14 +2,28 @@ name: Memory Cycle Brief — Fast Tier (daily delivery)
 
 on:
   schedule:
-    # Primary delivery 11:00 UTC weekdays → lands 13:00 CEST / 12:00 CET
-    # (1+ hour before US open even in summer DST).
-    # Fallback 11:30 if primary failed. Safety 12:05 (last attempt 25min+ before deadline).
-    # All three triggers use idempotency via state/brief_sent_dates.json — only first
-    # successful run produces output. Subsequent triggers no-op.
-    - cron: "0 11 * * 1-5"      # primary
-    - cron: "30 11 * * 1-5"     # fallback
-    - cron: "5 12 * * 1-5"      # safety
+    # v3.39.3: spread triggers + cascade gate. Seven attempts in a 90-minute
+    # window at odd minute marks (off-peak GitHub Actions slots) to dodge
+    # cron drift. fast_tier.py has both:
+    #   (a) cascade gate — exits cleanly if state/deep_tier_diagnostics.json
+    #       isn't dated today (deep_tier hasn't run yet — try again next
+    #       trigger). FORCE_RUN (manual dispatch) bypasses this gate.
+    #   (b) idempotency — exits cleanly if today's brief already sent
+    #       (state/brief_sent_dates.json). FORCE_RUN bypasses this too.
+    # So most triggers no-op in <30s; only the first one finding both
+    # (deep ran AND brief not sent) actually produces email + commits.
+    # Mon-Sat (1-6) per user pref.
+    #
+    # Timing target: email lands well before US market open (13:30 UTC).
+    # With deep_tier firing 10:03-11:03 UTC and fast_tier 11:13-12:43 UTC,
+    # email delivery should be 11:30-13:00 UTC most days (13:30-15:00 Munich).
+    - cron: "13 11 * * 1-6"    # 11:13 UTC
+    - cron: "27 11 * * 1-6"    # 11:27 UTC
+    - cron: "43 11 * * 1-6"    # 11:43 UTC
+    - cron: "57 11 * * 1-6"    # 11:57 UTC
+    - cron: "13 12 * * 1-6"    # 12:13 UTC
+    - cron: "27 12 * * 1-6"    # 12:27 UTC
+    - cron: "43 12 * * 1-6"    # 12:43 UTC — last attempt (~47 min before US open)
   workflow_dispatch: {}
 
 permissions:
@@ -91,7 +105,15 @@ jobs:
             echo "No state changes."
           else
             git commit -m "Fast tier $(date -u +%Y-%m-%dT%H:%M)"
-            git push
+            # v3.39.3: rebase onto remote before push to handle the race where
+            # a separate commit (manual edit, deep_tier commit, or another
+            # workflow) lands on main while fast_tier was running its
+            # ~20-minute pipeline. Without rebase, push rejected with
+            # "fetch first" and state/brief_sent_dates.json + prior_state.json
+            # are lost — tomorrow's change-tracking diff would compare against
+            # stale state. Same pattern as deep_tier.yml since v3.34.
+            git pull --rebase origin main || true
+            git push || (sleep 5 && git pull --rebase origin main && git push)
           fi
 
       - name: Create issue on critical failure
