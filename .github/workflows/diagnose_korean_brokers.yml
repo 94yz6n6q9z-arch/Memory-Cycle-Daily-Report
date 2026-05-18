@@ -1,0 +1,50 @@
+name: Diagnose Korean Brokers
+
+# Throwaway diagnostic. Manual dispatch only. Safe to leave in place
+# while we iterate; safe to delete once Korean broker channels are repaired.
+#
+# What it does:
+#   1. Installs minimal deps (requests, beautifulsoup4)
+#   2. Runs scripts/diagnose_korean_brokers.py
+#   3. Uploads the report + raw HTML fixtures as a workflow artifact
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run diagnostic
+        env:
+          # Same secret names as deep_tier.yml so the Samsung Gmail probe
+          # exercises the same credential path production uses.
+          SAMSUNG_GMAIL_USER: ${{ secrets.SAMSUNG_GMAIL_USER }}
+          SAMSUNG_GMAIL_APP_PW: ${{ secrets.SAMSUNG_GMAIL_APP_PW }}
+        run: |
+          python scripts/diagnose_korean_brokers.py
+
+      - name: Upload diagnostic artifacts
+        if: always()  # upload even if the script crashed
+        uses: actions/upload-artifact@v4
+        with:
+          name: korean-broker-diagnostic
+          path: |
+            scripts/diagnose_korean_brokers_output.txt
+            scripts/_diag_fixtures/
+          retention-days: 14
