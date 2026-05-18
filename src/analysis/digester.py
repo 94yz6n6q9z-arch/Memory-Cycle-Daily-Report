@@ -36,6 +36,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from typing import Any, Optional
@@ -521,7 +522,15 @@ def _placeholder_gap_digest(
 
 
 def digest_korean_broker_notes(broker_payloads: list[dict]) -> list[Digest]:
-    """Iterate Korean broker PDF payloads (Mirae / NH / Samsung Securities) and digest each note."""
+    """Iterate Korean broker note payloads (Mirae since v3.39.3.1) and digest
+    each note. NH Investment and Samsung Securities were removed in v3.39.3.1.
+
+    v3.39.4.2 fixed a latent filename-sanitization bug here. The original
+    `title[:40].replace(' ', '_')` left forward slashes intact, which the
+    v3.39.4 Mirae HTML title format ("SK Hynix (000660 KS/Buy)Reflecting...")
+    exposed for the first time. The slash made open() try to write into a
+    non-existent subdirectory. Now sanitized with the same regex pattern
+    korean_brokers uses for html_path filenames."""
     digests: list[Digest] = []
     for payload in broker_payloads:
         broker_name = payload.get("broker", "Unknown Korean broker")
@@ -542,8 +551,18 @@ def digest_korean_broker_notes(broker_payloads: list[dict]) -> list[Digest]:
             )
             if d:
                 digests.append(d)
+                # v3.39.4.2: sanitize title for filename. The naive
+                # `.replace(' ', '_')` left forward slashes intact, which
+                # blew up on v3.39.4's new Mirae HTML titles like
+                # "SK Hynix (000660 KS/Buy)Reflecting additional NAND
+                # momentum" — the slash made open() try to nest the file
+                # inside a non-existent "(000660 KS/" directory. Use the
+                # same regex pattern korean_brokers._fetch_mirae_detail
+                # applies to its html_path filenames for consistency.
+                safe_broker = re.sub(r"[^A-Za-z0-9._-]", "_", broker_name)
+                safe_title = re.sub(r"[^A-Za-z0-9._-]", "_", title[:40])
                 write_digest(
-                    name=f"broker_{broker_name.replace(' ', '_')}_{published_iso}_{title[:40].replace(' ', '_')}",
+                    name=f"broker_{safe_broker}_{published_iso}_{safe_title}",
                     payload=d.to_dict(),
                 )
     return digests
