@@ -166,6 +166,45 @@ def run_fast_tier() -> int:
             "but FORCE_RUN is set — bypassing idempotency check and running full pipeline."
         )
 
+    # ----- Step 0b: Cascade gate — wait for deep_tier -----
+    # v3.39.3: hard gate on deep_tier completion. The fast_tier consumes
+    # deep_tier's Layer 1 Haiku digests (state/digests/) and the diagnostics
+    # file (state/deep_tier_diagnostics.json). Running fast_tier before
+    # deep_tier produces a degraded brief — historically this was surfaced
+    # only as a WARN row in the email's data source table while still
+    # sending the email, which is the wrong default. Now we exit cleanly
+    # and wait for the next scheduled trigger (7 attempts spread 11:13-12:43
+    # UTC). FORCE_RUN bypasses this gate for manual recovery scenarios.
+    if not force_run:
+        deep_diag_path = Path("state") / "deep_tier_diagnostics.json"
+        today_iso = today.isoformat()
+        if not deep_diag_path.exists():
+            logger.info(
+                f"Cascade gate: state/deep_tier_diagnostics.json doesn't exist on disk. "
+                f"Deep tier hasn't committed today yet. Exiting cleanly — will retry "
+                f"on next scheduled trigger."
+            )
+            return 0
+        try:
+            with open(deep_diag_path) as f:
+                deep_data = json.load(f)
+            deep_run_date = deep_data.get("run_date")
+            if deep_run_date != today_iso:
+                logger.info(
+                    f"Cascade gate: state/deep_tier_diagnostics.json dated "
+                    f"{deep_run_date} (not today, {today_iso}). Deep tier hasn't run "
+                    f"yet today. Exiting cleanly — will retry on next scheduled trigger."
+                )
+                return 0
+            logger.info(f"Cascade gate: deep_tier ran today ({today_iso}) ✓ — proceeding.")
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(
+                f"Cascade gate: could not parse state/deep_tier_diagnostics.json ({e}). "
+                f"Treating as stale and exiting cleanly. Manual `workflow_dispatch` with "
+                f"FORCE_RUN bypasses this gate."
+            )
+            return 0
+
     logger.info(f"=== FAST TIER START — {today.isoformat()} {started_at.strftime('%H:%M')} UTC ===")
 
     collector = DiagnosticsCollector()
