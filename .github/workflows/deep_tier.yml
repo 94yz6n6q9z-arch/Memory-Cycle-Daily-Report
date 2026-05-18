@@ -51,9 +51,9 @@ jobs:
       - name: Run deep tier (transcripts + Korean broker PDFs + Layer 1 digester)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Samsung Securities Global — separate Gmail inbox for IMAP poll
-          SAMSUNG_GMAIL_USER: ${{ secrets.SAMSUNG_GMAIL_USER }}
-          SAMSUNG_GMAIL_APP_PW: ${{ secrets.SAMSUNG_GMAIL_APP_PW }}
+          # v3.39.3.1: SAMSUNG_GMAIL_USER / SAMSUNG_GMAIL_APP_PW removed —
+          # Samsung Securities Gmail IMAP source deleted (was never configured;
+          # see src/data/korean_brokers.py changelog for rationale).
           HAIKU_MODEL_OVERRIDE: ${{ secrets.HAIKU_MODEL_OVERRIDE }}
           # v3.33: Bright Data residential proxy for Yahoo Finance transcript
           # scraping. Yahoo blocks datacenter IPs (incl. GitHub Actions runners)
