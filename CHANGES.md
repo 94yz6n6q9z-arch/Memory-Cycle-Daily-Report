@@ -6,6 +6,68 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39.3 — Naver broker scraper restored via WiseReport iframe target
+
+**Why this release.** The 22:54 May 17 fast-tier run shipped cleanly on v3.39.2 (Sonnet 34,648/48,000 output, supercycle chart rendered, full email delivered), but the Data Source Assessment confirmed two consecutive runs with `Naver Finance (Korean broker scraper) → WARN, 0 rows × 3 tickers`. Naver Finance is the source that closes the canonical Tier 2 signal (`t2_eps_revisions`) — without it, our weighted broker scoring runs blind and the brief had to fall back on Google News + analyst color leaking through. Material signal loss.
+
+Three rounds of focused diagnostics (workflow-dispatched from production network, no local repo required) confirmed:
+
+1. **Naver moved the broker consensus content into an iframe** at `navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={code}`. The parent `coinfo.naver` page now contains only structural placeholders — `table.tb_type1` (our previous selector) no longer exists on it.
+2. The WiseReport response has two stable tables with `id` selectors that don't depend on class-name churn: `table#cTB15` (consensus summary) and `table#cTB24` (~25 per-broker rows with target, prior target, change %, current rating, prior rating, date).
+3. WiseReport rate-limits aggressively — sequential requests within ~3 seconds reliably hit ConnectTimeout.
+
+## Fix 1 — Rewrite `src/data/naver_finance.py` to use WiseReport
+
+**Module name and public interface preserved** (`fetch_naver_with_retry`, `fetch_all_naver_actions`, `BrokerAction`, `NAVER_TICKERS`) — `fast_tier.py`, `priority_alerter.py`, and `signal_scoring.actions_from_naver()` all continue to work without changes.
+
+What changed internally:
+- URL: `WISEREPORT_URL_TEMPLATE = "https://navercomp.wisereport.co.kr/v2/company/c1010001.aspx?cmp_cd={code}"`. The old fallback URL (`research/company_list.naver?keyword=...`) was dropped — diagnostics confirmed that endpoint returns a generic listing across all KOSPI tickers regardless of the `keyword` parameter (cosmetic only, not a real filter).
+- Selectors: `table#cTB24` for the 7-column action rows, `table#cTB15` for the 5-column summary. Both use `id` attributes which are far more stable than class names.
+- Headers: explicit `Referer: https://finance.naver.com/` so the request looks like normal embedded iframe traffic.
+- Rate-limit posture: 12s politeness (was 7s), 60s connection timeout (was 30s), one retry on `ConnectTimeout`/`ReadTimeout` with 60s backoff.
+- Korean broker name mapping: WiseReport uses SHORT forms (`KB`, `하나`, `현대차`, `미래에셋`) rather than long forms (`KB증권`, `하나증권`). The `KOREAN_TO_ENGLISH_BROKER` dict now contains both, preserving backward compat with any cached state on disk.
+- Rating normalization: extended to handle the mix of forms WiseReport emits (`BUY`/`Buy`/`매수`/`STRONG BUY`/`Outperform`/`보유`). All 27 distinct ratings observed across both real fixtures (SK Hynix + Samsung) map cleanly.
+
+**Bonus: `BrokerAction` fields previously unused are now populated.**
+- `prior_target_krw` — was always `None` (old Naver page didn't expose it); now populated directly from the `직전목표가` column.
+- `target_change_pct` — was always `None`; now populated from the `변동률(%)` column.
+- `direction` — was always `None`; now computed deterministically as `"raised"` / `"lowered"` / `"maintained"` / `"initiated"` from target vs prior target.
+- `prior_rating` — NEW field added to the dataclass; populated from the `직전투자의견` column. This enables downstream upgrade/downgrade classification (deferred to v3.39.4 — `signal_scoring.actions_from_naver` currently still classifies all as `"maintained"`, which is the conservative pre-v3.39.3 behavior).
+
+**Data layer dict output is strictly backward compatible.** `signal_scoring.actions_from_naver` only reads specific keys via `.get()` (no `**` unpacking), so the new fields are silently ignored by analysis code today but available for v3.39.4 to consume.
+
+## Fix 2 — Unit tests for the Naver pipeline (NEW)
+
+`tests/test_naver_finance.py` — 42 cases, runs entirely offline against an embedded HTML fixture modeled on the real WiseReport response. No network calls; tests pass even when WiseReport's site is down. Coverage:
+
+- Helper parsers: KRW int (including `137만` Korean shorthand), percent, WiseReport YY/MM/DD date format
+- Direction inference: raised / lowered / maintained / initiated, including None-prior and zero-prior edge cases
+- Rating normalization: Korean (`매수`/`보유`/`강력매수`), English uppercase (`BUY`/`HOLD`/`STRONG BUY`), English titlecase (`Buy`), Outperform→Buy / Market Perform→Hold remapping, unknown → None
+- Broker name mapping: 27+ short forms (WiseReport convention) + legacy long forms (backward compat for cached state)
+- Row-level parser: happy path, wrong cell count, header row, Korean rating, unmapped broker
+- Table-level parsers: 5-row fixture yields 5 actions, malformed row skipped, missing `cTB24` returns empty list (graceful), missing `cTB15` returns empty dict
+
+All 42 tests run in ~13ms.
+
+## Validation completed
+
+✅ Python AST clean (27 .py files in `src/`)
+✅ Signature audit: zero mismatches across `src/`
+✅ All 42 new tests pass; existing 16 tests in `test_safe_indicator_assessment.py` unchanged
+✅ Live parse against real Phase 3 diagnostic fixtures (`wisereport_000660_1010001.html`, `wisereport_005930_1010001.html`): 25/25 broker actions extracted per ticker, all brokers mapped to English names (zero unmapped), all ratings normalized (zero unrecognized)
+
+## Cost / runtime impact
+
+Per-run: +25s in worst case (12s politeness × 3 tickers — was 7s × 3 = 21s, so net +15s if all succeed first try; +60s + retry if a timeout fires). Still well inside the fast-tier 8-minute budget. Zero LLM cost change.
+
+## Out of scope (deferred to v3.39.4)
+
+- **Mirae Asset / NH Investment PDF scrapers** — both have dead URLs (Mirae site restructured under `/newir/`, NH rebranded `nhqv.com → nhsec.com`). The `Final` diagnostic was prepared but not run; if v3.39.3 brings sufficient broker color through WiseReport (Mirae and NH analyst actions both appear in the WiseReport consensus table), these PDFs become nice-to-have rather than critical.
+- **Samsung Securities Gmail IMAP** — credentials not set in GitHub Secrets (confirmed empty env vars in diagnostic run). Pure config fix on the user side.
+- **`signal_scoring.actions_from_naver` upgrade/downgrade classification using `prior_rating`** — fields are now in the dict; consumer logic upgrade is a separate, scoped change.
+
+---
+
 ## v3.39.2 — supercycle phase chart + 1Y bug fix + Node 24 actions + defensive parser hardening
 
 **Why this release.** The 21:19 May 17 fast-tier run validated v3.39.1 cleanly (Sonnet output 28,957/48,000 tokens, no crashes, full email shipped), but surfaced three observations:
@@ -85,6 +147,36 @@ Replaced all 4 occurrences in `fast_tier.py` (lines 132, 144, 471, 481) with `da
 
 `tests/test_safe_indicator_assessment.py` codifies the 7 cases validated during v3.39.1 development plus 2 new cases for v3.39.2's tier-from-id inference (and 7 dedicated `_tier_from_id` cases). 16 cases total, all pass. Run with `python -m tests.test_safe_indicator_assessment`.
 
+## Fix 8 — Priority alerts scheduled triggers disabled
+
+`priority_alerts.yml` cron triggers commented out. The workflow had been firing 32 times per weekday (16 cron triggers × 2 market sessions) and failing silently at the `NTFY_TOPIC_URL` check because the secret was never configured — ~640 failed runs/month consuming GitHub Actions minutes for no output. `workflow_dispatch: {}` retained so the workflow can be triggered manually once an ntfy.sh topic is set up. The code itself (`src/priority_alerter.py`) is untouched and ready to use; reactivating scheduled runs is a 3-line uncomment plus secret configuration.
+
+## Fix 9 — TrendForce ingestion repair (merged from a separate session, internally labeled v3.39.3 in code comments)
+
+The 21:19 May 17 fast-tier run produced `Haiku triage: ... 0 price commentary items` for the second consecutive run, confirming the TrendForce ingestion was effectively dead. Three layered problems, three coordinated fixes — companion patches across `news.py` and `config.py`.
+
+**(a) RSS feed dead → replaced with DRAMeXchange Weekly Research.**
+The legacy `https://www.trendforce.com/news/feed` URL no longer publishes XML — TrendForce restructured their news section and dropped the `/feed` path. Replacement: `https://www.dramexchange.com/rss.xml`, TrendForce's sister property on the data side, which DOES publish well-formed RSS with TrendForce-authored weekly research commentary. This is the exact behavioral-signal language Tier 1 `t1_price_cuts_no_demand` and `t1_oem_inventory` look for ("buyers cautious", "price cuts not stimulating demand", etc.). Items use relative `<link>` paths under `dramexchange.com` — `_safe_parse_rss_feed` passes them through unchanged.
+
+**(b) News scraper URL fixed.**
+TrendForce restructured `/news/category/dram` to `/news/category/semiconductors/dram/` (added `/semiconductors/` segment + trailing slash). The old URL returns HTTP 200 with no matching `<article a[href*='/news/']>` selectors → 0 items silently. Two changes:
+- `config.py:SCRAPE_TARGETS["TrendForce News"]` URL updated
+- `news.py:scrape_trendforce()` updated to match; selector relaxed to `a[href*='/news/']` (no longer requires `<article>` ancestor since the current layout uses different containers); skips bare category pages and other non-article links
+
+**(c) NEW: TrendForce DRAM Spot price table scraper.**
+The public spot-price table at `https://www.trendforce.com/price/dram/dram_spot` is server-rendered HTML — the table cells contain the actual numbers, no XHR endpoint to find. But it's full-page CDN-cached on request fingerprint (UA / geo / cookies), so generic-UA clients can see snapshots 1-3 days stale. New `scrape_trendforce_prices()` in `news.py` (~150 lines) with layered mitigations:
+
+1. Real Chrome User-Agent (already in `HEADERS`)
+2. `Cache-Control: no-cache` + `Pragma: no-cache` request headers
+3. `?_=<unix-ms>` cache-buster query string (best-effort; CDNs vary on whether they respect this)
+4. **Freshness guard**: parses the `"Last Update YYYY-MM-DD HH:MM (GMT+8)"` line, converts to UTC, computes age. When age > 36h, prepends `[STALE]` to the NewsItem title AND adds a directive in the summary text instructing Layer 2 to treat the row as informational only and NOT fire/unfire Tier 1 `t1_spot_first_decline` on it. Stale-fetch-worse-than-no-fetch — make staleness visible rather than hide it.
+
+The function emits a single high-priority NewsItem digesting the parsed table (compact `"item: avg X (change Y%)"` form). `score_relevance()` auto-preserves it at score 10 — same treatment as EDGAR — so Haiku can't filter it out. Flows through `fetch_all_news` → relevance filter → Layer 2 → Layer 3 like any other NewsItem.
+
+Diagnostics: collector records `STALE — Nh old` or `fresh — Nh old` so the email's data-source assessment row makes staleness visible to the user too.
+
+**Code comments in `news.py` and `config.py` use the internal label "v3.39.3"** because this work was done in a separate Claude session before the merge. The comments accurately describe the engineering history; the release tag is v3.39.2.
+
 ## Validation done
 
 - Python syntax clean (`ast.parse` across all 27 .py files)
@@ -100,13 +192,14 @@ Replaced all 4 occurrences in `fast_tier.py` (lines 132, 144, 471, 481) with `da
 |---|---|
 | `src/analysis/chart_generator.py` | +500 lines: `generate_supercycle_chart` + helpers (`_parse_peak_window_start`, `_compute_phase_boundaries`, `_quadratic_curve`, `_categorize_indicators`, `_draw_annotation_panel`); deps `numpy`, `matplotlib.patches`; new module-level imports for `date`, `timedelta`, `Optional` |
 | `src/analysis/llm_summarizer.py` | New `_tier_from_id` helper; `_safe_indicator_assessment` now uses it to recover tier when the field is missing or non-numeric |
-| `src/config.py` | `Indicator.short_label` field added; populated for all 22 indicators; new constants `CYCLE_TROUGH_DATE`, `CYCLE_PHASE_DURATIONS_MONTHS`, `CYCLE_PHASE_COLORS`, `SUPERCYCLE_CHART_TICKER_NAME`, `SUPERCYCLE_CHART_TICKER_CURRENCY` |
+| `src/config.py` | `Indicator.short_label` field added; populated for all 22 indicators; new constants `CYCLE_TROUGH_DATE`, `CYCLE_PHASE_DURATIONS_MONTHS`, `CYCLE_PHASE_COLORS`, `SUPERCYCLE_CHART_TICKER_NAME`, `SUPERCYCLE_CHART_TICKER_CURRENCY`; TrendForce ingestion repair (Fix 9): dropped dead `TrendForce` RSS, added `DRAMeXchange Weekly Research` RSS, fixed `TrendForce News` scrape URL, added `TrendForce DRAM Spot (price table)` scrape target |
+| `src/data/news.py` | TrendForce ingestion repair (Fix 9): `scrape_trendforce` URL fixed + selector relaxed; new `scrape_trendforce_prices()` function (~150 lines) with table parsing, layered CDN-cache mitigations, and `[STALE]` freshness guard; `score_relevance()` auto-preserves the spot price NewsItem at score 10 |
 | `src/data/prices.py` | `pct_change_lookback` off-by-one fix with safe fallback to oldest available row |
 | `src/fast_tier.py` | New imports for cycle constants + `generate_supercycle_chart`; `fetch_price_history` called with `period="3y"`; `datetime.utcnow()` → `datetime.now(UTC)` × 4; supercycle chart generation block; `supercycle_chart_base64` passed to `build_email_html` |
 | `src/email_module/template.py` | `build_email_html` signature gains `supercycle_chart_base64`; performance section drops embedded chart; new "Where we stand in the cycle" section between sections 1 and 2; downstream sections renumbered |
 | `.github/workflows/fast_tier.yml` | `actions/checkout@v4` → `@v5`, `actions/setup-python@v5` → `@v6`, `actions/github-script@v7` → `@v8` |
 | `.github/workflows/deep_tier.yml` | Same Node 24 bumps as fast_tier.yml |
-| `.github/workflows/priority_alerts.yml` | Same Node 24 bumps |
+| `.github/workflows/priority_alerts.yml` | Node 24 bumps + cron schedule commented out (workflow_dispatch retained for manual runs) |
 | `tests/test_safe_indicator_assessment.py` | NEW — 16 cases covering `_safe_indicator_assessment` and `_tier_from_id` |
 | `CHANGES.md` | This entry |
 
