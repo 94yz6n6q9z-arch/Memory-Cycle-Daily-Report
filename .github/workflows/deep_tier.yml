@@ -2,15 +2,24 @@ name: Memory Cycle Brief — Deep Tier (overnight)
 
 on:
   schedule:
-    # 08:00 UTC daily (10:00 CEST / 09:00 CET) — aligns with the empirical
-    # Yahoo/Quartr transcript availability curve (median ~6.5h post US call end,
-    # so by 08:00 UTC ~94% of US after-hours transcripts are scrape-able).
-    # Pulls slow sources: earnings transcripts (Yahoo Finance + Motley Fool +
-    # IR-site scrapers per v3.31/v3.32) and Korean broker English PDFs
-    # (Mirae/NH/Samsung Securities, 24-48hr lag). Runs the Layer 1 digester
-    # (Haiku) over each large document and persists JSON digests to
-    # state/digests/{YYYY-MM-DD}/ for the fast tier (11:00 UTC) to consume.
-    - cron: "0 8 * * *"
+    # 10:00 UTC daily (12:00 CEST / 11:00 CET = 19:00 KST). v3.39.3+:
+    # moved 08:00 → 10:00 to align with the END of the Korean broker
+    # publishing window. Korean desks publish post-close notes between
+    # KRX close (06:30 UTC = 15:30 KST) and ~19:00 KST (10:00 UTC),
+    # so firing at 10:00 UTC catches them all rather than missing the
+    # final 1-2 hours of broker output. Note: this tightens the buffer
+    # before fast_tier (11:00 UTC) to ~1 hour. With Korean broker PDF
+    # scrapers temporarily inert (NH/Samsung dead; Mirae pending v3.39.4
+    # HTML rewrite), the Layer 1 digester load is lighter — current
+    # runtime is ~4-6 min so 1 hour is adequate. If Mirae HTML scraper
+    # adds back substantial digester load in v3.39.4, revisit this.
+    #
+    # The original 08:00 UTC was optimized for US after-hours transcript
+    # availability (~94% scrape-able by 6.5h post-call median). That
+    # bias was sub-optimal for the Korean signals which are the higher
+    # weight in this brief — US transcripts are mostly available from
+    # Yahoo Finance by 10:00 UTC anyway (~98% per same curve).
+    - cron: "0 10 * * *"
   workflow_dispatch: {}
 
 permissions:
