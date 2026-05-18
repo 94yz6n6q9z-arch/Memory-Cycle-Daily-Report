@@ -388,6 +388,35 @@ class TestRelevanceFilter(unittest.TestCase):
             title="Cosmetics Sector Note", subtitle="K-Beauty exports recovering",
         )))
 
+    def test_samsung_fire_and_marine_rejected_after_v3_39_4_1_keyword_tightening(self):
+        # v3.39.4.1 regression test. Samsung Fire & Marine is an insurance
+        # company (ticker 000810 — not in TRACKED_KOREAN_TICKER_CODES). Phase E
+        # dry-run output 2026-05-18 caught the original "samsung" keyword
+        # pulling this row into the digester. With "samsung" dropped from
+        # TRACKED_TITLE_KEYWORDS in v3.39.4.1, this title must NO LONGER pass.
+        self.assertFalse(_row_is_relevant(self._row(
+            title="Samsung Fire & Marine (000810 KS/Hold)",
+            subtitle="New business CSM down 11% YoY",
+            ticker_code_korean="000810",
+        )))
+
+    def test_samsung_sdi_rejected_after_v3_39_4_1(self):
+        # Same class as the Fire & Marine case — batteries, not memory.
+        self.assertFalse(_row_is_relevant(self._row(
+            title="Samsung SDI (006400 KS/Buy)",
+            subtitle="EV battery shipments improving",
+            ticker_code_korean="006400",
+        )))
+
+    def test_samsung_electronics_still_passes_via_ticker_match(self):
+        # The ONLY samsung name we still want — caught by ticker-match, not
+        # keyword. Verify the v3.39.4.1 keyword removal didn't break this path.
+        self.assertTrue(_row_is_relevant(self._row(
+            title="Samsung Electronics (005930 KS/Buy)",
+            subtitle="HBM3E ramp on track",
+            ticker_code_korean="005930",
+        )))
+
 
 class TestParseMiraeDetail(unittest.TestCase):
     def setUp(self):
@@ -561,3 +590,4 @@ class TestTrackedTickerSet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
