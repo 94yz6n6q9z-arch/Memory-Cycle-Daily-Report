@@ -504,8 +504,29 @@ def build_sonnet_analysis_prompt(
     estimates_data: dict[str, EstimateSnapshot],
     big_movers: list[BigMover],
     prior_state: dict,
+    digests: Optional[list[dict]] = None,
+    signal_reasonings: Optional[list] = None,
+    computed_metrics: Optional[dict] = None,
 ) -> str:
-    """Construct the Sonnet analysis prompt using Haiku-triaged data."""
+    """Construct the Sonnet analysis prompt using Haiku-triaged data.
+
+    v3.39.5: New `digests` parameter. Threads Layer 1 deep-tier broker note
+    and transcript digests into Sonnet's prompt as a dedicated section.
+    Closes the architectural void where Mirae note bodies were written to
+    state/digests/ but never reached Sonnet — Sonnet was citing Korean news
+    aggregator coverage of Mirae's W3.2M raise instead of Mirae directly.
+
+    v3.39.6: New `signal_reasonings` and `computed_metrics` parameters.
+    Threads Layer 2 per-signal Haiku verdicts AND the numerical computed
+    metrics (relative strength 5-day spreads, hyperscaler capex ratios,
+    forward P/E, DART materials) into Sonnet's prompt. Closes the void
+    where Sonnet was speculating about signals it had no numbers for —
+    e.g., May 18 brief's t3_relative_strength prose hallucinated "almost
+    certainly past -10% threshold" from single-day news headlines when
+    the actual 5-day computed spread was below threshold. Sonnet now sees
+    the verdict directly and is instructed to LEAD with the numbers and
+    keep commentary to ≤1/3 of indicator text.
+    """
 
     perf_text = "PERFORMANCE DATA (Yahoo Finance):\n"
     for p in performance_data:
@@ -569,6 +590,236 @@ def build_sonnet_analysis_prompt(
         prior_text += json.dumps(prior_state, indent=2)
     else:
         prior_text += "(no prior state - this is the first run)\n"
+
+    # v3.39.5: Build the deep-tier digests block (Layer 1 output from
+    # overnight Haiku digestion of earnings transcripts and Korean broker
+    # notes). These are PRIMARY SOURCES — the actual analytical body of
+    # broker reports, written by the broker's analysts, not Korean news
+    # aggregators' coverage of those reports. When today's news triage
+    # mentions a broker action that overlaps with one of these digests,
+    # the broker is the source of record, not the aggregator.
+    #
+    # Schema reference: src/analysis/digester.py Digest dataclass.
+    # Fields: source_id, source_type, published_date_iso, title,
+    # key_metrics (dict), signal_relevance (list of indicator IDs),
+    # key_quotes (list of <15-word quotes, max 1 per doc), target_price_action
+    # (dict with broker/ticker/new_pt/prior_pt/direction — broker notes only),
+    # fired_status_evidence, raw_url, digested_at_iso.
+    digest_text = ""
+    if digests:
+        broker_digests = [d for d in digests if d.get("source_type") == "korean_broker_pdf"]
+        transcript_digests = [d for d in digests if d.get("source_type") == "earnings_transcript"]
+
+        digest_text += "\nDEEP-TIER BROKER NOTES (PRIMARY SOURCE — horse's mouth):\n"
+        if broker_digests:
+            digest_text += (
+                f"({len(broker_digests)} broker notes digested overnight by Haiku.\n"
+                "These are the actual analytical bodies of broker reports — PRIMARY\n"
+                "sources that take precedence over news aggregator coverage.)\n\n"
+            )
+            for d in broker_digests:
+                tpa = d.get("target_price_action") or {}
+                km = d.get("key_metrics") or {}
+                digest_text += f"- TITLE: {d.get('title', '')}\n"
+                digest_text += f"  PUBLISHED: {d.get('published_date_iso', '?')}\n"
+                digest_text += f"  SOURCE URL: {d.get('raw_url', '')}\n"
+                if tpa:
+                    digest_text += (
+                        f"  TARGET PRICE ACTION: {tpa.get('broker', '?')} "
+                        f"{tpa.get('direction', '?')} {tpa.get('ticker', '?')} target → "
+                        f"{tpa.get('new_pt', '?')} (prior: {tpa.get('prior_pt', '?')})\n"
+                    )
+                if km.get("fy27_eps_revision_pct") is not None:
+                    digest_text += f"  FY27 EPS revision: {km['fy27_eps_revision_pct']:+.1f}%"
+                    if km.get("fy27_eps_new") is not None and km.get("fy27_eps_prior") is not None:
+                        digest_text += f" ({km['fy27_eps_prior']} → {km['fy27_eps_new']})"
+                    digest_text += "\n"
+                if km.get("fy28_eps_revision_pct") is not None:
+                    digest_text += f"  FY28 EPS revision: {km['fy28_eps_revision_pct']:+.1f}%\n"
+                key_quotes = d.get("key_quotes") or []
+                if key_quotes:
+                    digest_text += "  ANALYTICAL EXCERPT:\n"
+                    for kq in key_quotes[:3]:
+                        digest_text += f"    \"{kq}\"\n"
+                sr = d.get("signal_relevance") or []
+                if sr:
+                    digest_text += f"  INFORMS INDICATORS: {', '.join(sr[:8])}\n"
+                fse = d.get("fired_status_evidence", "")
+                if fse:
+                    digest_text += f"  FIRED-STATUS EVIDENCE: {fse}\n"
+                digest_text += "\n"
+        else:
+            digest_text += "(no broker notes digested in window)\n"
+
+        digest_text += "\nDEEP-TIER EARNINGS TRANSCRIPTS (PRIMARY SOURCE):\n"
+        if transcript_digests:
+            digest_text += f"({len(transcript_digests)} transcripts digested overnight.)\n\n"
+            for d in transcript_digests:
+                km = d.get("key_metrics") or {}
+                digest_text += f"- TITLE: {d.get('title', '')}\n"
+                digest_text += f"  PUBLISHED: {d.get('published_date_iso', '?')}\n"
+                digest_text += f"  SOURCE URL: {d.get('raw_url', '')}\n"
+                # Surface the most cycle-relevant metrics if present
+                metric_lines = []
+                if km.get("supplier_inventory_weeks") is not None:
+                    metric_lines.append(f"supplier inventory: {km['supplier_inventory_weeks']} weeks")
+                if km.get("lead_time_weeks") is not None:
+                    metric_lines.append(f"lead time: {km['lead_time_weeks']} weeks")
+                if km.get("asp_yoy_pct") is not None:
+                    metric_lines.append(f"ASP YoY: {km['asp_yoy_pct']:+.1f}%")
+                if km.get("contract_price_qoq_pct") is not None:
+                    metric_lines.append(f"contract QoQ: {km['contract_price_qoq_pct']:+.1f}%")
+                if km.get("capex_2027_guidance_usd_b") is not None:
+                    metric_lines.append(f"2027 capex guidance: ${km['capex_2027_guidance_usd_b']}B")
+                if metric_lines:
+                    digest_text += "  METRICS: " + " | ".join(metric_lines) + "\n"
+                # Architecture signals (v3.3 captive-ratio feedstock — surface salient ones)
+                arch = km.get("architecture_signals") or {}
+                arch_lines = []
+                if arch.get("hbm_capex_pct") is not None:
+                    arch_lines.append(f"HBM/capex: {arch['hbm_capex_pct']}%")
+                if arch.get("memory_pct_of_capex") is not None:
+                    arch_lines.append(f"memory/capex: {arch['memory_pct_of_capex']}%")
+                if arch.get("wafer_allocation_language"):
+                    arch_lines.append(f"wafer: {arch['wafer_allocation_language']}")
+                if arch.get("architecture_freetext"):
+                    arch_lines.append(arch["architecture_freetext"])
+                if arch_lines:
+                    digest_text += "  ARCHITECTURE: " + " | ".join(arch_lines) + "\n"
+                key_quotes = d.get("key_quotes") or []
+                if key_quotes:
+                    digest_text += "  EXCERPT:\n"
+                    for kq in key_quotes[:3]:
+                        digest_text += f"    \"{kq}\"\n"
+                sr = d.get("signal_relevance") or []
+                if sr:
+                    digest_text += f"  INFORMS INDICATORS: {', '.join(sr[:8])}\n"
+                digest_text += "\n"
+        else:
+            digest_text += "(no new earnings transcripts in window)\n"
+    else:
+        digest_text = "\nDEEP-TIER DIGESTS: (deep_tier digests not threaded — running in legacy mode)\n"
+
+    # v3.39.6: COMPUTED METRICS BLOCK. The numerical verdicts the fast_tier
+    # ALREADY computed deterministically (no LLM involved) — relative strength
+    # spreads, hyperscaler capex/revenue ratios, forward P/Es, DART materials.
+    # Threading these in lets Sonnet QUOTE exact numbers instead of estimating
+    # from news headlines. This is the cure for the May 18 brief's
+    # t3_relative_strength hallucination: Sonnet wrote "5-day cumulative
+    # underperformance has almost certainly crossed the >10% threshold" when
+    # the actual computed spread was below threshold (banner_text was None
+    # in the fast_tier log, meaning overall_severity was None).
+    computed_text = "\nCOMPUTED METRICS (deterministic numerical verdicts — quote these EXACTLY):\n"
+    if computed_metrics:
+        rs = computed_metrics.get("relative_strength_full") or {}
+        if rs:
+            computed_text += "\n  t3_relative_strength (5-day rolling window vs SOX / SMH):\n"
+            skhx = rs.get("skhx_5d_vs_sox_pp")
+            mu = rs.get("mu_5d_vs_sox_pp")
+            dram = rs.get("dram_etf_vs_smh") or {}
+            if skhx is not None:
+                computed_text += f"    SK Hynix 5d vs SOX:      {skhx:+.2f}pp\n"
+            else:
+                computed_text += "    SK Hynix 5d vs SOX:      (not computed)\n"
+            if mu is not None:
+                computed_text += f"    Micron 5d vs SOX:        {mu:+.2f}pp\n"
+            else:
+                computed_text += "    Micron 5d vs SOX:        (not computed)\n"
+            if dram.get("spread_pp") is not None:
+                computed_text += (
+                    f"    DRAM ETF 5d vs SMH:      {dram['spread_pp']:+.2f}pp "
+                    f"(DRAM {dram.get('dram_return_pct', '?')}%, SMH {dram.get('smh_return_pct', '?')}%)\n"
+                )
+            computed_text += (
+                f"    Overall severity:        {rs.get('overall_severity') or 'None'}\n"
+                f"    Overall fired (red):     {rs.get('overall_fired', False)}\n"
+                "    Thresholds:              red ≤ -10pp on ANY sub-trigger | yellow ≤ -5pp\n"
+            )
+            sub = rs.get("fired_sub_triggers") or []
+            if sub:
+                computed_text += "    Fired sub-triggers:      " + "; ".join(
+                    f"{s[0]}: {s[1]}" if isinstance(s, (list, tuple)) and len(s) >= 2 else str(s)
+                    for s in sub
+                ) + "\n"
+
+        fpe = computed_metrics.get("forward_pe") or {}
+        if fpe:
+            computed_text += "\n  Forward P/E by ticker:\n"
+            for ticker, val in fpe.items():
+                if val is None:
+                    continue
+                try:
+                    computed_text += f"    {ticker:<12} {float(val):.2f}\n"
+                except (TypeError, ValueError):
+                    computed_text += f"    {ticker:<12} {val}\n"
+
+        crr = computed_metrics.get("capex_revenue_ratios") or {}
+        if crr:
+            computed_text += "\n  Hyperscaler capex/revenue ratios (most recent quarter per name):\n"
+            for ticker, quarters in crr.items():
+                if not quarters:
+                    continue
+                latest = quarters[-1]
+                computed_text += (
+                    f"    {ticker:<6} {latest.get('quarter_iso', '?')}: "
+                    f"capex ${latest.get('capex_usd_b', '?')}B / "
+                    f"rev ${latest.get('revenue_usd_b', '?')}B → "
+                    f"ratio {latest.get('ratio', '?')} "
+                    f"(fired_threshold={latest.get('fired_threshold', False)})\n"
+                )
+
+        dart = computed_metrics.get("dart_material_disclosures") or {}
+        if dart:
+            n_companies = len(dart)
+            total_mat = sum(len(v) if isinstance(v, list) else 0 for v in dart.values())
+            computed_text += f"\n  DART material disclosures: {total_mat} across {n_companies} companies\n"
+    else:
+        computed_text += "  (computed_metrics not threaded — running in legacy mode)\n"
+
+    # v3.39.6: LAYER 2 SIGNAL REASONINGS BLOCK. Haiku already evaluated each
+    # of the 22 indicators with full access to digests, naver_data, finnhub,
+    # computed_metrics, and fast_tier news. Its verdicts are authoritative
+    # PER-SIGNAL. Sonnet should CITE these (not re-derive them).
+    layer2_text = "\nLAYER 2 PER-SIGNAL VERDICTS (Haiku, with full evidence access — DEFER to these on individual signal status):\n"
+    if signal_reasonings:
+        layer2_text += (
+            f"({len(signal_reasonings)} signals evaluated. Each verdict is the result\n"
+            "of Haiku reading ALL evidence for that one signal — broker digests,\n"
+            "transcripts, Naver rows, Finnhub direction, computed metrics, news. When\n"
+            "writing indicator_assessments[].current_status and change_vs_prior,\n"
+            "use these verdicts as the source of truth.)\n\n"
+        )
+        for r in signal_reasonings:
+            rd = r.to_dict() if hasattr(r, "to_dict") else r
+            layer2_text += (
+                f"  [{rd.get('signal_id', '?')}] T{rd.get('tier', '?')} "
+                f"{rd.get('signal_name', '?')}\n"
+                f"    Verdict: {rd.get('fired_status', '?')} "
+                f"(confidence: {rd.get('confidence', '?')}, "
+                f"convergence: {rd.get('convergence', '?')}, "
+                f"evidence_count: {rd.get('evidence_count', 0)})\n"
+            )
+            fse = rd.get("fired_status_evidence") or []
+            if fse:
+                layer2_text += "    Evidence for current status:\n"
+                for ev in fse[:4]:
+                    layer2_text += f"      - {ev}\n"
+            change = rd.get("evidence_for_change_vs_yesterday") or ""
+            # v3.39.6: suppress noisy "no change" lines — we only render
+            # change-vs-yesterday when something actually changed. Use
+            # startswith so phrasings like "no change — still not fired"
+            # or "no change — verdict held" are also suppressed.
+            change_lower = change.lower().strip()
+            is_noop = (
+                not change_lower
+                or change_lower in ("no change", "none", "no", "n/a")
+                or change_lower.startswith("no change")
+            )
+            if change and not is_noop:
+                layer2_text += f"    Change vs yesterday: {change}\n"
+            layer2_text += "\n"
+    else:
+        layer2_text += "  (signal_reasonings not threaded — running in legacy mode)\n"
 
     prompt = f"""You are a senior memory/semiconductor cycle analyst preparing a daily institutional briefing. Use the Haiku-pre-processed news + market data + indicator framework below to produce a comprehensive structured analysis.
 
@@ -690,6 +941,53 @@ Set urgent_attention_needed=true if ANY of:
 - Big movers include SK Hynix, Micron, or Samsung with >4% move
 - Probability distribution shifted significantly (e.g., bear case +10pp vs prior)
 
+PRIMARY-SOURCE PRECEDENCE (v3.39.5):
+When today's NEWS TRIAGE mentions a broker action (target price change,
+rating change, estimate revision) that ALSO appears in DEEP-TIER BROKER
+NOTES, the broker IS the primary source. Cite the broker (from the
+TARGET PRICE ACTION line, e.g. "Mirae Asset Securities") in your
+latest_developments and key_news_summary — NOT the Korean news
+aggregator (Seoul Economic, AD HOC NEWS, abhs.in) that echoed the
+broker's report. Use the broker's SOURCE URL (from the digest's raw_url
+field), not the aggregator's URL.
+
+MAJOR BROKER ACTIONS IN KEY NEWS (v3.39.5):
+A target-price change of ≥10% or a rating change is material market-moving
+news. If a DEEP-TIER BROKER NOTE shows a TARGET PRICE ACTION with such a
+move, it MUST appear in your `key_news_summary` array — even if news
+triage didn't surface it. Format the headline as: "{{broker}}
+raises/lowers {{ticker}} target to {{new_pt}} from {{prior_pt}}". Use
+the broker's ANALYTICAL EXCERPT lines to write the why_it_matters field.
+
+NUMBER-FIRST INDICATOR FORMAT (v3.39.6 — STRICT):
+For every indicator_assessments[] entry, the `where_we_stand` field
+MUST follow this template when the indicator has computed numerical
+evidence (rel-strength spreads, capex/revenue ratios, forward P/E,
+EPS revisions, single-day moves, etc.):
+
+  1. LEAD with the exact numbers. Quote them from COMPUTED METRICS.
+     Example: "5-day vs SOX: SK Hynix -3.21pp, Micron -2.84pp, DRAM
+     ETF vs SMH -1.10pp. Severity: None (yellow threshold -5pp,
+     red threshold -10pp — neither crossed)."
+  2. THEN a SHORT trend/context note (≤1/3 of the words). Example:
+     "Spread has widened ~2pp this week as memory drawdowns
+     accelerated; would cross yellow if today's relative weakness
+     persists 2 more sessions as the May 11-12 positive days roll off."
+  3. NO speculative "almost certainly past threshold" or "highly
+     probable when measured" — the metric IS measured. If you don't
+     see it in COMPUTED METRICS, say "(not threaded)" — do NOT
+     reason backward from news headlines.
+
+`latest_developments` should be similarly tight: 2-4 sentences max
+with embedded links, NOT multi-paragraph essays. The reader scans
+this column on mobile; brevity is the design intent.
+
+For indicator status (`current_status`, `change_vs_prior`), DEFER
+to LAYER 2 PER-SIGNAL VERDICTS when present. Haiku already weighed
+the full evidence for that one signal — re-deriving the verdict in
+Sonnet's prose risks contradicting Layer 2 and looks bad in the
+dashboard where Layer 2 status renders alongside your text.
+
 Cycle baseline (use as your prior, adjust per today's evidence):
 {json.dumps(CYCLE_BASELINE, indent=2)}
 
@@ -702,6 +1000,9 @@ NOW THE DATA:
 {est_text}
 {indicator_text}
 {prior_text}
+{digest_text}
+{computed_text}
+{layer2_text}
 {triage_text}
 """
     return prompt
@@ -715,8 +1016,18 @@ def sonnet_analyze(
     big_movers: list[BigMover],
     prior_state: dict,
     collector: Optional[DiagnosticsCollector] = None,
+    digests: Optional[list[dict]] = None,
+    signal_reasonings: Optional[list] = None,
+    computed_metrics: Optional[dict] = None,
 ) -> Optional[BriefAnalysis]:
-    """Run Sonnet to produce the full analysis with exec summary."""
+    """Run Sonnet to produce the full analysis with exec summary.
+
+    v3.39.5: Accepts `digests` (deep-tier Layer 1 output).
+    v3.39.6: Accepts `signal_reasonings` (Layer 2 Haiku verdicts) and
+    `computed_metrics` (numerical deterministic verdicts). Threaded into
+    the prompt so Sonnet quotes exact numbers and defers to Layer 2 on
+    per-signal status, rather than speculating from news headlines.
+    """
     if not api_key:
         if collector is not None:
             collector.record_skipped(
@@ -728,7 +1039,10 @@ def sonnet_analyze(
 
     client = Anthropic(api_key=api_key)
     prompt = build_sonnet_analysis_prompt(
-        triage, performance_data, estimates_data, big_movers, prior_state
+        triage, performance_data, estimates_data, big_movers, prior_state,
+        digests=digests,
+        signal_reasonings=signal_reasonings,
+        computed_metrics=computed_metrics,
     )
 
     # v3.39: switch from messages.create to messages.stream. Two motivations:
@@ -920,8 +1234,23 @@ def analyze_with_llm(
     big_movers: list[BigMover],
     prior_state: dict,
     collector: Optional[DiagnosticsCollector] = None,
+    digests: Optional[list[dict]] = None,
+    signal_reasonings: Optional[list] = None,
+    computed_metrics: Optional[dict] = None,
 ) -> Optional[BriefAnalysis]:
-    """Two-stage LLM pipeline: Haiku triage -> Sonnet analysis."""
+    """Two-stage LLM pipeline: Haiku triage -> Sonnet analysis.
+
+    v3.39.5: New `digests` parameter (deep-tier Layer 1 broker notes +
+    earnings transcripts).
+    v3.39.6: New `signal_reasonings` (Layer 2 Haiku verdicts on each of the
+    22 indicators) and `computed_metrics` (numerical verdicts: 5-day
+    relative strength, hyperscaler capex ratios, forward P/E, DART
+    materials). Threaded through so Sonnet quotes the exact numbers
+    and defers to Layer 2 on per-signal status — fixing the May 18
+    brief's t3_relative_strength prose that speculated "almost certainly
+    past -10% threshold" from news headlines when the actual computed
+    spread was below threshold.
+    """
     if not api_key:
         logger.warning("No ANTHROPIC_API_KEY set; falling back to deterministic synthesis")
         if collector is not None:
@@ -949,10 +1278,19 @@ def analyze_with_llm(
             f"{len(triage.trendforce_commentary)} price commentary items"
         )
 
-    logger.info("Stage 2: Sonnet analysis...")
+    n_digests = len(digests) if digests else 0
+    n_reasonings = len(signal_reasonings) if signal_reasonings else 0
+    has_cm = "yes" if computed_metrics else "no"
+    logger.info(
+        f"Stage 2: Sonnet analysis (digests={n_digests} | "
+        f"layer2_verdicts={n_reasonings} | computed_metrics={has_cm})..."
+    )
     analysis = sonnet_analyze(
         api_key, triage, performance_data, estimates_data, big_movers, prior_state,
         collector=collector,
+        digests=digests,
+        signal_reasonings=signal_reasonings,
+        computed_metrics=computed_metrics,
     )
     return analysis
 
