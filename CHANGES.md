@@ -2,7 +2,323 @@
 
 This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensive diagnostics across both pipelines). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
 
-> **A note on version numbering.** v3.31 through v3.38 are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+> **A note on version numbering.** v3.31 through v3.39.x are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.
+
+---
+
+## v3.39.6 — Sonnet receives Layer 2 verdicts + computed_metrics + NUMBER-FIRST formatting rule
+
+**Why this release.** Email-side review of the v3.39.5 prompt structure revealed Sonnet was still speculating on indicators where the brief HAS deterministic numerical evidence on hand. The trigger was the May 18 brief's `t3_relative_strength` rendering, which read (verbatim):
+
+> "Today's price action is the most significant development for this indicator in the current cycle. Samsung -8.61%, SK Hynix -7.66%, Micron -6.54%, AMAT -5.56% all exceeded the >4% single-session threshold. The SOX index alone is estimated to have declined approximately 3-4% on the same session, implying single-day relative underperformance of approximately 3-5% for memory pure-plays vs SOX. Combined with the prior session's data (which had already partially fired this indicator), the 5-day cumulative underperformance window has almost certainly crossed the >10% threshold."
+
+That paragraph contains three problems that all share one root cause:
+
+1. **It's wordy.** Six sentences of estimates, hedging language ("approximately", "estimated", "almost certainly"), and reasoning-from-headlines to land on a speculative conclusion.
+2. **It's wrong.** The actual `computed_metrics["relative_strength_full"]` verdict in the 18:01 UTC fast_tier run had `overall_severity=None` and `banner_text=None` — meaning the 5-day spread had NOT crossed the -10pp red threshold OR the -5pp yellow threshold. Sonnet's "almost certainly past 10%" was hallucinated by reasoning backward from single-day news headlines about Samsung/SKH/MU drops.
+3. **It's parallel work.** Layer 2 Haiku at `src/analysis/signal_reasoner.py:182-184` ALREADY received `computed_metrics["relative_strength_full"]` and produced a per-signal verdict with confidence + convergence + evidence list. That verdict, computed in parallel for all 22 indicators, never reaches Sonnet's prompt. Sonnet re-derives status from scratch using a strictly smaller evidence base (news only) and gets it wrong.
+
+The root cause for all three is the same architectural void: **`signal_reasonings` and `computed_metrics` are computed in fast_tier and consumed by Layer 2, but never threaded to Sonnet's prompt**. v3.39.5 closed the Layer 1 digests void; v3.39.6 closes the Layer 2 verdicts + computed metrics void on the same pattern.
+
+This is exactly what was named in v3.39.5's CHANGES.md "What was deferred to v3.39.6" section. Surfacing the Sonnet hallucination accelerated the timeline.
+
+## What v3.39.6 ships
+
+### Fix 1 — Thread `computed_metrics` into Sonnet
+
+`src/analysis/llm_summarizer.py:build_sonnet_analysis_prompt` gains `computed_metrics: Optional[dict]` parameter. New block injected into the prompt body:
+
+```
+COMPUTED METRICS (deterministic numerical verdicts — quote these EXACTLY):
+
+  t3_relative_strength (5-day rolling window vs SOX / SMH):
+    SK Hynix 5d vs SOX:      {skhx_5d_vs_sox_pp:+.2f}pp
+    Micron 5d vs SOX:        {mu_5d_vs_sox_pp:+.2f}pp
+    DRAM ETF 5d vs SMH:      {spread_pp:+.2f}pp (DRAM {pct}%, SMH {pct}%)
+    Overall severity:        {None | yellow | red}
+    Overall fired (red):     {True | False}
+    Thresholds:              red ≤ -10pp on ANY sub-trigger | yellow ≤ -5pp
+    Fired sub-triggers:      {if any}
+
+  Forward P/E by ticker:
+    {ticker:<12} {value:.2f}
+
+  Hyperscaler capex/revenue ratios (most recent quarter per name):
+    {ticker:<6} {quarter}: capex ${capex}B / rev ${revenue}B → ratio {ratio} (fired_threshold={bool})
+
+  DART material disclosures: {N} across {M} companies
+```
+
+Each block renders only when the data is present. Missing data shows `(not computed)` rather than zero-fill so Sonnet can't mistake an absence for a verdict.
+
+### Fix 2 — Thread Layer 2 per-signal verdicts into Sonnet
+
+`build_sonnet_analysis_prompt` gains `signal_reasonings: Optional[list]` parameter. New block injected after COMPUTED METRICS:
+
+```
+LAYER 2 PER-SIGNAL VERDICTS (Haiku, with full evidence access — DEFER to these on individual signal status):
+(22 signals evaluated. Each verdict is the result of Haiku reading ALL evidence for that one signal...)
+
+  [t3_relative_strength] T3 Memory pure-plays underperform SOX
+    Verdict: Not fired (confidence: high, convergence: high, evidence_count: 4)
+    Evidence for current status:
+      - SK Hynix 5d vs SOX: -3.21pp (below -5pp yellow threshold)
+      - Micron 5d vs SOX: -2.84pp
+      - DRAM ETF 5d vs SMH: -1.10pp
+      - Single-day moves large but window includes positive May 11-12 sessions
+    Change vs yesterday: <only rendered when actually changed; "no change ..." suppressed>
+
+  [t2_eps_revisions] T2 Forward FY27/FY28 EPS revisions
+    Verdict: Fired ...
+    ...
+```
+
+"No change" status lines suppressed (using `startswith("no change")` for tolerance) so the prompt doesn't get noisy with N entries of "Change vs yesterday: no change — still fired" — 22 of those would crowd the signal evidence.
+
+### Fix 3 — NUMBER-FIRST formatting instruction (STRICT)
+
+New prompt instruction added before the data section, three rules:
+
+1. **LEAD with exact numbers** from COMPUTED METRICS. The instruction includes an inline example showing the expected format: `"5-day vs SOX: SK Hynix -3.21pp, Micron -2.84pp, DRAM ETF vs SMH -1.10pp. Severity: None (yellow threshold -5pp, red threshold -10pp — neither crossed)."`
+2. **THEN a SHORT trend/context note (≤1/3 of the words)**. Example: `"Spread has widened ~2pp this week as memory drawdowns accelerated; would cross yellow if today's relative weakness persists 2 more sessions as the May 11-12 positive days roll off."`
+3. **NO speculative language**. Specific banned phrases — "almost certainly past threshold" and "highly probable when measured" — named in the instruction so Sonnet doesn't drift back to them. If a metric isn't in COMPUTED METRICS, say "(not threaded)" — do NOT reason backward from news headlines.
+
+Plus: `latest_developments` should be 2-4 sentences max with embedded links, NOT multi-paragraph essays (the screenshot showed a 6-sentence paragraph for one indicator on the mobile email view).
+
+Plus: for `current_status` and `change_vs_prior`, DEFER to Layer 2 verdicts. Sonnet re-deriving status risks contradicting Layer 2 — which is bad because Layer 2's verdict ALSO renders in the dashboard alongside Sonnet's prose. Two disagreeing status indicators on the same indicator row looks broken.
+
+### Wiring through
+
+`sonnet_analyze` and `analyze_with_llm` both gain `signal_reasonings` + `computed_metrics` parameters. `fast_tier.py:462` passes them through. Logging updated:
+
+```
+Stage 2: Sonnet analysis (digests=N | layer2_verdicts=N | computed_metrics=yes/no)...
+```
+
+### Tests
+
+`tests/test_v3_39_6_calculation_driven.py` (new, 9 tests, 0.002s):
+
+- **5 tests** for COMPUTED METRICS block: rel-strength below threshold (the May 18 case); rel-strength red fire (the OTHER end of the range); forward P/E rendering with null-skipping; hyperscaler capex_revenue_ratios rendering most-recent-quarter-per-name; legacy-mode sentinel when computed_metrics=None.
+- **2 tests** for Layer 2 verdicts block: per-signal verdict rendering with the May 18 truthful `t3_relative_strength` verdict ("Not fired"); legacy-mode sentinel when signal_reasonings=None. "No change" suppression verified.
+- **2 tests** for the NUMBER-FIRST instruction: instruction header + 1/3 rule + anti-speculation phrases present (normalizing whitespace because the prompt wraps text across lines); example template realistic.
+
+122 total tests across the project pass (42 Naver + 59 Mirae + 12 v3.39.5 + 9 v3.39.6).
+
+## Validation completed
+
+✅ Python AST clean — 36 `.py` files parse (1 new test file)
+✅ Signature audit: ZERO mismatches across src/
+✅ All 122 tests pass
+✅ YAML clean on all 5 workflows
+
+## Cost / runtime impact
+
+| Item | v3.39.5 | v3.39.6 | Delta |
+|---|---|---|---|
+| Sonnet input tokens (typical) | ~48K (was 46K + ~2K v3.39.5 digest block) | ~52K (+~4K for L2 verdicts + computed metrics blocks) | +~4K input |
+| Sonnet output tokens | 22K | unchanged | 0 |
+| Per-run cost | ~$1.12 | ~$1.15 | +~$0.03 |
+
+Sonnet 4.6 input window 200K — ample headroom. Input-side cost is cheap (~$3/1M tokens for Sonnet input). The 22 Layer 2 verdicts add ~2-3K tokens; computed_metrics block adds ~1K when rel-strength + capex + P/E are all present.
+
+## Files changed
+
+| File | Change |
+|---|---|
+| `src/analysis/llm_summarizer.py` | `build_sonnet_analysis_prompt`, `sonnet_analyze`, `analyze_with_llm` all gain `signal_reasonings` + `computed_metrics` params; two new prompt blocks (COMPUTED METRICS, LAYER 2 PER-SIGNAL VERDICTS); NUMBER-FIRST INDICATOR FORMAT instruction added; "no change" status suppression. |
+| `src/fast_tier.py` | `analyze_with_llm(...)` call site passes `signal_reasonings=signal_reasonings, computed_metrics=computed_metrics`; comment block updated. |
+| `tests/test_v3_39_6_calculation_driven.py` | 9 new tests for the void closure. |
+| `CHANGES.md` | This entry. |
+| `CLAUDE.md` | v3.39.6 entry in top-of-file changelog. |
+
+## What's still on the void list (deferred further)
+
+Raw structured outputs that would need Haiku Layer A3 pre-summarization to fit Sonnet's prompt cleanly:
+- `naver_data` (60 broker rows, 25+25+10 for SK Hynix / Samsung / SK Square — too much raw structure)
+- `finnhub_data` (10 ticker direction signals)
+- `rel_strength_verdict` raw fields beyond the summary already in computed_metrics
+
+These are deferred because they're not currently feeding any speculative Sonnet output — they're already either covered by Layer 2 verdicts (Naver feeds t2_eps_revisions reasoning, Finnhub feeds direction reasoning) or covered by computed_metrics block (rel-strength). Threading them as raw structured data risks doubling counts in Sonnet's prompt against the same underlying evidence.
+
+The new data sources (KIND/KRX scraper, DART filter widening, Samsung IR audit) also remain on the v3.39.6+ roadmap from yesterday's architecture session.
+
+---
+
+## v3.39.5 — Close the Sonnet-input void: Layer 1 broker digests + Google News URL fix
+
+**Why this release.** Email-side review of the 2026-05-18 18:01 UTC fast_tier run identified three production bugs that all trace to two distinct root causes:
+
+1. **The Mirae W3.2M target raise was cited via "Seoul Economic" and "AD HOC NEWS"** in section 4 of the email, not via Mirae directly — even though the deep_tier successfully scraped, digested, and committed the Mirae note's full analytical body to `state/digests/2026-05-18/broker_Mirae_Asset_Securities_*.json` at 17:59:56 UTC.
+
+2. **Hyperlinks to those Korean news aggregators returned HTTP 400** when clicked — Google News emits encoded redirect URLs of the form `https://news.google.com/rss/articles/CBMi*` that the Google News frontend rejects.
+
+3. **The Mirae raise was absent from section 5 "Latest news from the memory & semi market"** — the single largest analyst action in 4 weeks on the brief's primary tracked position. Section 5 had four other items but not this one.
+
+Bugs #1 and #3 share the same root cause. The architecture diagnosis from the architecture-design session: `analyze_with_llm` at `src/fast_tier.py:462` was called without passing `digests=`. The deep_tier digests (Layer 1 Haiku output — broker notes + earnings transcripts) reach Layer 2 per-signal reasoning fine, but never reach Layer 3 Sonnet's prompt. So Sonnet wrote section 4 and section 5 commentary citing what Haiku triaged from regular news feeds — which had captured Korean news aggregators' coverage of Mirae's report rather than the report itself. The actual Mirae body with Young-gun Kim's HBM ASP forecasts, P/B reasoning, and W3.2M target sat unread in `state/digests/`. The code comment at `fast_tier.py:457-460` explicitly acknowledged this as a "pre-existing condition" — the data has never reached Sonnet. v3.39.5 closes that void.
+
+Bug #2 is an independent URL-extraction issue in `src/data/news.py`. The Google News RSS entry's `entry.link` field is the encoded redirect; the actual publisher URL is embedded in `entry.summary` as the first `<a href>` tag. v3.39.5 extracts it from there.
+
+## What v3.39.5 ships
+
+### Fix 1 — Thread Layer 1 digests into Sonnet's prompt
+
+`src/analysis/llm_summarizer.py`:
+- `build_sonnet_analysis_prompt(...)` signature gains `digests: Optional[list[dict]] = None`.
+- New `digest_text` block built from the passed digests, split by `source_type`:
+  - **DEEP-TIER BROKER NOTES (PRIMARY SOURCE — horse's mouth)** — emits broker title, published date, source URL, target_price_action (broker / ticker / new_pt / prior_pt / direction), FY27 + FY28 EPS revisions from key_metrics, analytical excerpts from key_quotes, and signal_relevance.
+  - **DEEP-TIER EARNINGS TRANSCRIPTS (PRIMARY SOURCE)** — emits company title, source URL, the cycle-defining metrics (supplier_inventory_weeks, lead_time_weeks, asp_yoy_pct, contract_price_qoq_pct, capex_2027_guidance_usd_b), captive-ratio architecture_signals (hbm_capex_pct, memory_pct_of_capex, wafer_allocation_language, architecture_freetext), and signal_relevance.
+- The block is injected into the prompt body BEFORE the existing `triage_text` block — Sonnet reads the primary source before the news triage that may have echoed it.
+- Two new prompt instructions added before the data section:
+  - **PRIMARY-SOURCE PRECEDENCE (v3.39.5)** — when a news triage broker_action overlaps with a deep-tier broker note, cite the broker (from `target_price_action.broker`), not the news aggregator. Use the broker's `raw_url`, not the aggregator's URL. The instruction names Seoul Economic, AD HOC NEWS, and abhs.in by name so Sonnet doesn't drift back to citing them.
+  - **MAJOR BROKER ACTIONS IN KEY NEWS (v3.39.5)** — a target-price change of ≥10% or a rating change MUST appear in Sonnet's `key_news_summary` array even if news triage didn't surface it. Format: "{broker} raises/lowers {ticker} target to {new_pt} from {prior_pt}". Uses the digest's analytical excerpt for why_it_matters.
+
+`sonnet_analyze(...)` and `analyze_with_llm(...)` both gain `digests` parameter, passed through to the prompt builder. Logging updated to surface the digest count at Stage 2 entry: `"Stage 2: Sonnet analysis (with N deep-tier digests threaded)..."`.
+
+`src/fast_tier.py:462` — the actual call site — now passes `digests=digests`. The old comment block that acknowledged this as a pre-existing condition has been updated to record the fix and to enumerate the remaining voids deferred to v3.39.6 (Layer 2 signal_reasonings, naver_data, finnhub_data, dart filings, hyperscaler/rel_strength structured data — these need a Haiku Layer A3 pre-summarization step before threading).
+
+### Fix 2 — Google News publisher-URL extraction
+
+`src/data/news.py`:
+- New helper `_extract_publisher_url_from_google_news_entry(entry) -> Optional[str]`.
+- Parses `entry.summary` HTML with BeautifulSoup, finds the first `<a href>` whose URL isn't itself a Google News redirect and uses an http(s) scheme. Returns None on parse failure or no anchor — caller falls back to `entry.link`.
+- Wired into `fetch_google_news` at the single call site. The `url` field of the resulting `NewsItem` is now the publisher URL when extractable.
+
+### Tests
+
+`tests/test_v3_39_5_void_closures.py` (new, 12 tests, 0.003s):
+- **7 tests** for `_extract_publisher_url_from_google_news_entry`: realistic Seoul Economic HTML; realistic AD HOC NEWS HTML; empty summary returns None; no anchor returns None; self-referential google news href rejected; non-http schemes (javascript:, mailto:, relative) rejected; multiple anchors → first one wins.
+- **5 tests** for `build_sonnet_analysis_prompt` digest threading: digest block present when digests passed (asserts "Mirae Asset Securities", "W3,200,000", "W2,700,000", "NAND ASP up mid-70% QoQ" all appear by name); precedence instruction present (asserts Seoul Economic + AD HOC NEWS + "≥10%" appear in the instruction); digest block omitted gracefully when digests=None (legacy backward compat); earnings transcript metrics render (supplier_inventory_weeks, hbm_capex_pct, wafer_allocation_language); mixed broker + transcript digests render in correct order.
+
+The Mirae digest fixture in the test mirrors exactly what `src/analysis/digester.py` would write for the May 18 SK Hynix W3.2M raise — including the slashed-title that v3.39.4.2 sanitized for the filename — so the test pins the fix against the exact production failure case.
+
+## Validation completed
+
+✅ Python AST clean — 35 `.py` files parse (1 new test file)
+✅ Signature audit: ZERO mismatches across src/
+✅ All 113 tests pass: 42 Naver, 59 Mirae, 12 new v3.39.5
+✅ YAML clean on all 5 workflows
+
+## What was deferred to v3.39.6 (next release)
+
+Out of scope for v3.39.5, on the v3.39.6 roadmap:
+
+- **Haiku Layer A3 — structured-source summarization**: 4 parallel Haiku calls to distill Naver/WiseReport broker rows, Finnhub price direction, DART filings, and hyperscaler capex / relative-strength signals into ~100-word prose summaries Sonnet can consume directly. Closes void #2 (Layer 2 structured data → Sonnet).
+- **Layer 2 → Sonnet**: thread the 22 per-signal reasonings into Sonnet's prompt so its narrative references the Haiku verdicts rather than re-deriving them. Closes void #3.
+- **DART filter widening**: replace the binary material/non-material filter in `src/data/dart.py` with a category labeling system (earnings / capital_action / governance / contract / other). Surface all filings, let Sonnet decide what to narrate. Today's run dropped 3 SK Hynix and 1 Samsung filing as "0 material" without surfacing them — including the May 15 rcpNo=20260515002287 filing.
+- **KIND/KRX scraper**: new `src/data/krx_disclosures.py` for `engkind.krx.co.kr`, the official Korea Exchange disclosure system that `skhynix.com/ir/UI-FR-IR12_T1` redirects users to. ~150 lines.
+- **Samsung Electronics IR audit**: verify whether the existing `samsung.com/global/ir/` scraper actually returns Q1 results or whether it's a JS shell like SK Hynix's UI-FR-IR06 was; switch to working alternative if needed.
+
+These were scoped together with v3.39.5 in the architecture-design session but split out so the surgical void-closure ships fast and the new data sources can be added with proper plumbing in place.
+
+## Cost / runtime impact
+
+| Item | Today | v3.39.5 | Delta |
+|---|---|---|---|
+| Google News URL extraction (per entry) | 0ms | <1ms (BeautifulSoup parse of summary HTML) | negligible |
+| Sonnet input tokens | 45,886 (95.6% of 48K observed yesterday) | +~2-4K tokens for digest block (Mirae note + transcripts) | +~5-10% input |
+| Sonnet output tokens | 22,404 of 48K cap | unchanged (same output structure) | 0 |
+| Per-run cost | ~$1.10 | ~$1.12-1.15 | +~$0.02-0.05 |
+
+Sonnet input headroom: still ~150K tokens (the model is `claude-sonnet-4-6` with 200K input context). The 48K cap mentioned in the v3.39.4.2 run logs is OUTPUT, not input. Safe.
+
+## Files changed
+
+| File | Change |
+|---|---|
+| `src/analysis/llm_summarizer.py` | `build_sonnet_analysis_prompt`, `sonnet_analyze`, `analyze_with_llm` all gain `digests` parameter; new digest_text block; two new prompt instruction blocks (precedence + major actions). |
+| `src/fast_tier.py` | `analyze_with_llm(...)` call site passes `digests=digests`; old void comment replaced with v3.39.5 fix note + v3.39.6 deferred list. |
+| `src/data/news.py` | New `_extract_publisher_url_from_google_news_entry` helper; wired into `fetch_google_news` entry construction. |
+| `tests/test_v3_39_5_void_closures.py` | 12 new tests (7 URL extraction + 5 prompt threading). |
+| `CHANGES.md` | This entry. |
+| `CLAUDE.md` | v3.39.5 entry in top-of-file changelog. |
+
+## Out of scope (still deferred from prior releases)
+
+- `signal_scoring.actions_from_naver` prior_rating upgrade — deferred since v3.39.3.
+- Doc refresh of stale cron times in CLAUDE.md / DEPLOYMENT_GUIDE.md.
+- v3.4 captive-ratio indicators (per ROADMAP.md, target June 14, 2026).
+
+---
+
+## v3.39.4.2 — Fix digester filename crash on slashed Mirae HTML titles
+
+**Why this release.** Manual deep_tier dispatch at 17:46 UTC May 18 (immediately after merging v3.39.4.1) crashed at the final state-write step. The scraper worked perfectly: 10 rows parsed, 8 within 3-day window, 1 relevant after filter, 1 detail page fetched (SK Hynix W2.7M → W3.2M raise), Haiku digestion succeeded (HTTP 200 from api.anthropic.com at 17:48:56). Then:
+
+```
+FileNotFoundError: [Errno 2] No such file or directory:
+'state/digests/2026-05-18/broker_Mirae_Asset_Securities_2026-05-18_SK_Hynix_(000660_KS/Buy)Reflecting_addit.json'
+```
+
+The forward slash in `(000660 KS/Buy)` was being interpreted by the OS as a path separator. The code in `digester.digest_korean_broker_notes` builds filenames via `title[:40].replace(' ', '_')` — which sanitizes spaces but nothing else. The kernel saw `..._SK_Hynix_(000660_KS/Buy)...json` and tried to open `Buy)...json` inside a non-existent subdirectory `(000660_KS/`.
+
+This is a **latent bug**, not introduced by v3.39.4. The naive `.replace(' ', '_')` has been in the digester forever; it just never hit a slashed title before because:
+- Old Mirae PDF flow: titles like `"SK Hynix"` — no slash
+- NH PDFs (deleted v3.39.3.1): titles like `"Memory Outlook"` — no slash
+- Samsung Securities IMAP (deleted v3.39.3.1): email subjects — rarely had slashes
+
+The v3.39.4 HTML detail-page parser correctly extracts the full title `"SK Hynix (000660 KS/Buy)Reflecting additional NAND momentum"` — exposing the latent bug for the first time.
+
+## Why Phase E didn't catch this
+
+Phase E (`scripts/dry_run_mirae_v3_39_4.py`) exercised listing → parser → detail page → return dict. It did not exercise the downstream consumer chain: `digester.digest_korean_broker_notes` → `state.write_digest` → `open(filepath, 'w')`. The bug lives one layer beyond what Phase E tested. Worth recording as a lesson — Phase E should be extended in a future release to verify the digester filename construction doesn't crash on the returned title format.
+
+## Fix 1 — Sanitize the broker digest filename
+
+`src/analysis/digester.py`:
+```python
+# Before (v3.39.4.1)
+write_digest(
+    name=f"broker_{broker_name.replace(' ', '_')}_{published_iso}_{title[:40].replace(' ', '_')}",
+    payload=d.to_dict(),
+)
+
+# After (v3.39.4.2)
+safe_broker = re.sub(r"[^A-Za-z0-9._-]", "_", broker_name)
+safe_title = re.sub(r"[^A-Za-z0-9._-]", "_", title[:40])
+write_digest(
+    name=f"broker_{safe_broker}_{published_iso}_{safe_title}",
+    payload=d.to_dict(),
+)
+```
+
+This is the same regex pattern `src/data/korean_brokers.py:_fetch_mirae_detail` already uses for its HTML cache filenames. Now consistent.
+
+Added `import re` to digester.py (was missing — file used `re.compile` nowhere before this).
+
+Updated the function docstring to reflect Mirae-only Korean-broker state since v3.39.3.1 (it still said "Mirae / NH / Samsung Securities").
+
+## Fix 2 — Regression test
+
+`tests/test_mirae_asset.py` — added `TestDigesterFilenameSafety.test_slash_in_title_does_not_break_filename`. Replicates the exact title that crashed production (`"SK Hynix (000660 KS/Buy)Reflecting additional NAND momentum"`), runs the same regex, asserts no slashes / parens / spaces / colons / pipes / etc. remain in the output. 58 → 59 tests, all pass.
+
+## Validation completed
+
+✅ Python AST clean — 34 `.py` files parse
+✅ Signature audit: zero mismatches
+✅ All 59 Mirae tests pass; all 42 Naver tests still pass unchanged
+✅ YAML clean on all 5 workflows
+
+## What this means for the production run that just failed
+
+The SK Hynix W3.2M raise note was successfully scraped, parsed, and digested by Haiku — only the file-write step failed. The `state/deep_tier_diagnostics.json` from that run was NOT committed (the workflow's commit step only runs on success, and this run exited 1). So the idempotency check won't be tripped: a fresh manual dispatch after merging v3.39.4.2 will re-fetch the same listing, re-fetch the SK Hynix detail page, re-digest via Haiku, AND succeed on the write step.
+
+Estimated re-run cost: another ~$0.10 (one Haiku call for the SK Hynix note — transcripts are all cached `already_processed`).
+
+## Files changed
+
+| File | Change |
+|---|---|
+| `src/analysis/digester.py` | `import re` added; `digest_korean_broker_notes` filename construction uses regex sanitization for both broker_name and title; docstring updated to reflect Mirae-only state. |
+| `tests/test_mirae_asset.py` | 1 new regression test for the filename sanitization. |
+| `CHANGES.md` | This entry. |
+| `CLAUDE.md` | v3.39.4.2 entry in the top-of-file changelog. |
+
+## Out of scope (still deferred)
+
+- **Phase E extension** to cover the digester filename path. Worth doing in a follow-up release so the next latent bug in this code path surfaces during dry-run rather than during a production deep_tier.
+- **`signal_scoring.actions_from_naver`** prior_rating upgrade.
+- **Doc refresh** of stale cron times in CLAUDE.md / DEPLOYMENT_GUIDE.md.
 
 ---
 
