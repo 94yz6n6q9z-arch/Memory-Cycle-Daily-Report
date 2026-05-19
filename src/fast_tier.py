@@ -454,10 +454,27 @@ def run_fast_tier() -> int:
     # Renamed: estimates → estimates_data, performance → performance_data
     # (matching analyze_with_llm's actual signature).
     #
-    # Architectural note: this means Sonnet does NOT receive signal_reasonings,
-    # naver_summary, finnhub_summary, or dart_summary today. That's the
-    # pre-existing condition — the data has never reached Sonnet. Threading
-    # it through is a follow-up architectural decision, not a bug fix.
+    # v3.39.5: digests now threaded through to Sonnet. Closes the void
+    # the v3.39 comment below previously described as a "pre-existing
+    # condition" — the Mirae note bodies, transcript summaries, and other
+    # Layer 1 outputs no longer get dropped before Sonnet's prompt.
+    # Sonnet now has the broker's analytical body as a primary source,
+    # not just news aggregators' coverage.
+    #
+    # v3.39.6: signal_reasonings (22 Layer 2 Haiku verdicts) AND
+    # computed_metrics (rel_strength_full, capex_revenue_ratios,
+    # forward_pe, dart_material_disclosures) now also threaded.
+    # Closes the void where Sonnet was reasoning about indicator status
+    # from news headlines instead of the actual computed verdicts —
+    # cured the May 18 t3_relative_strength hallucination where Sonnet
+    # wrote "5-day cumulative almost certainly past -10pp" when the
+    # actual computed spread was below threshold.
+    #
+    # Still on the void list (deferred): naver_data, finnhub_data (raw
+    # structured outputs would need Haiku A3 pre-summarization to fit
+    # Sonnet's input cleanly — distinct from the verdicts which are
+    # already terse). And the new data sources (KIND/KRX, Samsung IR
+    # audit, DART widening).
     logger.info("Running Layer 3 (Sonnet) synthesis...")
     analysis = analyze_with_llm(
         api_key=ANTHROPIC_API_KEY,
@@ -467,6 +484,9 @@ def run_fast_tier() -> int:
         big_movers=big_movers,
         prior_state=prior_state,
         collector=collector,
+        digests=digests,
+        signal_reasonings=signal_reasonings,
+        computed_metrics=computed_metrics,
     )
     if analysis is None:
         logger.error("Layer 3 (Sonnet) returned None; using fallback analysis")
