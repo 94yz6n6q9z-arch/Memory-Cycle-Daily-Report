@@ -24,6 +24,7 @@ Failure modes — see src/state.py for retry/cache policy. Critical sources
 sources use cached payload tagged STALE; nice-to-have just skip.
 
 CHANGELOG (this file):
+  v3.39.7 (2026-05-20) — Cycle matrix step inserted between Layer 3 and chart generation. New helper run_cycle_matrix_step() (a) calls scrape_trendforce_spot_structured() + scrape_trendforce_contract() + persist_*() (b) Haiku-extracts tone/forecast signals from up to CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN articles (c) evaluates the matrix via cycle_matrix.evaluate_matrix(). The matrix verdict OVERRIDES the LLM's t1_spot_decline indicator status via CYCLE_MATRIX_STATUS_MAP: Hold→Not fired, Warn→Partially fired, Fire→Fired. The where_we_stand text is rewritten from the matrix narrative so the cell/drawdown/synthetic numbers are deterministic, not LLM-paraphrased. Both cycle charts are rendered via render_cycle_charts_from_verdict() and passed to build_email_html. Cycle step is safe-failing — exception at any sub-step logs and continues; LLM's t1_spot_decline assessment used as fallback. Email subject also gets a [Hold|Warn|Fire] suffix when matrix verdict is available.
   v3.38.6 (2026-05-17) — FORCE_RUN env var bypass for the Step 0 idempotency check. Set automatically by fast_tier.yml when event_name == 'workflow_dispatch' (manual run from the Actions UI); scheduled cron triggers leave it empty so the existing primary/fallback/safety cron coordination via state/brief_sent_dates.json continues to work. Motivation: after the v3.38.5 push, manually re-running the fast tier to validate the fix bundle was a no-op because the morning 16:25 UTC run had already marked today. Manual dispatch always means "I want this to run right now" (test/validate/recover) — auto-bypass is the right default. `os` added to imports. No behavior change for scheduled runs.
   v3.38.5 (2026-05-17) — Two error-message strings rewrote to reflect real causes. The previous strings ("deep tier hasn't run since v3.38 deploy" / "deep tier may not have run yet") implied the deep tier didn't run, when in practice the deep tier DID run but the v3.38 root-level state JSONs (state/deep_tier_diagnostics.json, state/transcript_status.json) weren't in the deep_tier.yml workflow's `git add` line. Files generated on the runner, destroyed at shutdown, never reached origin/main. Fixed in the deep_tier.yml workflow in same release. Error messages now name both possibilities: tier didn't run, OR tier ran but didn't commit.
   v3.38.3 (2026-05-17) — Fixed `fallback_analysis` call site (line 399): was passing 3 positional args (news_items, performance, big_movers) to a function with 4 required parameters in different order (performance_data, estimates_data, news_items, big_movers). Pre-existing v3.37 bug masked by upstream crashes; surfaced when Sonnet JSON parse failed → fallback path activated → TypeError. Now uses kwarg form with all four. Caught by the expanded scripts/audit_signatures.py audit (positional + kwargs + arg count).
@@ -71,6 +72,14 @@ from src.config import (
     TRACKED_CONCEPTS,
     WIDER_BASKET,
     get_upcoming_events,
+    # v3.39.7 — cycle matrix config
+    CYCLE_MATRIX_DATA_DIR,
+    CYCLE_MATRIX_SPOT_CSV,
+    CYCLE_MATRIX_CONTRACT_ACTUALS_CSV,
+    CYCLE_MATRIX_FORECASTS_CSV,
+    CYCLE_MATRIX_SIGNALS_CSV,
+    CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN,
+    CYCLE_MATRIX_STATUS_MAP,
 )
 from src.state import (
     has_brief_been_sent_today,
@@ -92,7 +101,14 @@ from src.data.prices import (
     evaluate_relative_strength_signal,
 )
 from src.data.estimates import fetch_all_estimates, fetch_all_hyperscaler_capex
-from src.data.news import fetch_all_news, filter_relevant_news
+from src.data.news import (
+    fetch_all_news, filter_relevant_news,
+    # v3.39.7 cycle matrix data pipeline:
+    scrape_trendforce_spot_structured, scrape_trendforce_contract,
+    fetch_article_body,
+    persist_spot_to_history, persist_contract_to_history,
+    upsert_contract_forecasts, upsert_contract_signals,
+)
 from src.data.naver_finance import fetch_naver_with_retry
 from src.data.finnhub import fetch_finnhub_with_retry
 from src.data.dart import fetch_dart_with_retry
@@ -102,8 +118,17 @@ from src.analysis.llm_summarizer import (
     analyze_with_llm,
     fallback_analysis,
     identify_big_movers,
+    # v3.39.7 — Haiku extraction for cycle matrix
+    extract_dram_signal_from_article,
+    extract_dram_forecasts_from_press_release,
 )
-from src.analysis.chart_generator import generate_performance_chart, generate_supercycle_chart
+from src.analysis.chart_generator import (
+    generate_performance_chart, generate_supercycle_chart,
+    # v3.39.7 — cycle matrix charts
+    render_cycle_charts_from_verdict,
+)
+# v3.39.7 — cycle matrix engine
+from src.data.cycle_matrix import evaluate_matrix, MatrixVerdict
 from src.email_module.template import build_email_html
 from src.email_module.sender import send_email
 
@@ -560,6 +585,47 @@ def run_fast_tier() -> int:
             eps_scoring_verdict = r.raw_evidence_dump.get("signal_specific_data", {}).get("weighted_scoring_verdict")
             break
 
+    # ----- v3.39.7: Cycle matrix step (between Layer 3 and email build) -----
+    # Safe-failing: any exception at any sub-step is logged and the rest of
+    # the brief still ships. The matrix verdict (when available) OVERRIDES
+    # the LLM's t1_spot_decline assessment so the status badge is
+    # deterministic, and both cycle charts are passed into build_email_html.
+    cycle_verdict = None
+    cycle_matrix_chart_b64 = None
+    spot_contract_chart_b64 = None
+    try:
+        cycle_verdict = _run_cycle_matrix_step(
+            news_items=news_items,
+            anthropic_client=anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None,
+            collector=collector,
+        )
+    except Exception as e:
+        logger.error(f"Cycle matrix step failed: {e}", exc_info=True)
+
+    if cycle_verdict is not None:
+        # Override t1_spot_decline assessment status + where_we_stand with the
+        # deterministic matrix verdict (Hold/Warn/Fire → Not fired/Partially
+        # fired/Fired). Where_we_stand uses the matrix narrative so the
+        # numbers (cell, drawdown, synthetic, anchor) are deterministic,
+        # not paraphrased by the LLM.
+        try:
+            _override_t1_spot_decline_from_matrix(
+                analysis.indicator_assessments, cycle_verdict,
+            )
+        except Exception as e:
+            logger.warning(f"Could not override t1_spot_decline from matrix: {e}")
+
+        # Render the two cycle charts.
+        try:
+            cycle_matrix_chart_b64, spot_contract_chart_b64 = render_cycle_charts_from_verdict(
+                verdict=cycle_verdict,
+                spot_history_csv=CYCLE_MATRIX_SPOT_CSV,
+                contract_forecasts_csv=CYCLE_MATRIX_FORECASTS_CSV,
+            )
+            logger.info("Cycle matrix charts rendered")
+        except Exception as e:
+            logger.error(f"Cycle chart rendering failed: {e}", exc_info=True)
+
     html_body = build_email_html(
         analysis=analysis,
         performance=performance,
@@ -569,14 +635,22 @@ def run_fast_tier() -> int:
         upcoming_events=upcoming,
         rel_strength_verdict=rel_strength_verdict,
         eps_scoring_verdict=eps_scoring_verdict,
+        # v3.39.7 cycle matrix card
+        cycle_verdict=cycle_verdict,
+        cycle_matrix_chart_b64=cycle_matrix_chart_b64,
+        spot_contract_chart_b64=spot_contract_chart_b64,
     )
 
     # Send
     try:
         # v3.39: send_email takes (subject, html_body, recipient=None).
-        # Old call passed collector=collector — kwarg doesn't exist, TypeError.
+        # v3.39.7: subject gets [Hold|Warn|Fire] suffix when matrix verdict
+        # is available, mirroring the badge in the indicator card.
+        subject = f"Memory Cycle Brief — {today.strftime('%a %b %d')}"
+        if cycle_verdict is not None and getattr(cycle_verdict.cell, "value", None):
+            subject += f" [{cycle_verdict.cell.value}]"
         send_email(
-            subject=f"Memory Cycle Brief — {today.strftime('%a %b %d')}",
+            subject=subject,
             html_body=html_body,
         )
     except Exception as e:
@@ -794,3 +868,176 @@ def _surface_deep_tier_diagnostics(collector) -> None:
 
 if __name__ == "__main__":
     sys.exit(run_fast_tier())
+
+
+# ============================================================================
+# v3.39.7 — Cycle matrix helpers
+# ============================================================================
+
+def _run_cycle_matrix_step(
+    news_items: list,
+    anthropic_client,
+    collector: DiagnosticsCollector,
+) -> MatrixVerdict | None:
+    """Scrape spot+contract, extract structured signals, evaluate the matrix.
+
+    Safe-failing: each sub-step is wrapped in try/except. Returns the
+    MatrixVerdict (or None if matrix evaluation itself fails). Persistence
+    runs even if Haiku extraction fails so spot/contract CSVs still grow.
+    """
+    logger.info("=== Cycle matrix step (v3.39.7) ===")
+    CYCLE_MATRIX_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    # 1. Spot scrape (structured)
+    try:
+        spot = scrape_trendforce_spot_structured(collector=collector)
+        if spot.rows:
+            n = persist_spot_to_history(spot, CYCLE_MATRIX_SPOT_CSV)
+            collector.record(SourceFetchStatus(
+                "TrendForce spot (structured)", "scrape", True,
+                len(spot.rows), 0,
+                detail=f"{len(spot.rows)} SKUs as of {spot.update_date}; "
+                       f"{n} rows persisted; fresh={spot.fresh}",
+            ))
+            logger.info(f"  Spot: {len(spot.rows)} SKUs persisted (fresh={spot.fresh})")
+        else:
+            collector.record(SourceFetchStatus(
+                "TrendForce spot (structured)", "scrape", False, 0, 1,
+                detail="0 rows scraped",
+            ))
+    except Exception as e:
+        logger.error(f"  Spot scrape failed: {e}")
+        collector.record(SourceFetchStatus(
+            "TrendForce spot (structured)", "scrape", False, 0, 1,
+            detail=f"error: {e}",
+        ))
+
+    # 2. Contract scrape
+    try:
+        contract = scrape_trendforce_contract(collector=collector)
+        if contract.rows:
+            n = persist_contract_to_history(contract, CYCLE_MATRIX_CONTRACT_ACTUALS_CSV)
+            collector.record(SourceFetchStatus(
+                "TrendForce contract", "scrape", True,
+                len(contract.rows), 0,
+                detail=f"{len(contract.rows)} SKUs ({contract.period_label}) "
+                       f"as of {contract.update_date}; {n} rows persisted",
+            ))
+            logger.info(f"  Contract: {len(contract.rows)} SKUs persisted ({contract.period_label})")
+        else:
+            collector.record(SourceFetchStatus(
+                "TrendForce contract", "scrape", False, 0, 1, detail="0 rows scraped",
+            ))
+    except Exception as e:
+        logger.error(f"  Contract scrape failed: {e}")
+        collector.record(SourceFetchStatus(
+            "TrendForce contract", "scrape", False, 0, 1, detail=f"error: {e}",
+        ))
+
+    # 3. Haiku extraction over DRAM-relevant news (cost-capped)
+    if anthropic_client is not None and news_items:
+        try:
+            already_seen = _load_processed_signal_urls(CYCLE_MATRIX_SIGNALS_CSV)
+            relevant = [
+                n for n in news_items
+                if _is_dram_relevant_v3397(getattr(n, "title", ""))
+                and getattr(n, "url", "") not in already_seen
+            ][:CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN]
+
+            logger.info(f"  Haiku extraction over {len(relevant)} new DRAM articles")
+            new_signals, new_forecasts = [], []
+            for item in relevant:
+                body = fetch_article_body(item.url)
+                if not body:
+                    continue
+                signal = extract_dram_signal_from_article(
+                    client=anthropic_client,
+                    title=item.title,
+                    article_body=body,
+                    url=item.url,
+                    published_date=item.published.date() if item.published else None,
+                )
+                if signal is None:
+                    continue
+                new_signals.append(signal)
+
+                if signal.get("is_quarterly_forecast") or "/presscenter/" in item.url:
+                    forecasts = extract_dram_forecasts_from_press_release(
+                        client=anthropic_client,
+                        title=item.title, article_body=body, url=item.url,
+                        published_date=item.published.date() if item.published else None,
+                    )
+                    new_forecasts.extend(forecasts)
+
+            if new_signals:
+                n = upsert_contract_signals(new_signals, CYCLE_MATRIX_SIGNALS_CSV)
+                logger.info(f"  Signals: {n} written")
+            if new_forecasts:
+                n = upsert_contract_forecasts(new_forecasts, CYCLE_MATRIX_FORECASTS_CSV)
+                logger.info(f"  Forecasts: {n} written")
+        except Exception as e:
+            logger.error(f"  Haiku extraction failed: {e}", exc_info=True)
+
+    # 4. Evaluate matrix
+    try:
+        verdict = evaluate_matrix(
+            spot_history=CYCLE_MATRIX_SPOT_CSV,
+            contract_forecasts=CYCLE_MATRIX_FORECASTS_CSV,
+            contract_signals=CYCLE_MATRIX_SIGNALS_CSV,
+            as_of=datetime.now(UTC),
+        )
+        logger.info(f"  Verdict: {verdict.cell_label}")
+        for w in (verdict.warnings or []):
+            logger.warning(f"    ! {w}")
+        return verdict
+    except Exception as e:
+        logger.error(f"  Matrix evaluation failed: {e}", exc_info=True)
+        return None
+
+
+def _override_t1_spot_decline_from_matrix(
+    indicator_assessments: list, verdict: MatrixVerdict,
+) -> None:
+    """Override t1_spot_decline status and where_we_stand from the matrix verdict.
+
+    Maps Hold→Not fired, Warn→Partially fired, Fire→Fired so the status
+    badge in the email matches the matrix cell. Where_we_stand is replaced
+    with the matrix narrative so the cell/drawdown/synthetic numbers are
+    deterministic, not LLM-paraphrased.
+    """
+    cell_value = getattr(verdict.cell, "value", "")
+    new_status = CYCLE_MATRIX_STATUS_MAP.get(cell_value, "Unknown (LLM unavailable)")
+    for a in indicator_assessments:
+        if a.id == "t1_spot_decline":
+            old_status = a.current_status
+            a.current_status = new_status
+            a.where_we_stand = (verdict.narrative or a.where_we_stand)[:800]
+            logger.info(
+                f"  t1_spot_decline status overridden: '{old_status}' -> '{new_status}' "
+                f"(matrix cell: {cell_value})"
+            )
+            return
+    logger.warning("  t1_spot_decline not found in indicator_assessments")
+
+
+def _is_dram_relevant_v3397(title: str) -> bool:
+    """Heuristic: should this article be sent to Haiku for signal extraction?"""
+    if not title:
+        return False
+    keywords = ["dram", "ddr5", "ddr4", "hbm", "memory contract",
+                "memory spot", "contract price", "spot price",
+                "samsung", "sk hynix", "micron", "qoq", "forecast"]
+    low = title.lower()
+    return any(kw in low for kw in keywords)
+
+
+def _load_processed_signal_urls(signals_csv) -> set:
+    """Read signals CSV; return URLs already processed (don't re-Haiku them)."""
+    if not signals_csv.exists() or signals_csv.stat().st_size == 0:
+        return set()
+    try:
+        df = pd.read_csv(signals_csv, usecols=["source_url"])
+        return set(df["source_url"].dropna().astype(str).tolist())
+    except Exception as e:
+        logger.warning(f"Could not load processed URLs: {e}")
+        return set()
