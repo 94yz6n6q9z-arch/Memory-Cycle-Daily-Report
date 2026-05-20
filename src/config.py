@@ -5,6 +5,7 @@ Defines the tickers tracked, the indicator framework (tiers 1-4),
 and the thresholds that classify each signal as fired vs not fired.
 
 CHANGELOG (this file):
+  v3.39.7 (2026-05-20) — t1_spot_decline entry reworked: trigger_patterns/trigger_numeric/cadence/stitching all kept as references (Phase A/B/C cycle reasoning still applies to news commentary) but the SCORING moves to a 5x5 matrix evaluated separately. Indicator name updated from "DDR5 spot first MoM decline" → "Cycle matrix — contract growth × spot drawdown". what_to_look_for rewritten to describe matrix logic (R1-R5 contract growth bands × C1-C5 spot drawdown bands). New CYCLE_MATRIX_* config block appended at end: CYCLE_MATRIX_DATA_DIR, four CSV paths, CYCLE_MATRIX_PRIMARY_SKU, CYCLE_MATRIX_WEIGHTS (tone 0.4 + supplier 0.4 + spot_lead 0.2), CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN. Matrix evaluator lives in src/data/cycle_matrix.py. Anchor priority: server_ddr5 > conventional_dram_aggregate > supplier_specific (supplier_specific feeds supplier_adj, never anchor).
   v3.39.3.1 (2026-05-18) — RSS_FEEDS: dropped "AnandTech" (https://www.anandtech.com/rss/). Feed has been emitting `feed parse error: not well-formed (invalid token)` in every run since at least v3.39.1 — the published XML is malformed and feedparser bails. Site now publishes ~5 articles/month (down from the 2010s heyday); the maintenance cost of fixing the parser doesn't pay back. Tom's Hardware + DRAMeXchange + Google News cover the same beat. Companion deletions of NH Investment + Samsung Securities live in src/data/korean_brokers.py and src/deep_tier.py; no config-level change for those.
   v3.39.3 (2026-05-18) — TrendForce ingestion repair. Three config-level changes; companion patches in news.py same release. (a) RSS_FEEDS: dropped "TrendForce": "https://www.trendforce.com/news/feed" — that URL no longer publishes XML, replaced by "DRAMeXchange Weekly Research": "https://www.dramexchange.com/rss.xml". DRAMeXchange is TrendForce's sister property and the RSS is well-formed, current (most-recent items within a few days), and carries TrendForce-authored weekly research commentary which is exactly the behavioral-signal language Tier 1 t1_price_cuts_no_demand and t1_oem_inventory look for. (b) SCRAPE_TARGETS: "TrendForce News" URL fixed from /news/category/dram to /news/category/semiconductors/dram/ (TrendForce restructured the path; old URL returned 200 with 0 matching <article> selectors → silent zero). news.py scrape_trendforce() updated to match. (c) SCRAPE_TARGETS: added "TrendForce DRAM Spot (price table)" → /price/dram/dram_spot — handled by new scrape_trendforce_prices() in news.py with table parsing + freshness guard (stale snapshots tagged [STALE] in NewsItem title so Layer 2 won't fire Tier 1 on them).
   v3.38.5 (2026-05-17) — SONNET_MAX_TOKENS 24000 → 16000. The 16:25 UTC May 17 run had the Anthropic SDK refuse the Sonnet call with "Streaming is required for operations that may take longer than 10 minutes" — client-side guard that demands streaming when max_tokens crosses an estimated 10-min wall-time threshold. 24K crossed it; 16K stays under. Truncation risk that originally motivated the bump is covered by the json_repair fallback (v3.38.4) — if Sonnet truncates at 16K, json_repair returns best-effort partial dict. Proper fix (streaming) deferred to v3.39. Two non-config v3.38.5 fixes bundled into this release (not config-affecting, see their files): src/analysis/llm_summarizer.py (real root cause of Haiku failure: broken `_strip_code_fence` returned empty string on closed fences); .github/workflows/deep_tier.yml (commit step now stages state/deep_tier_diagnostics.json + state/transcript_status.json, fixing the silent loss of these v3.38 files at runner shutdown).
@@ -114,37 +115,92 @@ INDICATORS: list[Indicator] = [
     Indicator(
         id="t1_spot_decline",
         tier=1,
-        name="DDR5 spot first MoM decline",
-        short_label="Spot first decline",
+        name="Cycle matrix — contract growth × spot drawdown",
+        short_label="Cycle matrix",
         description=(
-            "DRAM spot prices show first month-over-month decline. DDR5 16Gb chip is "
-            "the validation; DDR4 alone is partly EOL noise."
+            "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against "
+            "DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). "
+            "Returns Hold / Warn / Fire per cell. Replaces the v3.39 absolute-"
+            "threshold trigger ($38.2 spot / $950 module). The matrix is the "
+            "framework's canonical early-warning signal — spot drawdown leads "
+            "contract direction by 6-10 weeks. Matrix engine: "
+            "src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py."
         ),
         what_to_look_for=(
-            "DDR5 16Gb 4800/5600 spot prints 2 consecutive weeks of -2%+ MoW decline "
-            "(current reference: $39). OR DDR5 RDIMM 32GB module first MoM decline "
-            "(current $970, trigger if <$950). DDR4-only moves are NOT a trigger."
+            "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): "
+            "R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. "
+            "COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, "
+            "C3 5-10% off, C4 10-20% off, C5 >=20% off. HOLD = R1/R2 with low "
+            "drawdown (full position). WARN = mid-band (review thesis, consider "
+            "25-33% trim). FIRE = any R4-R5 row, any C5 column, or R3+C4. "
+            "Historical cycle peaks all landed in R5 by the time contract growth "
+            "hit ~0% — the matrix exists to act BEFORE that. Contract row uses a "
+            "SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, "
+            "preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * "
+            "tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped "
+            "+/-30pp."
         ),
-        sources=["TrendForce news", "Tom's Hardware RAM index (proxy)",
-                 "Korean broker PDFs (Mirae/NH cite spot charts)"],
+        sources=[
+            "TrendForce DRAM Spot Price page (free, daily) — primary spot signal",
+            "TrendForce DRAM Contract Price page (free, monthly, lagged) — secondary",
+            "TrendForce Press Center quarterly forecasts — anchor source",
+            "TrendForce news commentary — tone signal extraction (Haiku)",
+            "Korean Electronic Times (etnews), ChosunBiz — supplier-specific QoQ",
+            "DigiTimes Asia — contract echo, 2-4 day lag",
+            "Tom's Hardware RAM index (proxy)",
+            "Korean broker PDFs (Mirae/NH cite spot charts)",
+        ],
         trigger_patterns=[
-            "DDR5 spot declined", "DDR5 spot fell", "DDR5 spot weakened",
-            "DDR5 spot softened", "DDR5 spot weakness", "DDR5 module price decline",
-            "DDR5 16Gb decline", "DDR5 RDIMM decline",
-            # Korean broker note phrasings (will surface via Mirae/NH/Samsung PDFs):
+            # Phase A — cooling tone (earliest, target for matrix tone_adj)
+            "momentum slowed", "cooling negotiations",
+            "ending the extreme seller's market", "more balanced market",
+            "pricing power moderating", "rally fading",
+            # Phase B — softening
+            "DDR5 spot softened", "DDR5 spot weakened", "DDR5 spot weakness",
+            "buyers more selective", "demand softening",
+            # Phase C — destruction (lagging confirmation)
+            "DDR5 spot declined", "DDR5 spot fell", "DDR5 16Gb decline",
+            "DDR5 module price decline", "price cuts failed to revive",
+            # Korean broker note phrasings:
             "spot price correction", "spot pricing under pressure",
         ],
         trigger_numeric={
-            "ddr5_16gb_spot": {"trigger_below": 38.2, "consecutive_weeks": 2, "wow_pct": -2.0},
-            "ddr5_rdimm_32gb": {"trigger_below": 950, "comparison": "MoM"},
-            # Tom's Hardware proxy (we CAN scrape this):
-            "tomshardware_ddr5_wow_pct": {"trigger_below": -2.0, "consecutive_weeks": 2},
+            # Matrix cell lookup is the authoritative trigger; keys below
+            # document the matrix inputs for engineering reference.
+            "matrix_cell": {
+                "logic": "MATRIX[(contract_row, spot_col)]",
+                "rows_from_synthetic_qoq": {"R1": ">=30", "R2": "20-30",
+                                            "R3": "10-20", "R4": "5-10", "R5": "<=5"},
+                "cols_from_spot_drawdown_pct": {"C1": ">=0", "C2": "-5 to 0",
+                                                "C3": "-10 to -5", "C4": "-20 to -10",
+                                                "C5": "<=-20"},
+                "cells_warn": ["R1C4", "R2C3", "R2C4", "R3C1", "R3C2", "R3C3"],
+                "cells_fire": ["R*C5", "R3C4", "R4C*", "R5C*"],
+            },
+            "ddr5_16gb_spot_session_avg": {
+                "primary_sku": "DDR5_16Gb_4800_5600",
+                "rolling_peak_window_weeks": 12,
+                "weekly_aggregation": "mean of session_avg by week",
+            },
+            "synthetic_contract_qoq": {
+                "formula": "anchor + 0.4*tone + 0.4*supplier + 0.2*spot_lead",
+                "each_adjustment_capped_pp": 30,
+            },
         },
-        cadence="2 consecutive weeks for spot; first MoM decline for module",
+        cadence=(
+            "Spot: daily (TrendForce free page) → weekly aggregation for matrix. "
+            "Contract anchor: quarterly forecasts (real-time when published) + "
+            "monthly contract actuals (1-2mo lag on free tier). "
+            "Tone signals: continuous, lookback 4 weeks for tone_adj."
+        ),
         stitching=(
-            "Stitched: trigger fires when ANY TWO of {TrendForce news commentary, "
-            "Tom's Hardware retail proxy, Korean broker PDF chart citation} corroborate "
-            "within 14 days. DDR4-only moves don't trigger — must be DDR5 specific."
+            "Single-source: matrix verdict from src/data/cycle_matrix.py evaluating "
+            "data/dram_spot_history.csv + data/dram_contract_quarterly_forecasts.csv "
+            "+ data/dram_contract_signals.csv. Trigger phrases above still flow into "
+            "the news pipeline for Layer 2 per-signal reasoning, but the BADGE "
+            "status (Hold/Warn/Fire → Not fired/Partially fired/Fired) is set by "
+            "the matrix verdict, not by phrase frequency. Phrase matches feed the "
+            "tone_adj component, weight 0.4."
         ),
     ),
 
@@ -1857,3 +1913,46 @@ EMAIL_FROM_NAME = "Memory Cycle Brief"
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 FMP_API_KEY = os.environ.get("FMP_API_KEY", "")  # Optional, free tier 250 req/day
+
+
+# ============================================================
+# v3.39.7 — Cycle matrix configuration
+# ============================================================
+# The cycle matrix is a contract-growth x spot-drawdown trigger grid
+# evaluated by src/data/cycle_matrix.py against the CSVs below.
+# Verdict (Hold/Warn/Fire) maps to t1_spot_decline indicator status
+# (Not fired/Partially fired/Fired) in fast_tier.py.
+
+from pathlib import Path as _Path_v3397
+
+CYCLE_MATRIX_DATA_DIR = _Path_v3397("data")
+CYCLE_MATRIX_SPOT_CSV = CYCLE_MATRIX_DATA_DIR / "dram_spot_history.csv"
+CYCLE_MATRIX_CONTRACT_ACTUALS_CSV = CYCLE_MATRIX_DATA_DIR / "dram_contract_actuals.csv"
+CYCLE_MATRIX_FORECASTS_CSV = CYCLE_MATRIX_DATA_DIR / "dram_contract_quarterly_forecasts.csv"
+CYCLE_MATRIX_SIGNALS_CSV = CYCLE_MATRIX_DATA_DIR / "dram_contract_signals.csv"
+
+# The focal SKU used to compute the spot column (drawdown from rolling peak)
+CYCLE_MATRIX_PRIMARY_SKU = "DDR5_16Gb_4800_5600"
+
+# Synthetic estimate weights (must sum to <= 1.0)
+CYCLE_MATRIX_WEIGHTS = {
+    "tone": 0.4,
+    "supplier": 0.4,
+    "spot_lead": 0.2,
+}
+
+# Lookback windows
+CYCLE_MATRIX_SIGNALS_LOOKBACK_WEEKS = 4
+CYCLE_MATRIX_ROLLING_PEAK_WINDOW_WEEKS = 12
+
+# Cost control: max number of Haiku extractions per pipeline run
+CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN = 10
+
+# Status mapping: matrix verdict cell -> indicator status badge
+# Used in fast_tier.py to override the LLM's t1_spot_decline assessment
+# with the deterministic matrix verdict.
+CYCLE_MATRIX_STATUS_MAP = {
+    "Hold": "Not fired",
+    "Warn": "Partially fired",
+    "Fire": "Fired",
+}
