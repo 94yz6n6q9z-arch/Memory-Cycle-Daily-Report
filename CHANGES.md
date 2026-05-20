@@ -6,6 +6,153 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39.7 — Cycle matrix indicator (5x5 trigger grid) with charts + status mapping fix
+
+**Why this release.** v3.39.6 fixed Sonnet's hallucination of `t3_relative_strength` by closing the Layer 2 verdicts void. v3.39.7 closes a different but architecturally adjacent void for `t1_spot_decline`: the prior trajectory-relative variance trigger (1-3 month MoM tape vs implied-from-QoQ-forecast trajectory) had two structural problems —
+
+1. **Three-month visibility gap between official forecasts.** Anchor changes only when TrendForce publishes a new quarterly forecast (every ~3 months). Between publications the trigger was inert to incremental tone shifts (e.g., the May 5 TrendForce commentary "PC DRAM contract prices rose this quarter, but momentum slowed... cooling negotiations, ending the extreme seller's market"). A Phase A cooling tone is the historical lead signal — calibrated against both 2017-18 and 2020-22 cycle tops — and the prior structure absorbed it only when Phase B (softening) and Phase C (destruction) followed.
+
+2. **Status badge derived from LLM summary, not deterministic math.** Same root cause as v3.39.6: Sonnet/Haiku re-derive the status text from prose. For a signal whose inputs are two numbers (current spot, current contract growth forecast) this is paraphrase risk for no upside — the verdict is computable directly.
+
+**The fix.** Replace t1_spot_decline's trigger with a 5x5 trigger matrix:
+
+```
+                 C1            C2            C3            C4            C5
+              at peak      <5% off       5-10% off    10-20% off    >=20% off
+R1 >=+30%      HOLD          HOLD          HOLD          WARN          FIRE
+R2 +20-30%     HOLD          HOLD          WARN          WARN          FIRE
+R3 +10-20%     WARN          WARN          WARN          FIRE          FIRE
+R4 +5-10%      FIRE          FIRE          FIRE          FIRE          FIRE
+R5 <=+5%       FIRE          FIRE          FIRE          FIRE          FIRE
+```
+
+ROWS = synthetic contract QoQ growth bands. COLS = DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak. Cells encoded as HOLD (full position) / WARN (review thesis, consider 25-33% trim) / FIRE (any R4-R5 row, any C5 column, or R3+C4 — historical cycle peaks all landed in R5 by the time contract growth hit ~0%, the matrix exists to act BEFORE that).
+
+The contract row uses a **synthetic estimate** evaluated weekly between official forecasts:
+```
+synthetic = anchor + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj
+```
+Each adjustment capped ±30pp. Anchor priority: server_ddr5 > conventional_dram_aggregate > supplier_specific (supplier_specific feeds supplier_adj, never anchor).
+
+The matrix verdict **OVERRIDES** the LLM's t1_spot_decline assessment via `CYCLE_MATRIX_STATUS_MAP` in config.py — Hold→Not fired (green badge), Warn→Partially fired (amber badge), Fire→Fired (red badge). This closes the same architectural void that v3.39.6 closed for t3_relative_strength, applied to the t1 signal where the inputs are equally deterministic.
+
+## What v3.39.7 ships
+
+### New module: `src/data/cycle_matrix.py` (1243 lines)
+
+Matrix evaluator. Spot calculations (weekly mean aggregation, 12-week rolling peak, drawdown classification into C1-C5), contract calculations (anchor selection by segment priority, tone scoring from Haiku-extracted signal phrases, supplier adjustment as median deviation of supplier-specific QoQ from anchor, spot lead signal from 4-week cumulative spot trajectory, synthetic central estimate with explicit adjustment breakdown), matrix cell lookup, narrative generation. CSV schemas documented at file bottom.
+
+Returns a `MatrixVerdict` dataclass with `.cell` (enum: HOLD/WARN/FIRE), `.cell_label` ("Hold (R1/C2)"), `.contract_row`, `.spot_col`, `.spot` (SpotComponent with current_session_avg/rolling_peak_price/rolling_peak_date/drawdown_pct/weeks_since_peak), `.contract` (ContractComponent with anchor_quarter/anchor_low/anchor_central/anchor_high/anchor_age_days/synthetic_central_pct/synthetic_low_pct/synthetic_high_pct/has_anchor/adjustments list), `.narrative` (deterministic prose for the email), `.warnings` (anchor age, missing signal lookback, etc.). Plus the `MatrixCell` enum, `Adjustment` dataclass, and the locked `MATRIX` dict.
+
+### New file: `tests/test_cycle_matrix.py` (10 cases)
+
+Pytest, no network or API key needed, runs in <2s:
+- `test_spot_parser_extracts_correct_values` — fixture HTML → SpotScrapeResult
+- `test_contract_parser_extracts_correct_values` — same for contract
+- `test_classify_spot_column_boundaries` — C1-C5 boundary correctness
+- `test_classify_contract_row_boundaries` — R1-R5 boundary correctness
+- `test_matrix_lookup_cells` — locked grid: (1,1)→HOLD, (1,5)→FIRE, (3,4)→FIRE, (4,1)→FIRE, (5,1)→FIRE
+- `test_persist_spot_idempotent` — same-day rerun replaces rows, no CSV growth
+- `test_persist_contract_idempotent` — same for contract
+- `test_upsert_forecasts_assigns_row_ids` — auto row_id assignment, key uniqueness
+- `test_upsert_signals_dedup_by_url` — re-running same signals doesn't duplicate
+- `test_evaluate_matrix_end_to_end` — realistic fixture data → expected Hold (R1/C1) verdict
+
+### New CSVs in `data/` (pre-seeded, committed)
+
+**`data/dram_spot_history.csv`** — 63 rows from Jul 7 2025 to May 19 2026, reconstructed by triangulating four sources:
+| Period | Source |
+|---|---|
+| Jul-Sep 2025 | 3DCenter retail index (~$8-11/chip equivalent) |
+| Oct-Dec 2025 | 3DCenter showed +93% Nov→Dec; chip $16-34 |
+| Jan-early Feb 2026 | 3DCenter +27.6% Dec→Jan; EU 32GB kit €430-470 peak; chip $41-45 |
+| Feb-Mar 2026 | EU retail -10-15% correction (Tom's Hardware/CamelCamelCamel); chip $45→$39 |
+| Mar 12 - May 19 2026 | TrendForce live prints (user-provided CSV) |
+
+Each row tagged with `provenance` column: `trendforce` for actual prints, `backfill` for reconstructed weekly samples. Production scrapes only update mid-March 2026 onwards; pre-March is the documented reconstruction.
+
+**`data/dram_contract_quarterly_forecasts.csv`** — 3 seeded forecasts:
+- row_id=1: Q1'26 initial (Jan 5, +55-60%, central +57.5%)
+- row_id=2: Q1'26 revised (Feb 2, +90-95%, central +92.5%, supersedes row 1)
+- row_id=3: Q2'26 initial (Mar 31, +58-63%, central +60.5%) ← current anchor
+
+**`data/dram_contract_signals.csv`** — 4 seeded Apr-May 2026 tone signals:
+- Apr 5 (etnews): Samsung Q2 +30% — supplier signal
+- Apr 29 (TrendForce): DDR4 price cuts failing — cooling tone
+- Apr 30 (TrendForce): "momentum slowed, ending extreme seller's market" — softening
+- May 6 (TrendForce): "DDR5 holding, DDR4 edging down" — stable
+
+### Existing modules extended (additions only)
+
+**`src/data/news.py`** — v3.39.7 cycle data pipeline appended at bottom. New: `parse_trendforce_spot_html`, `parse_trendforce_contract_html`, `scrape_trendforce_spot_structured` (returns `SpotScrapeResult` for matrix CSV path; distinct from v3.39.3 `scrape_trendforce_prices` which keeps returning `list[NewsItem]` for the news pipeline), `scrape_trendforce_contract`, `fetch_article_body`, `persist_spot_to_history`, `persist_contract_to_history`, `upsert_contract_forecasts`, `upsert_contract_signals`. New dataclasses: `SpotScrapeRow`, `SpotScrapeResult`, `ContractScrapeRow`, `ContractScrapeResult`. All existing functions untouched.
+
+**`src/analysis/llm_summarizer.py`** — Haiku extraction layer appended. New: `SIGNAL_EXTRACTION_SYSTEM_PROMPT_V3397` and `FORECAST_EXTRACTION_SYSTEM_PROMPT_V3397` prompt constants, `extract_dram_signal_from_article` (returns dram_contract_signals.csv-shaped dict), `extract_dram_forecasts_from_press_release` (returns list of dram_contract_quarterly_forecasts.csv-shaped dicts). Internal helpers `_call_haiku_json_v3397` and `_safe_num_v3397`. Allowed-value sets prevent free-text drift. Reuses existing HAIKU_MODEL + Anthropic client pattern.
+
+**`src/analysis/chart_generator.py`** — Two chart functions appended. `generate_cycle_matrix_chart` (5x5 grid + today dot + callout), `generate_spot_contract_chart` (dual-axis time series with peak/today annotations and anchor step function), `render_cycle_charts_from_verdict` (one-call wrapper that reads CSVs and produces both base64 PNGs). Existing `generate_performance_chart` and `generate_supercycle_chart` unchanged.
+
+**`src/email_module/template.py`** — `build_email_html()` signature extended with three optional kwargs (`cycle_verdict`, `cycle_matrix_chart_b64`, `spot_contract_chart_b64`). `_build_indicators_section` signature extended to accept and forward them; when rendering t1_spot_decline AND both chart base64 strings are non-None, appends a full-width card row (colspan=5) below the indicator row with both charts side-by-side (40/60 split). New `_build_cycle_matrix_card` helper. Verdict object read via `getattr()` to avoid importing cycle_matrix types into the email template. All other rendering unchanged; when kwargs are absent the section renders exactly as in v3.38.
+
+**`src/fast_tier.py`** — New helper `_run_cycle_matrix_step()` inserted between Layer 3 and email build. Sequence: structured spot scrape + persist → contract scrape + persist → Haiku extraction over up to `CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN` (default 10) DRAM-relevant articles → matrix evaluation. Safe-failing: each sub-step is wrapped in try/except, persistence runs even if Haiku extraction fails. After the matrix step, `_override_t1_spot_decline_from_matrix()` rewrites the LLM's t1_spot_decline assessment with the deterministic matrix verdict (status badge + narrative). Charts are rendered via `render_cycle_charts_from_verdict` and threaded into `build_email_html`. Subject line gets `[Hold|Warn|Fire]` suffix when verdict is available.
+
+**`src/config.py`** — `t1_spot_decline` Indicator entry rewritten. All dataclass fields preserved: trigger_patterns refined to Phase A/B/C cooling/softening/destruction taxonomy (still flows into news pipeline / Layer 2 reasoning), trigger_numeric documents matrix cell lookup logic for engineering reference, cadence documents weekly spot aggregation + monthly contract anchor refresh, stitching documents the single-source matrix verdict. Indicator name updated to "Cycle matrix — contract growth × spot drawdown", description and what_to_look_for rewritten for matrix logic. New `CYCLE_MATRIX_*` config block appended at end (paths, primary SKU, weights, lookback windows, cost ceiling, `CYCLE_MATRIX_STATUS_MAP` for the verdict→status mapping).
+
+### Audit xlsx update
+
+`memory_cycle_data_source_audit_v3_39_7.xlsx` — Summary sheet appended with the v3.39.7 entry; Tier 1 sheet `t1_spot_decline` row rewritten with matrix logic (signal name, what we're looking for, trigger numeric cell-lookup, sources list with backfill triangulation, current status Hold R1/C2).
+
+### Status mapping fix (Hold → Not fired)
+
+A direct response to the earlier review: when the matrix cell is HOLD the indicator badge MUST be "Not fired" (green), not "Partially fired" (amber). The semantic mapping is:
+
+| Matrix cell | Indicator status badge | Color |
+|---|---|---|
+| HOLD | Not fired | green |
+| WARN | Partially fired | amber |
+| FIRE | Fired | red |
+
+This is enforced deterministically in `fast_tier.py:_override_t1_spot_decline_from_matrix` via `CYCLE_MATRIX_STATUS_MAP`. The LLM's pre-override assessment is discarded for this single indicator. Other 21 indicators continue to use the Layer 2 + Sonnet flow.
+
+### Cost impact
+
+- Spot + contract scrapes: free (no API calls)
+- Haiku extraction: ~$0.05/article × max 10 articles/run = ~$0.50/run worst case
+- At fast-tier cadence (~3 runs/weekday, idempotency caps to 1 actually-firing) = ~$22/month additional
+- Chart rendering: matplotlib only, negligible
+- Total brief now ~€8-15/month vs prior €5-12/month target — bump documented in CLAUDE.md cost guidance
+
+### Known limitations
+
+- HBM contract pricing not yet modeled (open gap — would inform a Part 7)
+- Synthetic estimate historical trajectory in the chart approximates the step function; proper weekly back-computation needs historical signal extractions (open for Part 5/6 calibration)
+- 12-week rolling peak intentionally excludes the early Feb 2026 cycle high (today is 11 weeks past); design choice for rollover sensitivity. The chart shows the cycle peak ($44.57 early Feb) as an annotation for context.
+
+### Deployment requirements
+
+GitHub Actions workflow `.github/workflows/fast_tier.yml` needs:
+1. `permissions: contents: write` (was `read`)
+2. New commit step at the end that stages `data/*.csv` updates and pushes back to the repo
+
+Without this, the spot/contract history CSVs reset each run (GHA runner is ephemeral) — the matrix would only see the seeded data, no accumulation.
+
+### Parts in this release
+
+- **Part 1** — Matrix design + `cycle_matrix.py`
+- **Part 2** — Scrapers + persistence helpers
+- **Part 3** — Haiku extraction prompts + functions
+- **Part 4** — Charts + email integration + status mapping fix
+
+**Parts 5 and 6** are articulated in `ROADMAP.md` and queued for follow-up sessions.
+
+### Files touched
+
+Modified: `src/config.py`, `src/data/news.py`, `src/analysis/llm_summarizer.py`, `src/analysis/chart_generator.py`, `src/email_module/template.py`, `src/fast_tier.py`, `.github/workflows/fast_tier.yml`, `CLAUDE.md`, `CHANGES.md`, `ROADMAP.md`, `memory_cycle_data_source_audit_v3_39_7.xlsx` (renamed from v3.39).
+
+Added: `src/data/cycle_matrix.py`, `tests/test_cycle_matrix.py`, `data/.gitkeep`, `data/dram_spot_history.csv`, `data/dram_contract_quarterly_forecasts.csv`, `data/dram_contract_signals.csv`.
+
+Unchanged: every other source file in the repo (prices, estimates, naver_finance, finnhub, dart, korean_brokers, transcript_sources, digester, signal_reasoner, signal_scoring, state, diagnostics, deep_tier, main, sender, README, SETUP, DEPLOYMENT_GUIDE, requirements, all other tests, all other workflows).
+
+---
+
 ## v3.39.6 — Sonnet receives Layer 2 verdicts + computed_metrics + NUMBER-FIRST formatting rule
 
 **Why this release.** Email-side review of the v3.39.5 prompt structure revealed Sonnet was still speculating on indicators where the brief HAS deterministic numerical evidence on hand. The trigger was the May 18 brief's `t3_relative_strength` rendering, which read (verbatim):
