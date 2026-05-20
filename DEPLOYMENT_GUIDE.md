@@ -397,7 +397,7 @@ After Part 6 verification:
 
 **Monthly**: check Anthropic spend at <https://console.anthropic.com/settings/billing>. Should be €5-12. If above €20, something's looping — pause workflows from Actions tab and investigate.
 
-**Quarterly** (after each major earnings prints): the `state/inventory_weeks_running.json` and `state/hyperscaler_capex_baselines.json` auto-update from earnings call digests. No action needed.
+**Quarterly** (after each major earnings prints): the `state/inventory_weeks_running.json` and `state/hyperscaler_capex_baselines.json` auto-update from earnings call digests. The hyperscaler baselines file now tracks capex/OCF as the primary cycle metric (v3.39.7.4) with capex/revenue retained for context. No action needed.
 
 **After ADR launches (June/July 2026)**: add the SK Hynix ADR ticker symbol to `CORE_TICKERS` in `config.py` once it's known. This enables direct Finnhub coverage of US-broker actions on the ADR.
 
