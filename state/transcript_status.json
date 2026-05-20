@@ -1,17 +1,17 @@
 {
-  "written_at_iso": "2026-05-19T12:03:36.157419+00:00",
+  "written_at_iso": "2026-05-20T09:00:21.669067+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 0,
+    "full_transcript": 1,
     "materials_only": 0,
-    "nothing": 3,
-    "already_processed": 27,
+    "nothing": 1,
+    "already_processed": 28,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
       "Broadcom": "already_processed",
       "TSMC": "already_processed",
-      "Applied Materials": "nothing",
+      "Applied Materials": "full_transcript",
       "Microsoft": "already_processed",
       "Alphabet": "already_processed",
       "Meta": "already_processed",
@@ -149,9 +149,9 @@
     {
       "company": "SK Hynix",
       "ticker": "000660.KS",
-      "availability": "nothing",
-      "source_name": "SK Hynix IR",
-      "note": "IR RSS feed fetch failed (network or site down).",
+      "availability": "already_processed",
+      "source_name": "SK Hynix IR (newsroom RSS)",
+      "note": "Already digested in a previous deep-tier run (cache hit): \"SK hynix Announces 1Q26 Financial Results\".",
       "char_count": 0
     },
     {
@@ -213,10 +213,10 @@
     {
       "company": "Applied Materials",
       "ticker": "AMAT",
-      "availability": "nothing",
+      "availability": "full_transcript",
       "source_name": "Yahoo Finance",
-      "note": "Yahoo transcript page fetch failed (proxy or rate-limit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 54976
     },
     {
       "company": "ASML",
