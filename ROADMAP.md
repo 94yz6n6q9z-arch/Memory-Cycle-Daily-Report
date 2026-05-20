@@ -201,7 +201,7 @@ architecturally central than a bolt-on.
 
 **Two pieces sequenced together** because the Layer 2 integration needs accumulated history to be informative.
 
-### 5a — Wire matrix verdict into Layer 2 signal_reasoner
+### 5a — Wire matrix verdict into Layer 2 signal_reasoner — ✅ DONE in v3.39.7.1
 
 **Why**: in v3.39.7 the matrix verdict lives only in the email card + the deterministic indicator status override (`_override_t1_spot_decline_from_matrix`). It never reaches `signal_reasoner.py:reason_all_signals()` which produces the Layer 2 per-signal verdicts that Sonnet now receives (closed in v3.39.6). Result: Sonnet's exec summary references the OTHER 21 signals' Layer 2 verdicts but only references t1_spot_decline through the indicator badge — not through structured signal_reasoning. The exec summary cannot say "cycle matrix in Hold at R1/C2 with synthetic 54.6% QoQ" without the LLM re-deriving those numbers from prose.
 
@@ -216,7 +216,7 @@ architecturally central than a bolt-on.
 
 **Files**: `signal_reasoner.py` (new dataclass init path, no Layer 2 Haiku change), `fast_tier.py` (post-matrix append step), tests in `test_v3_39_6_calculation_driven.py` extended with a t1_spot_decline parity case.
 
-### 5b — GHA fast_tier.yml commit step for data/*.csv
+### 5b — GHA fast_tier.yml commit step for data/*.csv — ✅ SHIPPED in v3.39.7
 
 **Why**: without this, the 63 seeded rows in `data/dram_spot_history.csv` are the ONLY history the matrix ever sees in production. GHA runners are ephemeral — every scrape result is computed, written to the runner filesystem, then destroyed when the runner shuts down. Days pile up with the matrix still evaluating against the May 19 2026 snapshot.
 
@@ -238,7 +238,6 @@ architecturally central than a bolt-on.
 - The cycle matrix card in the email and the Sonnet-generated text agree on numbers; no paraphrase drift.
 - No regression in other 21 indicators or in the v3.39.6 Layer 2 + computed_metrics flow.
 
----
 
 ## Part 6 — Backtest harness against 2017-18 and 2022 cycle peaks
 
@@ -286,3 +285,62 @@ architecturally central than a bolt-on.
 - **HBM contract modeling**: open gap. SK Hynix is your primary position and HBM is its highest-margin product line; the cycle matrix currently models commodity DRAM only. Adding HBM would mean an HBM-specific anchor source (HBM forecast disclosures are gated; SK Hynix earnings commentary is the most reliable free source), an HBM-specific spot column proxy (spot prices for HBM don't exist meaningfully — HBM is contract-only), and likely a separate matrix grid (HBM cycle dynamics differ from commodity DRAM). Big enough to be its own version (v3.40 HBM cycle matrix), not a Part 7.
 - **LPDDR pricing integration**: gap #1 in the existing v3.4 roadmap above. Would inform Indicator 25 (LPDDR Datacenter Ramp) more than t1_spot_decline directly. Keep sequenced with v3.4.
 - **Real-time priority_alerter integration**: matrix verdict could feed `priority_alerter.py` for an off-cycle email when the cell flips Hold→Warn or Warn→Fire mid-day. Defer until Part 5 verifies the verdict is stable across runs.
+---
+
+# v3.39.7.3 follow-ups — Persistent evidence store
+
+**Status**: v3.39.7.3 shipped May 20, 2026 with the persistent indicator evidence store (`state/indicator_evidence.json`) bootstrapped from the May 9 framework doc. Five persistence categories (permanent / quarterly / durable_contract / live / event_window) handle different memory characteristics per indicator. The follow-ups below are scoped post-deploy after 2-3 weeks of accumulated state.
+
+**Why these are follow-ups, not v3.40**: same logic as Parts 5/6 above — same architectural change, completion in stages. Keeps the v3.4 captive-ratio label intact.
+
+---
+
+## Part 7a — Tune persistence categories from real data
+
+**Why**: the bootstrap categorization assigned each indicator's persistence based on a priori judgment about how its underlying data behaves (capex = quarterly, TurboQuant = permanent, P/E = live, LTAs = durable_contract). After 4-8 weeks of GHA runs, we'll have a track record of how often each indicator's evidence is genuinely refreshed vs preserved-by-default. Some categorizations may need correction.
+
+**Data source**: `state/indicator_evidence.json` evolves across GHA commits. Look at the diff between consecutive runs:
+- How often does Layer 2 PRESERVE status because today's evidence didn't match reversal_condition? (expected: most days)
+- How often does Layer 2 REVERSE a fired status? (expected: rare — once every few months per indicator)
+- For each indicator: was the reversal triggered by a genuine data print, or did the LLM misjudge?
+
+**Possible adjustments**:
+- Indicators currently `quarterly` that prove to refresh more frequently (e.g., TrendForce weekly prints) — re-categorize to `live` or add an explicit `next_check_due` date.
+- Indicators currently `permanent` with aging logic (e.g., insider sales 12mo window) — verify the 12mo window is right empirically; some sales should age out faster, some slower.
+- Indicators currently `durable_contract` that need expiry-date awareness (LTAs do expire — HBM3E 2026 sold-out expires end-2026).
+
+**Acceptance**: after 4-8 weeks, audit `state/indicator_evidence.json` diff history. If any indicator's category is producing wrong-direction errors (preserving when it should reverse, or vice versa), update its bootstrap entry. Schema is stable; only the data changes.
+
+**Files**: `state/indicator_evidence.json` (data updates only); audit script could be added to `scripts/` to summarize evidence store evolution.
+
+---
+
+## Part 7b — Schema migrations + versioning
+
+**Why**: the bootstrap was written with `_metadata.schema_version: "1.0"`. Future schema changes (new fields, new persistence categories, structural reorganization) need a migration path.
+
+**Likely v1.1 additions**:
+- `aging_window_days: int` field per evidence entry — make insider sales 12mo and event_window 35d explicit per-entry instead of hardcoded in `active_evidence()`.
+- `confidence: "high" | "medium" | "low"` per evidence entry — record how strong the evidence was when first logged.
+- `expiry_date: ISO date` for durable_contract entries — LTAs do have expiries.
+- `transition_log: list[dict]` — separate from evidence_log, just the status transitions for clean audit.
+
+**Acceptance**: `load_indicator_evidence_store()` recognizes `schema_version` and applies migrations idempotently. Bootstrap stays v1.0; new fields are additive.
+
+**Files**: `src/state.py` (migration logic in load function), `state/indicator_evidence.json` (schema upgrade after migration is written).
+
+---
+
+## Part 7c — Layer 2 prompt observability
+
+**Why**: the v3.39.7.3 prompt is long (DECISION RULES BY PERSISTENCE CATEGORY + INVALID DOWNGRADES + evidence_log block per indicator). Haiku may follow some rules better than others. Need to track which rules are being applied correctly.
+
+**Plan**: log Layer 2's reasoning per indicator, comparing `evidence_for_change_vs_yesterday` against the evidence_log's persistence category. Specifically:
+- If status preserved (Fired → Fired) AND today's evidence was empty → confirm the persistence category was the right reason (not just lazy preservation).
+- If status changed (Fired → Not fired) → verify the reversal_condition was actually matched in today's evidence, not invented by Haiku.
+
+**Output**: a weekly digest summarizing Layer 2 decisions per indicator: # of preserves vs reverses vs new fires, with sample reasoning quotes.
+
+**Files**: probably a new script in `scripts/` consuming the GHA-committed `state/indicator_evidence.json` history via `git log`.
+
+---

@@ -6,6 +6,200 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39.7.3 — Persistent evidence store: memory/data preservation, not just status preservation
+
+A diagnostic session against the May 9 doc, May 18 brief, and May 20 brief revealed a fundamental architectural gap: the system had no institutional memory of WHY each indicator fired. Layer 2 (Haiku) saw only today's news + computed metrics + (a string label) prior_status. So cumulative-state signals — capex announcements, multi-year LTAs, IDC forecasts, supplier inventory prints, insider transactions — got reset every morning when today's news didn't reaffirm them.
+
+The user's framing: *"Capex discussions are likely not going to happen until next quarterly earnings. The fact that we don't hear about this over the next three months doesn't make it go away."*
+
+### What the data showed
+
+Per-indicator assessment May 9 → May 20 (data-driven, with citation):
+
+| Indicator | May 9 | May 20 | Correct today | Why |
+|---|---|---|---|---|
+| t1_spot_decline (renamed → DRAM Price Evolution) | FIRED (DDR4 −5% late April) | Not fired (matrix R1/C2) | **Not fired** | Legit framework upgrade — matrix replaces single-SKU trigger; contract still growing 54.6% QoQ |
+| t1_lead_times | Not fired | Not fired | Not fired | OK |
+| t1_price_cuts_no_demand | FIRED (TrendForce Apr 28 statement) | Not fired | **Should be FIRED** | Memory loss — statement is a discrete event |
+| t1_oem_inventory | FIRED (supplier 2-3w, buyer 10w, 7w gap unprecedented) | Not fired | **Should be FIRED** | Memory loss; May 20 brief said "today's Layer 2 does not carry that forward" |
+| t1_efficiency_shock | FIRED (TurboQuant Mar 24, 6x KV-cache) | Not fired | **Should be FIRED** | Memory loss — historical announcement cannot be un-announced |
+| t1_demand_destruction | FIRED (IDC PC -2.4% to -11.3%) | Not fired | **Should be FIRED** | Memory loss — IDC forecasts don't get re-issued daily |
+| t2_eps_revisions | Not fired | Not fired | Not fired | OK — THE missing canonical signal |
+| t2_capex_parabolic | FIRED ($725B 2026 hyperscaler capex, +77% YoY) | Not fired | **Should be FIRED** | Memory loss — historical capex announcements don't unfire |
+| t2_ltas_signed | FIRED (HBM3E sold out, SK Hynix HBM4 LTAs with Nvidia, OpenAI Stargate $300B Oracle) | Not fired | **Should be FIRED** | Memory loss — multi-year LTAs are durable contracts |
+| t2_insider_sales | FIRED (Micron CEO Mehrotra March 2026) | Partially fired | **Should be FIRED** | Memory loss — transaction is permanent |
+| t2_pe_compressed | FIRED (3.7x SK Hynix, 5.3x Samsung) | Not fired | **Should be FIRED** | Computed-data contradiction: today's values still below thresholds (4.56x, 5.30x, 6.81x) |
+| t2_hyperscaler_capex_revenue | FIRED (MSFT 45%, ORCL 57%) | Fired | Fired | OK |
+| t2_spot_contract_spread | FIRED + INVERTED (DDR4) | Not fired | **Should be FIRED** | Memory loss — DDR4 inversion remains, May 20 only checked DDR5 |
+| Tier 3 + 4 | All Not fired (except t3_relative_strength: fired-then-reversed) | All Not fired | All Not fired | OK |
+
+Net: **9 indicators incorrectly downgraded** due to memory loss in May 18 → May 20 transition. Correct count today per data: 10 Fired (4 T1 + 6 T2 + 0 T3 + 0 T4).
+
+### Architecture — persistent evidence store
+
+New file: **`state/indicator_evidence.json`** — committed to repo, persists across runs.
+
+Per-indicator entry records: current_status, fired_since, evidence_log (each entry: date + type + value + source + persistence + reversal_condition), next_check_due. The reversal_condition is the contract that prevents the v3.39.6 "silence = unfire" regression — Layer 2 must check today's evidence against the recorded reversal_condition, not against zero.
+
+Five persistence categories (the key architectural insight — different signals have fundamentally different memory characteristics):
+
+| Persistence | Meaning | Examples | Layer 2 behavior |
+|---|---|---|---|
+| **permanent** | Historical event, cannot be unfired | TurboQuant announcement, completed insider transactions | Status persists indefinitely (with optional aging for some) |
+| **quarterly** | Refreshes at next earnings/forecast season | Capex announcements, hyperscaler capex/revenue ratios, IDC forecasts, TrendForce inventory prints | Status persists until next_check_due is past AND reversal evidence arrives |
+| **durable_contract** | Binding agreement valid until expiry | Multi-year LTAs, sold-out commitments | Status persists until explicit cancellation news |
+| **live** | Recomputed every run from current data | Forward P/E, relative strength, cycle matrix verdict, spot/contract spread | Latest computation wins; no preservation |
+| **event_window** | Decays after fixed window | 5d relative strength | Auto-resets after window (default 35 days) |
+
+### New file: bootstrap from May 9 doc
+
+`state/indicator_evidence.json` is pre-populated from the May 9 supercycle analysis document, with explicit citation of each fired signal's specific data and reversal condition. This avoids the bootstrap problem where the buggy May 20 prior_state would poison the system on first run.
+
+10 indicators bootstrap as Fired (the correct May 9 baseline with framework upgrades applied):
+- t1_price_cuts_no_demand, t1_oem_inventory, t1_efficiency_shock, t1_demand_destruction
+- t2_capex_parabolic, t2_ltas_signed, t2_insider_sales, t2_pe_compressed, t2_hyperscaler_capex_revenue, t2_spot_contract_spread
+
+### Files touched
+
+- **NEW** `state/indicator_evidence.json` — bootstrap file with 22 indicators
+- **MODIFIED** `src/state.py` — adds EvidenceEntry, IndicatorEvidence dataclasses, load/save/update API, INDICATOR_EVIDENCE_PATH constant
+- **MODIFIED** `src/analysis/signal_reasoner.py` — REASONER_SYSTEM_PROMPT rewritten with DECISION RULES BY PERSISTENCE CATEGORY + INVALID DOWNGRADES section; REASONER_USER_TEMPLATE includes `{evidence_store_block}`; reason_one_signal and reason_all_signals gain optional `indicator_evidence` / `indicator_evidence_store` params
+- **MODIFIED** `src/fast_tier.py` — load evidence store before Layer 2 + pass through + save after; signal_name in matrix injection updated to "DRAM Price Evolution"
+- **MODIFIED** `src/config.py` — t1_spot_decline display name → "DRAM Price Evolution (spot + contract matrix)"; short_label → "DRAM Price Evolution"; ID kept stable
+- **MODIFIED** `.github/workflows/fast_tier.yml` — add `state/indicator_evidence.json` to commit step
+- **NEW** `tests/test_indicator_evidence.py` — 18 tests covering bootstrap validation + format + save/load roundtrip + transitions
+
+Tests: 90 prior + 18 new = 108 total, all pass.
+
+### What happens on the next run
+
+Layer 2 receives, for each indicator, a fully-formatted evidence block:
+
+```
+Current status: Fired
+Fired since: 2026-01-15
+Next scheduled re-check: 2026-07-22
+
+Evidence log (oldest first):
+  [1] 2026-01-15 (forecast, persistence=quarterly): Hyperscaler 2026 capex $725B (+77% YoY consensus); Micron FY26 capex raised to >$25B; SK Hynix M15X plus three other fabs ramping
+      Source: Hyperscaler 2026 guidance + Micron + SK Hynix announcements (cited in May 9 framework doc)
+      Reversal condition: Next hyperscaler quarterly print shows capex CUT vs prior guidance; OR a memory maker announces fab cancellation or capex cut
+  [2] 2026-05-15 (announcement, persistence=quarterly): SK Hynix announces KRW 7.35 trillion (~$5.3B USD) capacity splurge in single allocation, funded by record KRW 37.6T profit
+      Source: AD HOC NEWS, May 15 2026 (per May 18 brief)
+      Reversal condition: SK Hynix announces capex cut or fab cancellation; or this allocation is reversed
+```
+
+The system prompt now contains explicit "INVALID DOWNGRADES" examples calling out the specific v3.39.7 bugs by name:
+
+> *"No new capex announcements in today's news feed" does NOT unfire t2_capex_parabolic. The $725B 2026 hyperscaler capex consensus and SK Hynix M15X are recorded. Silence is not reversal.*
+
+After Layer 2, `update_evidence_after_layer2()` records any status transitions back to the store. `save_indicator_evidence_store()` writes to disk. The GHA commit step pushes back to repo. Tomorrow's run sees today's decisions.
+
+### t1_spot_decline rename
+
+Per user direction: display name changed from "Cycle matrix — contract growth × spot drawdown" to **"DRAM Price Evolution (spot + contract matrix)"** with short label "DRAM Price Evolution". The matrix encompasses both spot and contract dynamics — the old name overemphasized spot. ID `t1_spot_decline` kept stable for state-file backward compatibility (prior_state.json keys on it).
+
+### Cost impact
+
+Adding ~300-500 input tokens per Layer 2 call × 22 calls = ~7-11k extra input tokens per fast tier run. At Haiku pricing that's ~$0.01/run. Negligible vs the ~$0.50/run Sonnet cost.
+
+### Bugs from the previous diagnosis still resolved
+
+The v3.39.7.3 work in this session SUPERSEDES the earlier-this-session probability-rule fixes in llm_summarizer.py (Rules A/B/C). Those remain in place too — but the much larger issue was the upstream Layer 2 memory loss. With the evidence store, Layer 2 should produce correct status decisions, and the probability rules will have correct inputs to recalculate from.
+
+---
+
+## v3.39.7.2 — Contract chart: direct lines (not step function)
+
+Single targeted follow-up on v3.39.7.1's chart cleanup.
+
+v3.39.7.1 converted the synthetic contract line from `plot()` to `step(where="post")` on the read that the user wanted to avoid the triangle artifact from connecting anchor jumps with straight lines. The resulting step function looked too rectangular.
+
+The actual problem in the original v3.39.7 render wasn't the `plot()` line itself — it was the `fill_between` band around the anchor that created angular polygon shapes. With the fill band gone (v3.39.7.1 removed it), a direct-line `plot()` between the four contract data points is clean.
+
+Now: synthetic contract drawn with `plot()`. Small white-edged circular markers at each data point so the four anchor publish dates (Jan 5 Q1'26 initial, Feb 2 Q1'26 revised, Mar 31 Q2'26 initial, May 19 today's adjusted synthetic) are identifiable on the line. The Feb→Mar segment is downward-sloping because Q2'26 anchor (60.5%) came in below the Q1'26 revised value (92.5%) — that's the actual data, not a chart artifact.
+
+Subtitle updated: "synthetic contract steps when forecast revisions land" → "contract synthetic updated at each forecast revision".
+
+Files touched: `src/analysis/chart_generator.py` only. Matrix grid chart unchanged. Spot line on the same dual-axis chart unchanged (still has peak red dot and today black dot — those are appropriate for that axis).
+
+Tests: all 90 still pass.
+
+---
+
+## v3.39.7.1 — Wording, chart cleanup, Part 5a (matrix verdict into Sonnet)
+
+Three follow-ups to v3.39.7, surfaced from review:
+
+### 1. Verdict wording aligned with the framework's status vocabulary
+
+Hold / Warn / Fire was inconsistent with the rest of the brief, which uses "Not fired / Partially fired / Fired" everywhere else (Indicator status badges, prior_state, signal_reasoner output, the existing 22 indicators). The matrix vocabulary now matches:
+
+| Was | Is |
+|---|---|
+| Hold | Not fired |
+| Warn | Partially fired |
+| Fire | Fired |
+
+Implementation: `MatrixCell` enum `.value` strings updated directly (Python identifiers `HOLD`/`WARN`/`FIRE` unchanged so `MATRIX` dict + tests + downstream code stay valid). Display strings auto-propagate through:
+- Email status badge ("Not fired" with green `#C0DD97`)
+- Chart cell labels ("Not\nfired", "Partially\nfired", "Fired" with line breaks for fit)
+- Today callout ("Not fired (R1 / C2)")
+- Card snapshot title badge
+- Narrative phrasing in `_generate_narrative` ("No firing condition met — hold full position." / "Partially fired — review thesis, prepare partial trim (25-33%)." / "Fired — exit substantial portion or full position.")
+- Subject line suffix (`[Not fired]` / `[Partially fired]` / `[Fired]`)
+- `where_we_stand` deterministic narrative (no longer says "Hold" anywhere)
+- config.py `description` and `what_to_look_for` prose
+
+`CYCLE_MATRIX_STATUS_MAP` in config.py was the v3.39.7 indirection that mapped Hold→Not fired etc. With `verdict.cell.value` now being "Not fired" directly, the map collapses to identity. Kept as a documented constant (semantically clear what callers expect) but `_override_t1_spot_decline_from_matrix` no longer needs the lookup.
+
+Verification: rendered email contains 0 occurrences of "Hold", "Warn", or "Fire " (with trailing space, excluding broker-rating "Hold" in `src/data/naver_finance.py` which is unrelated analyst recommendation vocabulary). 11 occurrences of "Not fired" across the indicator row, the matrix card, and the chart cells.
+
+### 2. Contract line in dual-axis chart cleaned up
+
+The v3.39.7 chart had three visual elements competing on the contract Y-axis: an anchor dashed step line, an anchor fill_between band, and a synthetic continuous line drawn with `plot()`. The fill band created angular polygon shapes, and the synthetic `plot()` connected the anchor jumps (Jan 57.5% → Feb 92.5% → Mar 60.5%) with straight lines that formed a triangular peak in Feb 2026.
+
+Now: one step line for the synthetic estimate. No fill, no scatter dot at the end, no arrow annotation. Today's value rendered as a plain text label at the right edge. Rectangular shape reflects the fact that the synthetic only updates when an anchor is published (~quarterly) plus weekly adjustments from new signals — anchor changes are visible as the vertical step segments themselves. Subtitle rewritten to "synthetic contract steps when forecast revisions land".
+
+The spot line (purple) is unchanged — still has its peak red dot and today black dot, which are appropriate for that axis.
+
+### 3. Part 5a — matrix verdict wired into signal_reasonings
+
+The v3.39.7 implementation had the matrix step run AFTER Layer 3 (Sonnet) analysis. The verdict reached the email card and the indicator status badge but never reached Sonnet's prompt, so Sonnet's exec summary could only reference t1_spot_decline through prose in `indicator_assessments`, forcing it to re-derive numbers.
+
+Order is now: Layer 2 (`reason_all_signals`) → cycle matrix step → `_inject_matrix_verdict_into_signal_reasonings` → Layer 3 (Sonnet) → `_override_t1_spot_decline_from_matrix` → email.
+
+`_inject_matrix_verdict_into_signal_reasonings` constructs a `SignalReasoning` with the matrix structured fields in `raw_evidence_dump.signal_specific_data.matrix_verdict`:
+- `cell` (string: "Not fired" / "Partially fired" / "Fired")
+- `cell_label` ("Not fired (R1 / C2)")
+- `contract_row`, `spot_col`
+- `synthetic_central_pct`, `synthetic_low_pct`, `synthetic_high_pct`
+- `anchor_quarter`, `anchor_central_pct`, `anchor_age_days`
+- `drawdown_pct`, `current_session_avg`, `rolling_peak_price`, `rolling_peak_date`, `weeks_since_peak`
+- `adjustments`: list of {component, pp, weight, sources_count, notes}
+- `warnings`: list (anchor age, missing signal lookback, etc.)
+
+Convergence + confidence derived from count of adjustments with sources_count > 0: ≥2 → high, 1 → medium, 0 → low. `fired_status` = `verdict.cell.value` (matches the framework vocabulary). REPLACES any existing t1_spot_decline entry in-place; appends if not present.
+
+Sonnet's v3.39.6 prompt iterates over `signal_reasonings` to build the LAYER 2 PER-SIGNAL VERDICTS block. With the injection, Sonnet can now reference matrix numbers verbatim. Pairs with the v3.39.6 STRICT NUMBER-FIRST INDICATOR FORMAT instruction — the matrix numbers were exactly the kind of computed evidence that instruction was designed to surface.
+
+### Tests + validation
+
+All 90 tests pass (80 pre-existing + 10 cycle_matrix). Rendered email: 0 Hold/Warn/Fire string occurrences in user-facing text. Charts re-rendered: matrix grid shows "Not fired"/"Partially fired"/"Fired" labels; dual-axis chart shows single clean step line for contract with no triangle peak, no fill band, no dot at end.
+
+### Files touched
+
+Modified: `src/data/cycle_matrix.py` (MatrixCell enum + narrative), `src/analysis/chart_generator.py` (matrix cell labels + contract line cleanup), `src/email_module/template.py` (cell_color dict uses STATUS_COLORS), `src/config.py` (CYCLE_MATRIX_STATUS_MAP identity + description/what_to_look_for prose), `src/fast_tier.py` (moved cycle step before Layer 3 + injection call + subject suffix), `CHANGES.md`, `CLAUDE.md`, `ROADMAP.md` (mark Part 5a complete).
+
+Added: none. No new files in this point release.
+
+### What's left
+
+- **Part 5b** — GHA workflow data/*.csv commit step. Already wired in v3.39.7 via fast_tier.yml (the existing state-commit step extended to include data CSVs). Active once deployed.
+- **Part 6** — Backtest harness against 2017-18 and 2022 cycle peaks. Open for the next session per ROADMAP.
+
+---
+
 ## v3.39.7 — Cycle matrix indicator (5x5 trigger grid) with charts + status mapping fix
 
 **Why this release.** v3.39.6 fixed Sonnet's hallucination of `t3_relative_strength` by closing the Layer 2 verdicts void. v3.39.7 closes a different but architecturally adjacent void for `t1_spot_decline`: the prior trajectory-relative variance trigger (1-3 month MoM tape vs implied-from-QoQ-forecast trajectory) had two structural problems —
