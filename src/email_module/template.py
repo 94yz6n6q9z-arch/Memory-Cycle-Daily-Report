@@ -13,6 +13,7 @@ Builds the email with:
    was actually reached and parsed during this run)
 
 CHANGELOG (this file):
+  v3.39.7 (2026-05-20) — Cycle matrix card injection. build_email_html() signature gains three optional kwargs (cycle_verdict, cycle_matrix_chart_b64, spot_contract_chart_b64). _build_indicators_section() now accepts and forwards them; when rendering t1_spot_decline AND both chart base64 strings are non-None, it appends a full-width "Cycle matrix snapshot" card row directly under the indicator row (colspan=5, 40/60 split: matrix dot left, dual-axis chart right). New helper _build_cycle_matrix_card() composes the card HTML. All other rendering unchanged; if kwargs are absent the section renders exactly as in v3.38. No new imports; the verdict is read via getattr() to avoid importing cycle_matrix types here.
   v3.38  (2026-05-17) — Added three new `_SOURCE_TYPE_LABELS` entries used by the deep tier diagnostics rows: "api" → "External API" (Finnhub, DART), "transcript" → "Earnings transcript source" (Yahoo / Motley Fool / IR scrapers), "broker_pdf" → "Korean broker note feed" (Mirae, NH, Samsung Securities). Without these, the new deep-tier rows would group under raw lowercase type-strings in the validation table.
 """
 
@@ -69,6 +70,14 @@ def build_email_html(
     # None (chart generation failed or SK Hynix data missing), the section
     # is silently skipped so the email still ships.
     supercycle_chart_base64: Optional[str] = None,
+    # v3.39.7: cycle matrix snapshot. When all three are non-None, a
+    # "Cycle matrix snapshot" card is injected directly below the
+    # t1_spot_decline row in the Tier 1 indicators table, showing the
+    # matrix dot (40%) + dual-axis spot/contract chart (60%) side-by-side.
+    # When any is None, the section renders exactly as in v3.38.
+    cycle_verdict: Optional[object] = None,
+    cycle_matrix_chart_b64: Optional[str] = None,
+    spot_contract_chart_b64: Optional[str] = None,
 ) -> str:
     """Assemble the full HTML email."""
 
@@ -221,7 +230,12 @@ def build_email_html(
 
     # 5. Tier indicators
     parts.append("<h2>3. Tier indicators — daily status</h2>")
-    parts.append(_build_indicators_section(analysis.indicator_assessments))
+    parts.append(_build_indicators_section(
+        analysis.indicator_assessments,
+        cycle_verdict=cycle_verdict,
+        cycle_matrix_chart_b64=cycle_matrix_chart_b64,
+        spot_contract_chart_b64=spot_contract_chart_b64,
+    ))
 
     # 6. Top 5 deep dives
     parts.append("<h2>4. Top 5 indicators — deep dive</h2>")
@@ -411,8 +425,20 @@ def _format_change(value: Optional[float]) -> str:
     return f"<span class='perf-flat'>{value:.2f}%</span>"
 
 
-def _build_indicators_section(assessments: list[IndicatorAssessment]) -> str:
-    """Build the four-tier indicator status tables."""
+def _build_indicators_section(
+    assessments: list[IndicatorAssessment],
+    cycle_verdict: Optional[object] = None,
+    cycle_matrix_chart_b64: Optional[str] = None,
+    spot_contract_chart_b64: Optional[str] = None,
+) -> str:
+    """Build the four-tier indicator status tables.
+
+    v3.39.7: when rendering t1_spot_decline AND both chart base64 strings
+    are provided, append a full-width "Cycle matrix snapshot" card row
+    directly under the indicator row, containing the matrix dot chart (40%)
+    and the dual-axis spot/contract chart (60%) side-by-side. If any of
+    the cycle_* kwargs is None, the section renders exactly as in v3.38.
+    """
     parts = []
     for tier in (1, 2, 3, 4):
         tier_assessments = [a for a in assessments if a.tier == tier]
@@ -455,9 +481,75 @@ def _build_indicators_section(assessments: list[IndicatorAssessment]) -> str:
                 "</tr>"
             )
 
+            # v3.39.7 — inject cycle matrix card under t1_spot_decline
+            if (a.id == "t1_spot_decline"
+                and cycle_matrix_chart_b64
+                and spot_contract_chart_b64):
+                parts.append(_build_cycle_matrix_card(
+                    cycle_verdict, cycle_matrix_chart_b64, spot_contract_chart_b64,
+                ))
+
         parts.append("</tbody></table>")
 
     return "\n".join(parts)
+
+
+def _build_cycle_matrix_card(
+    cycle_verdict: Optional[object],
+    matrix_b64: str,
+    spot_contract_b64: str,
+) -> str:
+    """v3.39.7 — render the two cycle-matrix charts as a card row spanning all
+    columns of the indicators table, placed directly under t1_spot_decline.
+
+    cycle_verdict is read via getattr() to keep this module decoupled from
+    cycle_matrix.py types (avoids a new import on this hot path).
+    """
+    narrative = ""
+    cell_value = ""
+    cell_color = "#CCCCCC"
+    if cycle_verdict is not None:
+        narrative = getattr(cycle_verdict, "narrative", "") or ""
+        cell_obj = getattr(cycle_verdict, "cell", None)
+        if cell_obj is not None:
+            cell_value = getattr(cell_obj, "value", "")
+            cell_color = {
+                "Hold": "#C0DD97",
+                "Warn": "#FAC775",
+                "Fire": "#D85A30",
+            }.get(cell_value, "#CCCCCC")
+
+    cell_badge = (
+        f"<span style='display:inline-block;background:{cell_color};"
+        f"color:#2c2c2a;padding:4px 12px;border-radius:3px;"
+        f"font-weight:700;font-size:13px;margin-left:8px'>{html.escape(cell_value)}</span>"
+        if cell_value else ""
+    )
+
+    return f"""<tr><td colspan="5" style="padding:0;background:#fafaf7">
+  <div style="border:1px solid #e0ddd4;border-radius:6px;margin:8px 0;padding:14px 18px;background:#fff">
+    <div style="font-size:13px;font-weight:700;color:#534AB7;margin-bottom:6px">
+      Cycle matrix snapshot{cell_badge}
+    </div>
+    <div style="font-size:12px;color:#5F5E5A;margin-bottom:12px">
+      {html.escape(narrative[:600])}
+    </div>
+    <table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin:0">
+      <tr>
+        <td style="width:40%;vertical-align:top;border:none;padding:0">
+          <img src="data:image/png;base64,{matrix_b64}"
+               alt="Cycle matrix grid with current position"
+               style="width:100%;height:auto;display:block;border:1px solid #e0ddd4;border-radius:4px"/>
+        </td>
+        <td style="width:60%;vertical-align:top;border:none;padding:0">
+          <img src="data:image/png;base64,{spot_contract_b64}"
+               alt="DDR5 spot price and synthetic contract estimate over time"
+               style="width:100%;height:auto;display:block;border:1px solid #e0ddd4;border-radius:4px"/>
+        </td>
+      </tr>
+    </table>
+  </div>
+</td></tr>"""
 
 
 def _build_top5_section(top5: list[IndicatorAssessment]) -> str:
