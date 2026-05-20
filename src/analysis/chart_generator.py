@@ -8,6 +8,18 @@ embedding inline in HTML email.
 v3.39.2 adds the supercycle phase chart — an overlay of the generic
 5-phase memory-supercycle anatomy onto SK Hynix's actual price history,
 with three dynamic annotation panels listing fired and pending indicators.
+
+CHANGELOG (this file):
+  v3.39.7 (2026-05-20) — Two cycle-matrix charts appended at bottom:
+    generate_cycle_matrix_chart() renders the 5x5 grid with HOLD/WARN/FIRE
+    cell colors and a callout dot at today's (contract_row, spot_col).
+    generate_spot_contract_chart() renders a dual-axis time series with
+    DDR5 16Gb spot price (left Y, purple) and synthetic contract QoQ
+    estimate (right Y, green), including peak and today annotations and
+    the anchor step function as a dashed line. render_cycle_charts_from_verdict()
+    is the one-call helper that reads the data CSVs and the MatrixVerdict
+    from cycle_matrix.py, returning both base64 PNGs. Existing
+    generate_performance_chart() and generate_supercycle_chart() unchanged.
 """
 
 from __future__ import annotations
@@ -593,3 +605,365 @@ def generate_supercycle_chart(
     buf.seek(0)
     encoded = base64.b64encode(buf.getvalue()).decode("utf-8")
     return encoded
+
+# v3.39.7 — Cycle matrix charts
+# ============================================================================
+# Two charts surfaced inside the t1_spot_decline indicator card:
+#   1. Cycle matrix dot — 5x5 grid + current-position marker
+#   2. Spot price & contract growth dual-axis time series
+#
+# Both return base64-encoded PNGs ready for inline HTML embedding.
+# ============================================================================
+
+from datetime import datetime, date, timedelta
+from pathlib import Path
+from typing import Optional, Union
+
+import numpy as np
+from matplotlib.patches import Rectangle, FancyBboxPatch
+from matplotlib import patheffects
+
+
+# Matrix cell color map (matches HOLD/WARN/FIRE semantics)
+MATRIX_COLOR_HOLD = "#C0DD97"   # green from existing palette
+MATRIX_COLOR_WARN = "#FAC775"   # amber from existing palette
+MATRIX_COLOR_FIRE = "#D85A30"   # red from existing palette
+MATRIX_DOT_COLOR = "#2c2c2a"    # body text color
+MATRIX_DOT_RING = "#FFEBA1"     # change-flag yellow ring around the dot
+
+
+def generate_cycle_matrix_chart(
+    contract_row: int,
+    spot_col: int,
+    cell_label: str,
+    synthetic_central_pct: Optional[float],
+    drawdown_pct: float,
+    width_in: float = 5.2,
+    height_in: float = 4.6,
+) -> str:
+    """Render the 5x5 cycle matrix with a dot at (contract_row, spot_col).
+
+    Returns a base64-encoded PNG suitable for inline HTML embedding.
+    """
+    # Matrix lookup (must match cycle_matrix.MATRIX exactly)
+    matrix_cells = {
+        (1, 1): "HOLD", (1, 2): "HOLD", (1, 3): "HOLD", (1, 4): "WARN", (1, 5): "FIRE",
+        (2, 1): "HOLD", (2, 2): "HOLD", (2, 3): "WARN", (2, 4): "WARN", (2, 5): "FIRE",
+        (3, 1): "WARN", (3, 2): "WARN", (3, 3): "WARN", (3, 4): "FIRE", (3, 5): "FIRE",
+        (4, 1): "FIRE", (4, 2): "FIRE", (4, 3): "FIRE", (4, 4): "FIRE", (4, 5): "FIRE",
+        (5, 1): "FIRE", (5, 2): "FIRE", (5, 3): "FIRE", (5, 4): "FIRE", (5, 5): "FIRE",
+    }
+    cell_colors = {"HOLD": MATRIX_COLOR_HOLD, "WARN": MATRIX_COLOR_WARN, "FIRE": MATRIX_COLOR_FIRE}
+
+    row_labels = [">=+30%", "+20-30%", "+10-20%", "+5-10%", "<=+5%"]
+    col_labels = ["At peak", "<5% off", "5-10% off", "10-20% off", ">=20% off"]
+
+    fig, ax = plt.subplots(figsize=(width_in, height_in), dpi=120)
+
+    # Draw cells. Row 1 at top, Row 5 at bottom (y inverted)
+    for (r, c), kind in matrix_cells.items():
+        x = c - 1
+        y = 5 - r  # invert so R1 sits at top
+        rect = Rectangle(
+            (x, y), 1, 1,
+            facecolor=cell_colors[kind],
+            edgecolor="white",
+            linewidth=2.0,
+            alpha=0.78,
+        )
+        ax.add_patch(rect)
+        ax.text(
+            x + 0.5, y + 0.5, kind,
+            ha="center", va="center",
+            fontsize=8, fontweight="bold",
+            color="#2c2c2a",
+        )
+
+    # Plot the today-dot
+    today_x = spot_col - 1 + 0.5
+    today_y = 5 - contract_row + 0.5
+    ax.scatter(
+        [today_x], [today_y],
+        s=420, marker="o",
+        facecolor=MATRIX_DOT_COLOR,
+        edgecolor=MATRIX_DOT_RING,
+        linewidth=4.0,
+        zorder=10,
+    )
+    # Today label callout
+    ax.annotate(
+        f"TODAY\n{cell_label}",
+        xy=(today_x, today_y),
+        xytext=(today_x + 1.1, today_y + 0.6),
+        fontsize=8, fontweight="bold",
+        color="#2c2c2a",
+        ha="left", va="center",
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="#FFEBA1",
+                  edgecolor="#C68A2A", linewidth=1.2),
+        arrowprops=dict(arrowstyle="->", color="#2c2c2a", lw=1.2),
+        zorder=11,
+    )
+
+    # Axes ticks and labels
+    ax.set_xticks([i + 0.5 for i in range(5)])
+    ax.set_xticklabels(col_labels, fontsize=8)
+    ax.set_yticks([i + 0.5 for i in range(5)])
+    ax.set_yticklabels(row_labels[::-1], fontsize=8)  # reverse to align with inverted y
+
+    ax.set_xlabel("Spot drawdown from rolling 12w peak", fontsize=9, fontweight="bold")
+    ax.set_ylabel("Contract growth QoQ (synthetic estimate)", fontsize=9, fontweight="bold")
+
+    title_main = "Cycle Matrix — contract growth × spot drawdown"
+    subtitle = (
+        f"Synthetic contract: {synthetic_central_pct:.1f}% QoQ · "
+        f"Spot drawdown: {drawdown_pct:+.2f}%"
+        if synthetic_central_pct is not None
+        else f"Spot drawdown: {drawdown_pct:+.2f}%"
+    )
+    ax.set_title(title_main, fontsize=10.5, fontweight="bold", loc="left", pad=32)
+    ax.text(0, 5.45, subtitle, fontsize=8.5, color="#5F5E5A",
+            transform=ax.transData)
+
+    ax.set_xlim(0, 5)
+    ax.set_ylim(0, 5.3)
+    ax.set_aspect("equal")
+
+    # Hide spines
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+    ax.tick_params(axis="both", which="both", length=0)
+
+    plt.tight_layout()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", facecolor="white", bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+def generate_spot_contract_chart(
+    spot_history_df: pd.DataFrame,
+    contract_synthetic_series: list[tuple[date, float]],
+    contract_anchor_series: list[tuple[date, float, float, float]],
+    today_spot: Optional[float] = None,
+    today_synthetic: Optional[float] = None,
+    width_in: float = 7.6,
+    height_in: float = 4.6,
+) -> str:
+    """Render the dual-axis chart: DDR5 spot (left) + contract growth (right).
+
+    Parameters:
+      spot_history_df: DataFrame with at least columns 'date' (ISO) and 'session_avg'
+                       for SKU DDR5_16Gb_4800_5600.
+      contract_synthetic_series: list of (date, central_pct) — weekly synthetic.
+      contract_anchor_series: list of (date, low_pct, central_pct, high_pct) —
+                       step function showing where anchor jumped on forecast pubs.
+      today_spot / today_synthetic: optional override for the rightmost dot label.
+
+    Returns base64-encoded PNG.
+    """
+    df = spot_history_df.copy()
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date")
+
+    fig, ax_spot = plt.subplots(figsize=(width_in, height_in), dpi=120)
+
+    # ----- Left axis: spot price -----
+    ax_spot.plot(
+        df["date"], df["session_avg"],
+        color="#534AB7",      # SK Hynix purple = our primary signal color
+        linewidth=2.4,
+        label="DDR5 16Gb 4800/5600 spot (session avg)",
+        zorder=3,
+    )
+    # Fill under for emphasis
+    ax_spot.fill_between(
+        df["date"], df["session_avg"], alpha=0.10, color="#534AB7", zorder=2,
+    )
+
+    # Annotate peak (early Feb point) — find global max in window
+    peak_idx = df["session_avg"].idxmax()
+    peak_date = df.loc[peak_idx, "date"]
+    peak_price = df.loc[peak_idx, "session_avg"]
+    ax_spot.scatter([peak_date], [peak_price], s=70, color="#A32D2D",
+                    zorder=5, edgecolor="white", linewidth=1.5)
+    ax_spot.annotate(
+        f"Peak ${peak_price:.2f}",
+        xy=(peak_date, peak_price),
+        xytext=(15, 12), textcoords="offset points",
+        fontsize=8, color="#A32D2D", fontweight="bold",
+        arrowprops=dict(arrowstyle="-", color="#A32D2D", lw=0.8),
+    )
+
+    # Today marker
+    if today_spot is not None:
+        today_date = df["date"].iloc[-1]
+        ax_spot.scatter([today_date], [today_spot], s=80, color="#2c2c2a",
+                        zorder=6, edgecolor="#FFEBA1", linewidth=2.5)
+        ax_spot.annotate(
+            f"Today ${today_spot:.2f}",
+            xy=(today_date, today_spot),
+            xytext=(-65, -25), textcoords="offset points",
+            fontsize=8, color="#2c2c2a", fontweight="bold",
+            arrowprops=dict(arrowstyle="-", color="#2c2c2a", lw=0.8),
+        )
+
+    ax_spot.set_ylabel("DDR5 16Gb spot (USD per chip)", fontsize=9,
+                       fontweight="bold", color="#534AB7")
+    ax_spot.tick_params(axis="y", labelcolor="#534AB7", labelsize=8)
+    ax_spot.tick_params(axis="x", labelsize=8)
+    ax_spot.spines["top"].set_visible(False)
+    ax_spot.spines["right"].set_color("#0F6E56")
+    ax_spot.spines["left"].set_color("#534AB7")
+    ax_spot.grid(True, linestyle=":", alpha=0.35)
+
+    # ----- Right axis: contract growth -----
+    ax_contract = ax_spot.twinx()
+
+    # Anchor step function: forecasts as published (one step per quarter/revision)
+    if contract_anchor_series:
+        anc_dates = [a[0] for a in contract_anchor_series]
+        anc_central = [a[2] for a in contract_anchor_series]
+        anc_low = [a[1] for a in contract_anchor_series]
+        anc_high = [a[3] for a in contract_anchor_series]
+        # Extend to today so the step shows current
+        anc_dates_ext = anc_dates + [df["date"].iloc[-1].date()]
+        anc_central_ext = anc_central + [anc_central[-1]]
+        anc_low_ext = anc_low + [anc_low[-1]]
+        anc_high_ext = anc_high + [anc_high[-1]]
+
+        ax_contract.step(
+            anc_dates_ext, anc_central_ext, where="post",
+            color="#0F6E56", linewidth=1.6, linestyle="--", alpha=0.8,
+            label="TrendForce contract forecast central (anchor)",
+            zorder=3,
+        )
+        # Fill anchor band
+        ax_contract.fill_between(
+            anc_dates_ext, anc_low_ext, anc_high_ext,
+            step="post", alpha=0.10, color="#0F6E56", zorder=2,
+        )
+
+    # Synthetic contract estimate as continuous line
+    if contract_synthetic_series:
+        s_dates = [d for d, _ in contract_synthetic_series]
+        s_central = [v for _, v in contract_synthetic_series]
+        ax_contract.plot(
+            s_dates, s_central,
+            color="#0F6E56", linewidth=2.4,
+            label="Synthetic contract estimate (tone+supplier+spot-lead adj)",
+            zorder=4,
+        )
+
+    if today_synthetic is not None and contract_synthetic_series:
+        last_date = contract_synthetic_series[-1][0]
+        ax_contract.scatter([last_date], [today_synthetic], s=70, color="#0F6E56",
+                            zorder=5, edgecolor="white", linewidth=1.5)
+        ax_contract.annotate(
+            f"{today_synthetic:.1f}% QoQ",
+            xy=(last_date, today_synthetic),
+            xytext=(-90, 8), textcoords="offset points",
+            fontsize=8, color="#0F6E56", fontweight="bold",
+            arrowprops=dict(arrowstyle="-", color="#0F6E56", lw=0.8),
+        )
+
+    ax_contract.set_ylabel("Contract growth QoQ (%)", fontsize=9,
+                           fontweight="bold", color="#0F6E56")
+    ax_contract.tick_params(axis="y", labelcolor="#0F6E56", labelsize=8)
+    ax_contract.spines["top"].set_visible(False)
+    ax_contract.spines["left"].set_color("#534AB7")
+    ax_contract.spines["right"].set_color("#0F6E56")
+
+    # Reasonable y-range for contract axis
+    if contract_synthetic_series:
+        all_c = [v for _, v in contract_synthetic_series]
+        if contract_anchor_series:
+            all_c += [a[2] for a in contract_anchor_series]
+        c_min = min(0, min(all_c) - 10)
+        c_max = max(all_c) + 15
+        ax_contract.set_ylim(c_min, c_max)
+
+    # Title
+    title = "DDR5 16Gb spot price & synthetic contract QoQ estimate"
+    subtitle = "Two inputs to the cycle matrix; spot peaked early Feb 2026, contract anchor revised in Mar"
+    ax_spot.set_title(title, fontsize=10.5, fontweight="bold", loc="left", pad=22)
+    ax_spot.text(0, 1.02, subtitle, fontsize=8.5, color="#5F5E5A",
+                 transform=ax_spot.transAxes)
+
+    # Build combined legend at the bottom
+    lines_spot, labels_spot = ax_spot.get_legend_handles_labels()
+    lines_contract, labels_contract = ax_contract.get_legend_handles_labels()
+    ax_spot.legend(
+        lines_spot + lines_contract,
+        labels_spot + labels_contract,
+        loc="upper left", fontsize=7.5, frameon=False, ncol=1,
+        bbox_to_anchor=(0, 0.95),
+    )
+
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", facecolor="white", bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+def render_cycle_charts_from_verdict(
+    verdict,
+    spot_history_csv: Union[Path, str],
+    contract_forecasts_csv: Union[Path, str],
+) -> tuple[str, str]:
+    """High-level helper: takes a MatrixVerdict + the two CSVs, returns
+    (matrix_chart_b64, spot_contract_chart_b64). Used by main.py.
+    """
+    # Matrix dot chart
+    matrix_b64 = generate_cycle_matrix_chart(
+        contract_row=verdict.contract_row,
+        spot_col=verdict.spot_col,
+        cell_label=verdict.cell_label,
+        synthetic_central_pct=verdict.contract.synthetic_central_pct,
+        drawdown_pct=verdict.spot.drawdown_pct,
+    )
+
+    # Spot+contract chart
+    spot_df = pd.read_csv(spot_history_csv)
+    spot_df = spot_df[spot_df["sku"] == verdict.spot.sku].copy()
+
+    # Contract forecast anchor series — load published forecasts (non-superseded)
+    fc_df = pd.read_csv(contract_forecasts_csv)
+    fc_df["published_date"] = pd.to_datetime(fc_df["published_date"]).dt.date
+    fc_df = fc_df.sort_values("published_date")
+    # Filter to aggregate-segment for the anchor (cleanest signal)
+    fc_anc = fc_df[fc_df["segment"].isin(["conventional_dram_aggregate", "server_ddr5"])]
+    # Build series as (date, low, central, high)
+    anchor_series = [
+        (row["published_date"], float(row["low_pct"]),
+         float(row["central_pct"]) if pd.notna(row["central_pct"])
+                                   else (row["low_pct"] + row["high_pct"]) / 2.0,
+         float(row["high_pct"]))
+        for _, row in fc_anc.iterrows()
+    ]
+
+    # Synthetic series: for now we have today's verdict point and historical anchors
+    # The synthetic blends anchor + tone + supplier + spot_lead. Without weekly
+    # historical signals, approximate the synthetic as the active anchor central
+    # for past dates plus today's actual synthetic value.
+    synthetic_points = []
+    if anchor_series:
+        for i, (d, _, central, _) in enumerate(anchor_series):
+            synthetic_points.append((d, central))
+    if verdict.contract.synthetic_central_pct is not None:
+        synthetic_points.append(
+            (verdict.as_of.date(), verdict.contract.synthetic_central_pct)
+        )
+
+    spot_contract_b64 = generate_spot_contract_chart(
+        spot_history_df=spot_df,
+        contract_synthetic_series=synthetic_points,
+        contract_anchor_series=anchor_series,
+        today_spot=verdict.spot.current_session_avg,
+        today_synthetic=verdict.contract.synthetic_central_pct,
+    )
+
+    return matrix_b64, spot_contract_b64
