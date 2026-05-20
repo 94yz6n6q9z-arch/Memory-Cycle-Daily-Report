@@ -186,3 +186,103 @@ but **cannot re-fire**. Indicator 3's existing scoring dedups *broker actions*
 but has no event identity that spans source types — that's the gap. This sits
 *underneath* Indicator 3's scoring and the news filter, so it's more
 architecturally central than a bolt-on.
+
+---
+
+# v3.39.7 follow-ups — Cycle matrix Parts 5 and 6
+
+**Status**: queued post-v3.39.7 (matrix indicator shipped in Parts 1-4). Build sequenced AHEAD of v3.4 captive-ratio indicators because both have data-accumulation needs that benefit from running passively for 2-3 weeks before threshold tuning.
+
+**Why these are Parts 5 and 6, not v3.40**: the cycle matrix is one indicator (`t1_spot_decline`). Versioning it as v3.40 implies a feature-version step which it isn't — these are remaining pieces of the same architectural change. Numbering them as Parts (not minor versions) keeps the v3.4 captive-ratio label intact, consistent with the rest of the v3.3x sequence.
+
+---
+
+## Part 5 — Layer 2 integration + GHA history accumulation
+
+**Two pieces sequenced together** because the Layer 2 integration needs accumulated history to be informative.
+
+### 5a — Wire matrix verdict into Layer 2 signal_reasoner
+
+**Why**: in v3.39.7 the matrix verdict lives only in the email card + the deterministic indicator status override (`_override_t1_spot_decline_from_matrix`). It never reaches `signal_reasoner.py:reason_all_signals()` which produces the Layer 2 per-signal verdicts that Sonnet now receives (closed in v3.39.6). Result: Sonnet's exec summary references the OTHER 21 signals' Layer 2 verdicts but only references t1_spot_decline through the indicator badge — not through structured signal_reasoning. The exec summary cannot say "cycle matrix in Hold at R1/C2 with synthetic 54.6% QoQ" without the LLM re-deriving those numbers from prose.
+
+**Closed spec**:
+
+1. Add a new SignalReasoning entry produced upstream of Layer 2 (not in Layer 2 itself — Layer 2 is per-signal Haiku, and the matrix verdict is deterministic, so it's parallel to the rel_strength_full case which v3.39.6 already does this way).
+2. In `fast_tier.py` after `_run_cycle_matrix_step` returns the verdict, construct a `SignalReasoning(signal_id="t1_spot_decline", verdict=...)` and APPEND or REPLACE the entry in `signal_reasonings` list.
+3. The structured fields written are the matrix verdict deconstructed: `cell` (HOLD/WARN/FIRE string), `cell_label`, `contract_row`, `spot_col`, `synthetic_central_pct`, `anchor_quarter`, `anchor_age_days`, `drawdown_pct`, `weeks_since_peak`, and the three adjustment values (`tone_adj_pp`, `supplier_adj_pp`, `spot_lead_adj_pp`).
+4. Sonnet's prompt already iterates over `signal_reasonings`; no prompt change needed — the v3.39.6 LAYER 2 PER-SIGNAL VERDICTS block automatically picks up the new entry. Sonnet's exec summary can then reference the matrix structured fields directly without re-derivation.
+
+**Verification**: re-render the May 17/18 May briefs locally with the matrix verdict piped in. Confirm Sonnet's exec summary references matrix numbers verbatim (not paraphrased), and that t1_spot_decline appears in the "LAYER 2 PER-SIGNAL VERDICTS" block in the Sonnet prompt.
+
+**Files**: `signal_reasoner.py` (new dataclass init path, no Layer 2 Haiku change), `fast_tier.py` (post-matrix append step), tests in `test_v3_39_6_calculation_driven.py` extended with a t1_spot_decline parity case.
+
+### 5b — GHA fast_tier.yml commit step for data/*.csv
+
+**Why**: without this, the 63 seeded rows in `data/dram_spot_history.csv` are the ONLY history the matrix ever sees in production. GHA runners are ephemeral — every scrape result is computed, written to the runner filesystem, then destroyed when the runner shuts down. Days pile up with the matrix still evaluating against the May 19 2026 snapshot.
+
+**Closed spec**:
+
+1. Edit `.github/workflows/fast_tier.yml` to set `permissions: contents: write` (was `read`).
+2. Append a step at the END of the fast_tier job: `git add data/dram_spot_history.csv data/dram_contract_actuals.csv data/dram_contract_quarterly_forecasts.csv data/dram_contract_signals.csv` (with `2>/dev/null || true`), then commit-if-staged, then `git pull --rebase origin main` + push with one retry (v3.34 pattern).
+3. Verify the runner has the required token (`secrets.GITHUB_TOKEN` is the default and has write access when `contents: write` is set).
+4. The `.github_workflow_patch.yml` file in the v3.39.7 zip is the canonical text for this step.
+
+**Risk**: if two runs interleave (primary 11:00 + fallback 11:30) the second push may race the first. The v3.34 pattern (`git pull --rebase` before push, with one retry) handles this. Same pattern is already in `deep_tier.yml`.
+
+**Files**: `.github/workflows/fast_tier.yml` only.
+
+### 5 — Combined acceptance criteria
+
+- After 5 consecutive weekday GHA runs, `data/dram_spot_history.csv` has grown by 5-7 rows per day (one per SKU per day, modulo TrendForce updating slower than daily).
+- Sonnet exec summary's t1_spot_decline mention contains the matrix structured fields verbatim (cell, drawdown_pct, synthetic_central_pct).
+- The cycle matrix card in the email and the Sonnet-generated text agree on numbers; no paraphrase drift.
+- No regression in other 21 indicators or in the v3.39.6 Layer 2 + computed_metrics flow.
+
+---
+
+## Part 6 — Backtest harness against 2017-18 and 2022 cycle peaks
+
+**Why**: the matrix weights `{"tone": 0.4, "supplier": 0.4, "spot_lead": 0.2}` and the cell semantics (R1-R5/C1-C5 thresholds) were specified ex ante in Part 1. They have not been validated against historical cycle turns. The framework's underlying logic — that spot drawdown leads contract direction by 6-10 weeks — is empirically grounded (2018 cycle spot peaked ~2 months before contract turned; 2022 cycle DDR4 spot rolled ~6 months ahead per the audit xlsx) but the specific weight choices and band cutoffs are not.
+
+**Closed spec**:
+
+1. Assemble a backtest dataset covering 2017Q1-2018Q4 and 2021Q2-2023Q1 (two cycle tops + the troughs around them):
+   - Historical DDR4 16Gb 2Gx8 1600/2133 spot session_avg, weekly resolution (DDRexchange/DRAMeXchange archive, or paid TrendForce snapshot if free fails).
+   - Historical TrendForce quarterly contract forecasts (need to scrape Press Center archive; 2017-18 may require paywalled access — surface this as a question to the user at build time).
+   - Historical SK Hynix close price (yfinance — straightforward).
+2. Implement `scripts/backtest_cycle_matrix.py` that walks the backtest dates week-by-week, calling `evaluate_matrix()` with `as_of=<historical-date>`. Emits a CSV with `date, cell, contract_row, spot_col, synthetic_central_pct, drawdown_pct, sk_hynix_close, sk_hynix_drawdown_from_peak_pct`.
+3. Plot the backtest: SK Hynix close (left Y) + matrix cell color (background) over time. Goal is to visualize whether the matrix flipped to WARN/FIRE in the 4-8 weeks before SK Hynix made its all-time high in each cycle.
+4. Compute summary statistics:
+   - Did matrix reach WARN before SK Hynix's cycle peak? How many weeks ahead?
+   - Did matrix reach FIRE before SK Hynix's cycle peak? How many weeks ahead?
+   - Any false positives (FIRE that wasn't followed by an SK Hynix decline within N weeks)?
+   - Any false negatives (SK Hynix decline of >X% with matrix still in HOLD)?
+5. If false positive/negative counts are unacceptable, tune the weights. Specifically: if matrix lags (false negative), increase `spot_lead` weight (currently 0.2); if it whipsaws (false positive), tighten the spot drawdown bands (e.g., C2 boundary from -5% to -3%).
+
+**Acceptance criteria**:
+
+- Matrix reaches WARN at least 4 weeks before the cycle peak in both 2018 and 2022 backtests.
+- Matrix reaches FIRE at most 2 weeks after the cycle peak in both backtests (otherwise the signal is too late).
+- False positive count: at most 1 FIRE in a non-peak window across both backtests.
+- If acceptance criteria fail, document the tuning iteration in CHANGES.md and re-run.
+
+**Data sourcing risk**: historical TrendForce quarterly forecasts may be paywalled in archive. Fallback: use Korean broker PDFs (Mirae archive goes back to 2018) or manually transcribe from the brief's existing source citations in audit xlsx Tier 1. Surface to user at build time.
+
+**Files**: `scripts/backtest_cycle_matrix.py` (new), `tests/test_cycle_matrix.py` extended with backtest-pin cases for the 2018 and 2022 peak dates, `CHANGES.md` (record any tuning), `CLAUDE.md` (update locked decisions if weights changed).
+
+---
+
+## What to ask the user before starting Parts 5 and 6
+
+- Part 5a: confirm "OK to override the LLM's t1_spot_decline assessment in the signal_reasonings list, not just in the email indicator card" (this is the design choice that closes the Sonnet drift risk)
+- Part 5b: confirm GHA token has write access to the repo's main branch from the fast_tier workflow (default is yes; user may have repo settings that disable it)
+- Part 6: confirm historical data sourcing strategy — paid TrendForce archive vs Korean broker PDF reconstruction vs manual transcription. Decision affects time-to-build by 2-4 hours.
+- Sequencing: build Part 5 first (1-2 days, modest scope) and run for 2-3 weeks to accumulate real history before Part 6 backtest. Build Part 6 in parallel if a backtest dataset can be assembled without waiting on production accumulation.
+
+---
+
+## What's explicitly NOT in Parts 5 and 6 (candidates for Part 7+)
+
+- **HBM contract modeling**: open gap. SK Hynix is your primary position and HBM is its highest-margin product line; the cycle matrix currently models commodity DRAM only. Adding HBM would mean an HBM-specific anchor source (HBM forecast disclosures are gated; SK Hynix earnings commentary is the most reliable free source), an HBM-specific spot column proxy (spot prices for HBM don't exist meaningfully — HBM is contract-only), and likely a separate matrix grid (HBM cycle dynamics differ from commodity DRAM). Big enough to be its own version (v3.40 HBM cycle matrix), not a Part 7.
+- **LPDDR pricing integration**: gap #1 in the existing v3.4 roadmap above. Would inform Indicator 25 (LPDDR Datacenter Ramp) more than t1_spot_decline directly. Keep sequenced with v3.4.
+- **Real-time priority_alerter integration**: matrix verdict could feed `priority_alerter.py` for an off-cycle email when the cell flips Hold→Warn or Warn→Fire mid-day. Defer until Part 5 verifies the verdict is stable across runs.
