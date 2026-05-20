@@ -122,8 +122,14 @@ jobs:
           # is fired, with reversal_conditions per evidence entry) accumulates
           # across runs. Without this, every run reads the bootstrap-only state
           # and any Layer 2 status transitions from prior runs are lost.
+          # v3.39.7.5: state/trigger_events_24h.json added — the 24h ephemeral
+          # trigger event log. Without persistence, the morning's events would
+          # be visible only on the run that observed them; subsequent crons
+          # (clean checkout each time) would have an empty log and lose the
+          # callouts even though they fall well within the 24h window.
           git add -A state/brief_sent_dates.json state/prior_state.json state/cache/ \
                   state/indicator_evidence.json \
+                  state/trigger_events_24h.json \
                   data/dram_spot_history.csv \
                   data/dram_contract_actuals.csv \
                   data/dram_contract_quarterly_forecasts.csv \
