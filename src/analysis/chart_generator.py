@@ -10,6 +10,8 @@ v3.39.2 adds the supercycle phase chart — an overlay of the generic
 with three dynamic annotation panels listing fired and pending indicators.
 
 CHANGELOG (this file):
+  v3.39.7.2 (2026-05-20) — Reverted the synthetic contract line from step() back to plot() in generate_spot_contract_chart. v3.39.7.1's step function looked too rectangular; the user wants direct lines connecting the contract data points. The original v3.39.7 "triangle" complaint was about the fill_between band (the angular polygon shapes) not the plot line itself — with the band gone the straight-line connection is clean. Small white-edged markers added at each point so anchor publish dates + today are identifiable on the line. Subtitle updated.
+  v3.39.7.1 (2026-05-20) — Matrix chart cell labels updated from "HOLD"/"WARN"/"FIRE" to "Not fired"/"Partially fired"/"Fired" (with line breaks for fit at 7.5pt font). Internal lookup keys renamed to NOT_FIRED/PARTIAL/FIRED for dict-lookup ergonomics; the cell_display map controls the rendered text. In the dual-axis spot/contract chart, the contract line cleanup: removed the anchor dashed step + fill_between band + scatter dot + arrow annotation (they created angular polygons and a triangle peak at the Feb 2026 anchor jump). Now a single step function for the synthetic estimate with a plain text label at the right edge. Subtitle updated to reflect the new visualization.
   v3.39.7 (2026-05-20) — Two cycle-matrix charts appended at bottom:
     generate_cycle_matrix_chart() renders the 5x5 grid with HOLD/WARN/FIRE
     cell colors and a callout dot at today's (contract_row, spot_col).
@@ -646,14 +648,27 @@ def generate_cycle_matrix_chart(
     Returns a base64-encoded PNG suitable for inline HTML embedding.
     """
     # Matrix lookup (must match cycle_matrix.MATRIX exactly)
+    # v3.39.7.1 — display labels updated to match the framework's status
+    # vocabulary. Internal keys (NOT_FIRED/PARTIAL/FIRED) kept short for
+    # dict-lookup ergonomics; display strings use line breaks for "Partially
+    # fired" since "Partially" doesn't fit on a 1.0-unit cell at 8pt.
     matrix_cells = {
-        (1, 1): "HOLD", (1, 2): "HOLD", (1, 3): "HOLD", (1, 4): "WARN", (1, 5): "FIRE",
-        (2, 1): "HOLD", (2, 2): "HOLD", (2, 3): "WARN", (2, 4): "WARN", (2, 5): "FIRE",
-        (3, 1): "WARN", (3, 2): "WARN", (3, 3): "WARN", (3, 4): "FIRE", (3, 5): "FIRE",
-        (4, 1): "FIRE", (4, 2): "FIRE", (4, 3): "FIRE", (4, 4): "FIRE", (4, 5): "FIRE",
-        (5, 1): "FIRE", (5, 2): "FIRE", (5, 3): "FIRE", (5, 4): "FIRE", (5, 5): "FIRE",
+        (1, 1): "NOT_FIRED", (1, 2): "NOT_FIRED", (1, 3): "NOT_FIRED", (1, 4): "PARTIAL", (1, 5): "FIRED",
+        (2, 1): "NOT_FIRED", (2, 2): "NOT_FIRED", (2, 3): "PARTIAL",   (2, 4): "PARTIAL", (2, 5): "FIRED",
+        (3, 1): "PARTIAL",   (3, 2): "PARTIAL",   (3, 3): "PARTIAL",   (3, 4): "FIRED",   (3, 5): "FIRED",
+        (4, 1): "FIRED",     (4, 2): "FIRED",     (4, 3): "FIRED",     (4, 4): "FIRED",   (4, 5): "FIRED",
+        (5, 1): "FIRED",     (5, 2): "FIRED",     (5, 3): "FIRED",     (5, 4): "FIRED",   (5, 5): "FIRED",
     }
-    cell_colors = {"HOLD": MATRIX_COLOR_HOLD, "WARN": MATRIX_COLOR_WARN, "FIRE": MATRIX_COLOR_FIRE}
+    cell_colors = {
+        "NOT_FIRED": MATRIX_COLOR_HOLD,
+        "PARTIAL":   MATRIX_COLOR_WARN,
+        "FIRED":     MATRIX_COLOR_FIRE,
+    }
+    cell_display = {
+        "NOT_FIRED": "Not\nfired",
+        "PARTIAL":   "Partially\nfired",
+        "FIRED":     "Fired",
+    }
 
     row_labels = [">=+30%", "+20-30%", "+10-20%", "+5-10%", "<=+5%"]
     col_labels = ["At peak", "<5% off", "5-10% off", "10-20% off", ">=20% off"]
@@ -673,10 +688,11 @@ def generate_cycle_matrix_chart(
         )
         ax.add_patch(rect)
         ax.text(
-            x + 0.5, y + 0.5, kind,
+            x + 0.5, y + 0.5, cell_display[kind],
             ha="center", va="center",
-            fontsize=8, fontweight="bold",
+            fontsize=7.5, fontweight="bold",
             color="#2c2c2a",
+            linespacing=0.95,
         )
 
     # Plot the today-dot
@@ -819,53 +835,44 @@ def generate_spot_contract_chart(
     ax_spot.grid(True, linestyle=":", alpha=0.35)
 
     # ----- Right axis: contract growth -----
+    # v3.39.7.1 — contract line cleanup. Previously this axis had three visual
+    # elements competing for attention: (1) anchor dashed step, (2) anchor
+    # fill_between band, (3) synthetic continuous line drawn with plot(). The
+    # fill band created angular polygon shapes, and v3.39.7.1 then converted
+    # the synthetic to a step function. User feedback (v3.39.7.2): the step
+    # function looked too rectangular; switch back to direct lines connecting
+    # the contract points. The "triangle" artifact in the original v3.39.7
+    # render was the fill_between band, not the plot line itself — with the
+    # band gone the straight-line connection is clean.
+    #
+    # Now: ONE plot() line for the synthetic estimate connecting the data
+    # points directly. Visible markers at each point so the underlying anchor
+    # publish dates + today's value are identifiable on the line. No fill,
+    # no arrow, no end-cap callout — just the line and small markers.
     ax_contract = ax_spot.twinx()
 
-    # Anchor step function: forecasts as published (one step per quarter/revision)
-    if contract_anchor_series:
-        anc_dates = [a[0] for a in contract_anchor_series]
-        anc_central = [a[2] for a in contract_anchor_series]
-        anc_low = [a[1] for a in contract_anchor_series]
-        anc_high = [a[3] for a in contract_anchor_series]
-        # Extend to today so the step shows current
-        anc_dates_ext = anc_dates + [df["date"].iloc[-1].date()]
-        anc_central_ext = anc_central + [anc_central[-1]]
-        anc_low_ext = anc_low + [anc_low[-1]]
-        anc_high_ext = anc_high + [anc_high[-1]]
-
-        ax_contract.step(
-            anc_dates_ext, anc_central_ext, where="post",
-            color="#0F6E56", linewidth=1.6, linestyle="--", alpha=0.8,
-            label="TrendForce contract forecast central (anchor)",
-            zorder=3,
-        )
-        # Fill anchor band
-        ax_contract.fill_between(
-            anc_dates_ext, anc_low_ext, anc_high_ext,
-            step="post", alpha=0.10, color="#0F6E56", zorder=2,
-        )
-
-    # Synthetic contract estimate as continuous line
     if contract_synthetic_series:
         s_dates = [d for d, _ in contract_synthetic_series]
         s_central = [v for _, v in contract_synthetic_series]
         ax_contract.plot(
             s_dates, s_central,
-            color="#0F6E56", linewidth=2.4,
-            label="Synthetic contract estimate (tone+supplier+spot-lead adj)",
-            zorder=4,
+            color="#0F6E56", linewidth=2.2,
+            marker="o", markersize=5,
+            markerfacecolor="#0F6E56", markeredgecolor="white",
+            markeredgewidth=1.2,
+            label="Synthetic contract QoQ estimate",
+            zorder=3,
         )
 
+    # Today's contract value as a simple text label at the right edge
+    # (no arrow, no extra geometry).
     if today_synthetic is not None and contract_synthetic_series:
         last_date = contract_synthetic_series[-1][0]
-        ax_contract.scatter([last_date], [today_synthetic], s=70, color="#0F6E56",
-                            zorder=5, edgecolor="white", linewidth=1.5)
-        ax_contract.annotate(
-            f"{today_synthetic:.1f}% QoQ",
-            xy=(last_date, today_synthetic),
-            xytext=(-90, 8), textcoords="offset points",
+        ax_contract.text(
+            last_date, today_synthetic,
+            f"  {today_synthetic:.1f}% QoQ",
             fontsize=8, color="#0F6E56", fontweight="bold",
-            arrowprops=dict(arrowstyle="-", color="#0F6E56", lw=0.8),
+            ha="left", va="center",
         )
 
     ax_contract.set_ylabel("Contract growth QoQ (%)", fontsize=9,
@@ -878,15 +885,13 @@ def generate_spot_contract_chart(
     # Reasonable y-range for contract axis
     if contract_synthetic_series:
         all_c = [v for _, v in contract_synthetic_series]
-        if contract_anchor_series:
-            all_c += [a[2] for a in contract_anchor_series]
         c_min = min(0, min(all_c) - 10)
         c_max = max(all_c) + 15
         ax_contract.set_ylim(c_min, c_max)
 
     # Title
     title = "DDR5 16Gb spot price & synthetic contract QoQ estimate"
-    subtitle = "Two inputs to the cycle matrix; spot peaked early Feb 2026, contract anchor revised in Mar"
+    subtitle = "Two inputs to the cycle matrix; spot peaked early Feb 2026, contract synthetic updated at each forecast revision"
     ax_spot.set_title(title, fontsize=10.5, fontweight="bold", loc="left", pad=22)
     ax_spot.text(0, 1.02, subtitle, fontsize=8.5, color="#5F5E5A",
                  transform=ax_spot.transAxes)
