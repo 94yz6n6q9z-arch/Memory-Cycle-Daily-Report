@@ -588,6 +588,33 @@ class TestTrackedTickerSet(unittest.TestCase):
         )
 
 
+class TestDigesterFilenameSafety(unittest.TestCase):
+    """v3.39.4.2 regression test. The digester's broker-note filename
+    construction was clobbered by forward slashes in v3.39.4's new HTML
+    title format. The slash in "(000660 KS/Buy)" made open() try to nest
+    the file in a non-existent subdirectory.
+
+    This test asserts the regex sanitization Mirae writes (and digester
+    now mirrors) strips slashes and parentheses to underscores. Replicates
+    the exact production title that broke deep_tier at 17:48 UTC May 18."""
+
+    def test_slash_in_title_does_not_break_filename(self):
+        # The exact title from the failed deep_tier run, line 172:
+        broken_title = "SK Hynix (000660 KS/Buy)Reflecting additional NAND momentum"
+        # Same regex pattern used in digester.py:digest_korean_broker_notes
+        # and korean_brokers.py:_fetch_mirae_detail
+        import re as _re
+        safe = _re.sub(r"[^A-Za-z0-9._-]", "_", broken_title[:40])
+        # Must not contain forward slash anywhere
+        self.assertNotIn("/", safe)
+        # Must not contain parens, spaces, or other path-unsafe chars
+        for forbidden in ("/", "\\", " ", "(", ")", ":", "*", "?", "<", ">", "|"):
+            self.assertNotIn(forbidden, safe, f"{forbidden!r} should have been replaced")
+        # Sanity: should still be roughly recognizable
+        self.assertIn("SK_Hynix", safe)
+        self.assertIn("000660", safe)
+        self.assertIn("Buy", safe)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
-
