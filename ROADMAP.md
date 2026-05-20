@@ -345,6 +345,22 @@ architecturally central than a bolt-on.
 
 ---
 
+## v3.39.7.5 — ✅ SHIPPED 2026-05-20
+
+Five-issue release addressing user feedback on the May 20 v3.39.7.4 brief. Details in CHANGES.md.
+
+- **Issue 1** — KRX staleness repair: yfinance returned SK Hynix at yesterday's close while Yahoo's own page showed today's flat. Three-layer defensive fix in `prices.py` (asof check + FMP fallback + Naver fallback). New `fetch_quote_for_ticker` helper in `naver_finance.py`.
+- **Issue 2** — Cycle matrix card moved from section 3 (Tier indicators summary) to section 4 (Top 5 deep-dive), where it belongs with the DRAM Price Evolution deep-dive narrative.
+- **Issue 3** — Exec summary restructure: URGENT banner killed; the three v3.39.7.4 blocks (delta prose / big_movers list / Today's market) consolidated into ONE 5-8 sentence `executive_brief` paragraph written by Sonnet, covering 4 themes (signal changes, big news with directional-signal prioritization, big movers, macro). Anchor link convention `[→§N]` substituted to clickable HTML pointing at `id="section-N"` anchors on every numbered h2.
+- **Issue 4** — 24h ephemeral trigger event window: new `state/trigger_events_24h.json` log + 3 helpers in `state.py`. Multiple manual reruns same day keep showing the same trigger callouts (key user requirement); tomorrow they auto-prune naturally.
+- **Issue 4b** — Korea Herald RSS URL repaired (the old `020000000000.xml` endpoint had been 404'ing); 5 new Google News queries for Korean labor news so future Samsung-strike-style stories don't slip through.
+
+180 tests pass (160 prior + 11 in NEW `tests/test_trigger_log_24h.py` + 9 in NEW `tests/test_executive_brief.py`). xlsx renamed to `_v3_39_7_5.xlsx` (no content changes — no indicator config changed in this release; row 7 of Tier 2 sheet still reflects the v3.39.7.4 capex/OCF rewrite).
+
+Files: src/data/prices.py, src/data/naver_finance.py, src/fast_tier.py, src/email_module/template.py, src/analysis/llm_summarizer.py, src/state.py, src/config.py, .github/workflows/fast_tier.yml, tests/test_trigger_log_24h.py (NEW), tests/test_executive_brief.py (NEW).
+
+---
+
 ## v3.39.7.4 — ✅ SHIPPED 2026-05-20 (Batches 1 + 2)
 
 Two-batch correction following the May 20 production diagnostic. Details in CHANGES.md.
@@ -379,3 +395,25 @@ Items to monitor across the first ~2 weeks of v3.39.7.4 production runs. Not bug
 **Cron race elimination verification**: after v3.39.7.4 deploys, monitor for ~3 days that the 11:43 / 12:13 / 12:43 UTC crons all no-op cleanly (~30s runs) once the 11:13 cron succeeds. If any of them runs the full pipeline despite a successful 11:13, the `_refresh_from_origin_main()` mechanism isn't enough and we'd need a stronger barrier (probably a `git log --grep` check).
 
 ---
+
+## v3.39.7.5 — Follow-up watch items (post-shipping)
+
+**KRX repair frequency**: each KRX repair via FMP or Naver logs `WARNING` `KRX ticker {symbol} ({name}) has stale price history: latest={d1}, expected={d2} ({n}d stale)`. Watch in production:
+- 0% rate → yfinance KRX coverage is fine; repair path is dormant insurance
+- Occasional (<10% of runs) → expected; repair path doing its job
+- High rate (>50%) → yfinance has a systemic KRX issue; consider switching the primary fetch to FMP for KRX names and using yfinance as fallback instead
+
+**FMP coverage gaps**: `_fetch_krx_quote_from_fmp` returns None on any FMP failure (404, 401, missing price field). When this happens for SK Hynix or Samsung, the Naver fallback should pick up — verify by checking that the success path log line `Repaired {symbol} via Naver: today's close = ...` actually fires on at least some runs. If Naver also fails consistently, the brief renders the stale yfinance value flagged as such in the data source assessment. No additional fallback is planned — three sources is enough.
+
+**Executive brief quality**: the consolidated 5-8 sentence paragraph from Sonnet is the most visible part of the brief. Watch over the first week for:
+- Whether Sonnet emits the `[→§N]` anchor link tokens correctly (regex substitution catches them; if it ever emits malformed tokens like `[→§]` or `[→§X]`, those will appear as literal text)
+- Whether the paragraph actually covers all 4 themes or systematically skips one (likely (iv) macro, since it's the most lateral theme)
+- Length compliance — if Sonnet routinely writes <5 sentences (too thin) or >8 (too long), tighten the prompt
+- Directional-signal news prioritization — is the AsiaEconomy "Sell SK Hynix"-class news actually getting elevated in the paragraph? If not, the prompt's example needs to be made more prescriptive
+
+**24h trigger log behavior**: the log is the user's primary feedback channel for state changes during the day. Watch:
+- That manual reruns after the morning cron still show the same trigger callouts (the core requirement). If they vanish, the override in fast_tier.py isn't taking effect — check the log lines `Trigger event log: N entries in 24h window`
+- That `fired_at_iso` doesn't migrate on rerun (each entry keeps its first-observed timestamp)
+- That entries actually clear next calendar day. If the brief on day N+1 still shows day N's triggers, the prune logic in `load_trigger_log_24h` isn't working — likely a timezone confusion (24h is rolling UTC, but the user reads on Munich time which is +1 or +2)
+
+**Korea Herald URL longevity**: koreaherald.com has restructured RSS URLs at least twice in the past 5 years per public blog posts. The current `/rss/kh_Business` + `/rss/kh_National` URLs were probed live on 2026-05-20 but could die at any time. Watch the data source assessment section for `Korea Herald: 0 results` repeating across multiple consecutive runs — that's the signal to re-probe. The Google News fallback queries added in v3.39.7.5 provide partial backup but won't catch everything Korea Herald carries directly.

@@ -1208,10 +1208,20 @@ EPS_REVISIONS_TICKERS = ["000660.KS", "MU", "005930.KS"]  # SK Hynix, Micron, Sa
 RSS_FEEDS = {
     # Korean press
     "Korea Times Business": "https://www.koreatimes.co.kr/www/rss/biz.xml",
-    # NOTE: Yonhap, Korea Herald, Pulse all 404 — Korean press signal still flows
+    # NOTE: Yonhap, Pulse still 404 on their RSS endpoints. Korea Herald
+    # was repaired in v3.39.7.5 (see below). The Korean press signal also
+    # flows via Google News RSS targeted queries (see GOOGLE_NEWS_QUERIES).
     # via ChosunBiz scraper, KED Global (when not 502), and Korean-name Google News.
     "KED Global (Korea Economic Daily English)": "https://www.kedglobal.com/rss/all.xml",
-    "Korea Herald Business": "https://www.koreaherald.com/rss/020000000000.xml",
+    # v3.39.7.5 — Korea Herald RSS URL repaired. Old URL
+    # `koreaherald.com/rss/020000000000.xml` was the legacy numeric-key
+    # format and 404'd. The current site uses path-keyed RSS:
+    # `/rss/kh_Business` (Business section). Probed live 2026-05-20.
+    # Also added /rss/kh_National which carries labor news (Samsung
+    # strike resolution May 20 2026 was published here, not Business
+    # — Korean labor disputes are National-section content).
+    "Korea Herald Business": "https://www.koreaherald.com/rss/kh_Business",
+    "Korea Herald National": "https://www.koreaherald.com/rss/kh_National",
     # Memory / semi industry
     # v3.39.3 — Dropped "TrendForce": "https://www.trendforce.com/news/feed".
     # That URL returns no XML — TrendForce restructured their news section
@@ -1478,11 +1488,23 @@ GOOGLE_NEWS_QUERIES = [
     # AI efficiency (Tier 1)
     "KV cache compression",
     "inference efficiency breakthrough",
-    # Broker + analyst combos (NEW — catches MS/GS/Bernstein thematic notes)
+    # Broker + analyst combos (catches MS/GS/Bernstein thematic notes)
     "Morgan Stanley memory semiconductor",
     "Goldman Sachs SK Hynix Micron",
     "Bernstein semiconductor Rasgon",
     "JPMorgan memory DRAM analyst",
+    # v3.39.7.5 — Korean labor + macro queries. The May 20 2026 brief
+    # missed the Samsung-strike-resolution story (Korea Herald) which
+    # is a major SK Hynix-positive catalyst (their primary competitor
+    # avoiding production disruption). These targeted queries catch
+    # labor / capex commitment / Korean macro stories that the
+    # framework-keyword queries above miss because they don't mention
+    # memory products or pricing directly.
+    "Samsung union strike",
+    "Samsung Electronics labor dispute",
+    "SK Hynix labor union",
+    "Samsung Electronics chip workers",
+    "Korea memory chip industry",
     "Mizuho semiconductor memory",
     "Mirae Asset memory analyst",
     # Thematic cycle signals (NEW — would have caught the Jan 16 Shawn Kim note)

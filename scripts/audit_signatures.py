@@ -174,3 +174,76 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+# ============================================================
+# v3.38.3 — In-file CHANGELOG freshness checker.
+#
+# Per CLAUDE.md "Working norms": every editable file carries a CHANGELOG
+# (this file) block, and every modification must add a line. This was missed
+# repeatedly across v3.38.x — adding a freshness check so the audit script
+# also flags stale changelogs alongside signature mismatches.
+# ============================================================
+
+def check_changelog_freshness(root: str = "src") -> list[tuple]:
+    """Return list of (file, latest_changelog_version) for files where the
+    CHANGELOG block exists but doesn't mention the current top-of-CHANGES.md
+    version (if it should). Heuristic-only — manual review still required."""
+    import re
+    from pathlib import Path
+
+    issues: list[tuple] = []
+    # What's the latest version per CHANGES.md? Pull from the top entry.
+    changes_path = Path("CHANGES.md")
+    latest_global = None
+    if changes_path.exists():
+        for line in changes_path.read_text().splitlines():
+            m = re.match(r"##\s+v(\d+\.\d+(?:\.\d+)?)\s", line)
+            if m:
+                latest_global = m.group(1)
+                break
+
+    if not latest_global:
+        return issues  # can't check freshness without a reference
+
+    for r, _, names in os.walk(root):
+        for n in names:
+            if not (n.endswith(".py") and not n.startswith("_")):
+                continue
+            f = os.path.join(r, n)
+            head = Path(f).read_text()[:5000]  # changelog should be near the top
+            if "CHANGELOG (this file)" not in head:
+                continue  # file doesn't use the per-file changelog pattern
+            # What's the newest version mentioned in this file's changelog?
+            versions = re.findall(r"v(\d+\.\d+(?:\.\d+)?)", head)
+            if not versions:
+                continue
+            file_latest = max(versions, key=lambda v: tuple(int(x) for x in v.split(".")))
+            global_parts = tuple(int(x) for x in latest_global.split("."))
+            file_parts = tuple(int(x) for x in file_latest.split("."))
+            # Only flag if file's latest is BEHIND the global latest AND the file
+            # was modified in git status / on disk recently. For a simple heuristic
+            # we just compare versions — manual review confirms if a real touch.
+            if file_parts < global_parts:
+                issues.append((f, file_latest, latest_global))
+    return issues
+
+
+# Patch main() to also report stale changelogs (don't fail the build on them,
+# just warn — the signature audit remains the hard gate).
+_orig_main = main
+
+
+def main() -> int:
+    code = _orig_main()
+    stale = check_changelog_freshness("src")
+    if stale:
+        print(f"\n⚠ CHANGELOG freshness check (advisory):")
+        print(f"  CHANGES.md latest version: {stale[0][2]}")
+        print(f"  Files whose CHANGELOG (this file) doesn't mention it:")
+        for f, file_latest, global_latest in stale:
+            print(f"    {f}  (file CHANGELOG: v{file_latest})")
+        print(f"  → Per CLAUDE.md: 'When you modify a file, ADD a line to its block.'")
+        print(f"  → Check whether each file was actually modified at v{global_latest}.")
+        # Advisory only — doesn't change exit code.
+    return code

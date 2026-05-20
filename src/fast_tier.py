@@ -361,7 +361,7 @@ def run_fast_tier() -> int:
             #     it with margin. Defense-in-depth: pct_change_lookback also
             #     hardened in prices.py to fall back gracefully even when
             #     the series is shorter than the requested window.
-            pool.submit(_run, "prices",    lambda: fetch_price_history(WIDER_BASKET, period="3y", collector=collector)),
+            pool.submit(_run, "prices",    lambda: fetch_price_history(WIDER_BASKET, period="3y", collector=collector, fmp_api_key=FMP_API_KEY or None)),
             pool.submit(_run, "estimates", lambda: fetch_all_estimates(CORE_TICKERS, fmp_api_key=FMP_API_KEY, collector=collector)),
             # v3.38: edgar_feeds passed as kwarg — fetch_all_news signature is
             # (rss, google, hours_back, edgar_feeds, collector); positional
@@ -705,6 +705,58 @@ def run_fast_tier() -> int:
             news_items=news_items,
             big_movers=big_movers,
         )
+
+    # v3.39.7.5 — 24h ephemeral trigger event window.
+    #
+    # The brief used to compute "new triggers today" via Sonnet's diff of
+    # current vs prior_state.json. With idempotent re-runs (which the user
+    # frequently triggers manually during the day) the second+ runs would
+    # see prior_state already reflecting today's status → empty diff →
+    # "No new trigger events today", losing the morning's events.
+    #
+    # The 24h log keeps each transition visible until 24h after first
+    # observation regardless of how many manual reruns happen. Tomorrow's
+    # first run sees them naturally pruned (>24h old) and the brief shows
+    # "No new trigger events today" only when there have genuinely been
+    # none in the last 24h.
+    try:
+        from src.state import update_trigger_log_24h
+        # Build prior_status_by_id from the PREVIOUS prior_state.json
+        # (loaded at the top of run_fast_tier, before this run's analysis
+        # gets persisted to prior_state.json by save_state below). This is
+        # the "diff target" — what was true at the start of today's processing.
+        prior_status_by_id = {
+            a.get("id"): a.get("current_status", "")
+            for a in (prior_state.get("indicator_assessments") or [])
+            if isinstance(a, dict) and a.get("id")
+        }
+        log_entries = update_trigger_log_24h(
+            prior_status_by_id=prior_status_by_id,
+            current_assessments=analysis.indicator_assessments or [],
+        )
+        # Override Sonnet's computed new_triggers_today with the log-derived
+        # list. The log already covers Sonnet's case (today's transitions)
+        # PLUS earlier transitions today that Sonnet wouldn't see on reruns.
+        # Convert log entry shape to the dict shape ExecutiveSummary expects
+        # (keys: tier, indicator_id, indicator_name, description).
+        analysis.executive_summary.new_triggers_today = [
+            {
+                "tier": e["tier"],
+                "indicator_id": e["indicator_id"],
+                "indicator_name": e["indicator_name"],
+                "description": e["description"],
+            }
+            for e in log_entries
+        ]
+        logger.info(
+            f"Trigger event log: {len(log_entries)} entries in 24h window "
+            f"(prior Sonnet count was {len(analysis.executive_summary.new_triggers_today)})"
+        )
+    except Exception as e:
+        # Safe-fail: if the log update fails for any reason, keep Sonnet's
+        # computed new_triggers_today list so the brief still renders the
+        # callouts for transitions Sonnet itself detected.
+        logger.warning(f"Could not update 24h trigger event log: {e}")
 
     # ----- Step 6: Chart + email -----
     # v3.39: generate_performance_chart takes (history_baseline100, title=...).

@@ -506,3 +506,93 @@ def fetch_naver_with_retry() -> tuple[Optional[dict], dict]:
         fetch_fn=fetch_all_naver_actions,
         criticality=Criticality.CRITICAL,  # Closes canonical Tier 2 signal
     )
+
+
+# ============================================================
+# v3.39.7.5 — Quote fallback for KRX tickers
+# ============================================================
+# When yfinance returns stale data for KRX tickers (the May 20 brief showed
+# SK Hynix at yesterday's -5.16% close despite the brief running 10+ hours
+# after KRX close), `prices.py` falls back to FMP and then to Naver Finance.
+# Naver is a SECONDARY fallback because it's a scrape, not an API — kept as
+# the last line of defense since the data is server-rendered and reliably
+# fresh within minutes of KRX close.
+
+
+def fetch_quote_for_ticker(naver_code: str) -> Optional[dict]:
+    """Fetch the latest quote for a single KRX-listed ticker from Naver Finance.
+
+    Args:
+        naver_code: The 6-digit KRX ticker without exchange suffix
+            (e.g. "000660" for SK Hynix, NOT "000660.KS").
+
+    Returns dict with keys:
+        - price: float, current/last close in KRW
+        - previous_close: float, prior trading day's close
+        - change_pct: float, today's percentage change vs previous close
+        - asof: ISO timestamp string of when we scraped this
+        - source: 'Naver Finance'
+    Or None if the scrape failed or the page structure changed.
+
+    The Naver Finance HTML structure (stable since at least 2020):
+      <p class="no_today"><em>...<span class="blind">PRICE</span></em></p>
+      <table class="no_info">
+        ... <span class="blind">PREVIOUS CLOSE</span> ...
+    `<span class="blind">` is screen-reader text containing the raw number
+    in Korean number format (commas as thousands separators). We strip
+    commas and parse as int → float.
+    """
+    if not naver_code or not naver_code.isdigit() or len(naver_code) != 6:
+        logger.warning(f"Invalid Naver code {naver_code!r}; expected 6-digit string")
+        return None
+
+    url = f"https://finance.naver.com/item/main.naver?code={naver_code}"
+    try:
+        resp = _polite_get_with_retry(url)
+        soup = BeautifulSoup(resp.text, "html.parser")
+    except Exception as e:
+        logger.warning(f"Naver quote scrape failed for {naver_code}: {e}")
+        return None
+
+    # Current price: <p class="no_today"> → first <span class="blind">
+    no_today = soup.find("p", class_="no_today")
+    if no_today is None:
+        logger.warning(f"Naver quote {naver_code}: <p class='no_today'> not found")
+        return None
+    blind = no_today.find("span", class_="blind")
+    if blind is None or not blind.text.strip():
+        logger.warning(f"Naver quote {naver_code}: blind span empty")
+        return None
+    try:
+        price = float(blind.text.strip().replace(",", ""))
+    except ValueError:
+        logger.warning(f"Naver quote {naver_code}: could not parse price {blind.text!r}")
+        return None
+
+    # Previous close: <table class="no_info"> → first <span class="blind">
+    # Table layout: first row, first cell, with the "전일" (previous day) label.
+    previous_close: Optional[float] = None
+    no_info = soup.find("table", class_="no_info")
+    if no_info is not None:
+        # Iterate all blind spans inside no_info; first one is previous close
+        blind_spans = no_info.find_all("span", class_="blind")
+        if blind_spans:
+            try:
+                previous_close = float(blind_spans[0].text.strip().replace(",", ""))
+            except ValueError:
+                pass
+    if previous_close is None:
+        logger.info(f"Naver quote {naver_code}: previous close not parsed; will skip change_pct")
+
+    change_pct: Optional[float] = None
+    if previous_close and previous_close > 0:
+        change_pct = round((price / previous_close - 1) * 100, 4)
+
+    return {
+        "price": price,
+        "previous_close": previous_close,
+        "change_pct": change_pct,
+        "asof": datetime.now(timezone.utc).isoformat(),
+        "source": "Naver Finance",
+    }
+

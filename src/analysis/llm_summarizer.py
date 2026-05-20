@@ -92,7 +92,22 @@ class CaseScenario:
 
 @dataclass
 class ExecutiveSummary:
-    """The structured exec summary at the top of the email."""
+    """The structured exec summary at the top of the email.
+
+    v3.39.7.5 — `executive_brief` field added: a single consolidated
+    5-8 sentence paragraph synthesizing today's signal changes, big
+    news, big movers, and macro context. Replaces the three-block
+    pattern (delta_from_prior_text / big_movers list / market_summary)
+    that the May 20 brief surfaced as repetitive. Anchor links of the
+    form `[→§N]` are emitted by Sonnet and substituted to HTML
+    `<a href="#section-N">§N</a>` at template render time.
+
+    The legacy fields (`delta_from_prior_text`, `urgent_attention_*`,
+    and `market_summary` on BriefAnalysis) are KEPT but no longer
+    rendered. Sonnet still populates them as JSON output for any
+    future debugging/observability use; they're dead-letter fields
+    from the email's perspective.
+    """
     current_phase: int
     current_phase_label: str
     tier_status_summary: str
@@ -103,6 +118,7 @@ class ExecutiveSummary:
     delta_from_prior_text: str
     urgent_attention_needed: bool
     urgent_attention_text: str
+    executive_brief: str = ""  # v3.39.7.5 — populated by Sonnet, rendered as the consolidated exec block
 
 
 # ============================================================
@@ -917,14 +933,39 @@ ANALYTICAL FRAMEWORK CONTEXT:
 - Most likely peak window per current evidence: Q3 2026 - Q1 2027.
 
 YOUR JOB:
-1. Build the EXECUTIVE SUMMARY in the structured format below.
+1. Build the EXECUTIVE SUMMARY in the structured format below — including the consolidated `executive_brief` paragraph that anchors the brief (see detailed spec in section EXECUTIVE BRIEF SPECIFICATION below).
 2. Assess EVERY indicator (status, where we stand, latest developments with links).
 3. Provide DEEP DIVES for the top 5 indicators.
 4. Compose the cycle position synthesis paragraph.
 5. Identify NEW TRIGGERS that fired today (compare against prior state).
 6. Calculate UPDATED PROBABILITY DISTRIBUTION based on new evidence.
 7. Compare current peak estimate vs prior to flag if peak has shortened or extended.
-8. If a new tier signal fired today, set urgent_attention_needed=true and explain.
+
+EXECUTIVE BRIEF SPECIFICATION (v3.39.7.5):
+
+The `executive_brief` field is the consolidated paragraph at the top of the brief — the FIRST thing the reader sees after the phase line and trigger callouts. It replaces three separate v3.39.7.4 blocks (delta_from_prior_text prose, big_movers list, market_summary) into a single coherent narrative.
+
+Length: 5-8 sentences, ONE paragraph. The reader uses this to decide whether to read on; details are in later sections.
+
+Content — cover all four themes in this order, but blend them into prose (NOT four labeled bullets):
+  (i)  Signal fires/unfires today + what drove them (cite the specific indicator and the trigger value / news that caused the change)
+  (ii) Big news from today's feed. PRIORITIZE items that align with a framework signal even when they don't formally fire it. Example: a single-firm "Sell SK Hynix" rating doesn't fire t2_insider_sales (which requires actual insider transactions), but in a market of 26-up / 0-down EPS revisions it IS the first sell-side dissent — a psychological inflection the framework cares about deeply. Surface these as "directional confirmation of [signal name]" or "first dissent from the [signal name] consensus".
+  (iii) Big movers today — name 2-4 specific tickers with their 1D % moves. Focus on those that diverge from the broader semi tape (especially the memory pure-plays).
+  (iv) Macro / AI / semiconductor backdrop news that impacts the trade (Fed decisions, China export controls, NVIDIA orders, AI capex announcements, etc).
+
+Anchor links — when referencing detail elsewhere in the brief, emit hyperlinks of the form `[→§N]` where N is the section number (1-7):
+  §1 = Performance overview (price table)
+  §2 = Where we stand in the cycle (phase chart)
+  §3 = Tier indicators — daily status (summary cards)
+  §4 = Top 5 indicators — deep dive (deep-dive narratives, includes matrix)
+  §5 = Latest news from the memory & semi market
+  §6 = Calendar of events — next 90 days
+  §7 = Data source assessment
+
+The template substitutes `[→§N]` into clickable HTML anchors. Use them liberally — every claim that has a detail elsewhere should link. Example:
+  "...ASML +5.5% [→§1] led equipment names higher on strong demand commentary [→§5], while SK Hynix flat amid first sell-side dissent (directional confirmation of t2_insider_sales [→§3])..."
+
+Tone: institutional analyst, declarative, no hedging language ("might", "could", "perhaps"). State the facts as observed.
 
 OUTPUT FORMAT - respond with ONLY a JSON object:
 
@@ -936,12 +977,11 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
     "new_triggers_today": [
       {{"tier": 2, "indicator_id": "...", "indicator_name": "...", "description": "..."}}
     ],
+    "executive_brief": "5-8 sentence consolidated paragraph per EXECUTIVE BRIEF SPECIFICATION above. Cover all 4 themes (signal changes, big news with directional-signal prioritization, big movers, macro). Use anchor links of the form [→§N] for cross-references.",
     "base_case": {{"probability_pct": 50, "peak_months_away": 4, "peak_window_start": "August 2026", "peak_window_end": "October 2026", "return_to_peak_pct": 18}},
     "bull_case": {{"probability_pct": 22, "peak_months_away": 12, "peak_window_start": "Q1 2027", "peak_window_end": "Q2 2027", "return_to_peak_pct": 55}},
     "bear_case": {{"probability_pct": 28, "peak_months_away": 0, "peak_window_start": "May 2026", "peak_window_end": "May 2026", "return_to_peak_pct": -8}},
-    "delta_from_prior_text": "Base case peak unchanged | OR shortened by X months due to ... | OR no prior data",
-    "urgent_attention_needed": false,
-    "urgent_attention_text": "Empty if not urgent. Otherwise: clear description of what to address."
+    "delta_from_prior_text": "Legacy field (v3.39.7.5: no longer rendered, but keep emitting for back-compat / observability). Short description of probability/peak-window shifts vs prior brief."
   }},
   "indicator_assessments": [
     {{
@@ -1346,8 +1386,15 @@ def sonnet_analyze(
         bull_case=bull_fixed,
         bear_case=bear_fixed,
         delta_from_prior_text=exec_data.get("delta_from_prior_text", ""),
-        urgent_attention_needed=exec_data.get("urgent_attention_needed", False),
-        urgent_attention_text=exec_data.get("urgent_attention_text", ""),
+        # v3.39.7.5 — URGENT banner killed; fields kept on dataclass for back-
+        # compat with prior_state.json but Sonnet no longer populates them
+        # and template no longer renders them.
+        urgent_attention_needed=False,
+        urgent_attention_text="",
+        # v3.39.7.5 — consolidated exec paragraph replacing the old 3-block
+        # pattern (delta prose / big movers / today's market). Anchor links
+        # of the form `[→§N]` are substituted into clickable HTML at render.
+        executive_brief=exec_data.get("executive_brief", ""),
     )
 
     # v3.39.1: defensive construction of IndicatorAssessment objects from the
@@ -1539,6 +1586,13 @@ def fallback_analysis(
         delta_from_prior_text="LLM unavailable - cannot compute deltas",
         urgent_attention_needed=False,
         urgent_attention_text="",
+        # v3.39.7.5 — fallback exec brief when Sonnet is unavailable
+        executive_brief=(
+            "LLM analysis is unavailable for this brief; please review raw data manually. "
+            f"Performance data captured for {len(performance_data)} tickers — see §1 for the price table. "
+            "Indicator statuses default to 'Unknown' in §3; tier counts and trigger event detection "
+            "require the Sonnet path. Today's news feed is summarized in §5."
+        ),
     )
 
     return BriefAnalysis(

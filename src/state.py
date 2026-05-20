@@ -41,6 +41,14 @@ CACHE_DIR = STATE_DIR / "cache"
 DIGESTS_DIR = STATE_DIR / "digests"
 BRIEF_SENT_FILE = STATE_DIR / "brief_sent_dates.json"
 PRIOR_STATE_FILE = STATE_DIR / "prior_state.json"
+# v3.39.7.5 — 24h ephemeral trigger event log. Each indicator status
+# transition (e.g., t1_demand_destruction: Not fired → Fired) gets one
+# entry keyed on (indicator_id, new_status), timestamped with when the
+# transition was FIRST observed within the rolling 24h window. Lets
+# multiple manual brief reruns during the day keep showing the same
+# trigger callouts (which would otherwise disappear after the first run
+# updated prior_state.json). Entries auto-prune past 24h on every load.
+TRIGGER_EVENTS_24H_FILE = STATE_DIR / "trigger_events_24h.json"
 
 
 # ============================================================
@@ -143,6 +151,152 @@ def mark_brief_sent_today(today: Optional[date] = None) -> None:
         with open(BRIEF_SENT_FILE, "w") as f:
             json.dump(data, f, indent=2)
     logger.info(f"Marked {today.isoformat()} as brief-sent.")
+
+
+# ============================================================
+# 24h ephemeral trigger event log (v3.39.7.5)
+# ============================================================
+#
+# Problem solved: with idempotent reruns, the prior brief-sent path was
+# "compute trigger events as diff(today, prior_state)". This meant the
+# FIRST run of the day computed the diff correctly, persisted prior_state,
+# and on subsequent manual reruns the diff was empty (because prior_state
+# already reflected today's status). Users running multiple manual briefs
+# during the day would see "No new trigger events today" on every rerun
+# after the first.
+#
+# The 24h log decouples display from prior_state. Each transition gets
+# logged on first observation; subsequent reruns within 24h read from the
+# log and re-display the same events. Tomorrow's first run sees them
+# pruned out (>24h old) so they become "the new normal" naturally without
+# needing a separate "clear on calendar day change" mechanism.
+#
+# Dedup key: (indicator_id, new_status). So if t1_demand_destruction
+# transitions Not fired → Fired in the morning, then later in the same
+# day transitions Fired → Partially fired, BOTH entries appear (different
+# new_status). If the morning's transition is logged twice (e.g., due to
+# a race), only the first sticks (same key).
+
+
+def load_trigger_log_24h(now_utc: Optional[datetime] = None) -> list[dict]:
+    """Load the 24h ephemeral trigger event log, pruning entries older than 24h.
+
+    Returns a list of dicts: each has keys {indicator_id, indicator_name,
+    tier, old_status, new_status, description, fired_at_iso}. The
+    fired_at_iso is the timestamp of FIRST observation within the rolling
+    24h window (so the same event displayed across multiple manual reruns
+    keeps a stable timestamp).
+
+    `now_utc` defaults to datetime.utcnow() — overridable for testing.
+    Missing file or parse error → returns empty list (logged at warn).
+    """
+    if now_utc is None:
+        now_utc = datetime.utcnow()
+    if not TRIGGER_EVENTS_24H_FILE.exists():
+        return []
+    try:
+        with open(TRIGGER_EVENTS_24H_FILE) as f:
+            entries = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning(f"Could not load {TRIGGER_EVENTS_24H_FILE}: {e}")
+        return []
+    if not isinstance(entries, list):
+        logger.warning(
+            f"{TRIGGER_EVENTS_24H_FILE} root is not a list (got {type(entries).__name__}); "
+            f"treating as empty"
+        )
+        return []
+    cutoff_iso = (now_utc - timedelta(hours=24)).isoformat()
+    pruned = [
+        e for e in entries
+        if isinstance(e, dict) and e.get("fired_at_iso", "") > cutoff_iso
+    ]
+    return pruned
+
+
+def save_trigger_log_24h(entries: list[dict]) -> None:
+    """Persist the trigger event log. Caller pre-prunes to last 24h."""
+    STATE_DIR.mkdir(exist_ok=True)
+    try:
+        with open(TRIGGER_EVENTS_24H_FILE, "w") as f:
+            json.dump(entries, f, indent=2)
+    except OSError as e:
+        logger.warning(f"Could not write {TRIGGER_EVENTS_24H_FILE}: {e}")
+
+
+def update_trigger_log_24h(
+    prior_status_by_id: dict[str, str],
+    current_assessments: list,
+    now_utc: Optional[datetime] = None,
+) -> list[dict]:
+    """Merge today's observed transitions into the 24h log, prune, save, return.
+
+    Args:
+        prior_status_by_id: maps indicator_id → prior current_status string
+            (e.g. {"t1_demand_destruction": "Not fired", ...}). Built from
+            prior_state.json by the caller — passed in instead of read here
+            to avoid a circular import on state.py.
+        current_assessments: list of IndicatorAssessment-like objects from
+            the just-computed brief. Each must have .id, .name, .tier,
+            .current_status. Pass directly from analysis.indicator_assessments.
+        now_utc: optional datetime override for testing.
+
+    Returns the final pruned + saved log — what should be passed to
+    ExecutiveSummary.new_triggers_today. Each dict has keys: indicator_id,
+    indicator_name, tier, old_status, new_status, description, fired_at_iso.
+
+    The dedup key is (indicator_id, new_status). Same event observed across
+    multiple reruns within 24h keeps the first fired_at_iso; the entry
+    is NOT re-timestamped.
+    """
+    if now_utc is None:
+        now_utc = datetime.utcnow()
+
+    log = load_trigger_log_24h(now_utc=now_utc)
+    existing_keys = {(e["indicator_id"], e["new_status"]) for e in log}
+    now_iso = now_utc.isoformat()
+
+    new_count = 0
+    for a in current_assessments:
+        try:
+            indicator_id = a.id
+            indicator_name = a.name
+            tier = a.tier
+            new_status = a.current_status
+        except AttributeError:
+            # Skip malformed entries — defensive, shouldn't happen with
+            # IndicatorAssessment which guarantees these via dataclass
+            continue
+
+        prior_status = prior_status_by_id.get(indicator_id)
+        if prior_status is None:
+            continue  # No prior baseline — not a transition
+        if prior_status == new_status:
+            continue  # Unchanged
+        key = (indicator_id, new_status)
+        if key in existing_keys:
+            continue  # Already in log from earlier rerun today
+
+        log.append({
+            "indicator_id": indicator_id,
+            "indicator_name": indicator_name,
+            "tier": tier,
+            "old_status": prior_status,
+            "new_status": new_status,
+            "description": f"Status changed from '{prior_status}' to '{new_status}'.",
+            "fired_at_iso": now_iso,
+        })
+        existing_keys.add(key)
+        new_count += 1
+
+    if new_count > 0:
+        logger.info(
+            f"Trigger event log: {new_count} new transitions added; "
+            f"{len(log)} total entries in 24h window"
+        )
+
+    save_trigger_log_24h(log)
+    return log
 
 
 # ============================================================

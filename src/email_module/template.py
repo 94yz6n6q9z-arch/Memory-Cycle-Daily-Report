@@ -21,6 +21,7 @@ CHANGELOG (this file):
 from __future__ import annotations
 
 import html
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -105,6 +106,14 @@ def build_email_html(
       .case-bull { background: #EAF3DE; color: #4A6B17; }
       .case-bear { background: #FCEBEB; color: #791F1F; }
       .delta-text { font-style: italic; color: #5F5E5A; font-size: 13px; margin-top: 8px; }
+      /* v3.39.7.5 — consolidated executive brief paragraph. The chunky
+         5-8 sentence narrative that anchors the brief. Anchor links
+         (rendered from the literal token [→§N] in Sonnet output) use
+         a subtle styling so they're visible but don't disrupt the
+         reading flow. */
+      .exec-brief { background: #f5f3ed; border-left: 3px solid #534AB7; padding: 14px 18px; margin: 14px 0 0 0; font-size: 14px; line-height: 1.55; color: #2d2d2d; }
+      .exec-brief .anchor-link, .anchor-link { color: #534AB7; text-decoration: none; font-weight: 600; padding: 0 2px; border-bottom: 1px dotted #534AB7; }
+      .exec-brief .anchor-link:hover, .anchor-link:hover { text-decoration: underline; }
       .new-trigger { background: #FFEBA1; border-left: 3px solid #C68A2A; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
       .big-movers { background: #fff; border: 1px solid #e0ddd4; padding: 12px 16px; margin: 12px 0; border-radius: 4px; font-size: 13px; }
       .market-summary { background: #f5f3ed; padding: 10px 14px; margin: 12px 0; font-size: 13px; border-radius: 4px; border-left: 3px solid #888780; }
@@ -162,14 +171,9 @@ def build_email_html(
 
     es = analysis.executive_summary
 
-    # 0. Urgent banner if flagged
-    if es.urgent_attention_needed and es.urgent_attention_text:
-        parts.append(
-            f"<div class='urgent-banner'>"
-            f"<span class='label'>⚠ URGENT — REQUIRES ATTENTION</span><br/>"
-            f"<span class='text'>{html.escape(es.urgent_attention_text)}</span>"
-            f"</div>"
-        )
+    # v3.39.7.5 — URGENT banner killed entirely. Was repetitive with body card
+    # statuses and tier_status_summary line. Field still on ExecutiveSummary
+    # dataclass for back-compat (won't break prior_state load); just not rendered.
 
     # 0b. 🚨 Relative strength banner — fires when any of 3 sub-triggers breach
     if rel_strength_verdict and rel_strength_verdict.get("overall_fired"):
@@ -181,18 +185,12 @@ def build_email_html(
         if overall in ("FIRED", "EARLY_WARNING"):
             parts.append(_build_eps_revisions_banner(eps_scoring_verdict))
 
-    # 1. Executive summary in the requested format
+    # 1. Executive summary — phase line, new-trigger callouts, consolidated brief
+    # v3.39.7.5: _build_executive_summary now renders es.executive_brief (the
+    # consolidated 5-8 sentence paragraph) with anchor link substitution. The
+    # old _build_big_movers and market_summary renders are GONE — both themes
+    # are now folded into the consolidated paragraph.
     parts.append(_build_executive_summary(es))
-
-    # 2. Big movers callout
-    if analysis.big_movers:
-        parts.append(_build_big_movers(analysis.big_movers))
-
-    # Market summary
-    if analysis.market_summary:
-        parts.append(
-            f"<div class='market-summary'><strong>Today's market:</strong> {html.escape(analysis.market_summary)}</div>"
-        )
 
     # 3. Performance section
     #
@@ -201,7 +199,7 @@ def build_email_html(
     # shows 1D / 1W / 1M / 3M / 6M / 1Y returns numerically). The lead visual
     # is now the supercycle phase chart (section 2 below). chart_base64 is
     # still computed upstream but no longer embedded here.
-    parts.append("<h2>1. Performance overview</h2>")
+    parts.append("<h2 id='section-1'>1. Performance overview</h2>")
     parts.append(_build_performance_table(performance))
 
     # 4. Where we stand in the cycle (supercycle phase chart) — v3.39.2
@@ -211,7 +209,7 @@ def build_email_html(
     # the rest of the content; renumbering downstream is not necessary
     # because section numbers below this one are stable regardless.
     if supercycle_chart_base64:
-        parts.append("<h2>2. Where we stand in the cycle</h2>")
+        parts.append("<h2 id='section-2'>2. Where we stand in the cycle</h2>")
         parts.append(
             "<p style='font-size:12px;color:#5F5E5A;margin-top:0'>"
             "SK Hynix mapped against the universal 5-phase memory-supercycle "
@@ -229,21 +227,22 @@ def build_email_html(
             f"alt='Supercycle phase chart — SK Hynix vs 5-phase framework' />"
         )
 
-    # 5. Tier indicators
-    parts.append("<h2>3. Tier indicators — daily status</h2>")
-    parts.append(_build_indicators_section(
-        analysis.indicator_assessments,
+    # 5. Tier indicators (section 3 — summary cards table)
+    parts.append("<h2 id='section-3'>3. Tier indicators — daily status</h2>")
+    parts.append(_build_indicators_section(analysis.indicator_assessments))
+
+    # 6. Top 5 deep dives (section 4 — includes cycle matrix card under
+    # t1_spot_decline per v3.39.7.5 placement decision)
+    parts.append("<h2 id='section-4'>4. Top 5 indicators — deep dive</h2>")
+    parts.append(_build_top5_section(
+        analysis.top_5_deep_dives,
         cycle_verdict=cycle_verdict,
         cycle_matrix_chart_b64=cycle_matrix_chart_b64,
         spot_contract_chart_b64=spot_contract_chart_b64,
     ))
 
-    # 6. Top 5 deep dives
-    parts.append("<h2>4. Top 5 indicators — deep dive</h2>")
-    parts.append(_build_top5_section(analysis.top_5_deep_dives))
-
     # 7. Latest news
-    parts.append("<h2>5. Latest news from the memory & semi market</h2>")
+    parts.append("<h2 id='section-5'>5. Latest news from the memory & semi market</h2>")
     parts.append(_build_news_section(analysis.key_news_summary))
 
     # 7b. EPS Revisions Watch — detailed section when signal fired/approaching
@@ -253,7 +252,7 @@ def build_email_html(
 
     # 8. Calendar of events (next 90 days)
     if upcoming_events:
-        parts.append("<h2>6. Calendar of events — next 90 days</h2>")
+        parts.append("<h2 id='section-6'>6. Calendar of events — next 90 days</h2>")
         parts.append(
             "<p style='font-size:12px;color:#5F5E5A;margin-top:0'>"
             "Forward-looking calendar across the core 7 indicators and wider industry. "
@@ -266,7 +265,7 @@ def build_email_html(
 
     # 8. Data source assessment (per-source fetch status)
     if data_source_statuses:
-        parts.append("<h2>7. Data source assessment</h2>")
+        parts.append("<h2 id='section-7'>7. Data source assessment</h2>")
         parts.append(
             "<p style='font-size:12px;color:#5F5E5A;margin-top:0'>"
             "Per-source diagnostics for this run. Written confirmation that each configured "
@@ -368,6 +367,33 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
         f"</div>"
     )
 
+    # v3.39.7.5 — consolidated executive brief paragraph.
+    # Replaces the old 3-block pattern (delta_from_prior_text prose alone +
+    # big_movers list + market_summary). Sonnet writes ONE 5-8 sentence
+    # paragraph covering 4 themes (signal changes, big news with directional-
+    # signal prioritization, big movers, macro). Anchor links of the form
+    # `[→§N]` are substituted into clickable HTML pointing to section ids.
+    if es.executive_brief:
+        # Escape HTML first to prevent injection, then substitute anchor links.
+        # The Sonnet prompt explicitly emits the literal token `[→§N]` (with
+        # the arrow + section sign + number + brackets), so we look for that
+        # exact pattern in the escaped string.
+        escaped = html.escape(es.executive_brief)
+        # The arrow → and section sign § survive html.escape (only <,>,&," get
+        # escaped). Sub them: [→§N] → clickable HTML link.
+        brief_with_links = re.sub(
+            r"\[→§(\d+)\]",
+            lambda m: f"<a href='#section-{m.group(1)}' class='anchor-link'>§{m.group(1)}</a>",
+            escaped,
+        )
+        brief_block = (
+            f"<div class='exec-brief'>"
+            f"{brief_with_links}"
+            f"</div>"
+        )
+    else:
+        brief_block = ""
+
     return (
         f"<div class='exec-summary'>"
         f"<h2>Executive summary</h2>"
@@ -376,6 +402,7 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
         f"{peak_line}"
         f"{cases_line}"
         f"{delta_line}"
+        f"{brief_block}"
         f"</div>"
     )
 
@@ -428,17 +455,16 @@ def _format_change(value: Optional[float]) -> str:
 
 def _build_indicators_section(
     assessments: list[IndicatorAssessment],
-    cycle_verdict: Optional[object] = None,
-    cycle_matrix_chart_b64: Optional[str] = None,
-    spot_contract_chart_b64: Optional[str] = None,
 ) -> str:
     """Build the four-tier indicator status tables.
 
-    v3.39.7: when rendering t1_spot_decline AND both chart base64 strings
-    are provided, append a full-width "Cycle matrix snapshot" card row
-    directly under the indicator row, containing the matrix dot chart (40%)
-    and the dual-axis spot/contract chart (60%) side-by-side. If any of
-    the cycle_* kwargs is None, the section renders exactly as in v3.38.
+    v3.39.7.5 — the cycle matrix snapshot card was moved out of this
+    section (was injected under t1_spot_decline at the bottom of section
+    3 since v3.39.7). It now renders inside section 4 (Top 5 indicators
+    — deep dive), at the bottom of the DRAM Price Evolution deep-dive
+    item per user direction 2026-05-20. This keeps section 3 as a clean
+    summary table and concentrates the visual matrix + chart in the
+    deep-dive context where they're more useful.
     """
     parts = []
     for tier in (1, 2, 3, 4):
@@ -482,13 +508,8 @@ def _build_indicators_section(
                 "</tr>"
             )
 
-            # v3.39.7 — inject cycle matrix card under t1_spot_decline
-            if (a.id == "t1_spot_decline"
-                and cycle_matrix_chart_b64
-                and spot_contract_chart_b64):
-                parts.append(_build_cycle_matrix_card(
-                    cycle_verdict, cycle_matrix_chart_b64, spot_contract_chart_b64,
-                ))
+            # v3.39.7.5: cycle matrix card moved to section 4 deep-dive,
+            # was previously injected here under t1_spot_decline.
 
         parts.append("</tbody></table>")
 
@@ -552,8 +573,21 @@ def _build_cycle_matrix_card(
 </td></tr>"""
 
 
-def _build_top5_section(top5: list[IndicatorAssessment]) -> str:
-    """Deeper write-up for the top 5 indicators."""
+def _build_top5_section(
+    top5: list[IndicatorAssessment],
+    cycle_verdict: Optional[object] = None,
+    cycle_matrix_chart_b64: Optional[str] = None,
+    spot_contract_chart_b64: Optional[str] = None,
+) -> str:
+    """Deeper write-up for the top 5 indicators.
+
+    v3.39.7.5 — when rendering t1_spot_decline AND both chart base64
+    strings are provided, append a full-width "Cycle matrix snapshot"
+    card directly under that indicator's deep-dive write-up. Moved here
+    from section 3 (where it lived in v3.39.7-v3.39.7.4) per user
+    direction: the matrix + chart belong inside the deep-dive context,
+    not stuck under a summary card.
+    """
     parts = []
     for a in top5:
         status_color = STATUS_COLORS.get(a.current_status, "#CCCCCC")
@@ -571,6 +605,16 @@ def _build_top5_section(top5: list[IndicatorAssessment]) -> str:
                 for l in a.relevant_links[:5]
             )
             parts.append(f"<p class='links-list' style='font-size:12px'>{link_html}</p>")
+
+        # v3.39.7.5: inject cycle matrix card under t1_spot_decline's deep dive.
+        # If either chart b64 is missing, falls back to silent skip — keeps the
+        # deep-dive narrative readable even when cycle_matrix step failed.
+        if (a.id == "t1_spot_decline"
+            and cycle_matrix_chart_b64
+            and spot_contract_chart_b64):
+            parts.append(_build_cycle_matrix_card(
+                cycle_verdict, cycle_matrix_chart_b64, spot_contract_chart_b64,
+            ))
 
     return "\n".join(parts)
 

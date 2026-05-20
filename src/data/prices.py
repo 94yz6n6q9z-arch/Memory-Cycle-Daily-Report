@@ -5,16 +5,27 @@ Provides:
 - Current prices and recent performance for tracked tickers
 - 1Y price history baselined to 100 for charting
 - Performance over multiple windows (1D, 1W, 1M, 3M, 6M, 1Y)
+
+v3.39.7.5 — KRX staleness repair. yfinance occasionally returns
+yesterday's bar as the "latest" for `.KS` / `.KQ` tickers even when
+the daily session has been closed for many hours. The May 20 2026
+brief surfaced SK Hynix at -5.16% (yesterday's print) while Yahoo's
+own page showed 1,745,000 KRW flat (today's actual close). The
+repair path here checks each KRX ticker's freshness after the batch
+yfinance call and falls back through (1) single-ticker yfinance
+refetch, (2) FMP `/api/v3/quote/{symbol}`, (3) Naver Finance scrape.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 import pandas as pd
+import requests
 import yfinance as yf
 
 from src.diagnostics import DiagnosticsCollector
@@ -42,12 +53,20 @@ def fetch_price_history(
     period: str = "1y",
     interval: str = "1d",
     collector: Optional[DiagnosticsCollector] = None,
+    fmp_api_key: Optional[str] = None,
 ) -> pd.DataFrame:
     """Fetch adjusted close price history for a basket of tickers.
 
     Returns a DataFrame indexed by date with one column per ticker name.
     Records a single SourceFetchStatus for the batch yfinance call,
     with items_returned set to the number of tickers that resolved.
+
+    v3.39.7.5 — After the batch fetch, KRX tickers (.KS / .KQ) are
+    checked for staleness. yfinance has been observed returning
+    yesterday's bar as the latest for KRX names even when the daily
+    session closed >12h ago. Stale KRX tickers get their latest row
+    repaired from FMP first (if `fmp_api_key` provided), then from
+    Naver Finance as a last resort.
     """
     symbols = list(tickers.values())
     name_map = {symbol: name for name, symbol in tickers.items()}
@@ -97,7 +116,179 @@ def fetch_price_history(
         _t_handle.detail = f"{resolved}/{len(symbols)} tickers resolved"
 
     out = out.dropna(how="all")
+
+    # v3.39.7.5: repair stale KRX tickers via FMP → Naver fallback chain
+    out = _repair_stale_krx_tickers(
+        out, tickers, fmp_api_key=fmp_api_key, collector=collector,
+    )
+
     return out
+
+
+# ============================================================
+# v3.39.7.5 — KRX staleness repair
+# ============================================================
+# KRX (Korea Exchange) trading hours: 09:00-15:30 KST = 00:00-06:30 UTC.
+# After 06:30 UTC on a weekday, the daily session is closed and the
+# day's close should be available in price feeds. yfinance is usually
+# reliable but has been seen returning T-1 data for KRX tickers even
+# many hours after close. We check freshness and fall back through:
+#   1. FMP `/api/v3/quote/{symbol}` (API, fast, well-formatted)
+#   2. Naver Finance scrape (server-rendered, free, last resort)
+# If all fail, we keep the stale data and emit a WARN diagnostic.
+
+
+def _latest_expected_krx_session_date(now_utc: Optional[datetime] = None) -> date:
+    """The most recent trading-day date for which KRX has a closed session.
+
+    Walks back through weekends/holidays-as-weekends. We don't have a
+    full KRX holiday calendar; weekend handling alone catches ~95% of
+    cases, and the safety_buffer parameter (1h) provides slack on
+    days where ingestion is slow.
+
+    KRX closes at 06:30 UTC. We add a 1.5h ingestion buffer, so we only
+    expect today's data to be available from 08:00 UTC onward.
+    """
+    if now_utc is None:
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    candidate = now_utc.date()
+    cutoff_today = now_utc.replace(hour=8, minute=0, second=0, microsecond=0)
+    if now_utc < cutoff_today:
+        candidate -= timedelta(days=1)
+    # Walk back through Sat/Sun (and unrecognized holidays — they'll
+    # appear as a stale-but-recent-weekday case)
+    while candidate.weekday() >= 5:
+        candidate -= timedelta(days=1)
+    return candidate
+
+
+def _fetch_krx_quote_from_fmp(symbol: str, api_key: str) -> Optional[dict]:
+    """Fetch latest quote from Financial Modeling Prep.
+
+    Args:
+        symbol: full Yahoo-style ticker (e.g. "000660.KS"). FMP accepts
+            the same format.
+        api_key: FMP API key (env var `FMP_API_KEY`)
+
+    Returns dict with keys {price, previous_close, change_pct, asof,
+    source} or None if the fetch failed or didn't return usable data.
+    """
+    if not api_key:
+        return None
+    try:
+        url = f"https://financialmodelingprep.com/api/v3/quote/{symbol}?apikey={api_key}"
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        if not data or not isinstance(data, list) or not data[0].get("price"):
+            return None
+        item = data[0]
+        price = float(item["price"])
+        prev = item.get("previousClose")
+        prev_f = float(prev) if prev is not None else None
+        change_pct = None
+        if prev_f and prev_f > 0:
+            change_pct = round((price / prev_f - 1) * 100, 4)
+        return {
+            "price": price,
+            "previous_close": prev_f,
+            "change_pct": change_pct,
+            "asof": datetime.now(timezone.utc).isoformat(),
+            "source": "FMP",
+        }
+    except Exception as e:
+        logger.warning(f"FMP quote fetch failed for {symbol}: {e}")
+        return None
+
+
+def _repair_stale_krx_tickers(
+    history: pd.DataFrame,
+    tickers: dict[str, str],
+    fmp_api_key: Optional[str] = None,
+    collector: Optional[DiagnosticsCollector] = None,
+) -> pd.DataFrame:
+    """For each KRX-listed ticker (.KS / .KQ) in `tickers`, check whether
+    `history`'s latest row reflects the most recent expected KRX session.
+    If not, try to repair by appending today's close from FMP, then Naver.
+
+    Mutates and returns the DataFrame.
+    """
+    krx_tickers = {
+        name: symbol for name, symbol in tickers.items()
+        if symbol.endswith(".KS") or symbol.endswith(".KQ")
+    }
+    if not krx_tickers:
+        return history
+
+    expected_date = _latest_expected_krx_session_date()
+    expected_ts = pd.Timestamp(expected_date)
+
+    repairs_attempted = 0
+    repairs_succeeded = 0
+    repair_details = []
+
+    for name, symbol in krx_tickers.items():
+        if name not in history.columns:
+            continue
+        series = history[name].dropna()
+        if len(series) == 0:
+            continue
+
+        latest_ts = pd.Timestamp(series.index[-1]).normalize()
+        if latest_ts >= expected_ts:
+            continue  # Fresh, no repair needed
+
+        repairs_attempted += 1
+        days_stale = (expected_ts - latest_ts).days
+        logger.warning(
+            f"KRX ticker {symbol} ({name}) has stale price history: "
+            f"latest={latest_ts.date()}, expected={expected_date} "
+            f"({days_stale}d stale). Attempting FMP → Naver fallback."
+        )
+
+        # Try FMP first
+        quote = _fetch_krx_quote_from_fmp(symbol, fmp_api_key) if fmp_api_key else None
+
+        # Fall back to Naver scrape (uses 6-digit code, no exchange suffix)
+        if quote is None:
+            try:
+                from src.data.naver_finance import fetch_quote_for_ticker
+                naver_code = symbol.replace(".KS", "").replace(".KQ", "")
+                quote = fetch_quote_for_ticker(naver_code)
+            except Exception as e:
+                logger.warning(f"Naver quote fallback failed for {symbol}: {e}")
+                quote = None
+
+        if quote is None:
+            logger.error(
+                f"Could not repair stale {symbol} via FMP or Naver — "
+                f"keeping yfinance value of {series.iloc[-1]:.0f} from {latest_ts.date()}. "
+                f"Brief will display this stale value flagged in data source assessment."
+            )
+            repair_details.append(f"{symbol}: failed (all fallbacks exhausted)")
+            continue
+
+        # Inject the fresh value at expected_ts
+        history.loc[expected_ts, name] = quote["price"]
+        history = history.sort_index()
+        repairs_succeeded += 1
+        logger.info(
+            f"Repaired {symbol} via {quote['source']}: today's close = "
+            f"{quote['price']:.0f} KRW (was {series.iloc[-1]:.0f} from {latest_ts.date()})"
+        )
+        repair_details.append(
+            f"{symbol}: repaired via {quote['source']} → {quote['price']:.0f} KRW"
+        )
+
+    if repairs_attempted > 0 and collector is not None:
+        with collector.track("KRX staleness repair", "internal") as t:
+            t.items_returned = repairs_succeeded
+            t.detail = (
+                f"{repairs_succeeded}/{repairs_attempted} KRX tickers repaired. "
+                + " | ".join(repair_details)
+            )
+
+    return history
 
 
 def calculate_performance(

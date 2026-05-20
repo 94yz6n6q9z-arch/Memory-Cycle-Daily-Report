@@ -6,7 +6,112 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
-## v3.39.7.4 (Batch 1 + Batch 2) — Surgical fixes + bear case calibration + capex/OCF metric rebuild
+## v3.39.7.5 — KRX staleness repair + exec summary restructure + matrix relocation + 24h ephemeral triggers + Korea Herald repair
+
+Five concurrent fixes addressing user feedback on the May 20 2026 v3.39.7.4 brief. Touches data fetching, email layout, Sonnet prompt, and persistent state.
+
+### Issue 1 — SK Hynix price stale by one day (KRX staleness repair)
+
+**Root cause**: yfinance occasionally returns yesterday's bar as the "latest" for `.KS` / `.KQ` tickers even when the daily session has been closed for many hours. The May 20 brief surfaced SK Hynix at -5.16% (yesterday's print) while Yahoo's own page showed 1,745,000 KRW flat (today's actual close). Symptom was specific to SK Hynix — Samsung (also `.KS`) returned fresh data the same run. yfinance's data provider just doesn't always have today's KRX close ready by the time we fetch.
+
+**Fix**: three-layer defensive repair in `src/data/prices.py`:
+- New `_latest_expected_krx_session_date(now_utc)` walks back through weekends from now − 8h UTC cutoff (KRX closes 06:30 UTC + 1.5h ingestion buffer) to determine the most recent expected close date
+- New `_fetch_krx_quote_from_fmp(symbol, api_key)` hits `https://financialmodelingprep.com/api/v3/quote/{symbol}` — FMP has `000660.KS` in its catalog (confirmed). Uses the existing `FMP_API_KEY` env var. Returns `{price, previous_close, change_pct, asof, source}` or None on failure.
+- New `_repair_stale_krx_tickers(history, tickers, fmp_api_key, collector)` runs after the batch yfinance fetch; for each KRX ticker, if `series.index[-1] < expected_date`, attempts FMP → Naver fallback chain and injects today's close at `expected_ts`.
+- New `fetch_quote_for_ticker(naver_code)` in `src/data/naver_finance.py` scrapes `https://finance.naver.com/item/main.naver?code=XXXXXX` for the same-day quote (server-rendered HTML, parses `<p class="no_today">` for current price + `<table class="no_info">` for previous close). Used as the last-resort fallback when FMP doesn't have the ticker.
+- `fetch_price_history()` signature gains `fmp_api_key: Optional[str] = None` kwarg; `fast_tier.py` call updated to pass `FMP_API_KEY or None`.
+
+Safe-failing: if all fallbacks exhaust, logs `ERROR` and keeps the yfinance stale value (the brief renders the stale value but the data source assessment section flags it).
+
+### Issue 2 — Cycle matrix + spot/contract chart moved from section 3 to section 4
+
+**Root cause**: v3.39.7 attached the cycle matrix card under the `t1_spot_decline` row in `_build_indicators_section` (section 3, "Tier indicators — daily status"). User feedback (May 20): the matrix and chart are deep-dive material and belong with the deep-dive narrative for DRAM Price Evolution in section 4 ("Top 5 indicators — deep dive"), not interrupting the at-a-glance card summary.
+
+**Fix** in `src/email_module/template.py`:
+- `_build_indicators_section()` signature stripped back to `(assessments)` — removed cycle_verdict / cycle_matrix_chart_b64 / spot_contract_chart_b64 kwargs and the inline card injection
+- `_build_top5_section()` signature extended to receive those same three kwargs; injects the `_build_cycle_matrix_card()` directly under the t1_spot_decline deep-dive write-up
+- `build_email_html()` call site updated to route the matrix params to `_build_top5_section` instead of `_build_indicators_section`
+- `_build_cycle_matrix_card` helper itself unchanged
+
+Section numbering unchanged (7 sections total, matrix now lives inside section 4).
+
+### Issue 3 — Executive summary restructure: kill URGENT banner, consolidate three blocks into one, anchor links
+
+**Root cause**: the May 20 brief had three overlapping summary blocks all conveying related info:
+- URGENT banner (red box, large)
+- "Indicator distribution shifted materially vs prior:" prose paragraph (dense)
+- "Big movers today:" list line
+- "Today's market:" prose paragraph
+
+This was repetitive and made it hard to find the substantive analytical takeaway. User feedback: kill URGENT entirely; merge the other three into one consolidated 5-8 sentence paragraph covering (i) signal fires/unfires, (ii) big news, (iii) big movers, (iv) macro/AI/semi.
+
+**Fix** across `src/analysis/llm_summarizer.py` + `src/email_module/template.py`:
+
+**Sonnet prompt + parser**:
+- New `executive_brief` field added to JSON schema with detailed 4-theme spec embedded in prompt as the `EXECUTIVE BRIEF SPECIFICATION` section. Length target: 5-8 sentences, ONE paragraph. Themes blend into prose (not labeled bullets). Cites the AsiaEconomy "Sell SK Hynix" article as the canonical example of directional-signal news prioritization — items that don't formally fire an indicator but ARE a meaningful directional confirmation get elevated.
+- `urgent_attention_needed` + `urgent_attention_text` removed from JSON schema; YOUR JOB item 8 ("If new tier signal fired today, set urgent_attention_needed=true and explain") removed
+- ExecutiveSummary dataclass retains `urgent_attention_needed` / `urgent_attention_text` fields for back-compat with prior_state.json — but parser sets them to False / "" always now
+- New field `executive_brief: str = ""` on ExecutiveSummary dataclass (default empty for back-compat)
+- Anchor link convention: Sonnet emits literal token `[→§N]` for cross-references to numbered sections (e.g., `[→§5]` to jump to news section). Template substitutes via regex.
+- Fallback `analyze_with_llm` (when Sonnet fails) also populates a sensible default executive_brief telling the reader to check raw data manually
+
+**Template**:
+- Removed: URGENT banner render block, `_build_big_movers` call (function kept for back-compat but no longer invoked from `build_email_html`), `market_summary` "Today's market" prose render
+- `_build_executive_summary()` rewritten to render `es.executive_brief` with anchor link substitution: regex `\[→§(\d+)\]` → `<a href='#section-N' class='anchor-link'>§N</a>`
+- All 7 numbered h2 section headers now carry `id="section-N"` so the anchor links work
+- New CSS: `.exec-brief` (subtle background, left border accent, 14px font, 1.55 line-height) + `.anchor-link` (purple, dotted underline, hover effect)
+
+### Issue 4 — 24h ephemeral trigger event window
+
+**Root cause**: the brief used to compute "new triggers today" via Sonnet's diff of current vs `prior_state.json`. With idempotent re-runs (user frequently triggers multiple manual briefs during the day), the second+ runs would see prior_state already reflecting today's status → empty diff → "No new trigger events today", losing the morning's events. User feedback: events should stay visible for a rolling 24h window regardless of how many manual reruns happen, then disappear naturally the next calendar day.
+
+**Fix** — new state file + 3 helpers + integration:
+- New state file `state/trigger_events_24h.json` (list of dicts, each with indicator_id / indicator_name / tier / old_status / new_status / description / fired_at_iso)
+- New `TRIGGER_EVENTS_24H_FILE` constant in `src/state.py`
+- New `load_trigger_log_24h(now_utc=None)` — reads JSON, auto-prunes entries with `fired_at_iso < (now − 24h)`, returns the pruned list. Missing file or parse error → empty list (safe).
+- New `save_trigger_log_24h(entries)` — persists the list.
+- New `update_trigger_log_24h(prior_status_by_id, current_assessments, now_utc=None)` — computes today's transitions (prior status != current status), merges into log with dedup key `(indicator_id, new_status)`, prunes >24h, saves, returns final log. Critically: re-observed transitions within 24h KEEP their original `fired_at_iso` (no re-stamping), so the "new trigger" callout doesn't migrate to the top each rerun.
+- `src/fast_tier.py` integration: after `analyze_with_llm` returns, builds `prior_status_by_id` from prior_state.json (the diff target before today's analysis is persisted), calls `update_trigger_log_24h`, overrides `analysis.executive_summary.new_triggers_today` with the log-derived list. Safe-failing: any exception logs WARN and falls back to Sonnet's computed list.
+- `.github/workflows/fast_tier.yml`: `state/trigger_events_24h.json` added to the `git add -A` line so the log persists across cron runs (clean checkout each time means without persistence the log would always read empty).
+
+11 new tests in `tests/test_trigger_log_24h.py` covering: empty/missing/malformed file → empty list; transitions are captured; unchanged status skipped; missing prior skipped; same transition within 24h NOT re-added (the key dedup test, with morning/afternoon timestamps to verify original `fired_at_iso` survives); two different transitions on same indicator both captured; old entries pruned; malformed assessments skipped gracefully.
+
+### Issue 4b — Korea Herald RSS repair + Korean labor news queries
+
+**Root cause**: the old `koreaherald.com/rss/020000000000.xml` URL had been 404'ing for some time (existing comment in config.py acknowledged this). When Samsung averted the planned strike on May 20 — a material positive for SK Hynix — the news flowed through Korea Herald but our brief missed it because the RSS endpoint was dead.
+
+**Fix** in `src/config.py`:
+- Replaced dead URL with `https://www.koreaherald.com/rss/kh_Business` (probed live 2026-05-20, working)
+- Added `https://www.koreaherald.com/rss/kh_National` (Korean labor disputes are National-section content)
+- Added 5 new GOOGLE_NEWS_QUERIES targeting Korean labor + macro headlines that often miss general feeds: `"Samsung union strike"`, `"Samsung Electronics labor dispute"`, `"SK Hynix labor union"`, `"Samsung Electronics chip workers"`, `"Korea memory chip industry"`
+
+### Files changed in v3.39.7.5
+
+- `src/data/prices.py` — KRX staleness repair (Issue 1)
+- `src/data/naver_finance.py` — new `fetch_quote_for_ticker` helper (Issue 1)
+- `src/fast_tier.py` — pass `fmp_api_key` to fetch_price_history (Issue 1); wire 24h trigger log (Issue 4)
+- `src/email_module/template.py` — matrix moved to section 4 (Issue 2); URGENT/big_movers/market_summary removed, executive_brief rendered with anchor links, section-N anchors added, new CSS (Issue 3)
+- `src/analysis/llm_summarizer.py` — Sonnet prompt schema rewritten, executive_brief field added, fallback updated (Issue 3)
+- `src/state.py` — TRIGGER_EVENTS_24H_FILE + 3 helpers (Issue 4)
+- `src/config.py` — Korea Herald RSS repaired, 5 new labor queries (Issue 4b)
+- `.github/workflows/fast_tier.yml` — trigger_events_24h.json added to git add (Issue 4)
+- `tests/test_trigger_log_24h.py` — NEW, 11 tests for the 24h log
+- `tests/test_executive_brief.py` — NEW, 9 tests for anchor link substitution + URGENT removal
+- `memory_cycle_data_source_audit_v3_39_7_5.xlsx` — renamed only (no content changes in this release)
+- 180 tests pass (160 prior from v3.39.7.4 + 11 trigger log + 9 executive brief)
+
+### What v3.39.7.5 does NOT change
+
+- Indicator config (thresholds, IDs, names): unchanged from v3.39.7.4
+- Evidence store schema: unchanged
+- Layer 1 digesters / Layer 2 system prompt: unchanged
+- All other data fetchers (estimates, news, DART, cycle_matrix): unchanged
+- Bear case calibration (added in 2a of v3.39.7.4): unchanged
+- Capex/OCF metric (added in 2b of v3.39.7.4): unchanged
+
+---
+
+
 
 Two-batch correction sequence following the May 20 2026 production diagnostic. Batch 1 unblocks the matrix and fixes the tier-count + idempotency issues. Batch 2 calibrates the bear case to historical drawdowns and replaces the broken capex/revenue trigger with capex/OCF.
 
