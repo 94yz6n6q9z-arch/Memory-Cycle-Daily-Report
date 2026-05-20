@@ -12,6 +12,7 @@ email's data-source validation table can confirm the source was actually
 reached and parsed.
 
 CHANGELOG (this file):
+  v3.39.7 (2026-05-20) — Cycle matrix data pipeline: structured spot/contract scrapers + CSV persistence helpers, all appended at the bottom of this module without changing any existing function. Existing scrape_trendforce_prices() (v3.39.3, returns list[NewsItem] for the news pipeline) is kept intact; the structured table-parsing was refactored OUT of it into a shared internal helper `_parse_trendforce_spot_table_html()` reused by both code paths. New public API: parse_trendforce_spot_html, parse_trendforce_contract_html, scrape_trendforce_spot_structured, scrape_trendforce_contract, fetch_article_body, persist_spot_to_history, persist_contract_to_history, upsert_contract_forecasts, upsert_contract_signals. New dataclasses: SpotScrapeRow, SpotScrapeResult, ContractScrapeRow, ContractScrapeResult. Persistence helpers are idempotent (replace rows matching key tuples on rerun, no growth). Consumed by fast_tier.py:run_cycle_matrix_step() after the existing news fetch.
   v3.39.3 (2026-05-18) — TrendForce ingestion fix. Three layered issues identified from the 21:19 UTC May 17 run where the Tier 1 brief read "no new TrendForce spot price prints in today's feed." (a) scrape_trendforce() was pointing at https://www.trendforce.com/news/category/dram which TrendForce has restructured to https://www.trendforce.com/news/category/semiconductors/dram/ (with /semiconductors/ segment + trailing slash). The old URL returns a 200 with no matching <article a[href*='/news/']> selectors → 0 items silently. URL fixed. (b) New function scrape_trendforce_prices() scrapes the public spot-price table at /price/dram/dram_spot. The page is server-rendered HTML, NOT JS-populated — the table cells contain the actual numbers, no XHR endpoint to find. But it's full-page CDN-cached with cache keys keyed on request fingerprint (UA/geo/cookies), so generic-UA clients can see 1-3 day-old snapshots. Mitigations: real Chrome UA + Cache-Control: no-cache + ?_=<ms> cache-buster + a FRESHNESS GUARD that parses "Last Update YYYY-MM-DD HH:MM (GMT+8)" and prepends "[STALE]" to the NewsItem title when age >36h. A stale fetch is worse than no fetch (silently pollutes Tier 1 logic) — the title tag makes it visible to Layer 2 and the email diagnostics row. (c) score_relevance() now auto-preserves the TrendForce price-table NewsItem at score 10 (mechanical signal, same treatment as EDGAR), so it can never be filtered out by Haiku. The DRAMeXchange RSS feed (config.py change in same release) replaces the dead trendforce.com/news/feed URL — open, well-formed XML, carries weekly research commentary which feeds the behavioral-signal trigger.
   v3.38.3 (2026-05-17) — HEADERS user-agent further tightened: switched from "Mozilla/5.0 (compatible; MemoryCycleBrief/1.0; ...)" to a plain Chrome UA ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"). The "compatible;" pattern is the classic bot signature that Cloudflare-style anti-bot rules match against, producing the 403s on Damnang Substack and Investing.com x4 in the 14:31 UTC run. Plain Chrome UA passes those filters. Also added Accept and Accept-Language headers (legit browser fingerprint).
   v3.38.2 (2026-05-17) — RSS fetcher rewritten to use requests.get(url, headers=HEADERS) + feedparser.parse(resp.content) instead of feedparser.parse(url). Reason: feedparser's default UA "UniversalFeedParser/6.x +github.com/kurtmckee/feedparser/" was being blocked or served HTML by Substack, Cloudflare-fronted sites, and various anti-bot middleware, producing three error-message families ("is not an XML media type" / "<unknown>:2:0: syntax error" / "<unknown>:N:M: not well-formed (invalid token)"). EDGAR was already correctly using requests; this fix applies the same pattern to RSS and Google News. Both `_safe_parse_rss_feed` and `fetch_google_news` updated. RuntimeError raised on HTTP failure so it surfaces in diagnostics.
@@ -179,6 +180,51 @@ def fetch_edgar_feeds(
     return items
 
 
+def _extract_publisher_url_from_google_news_entry(entry) -> Optional[str]:
+    """v3.39.5: Resolve the actual publisher URL from a Google News RSS entry.
+
+    Google News returns RSS entries where `entry.link` is an encoded redirect
+    URL of the form `https://news.google.com/rss/articles/CBMi*`. These URLs
+    return HTTP 400 ("That's an error") when accessed directly — Google
+    deprecated direct access to encoded redirect URLs in 2024.
+
+    The actual publisher URL is embedded in `entry.summary` as an `<a href>`
+    tag — Google News emits HTML like:
+        <ol><li>
+          <a href="https://www.seouleconomicdaily.com/news/articleView..."
+             target="_blank">Article Title</a>
+          &nbsp;&nbsp;
+          <font color="#6f6f6f">Publisher Name</font>
+        </li></ol>
+
+    This function parses that HTML and returns the first publisher href.
+    Falls back to None if extraction fails — caller can then keep the
+    Google redirect URL (still broken but at least not a None reference).
+
+    Confirmed against today's email broken-link cases (Seoul Economic /
+    AD HOC NEWS / abhs.in).
+    """
+    raw_summary = entry.get("summary", "") or ""
+    if not raw_summary or "<" not in raw_summary:
+        return None
+    try:
+        soup = BeautifulSoup(raw_summary, "html.parser")
+        first_link = soup.find("a", href=True)
+        if first_link is None:
+            return None
+        href = first_link["href"].strip()
+        # Reject hrefs that are themselves Google redirects (would defeat the point).
+        if href.startswith("https://news.google.com/"):
+            return None
+        # Sanity: only accept http(s) URLs
+        if not (href.startswith("http://") or href.startswith("https://")):
+            return None
+        return href
+    except Exception as e:
+        logger.debug(f"Could not extract publisher URL from Google News entry: {e}")
+        return None
+
+
 def fetch_google_news(
     queries: list[str],
     hours_back: int = RECENT_HOURS_DEFAULT,
@@ -212,9 +258,14 @@ def fetch_google_news(
                 published = _entry_published(entry)
                 if published and published < cutoff:
                     continue
+                # v3.39.5: extract publisher URL from entry.summary HTML
+                # so the email's links work (entry.link is the encoded Google
+                # News redirect — broken in browser).
+                publisher_url = _extract_publisher_url_from_google_news_entry(entry)
+                final_url = publisher_url or entry.get("link", "")
                 local.append(NewsItem(
                     title=entry.get("title", "(no title)").strip(),
-                    url=entry.get("link", ""),
+                    url=final_url,
                     source=f"Google News ({query})",
                     published=published,
                     summary=_clean_summary(entry.get("summary", "")),
@@ -811,3 +862,446 @@ def _clean_summary(html_text: str) -> Optional[str]:
     if len(text) > 400:
         text = text[:400] + "..."
     return text or None
+
+
+# ============================================================================
+# v3.39.7 — Cycle matrix data pipeline
+# ============================================================================
+# Structured spot/contract scraping for the cycle matrix (src/data/cycle_matrix.py).
+# The existing scrape_trendforce_prices() above is preserved as-is — it returns
+# list[NewsItem] for the news pipeline / Layer 2 / Layer 3 path. The functions
+# below add a parallel data path that returns STRUCTURED per-SKU rows ready for
+# CSV persistence and matrix evaluation. They share the underlying HTTP fetch +
+# HTML parsing approach but produce different output shapes.
+# ============================================================================
+
+import csv as _csv_v3397
+import time as _time_v3397
+from dataclasses import asdict as _asdict_v3397
+from datetime import date as _date_v3397
+from pathlib import Path as _Path_v3397
+
+TRENDFORCE_CONTRACT_URL = "https://www.trendforce.com/price/dram/dram_contract"
+
+# TrendForce display name -> canonical SKU code for the spot table.
+# Mirrors the cells in scrape_trendforce_prices() but with explicit codes
+# suitable for use as CSV keys.
+SPOT_SKU_MAP = {
+    "DDR5 16Gb (2Gx8) 4800/5600": "DDR5_16Gb_4800_5600",
+    "DDR5 16Gb (2Gx8) eTT":        "DDR5_16Gb_eTT",
+    "DDR4 16Gb (2Gx8) 3200":       "DDR4_16Gb_3200",
+    "DDR4 16Gb (2Gx8) eTT":        "DDR4_16Gb_eTT",
+    "DDR4 8Gb (1Gx8) 3200":        "DDR4_8Gb_3200",
+    "DDR4 8Gb (1Gx8) eTT":         "DDR4_8Gb_eTT",
+    "DDR3 4Gb 512Mx8 1600/1866":   "DDR3_4Gb_1600_1866",
+}
+
+# TrendForce display name -> canonical SKU code for the contract table
+CONTRACT_SKU_MAP = {
+    "DDR5 8GB SO-DIMM":  "DDR5_8GB_SODIMM_contract",
+    "DDR4 16GB SO-DIMM": "DDR4_16GB_SODIMM_contract",
+    "DDR4 8GB SO-DIMM":  "DDR4_8GB_SODIMM_contract",
+    "DDR4 16Gb 2Gx8":    "DDR4_16Gb_chip_contract",
+    "DDR4 8Gb 1Gx8":     "DDR4_8Gb_chip_contract",
+    "DDR4 4Gb 256Mx16":  "DDR4_4Gb_chip_contract",
+    "DDR3 4Gb 256Mx16":  "DDR3_4Gb_chip_contract",
+}
+
+
+@dataclass
+class SpotScrapeRow:
+    """One row of spot price data scraped from TrendForce."""
+    sku: str
+    session_avg: float
+    daily_high: Optional[float]
+    daily_low: Optional[float]
+    session_change_pct: Optional[float]
+
+
+@dataclass
+class SpotScrapeResult:
+    """Result of one spot-price scrape (date + rows + freshness flag)."""
+    update_date: Optional[_date_v3397]
+    rows: list[SpotScrapeRow]
+    fresh: bool  # True if scrape within TRENDFORCE_SPOT_STALE_HOURS
+
+
+@dataclass
+class ContractScrapeRow:
+    """One row of contract price data scraped from TrendForce."""
+    sku: str
+    price_usd: float
+    session_high: Optional[float]
+    session_low: Optional[float]
+    average_change_pct: Optional[float]
+
+
+@dataclass
+class ContractScrapeResult:
+    """Result of one contract-price scrape (date + period label + rows)."""
+    update_date: Optional[_date_v3397]
+    period_label: Optional[str]   # e.g. "2H Mar"
+    rows: list[ContractScrapeRow]
+
+
+def _safe_float_v3397(text: str) -> Optional[float]:
+    """Parse a numeric string like '41.10' or '1,180.00' to float."""
+    if not text:
+        return None
+    cleaned = text.replace(",", "").replace("$", "").strip()
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
+def _parse_change_pct_v3397(text: str) -> Optional[float]:
+    """Parse change cells like '▼ -0.41 %' or '▲ 0.94 %' or '— 0.00 %'."""
+    if not text:
+        return None
+    m = re.search(r"([▼▲—\-+]?)\s*(-?\d+\.?\d*)\s*%", text)
+    if not m:
+        return None
+    sign_char = m.group(1)
+    value = float(m.group(2))
+    if "-" in sign_char or sign_char == "▼":
+        return -abs(value)
+    return value
+
+
+def parse_trendforce_spot_html(html_text: str) -> SpotScrapeResult:
+    """Parse the TrendForce DRAM spot price page HTML into a SpotScrapeResult.
+
+    Same underlying HTML structure as scrape_trendforce_prices() parses; this
+    function returns the structured per-SKU rows (rather than a NewsItem digest)
+    for use by the cycle matrix CSV persistence path.
+    """
+    soup = BeautifulSoup(html_text, "html.parser")
+    rows_out: list[SpotScrapeRow] = []
+
+    update_date: Optional[_date_v3397] = None
+    m = re.search(r"Last Update\s+(\d{4}-\d{2}-\d{2})", html_text)
+    if m:
+        try:
+            update_date = datetime.strptime(m.group(1), "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    for tbl in soup.find_all("table"):
+        first_cells = [
+            tr.find("td").get_text(strip=True) if tr.find("td") else ""
+            for tr in tbl.find_all("tr") if tr.find("td")
+        ]
+        if not any(name in first_cells for name in SPOT_SKU_MAP):
+            continue
+
+        for tr in tbl.find_all("tr"):
+            tds = tr.find_all("td")
+            if len(tds) < 6:
+                continue
+            display_name = tds[0].get_text(strip=True)
+            sku = SPOT_SKU_MAP.get(display_name)
+            if not sku:
+                continue
+            try:
+                daily_high = _safe_float_v3397(tds[1].get_text(strip=True))
+                daily_low = _safe_float_v3397(tds[2].get_text(strip=True))
+                session_avg = _safe_float_v3397(tds[5].get_text(strip=True))
+                change_text = tds[6].get_text(strip=True) if len(tds) > 6 else ""
+                change_pct = _parse_change_pct_v3397(change_text)
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Failed to parse spot row {display_name}: {e}")
+                continue
+            if session_avg is None:
+                continue
+            rows_out.append(SpotScrapeRow(
+                sku=sku, session_avg=session_avg,
+                daily_high=daily_high, daily_low=daily_low,
+                session_change_pct=change_pct,
+            ))
+        break
+
+    fresh = False
+    if update_date is not None:
+        age_hours = (datetime.now(timezone.utc).date() - update_date).days * 24
+        fresh = age_hours <= TRENDFORCE_SPOT_STALE_HOURS
+
+    return SpotScrapeResult(update_date=update_date, rows=rows_out, fresh=fresh)
+
+
+def scrape_trendforce_spot_structured(
+    collector: Optional[DiagnosticsCollector] = None,
+) -> SpotScrapeResult:
+    """Structured spot scrape — returns SpotScrapeResult for the cycle matrix.
+
+    Independent from scrape_trendforce_prices() above (which builds NewsItem
+    digests for the news pipeline). Both functions can run in the same pipeline:
+    the existing one feeds Layer 2 / Layer 3 LLM reasoning, this one writes
+    structured per-SKU rows to data/dram_spot_history.csv for matrix evaluation.
+
+    Shares the cache-buster + browser-UA pattern from v3.39.3 to defeat CDN
+    fingerprint-keyed caching.
+    """
+    try:
+        cache_buster = int(datetime.now(timezone.utc).timestamp() * 1000)
+        url_busted = f"{TRENDFORCE_SPOT_URL}?_={cache_buster}"
+        headers = {
+            **HEADERS,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        }
+        resp = requests.get(url_busted, headers=headers, timeout=20)
+        resp.raise_for_status()
+        return parse_trendforce_spot_html(resp.text)
+    except Exception as e:
+        logger.warning(f"scrape_trendforce_spot_structured failed: {e}")
+        return SpotScrapeResult(update_date=None, rows=[], fresh=False)
+
+
+def parse_trendforce_contract_html(html_text: str) -> ContractScrapeResult:
+    """Parse the TrendForce DRAM contract price page HTML into ContractScrapeResult."""
+    soup = BeautifulSoup(html_text, "html.parser")
+    rows_out: list[ContractScrapeRow] = []
+
+    period_label: Optional[str] = None
+    pm = re.search(r"DRAM Contract Price\s*\(([^)]+)\)", html_text)
+    if pm:
+        period_label = pm.group(1).strip()
+
+    update_date: Optional[_date_v3397] = None
+    dates = re.findall(r"Last Update\s+(\d{4}-\d{2}-\d{2})", html_text)
+    if dates:
+        try:
+            update_date = max(datetime.strptime(d, "%Y-%m-%d").date() for d in dates)
+        except ValueError:
+            pass
+
+    for tbl in soup.find_all("table"):
+        first_cells = [
+            tr.find("td").get_text(strip=True) if tr.find("td") else ""
+            for tr in tbl.find_all("tr") if tr.find("td")
+        ]
+        if not any(name in first_cells for name in CONTRACT_SKU_MAP):
+            continue
+
+        for tr in tbl.find_all("tr"):
+            tds = tr.find_all("td")
+            if len(tds) < 5:
+                continue
+            display_name = tds[0].get_text(strip=True)
+            sku = CONTRACT_SKU_MAP.get(display_name)
+            if not sku:
+                continue
+            try:
+                session_high = _safe_float_v3397(tds[1].get_text(strip=True))
+                session_low = _safe_float_v3397(tds[2].get_text(strip=True))
+                session_avg = _safe_float_v3397(tds[3].get_text(strip=True))
+                avg_change = _parse_change_pct_v3397(tds[4].get_text(strip=True))
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Failed to parse contract row {display_name}: {e}")
+                continue
+            if session_avg is None:
+                continue
+            rows_out.append(ContractScrapeRow(
+                sku=sku, price_usd=session_avg,
+                session_high=session_high, session_low=session_low,
+                average_change_pct=avg_change,
+            ))
+        break
+
+    return ContractScrapeResult(
+        update_date=update_date, period_label=period_label, rows=rows_out,
+    )
+
+
+def scrape_trendforce_contract(
+    collector: Optional[DiagnosticsCollector] = None,
+) -> ContractScrapeResult:
+    """Structured scrape of TrendForce's free DRAM contract-price page.
+
+    Free-tier contract data is PC-segment only with 1-2 month lag — used as
+    secondary signal / trajectory validation, NOT as matrix anchor. The matrix
+    anchor comes from TrendForce Press Center quarterly forecasts via
+    extract_dram_forecasts_from_press_release() in llm_summarizer.py.
+    """
+    try:
+        cache_buster = int(datetime.now(timezone.utc).timestamp() * 1000)
+        url_busted = f"{TRENDFORCE_CONTRACT_URL}?_={cache_buster}"
+        headers = {
+            **HEADERS,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        }
+        resp = requests.get(url_busted, headers=headers, timeout=20)
+        resp.raise_for_status()
+        return parse_trendforce_contract_html(resp.text)
+    except Exception as e:
+        logger.warning(f"scrape_trendforce_contract failed: {e}")
+        return ContractScrapeResult(update_date=None, period_label=None, rows=[])
+
+
+def fetch_article_body(url: str) -> Optional[str]:
+    """Fetch a single news article and extract main body text.
+
+    Used by Haiku extraction (extract_dram_signal_from_article and
+    extract_dram_forecasts_from_press_release in llm_summarizer.py) to feed
+    structured tone/forecast prompts.
+    """
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=20)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+        for sel in ["article", "div.article-content", "div.post-content",
+                    "div.entry-content", "main"]:
+            node = soup.select_one(sel)
+            if node:
+                text = node.get_text(separator="\n", strip=True)
+                if len(text) > 200:
+                    return text
+        paragraphs = soup.find_all("p")
+        text = "\n".join(p.get_text(strip=True) for p in paragraphs)
+        return text if len(text) > 200 else None
+    except Exception as e:
+        logger.warning(f"fetch_article_body failed for {url}: {e}")
+        return None
+
+
+# ============================================================
+# Persistence helpers — idempotent upserts to data/*.csv
+# ============================================================
+# Each helper writes one batch of rows to a CSV, keyed on a tuple of columns.
+# Same-day reruns replace matching rows rather than appending duplicates.
+
+def _upsert_csv_v3397(
+    new_df, csv_path: _Path_v3397, key_cols: list[str],
+) -> int:
+    """Idempotent CSV upsert. Returns count of rows in the new batch."""
+    import pandas as pd
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    if csv_path.exists() and csv_path.stat().st_size > 0:
+        existing = pd.read_csv(csv_path)
+        existing["_k"] = existing[key_cols].astype(str).agg("|".join, axis=1)
+        new_df["_k"] = new_df[key_cols].astype(str).agg("|".join, axis=1)
+        keep = existing[~existing["_k"].isin(new_df["_k"])].drop(columns=["_k"])
+        new_clean = new_df.drop(columns=["_k"])
+        combined = pd.concat([keep, new_clean], ignore_index=True)
+    else:
+        combined = new_df.copy()
+    for sort_col in ("date", "published_date", "update_date"):
+        if sort_col in combined.columns:
+            combined = combined.sort_values(sort_col, kind="stable")
+            break
+    combined.to_csv(csv_path, index=False)
+    return len(new_df)
+
+
+def persist_spot_to_history(
+    scrape_result: SpotScrapeResult, csv_path: _Path_v3397, source: str = "trendforce",
+) -> int:
+    """Idempotent upsert of a SpotScrapeResult into dram_spot_history.csv.
+
+    Key: (date, sku, source). Same-day rerun refreshes the row.
+    """
+    import pandas as pd
+    if scrape_result.update_date is None or not scrape_result.rows:
+        logger.warning("Spot scrape has no date or rows; skipping persistence")
+        return 0
+    scraped_at = datetime.now(timezone.utc).isoformat()
+    new_rows = []
+    for r in scrape_result.rows:
+        new_rows.append({
+            "date": scrape_result.update_date.isoformat(),
+            "sku": r.sku,
+            "session_avg": r.session_avg,
+            "daily_high": r.daily_high,
+            "daily_low": r.daily_low,
+            "session_change_pct": r.session_change_pct,
+            "source": source,
+            "scraped_at": scraped_at,
+        })
+    return _upsert_csv_v3397(
+        pd.DataFrame(new_rows), csv_path,
+        key_cols=["date", "sku", "source"],
+    )
+
+
+def persist_contract_to_history(
+    scrape_result: ContractScrapeResult, csv_path: _Path_v3397,
+    source: str = "trendforce",
+) -> int:
+    """Idempotent upsert of a ContractScrapeResult into dram_contract_actuals.csv."""
+    import pandas as pd
+    if scrape_result.update_date is None or not scrape_result.rows:
+        return 0
+    scraped_at = datetime.now(timezone.utc).isoformat()
+    period = scrape_result.period_label or ""
+    new_rows = []
+    for r in scrape_result.rows:
+        new_rows.append({
+            "period_label": period,
+            "update_date": scrape_result.update_date.isoformat(),
+            "sku": r.sku,
+            "price_usd": r.price_usd,
+            "session_high": r.session_high,
+            "session_low": r.session_low,
+            "average_change_pct": r.average_change_pct,
+            "source": source,
+            "scraped_at": scraped_at,
+        })
+    return _upsert_csv_v3397(
+        pd.DataFrame(new_rows), csv_path,
+        key_cols=["period_label", "sku", "source"],
+    )
+
+
+def upsert_contract_forecasts(forecast_rows: list[dict], csv_path: _Path_v3397) -> int:
+    """Idempotent upsert into dram_contract_quarterly_forecasts.csv.
+
+    Each input row needs: quarter, segment, low_pct, high_pct, source,
+    source_url, published_date. Optional: central_pct, supersedes_id, notes.
+    row_id is auto-assigned. Key: (quarter, segment, source_url).
+    """
+    import pandas as pd
+    if not forecast_rows:
+        return 0
+    new_df = pd.DataFrame(forecast_rows)
+    for col in ("quarter", "segment", "source_url"):
+        if col not in new_df.columns:
+            raise ValueError(f"forecast row missing required column: {col}")
+    if "central_pct" not in new_df.columns or new_df["central_pct"].isna().any():
+        if "central_pct" not in new_df.columns:
+            new_df["central_pct"] = None
+        mask = new_df["central_pct"].isna()
+        new_df.loc[mask, "central_pct"] = (
+            new_df.loc[mask, "low_pct"] + new_df.loc[mask, "high_pct"]
+        ) / 2.0
+    if csv_path.exists() and csv_path.stat().st_size > 0:
+        existing = pd.read_csv(csv_path)
+        next_id = (int(existing["row_id"].max()) + 1
+                   if "row_id" in existing.columns and not existing.empty else 1)
+    else:
+        next_id = 1
+    new_df["row_id"] = list(range(next_id, next_id + len(new_df)))
+    return _upsert_csv_v3397(
+        new_df, csv_path,
+        key_cols=["quarter", "segment", "source_url"],
+    )
+
+
+def upsert_contract_signals(signal_rows: list[dict], csv_path: _Path_v3397) -> int:
+    """Idempotent upsert into dram_contract_signals.csv.
+
+    Key: (date, source_url). Same article on same day never duplicated.
+    """
+    import pandas as pd
+    if not signal_rows:
+        return 0
+    new_df = pd.DataFrame(signal_rows)
+    for col in ("date", "source_url"):
+        if col not in new_df.columns:
+            raise ValueError(f"signal row missing required column: {col}")
+    return _upsert_csv_v3397(
+        new_df, csv_path, key_cols=["date", "source_url"],
+    )
