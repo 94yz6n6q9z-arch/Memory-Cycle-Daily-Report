@@ -17,6 +17,9 @@ Usage:
 If the block raises, the status is recorded as `reached=False` with the
 error message. Otherwise `reached=True` and `items_returned` defaults
 to 0 unless the caller sets it.
+
+CHANGELOG (this file):
+  v3.38  (2026-05-17) — Three new helpers added at module bottom for cross-tier diagnostics. (a) `status_from_retry_meta(source_name, source_type, payload, meta, items_count, items_detail)` — converts a fetch_with_retry result (payload, meta) tuple into a SourceFetchStatus, mapping meta.status (ok / cached_stale / failed / skipped / unknown) to the right health flag and detail string. Used by both fast tier and deep tier for any fetch_*_with_retry call. cached_stale stays health=ok but includes a loud "USING STALE CACHE — N day(s) old" in detail. (b) `statuses_to_dict_list(statuses)` — serialize for JSON persistence across pipeline tiers. (c) `statuses_from_dict_list(payload)` — re-hydrate; tolerates missing/malformed entries by skipping them rather than raising.
 """
 
 from __future__ import annotations

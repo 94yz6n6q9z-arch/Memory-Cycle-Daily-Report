@@ -5,6 +5,8 @@ Defines the tickers tracked, the indicator framework (tiers 1-4),
 and the thresholds that classify each signal as fired vs not fired.
 
 CHANGELOG (this file):
+  v3.39.7.3 (2026-05-20) — t1_spot_decline display name updated to "DRAM Price Evolution (spot + contract matrix)" / short_label "DRAM Price Evolution" to reflect that the matrix encompasses both spot drawdown AND contract growth, not just spot. ID kept as t1_spot_decline for state-file back-compat. No logic change; the underlying matrix evaluator and trigger config are unchanged from v3.39.7.
+  v3.39.7.1 (2026-05-20) — Two updates on t1_spot_decline: (1) description and what_to_look_for prose updated to use the new vocabulary ("Returns Not fired / Partially fired / Fired per cell" instead of "Returns Hold / Warn / Fire per cell"; "Not fired = R1/R2 with low drawdown..." instead of "HOLD = R1/R2..."). (2) CYCLE_MATRIX_STATUS_MAP at the bottom simplified to identity ({"Not fired": "Not fired", ...}) since MatrixCell.HOLD/WARN/FIRE .value strings now match the framework status vocabulary directly; the map is kept as a documented constant for callers in fast_tier.py.
   v3.39.7 (2026-05-20) — t1_spot_decline entry reworked: trigger_patterns/trigger_numeric/cadence/stitching all kept as references (Phase A/B/C cycle reasoning still applies to news commentary) but the SCORING moves to a 5x5 matrix evaluated separately. Indicator name updated from "DDR5 spot first MoM decline" → "Cycle matrix — contract growth × spot drawdown". what_to_look_for rewritten to describe matrix logic (R1-R5 contract growth bands × C1-C5 spot drawdown bands). New CYCLE_MATRIX_* config block appended at end: CYCLE_MATRIX_DATA_DIR, four CSV paths, CYCLE_MATRIX_PRIMARY_SKU, CYCLE_MATRIX_WEIGHTS (tone 0.4 + supplier 0.4 + spot_lead 0.2), CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN. Matrix evaluator lives in src/data/cycle_matrix.py. Anchor priority: server_ddr5 > conventional_dram_aggregate > supplier_specific (supplier_specific feeds supplier_adj, never anchor).
   v3.39.3.1 (2026-05-18) — RSS_FEEDS: dropped "AnandTech" (https://www.anandtech.com/rss/). Feed has been emitting `feed parse error: not well-formed (invalid token)` in every run since at least v3.39.1 — the published XML is malformed and feedparser bails. Site now publishes ~5 articles/month (down from the 2010s heyday); the maintenance cost of fixing the parser doesn't pay back. Tom's Hardware + DRAMeXchange + Google News cover the same beat. Companion deletions of NH Investment + Samsung Securities live in src/data/korean_brokers.py and src/deep_tier.py; no config-level change for those.
   v3.39.3 (2026-05-18) — TrendForce ingestion repair. Three config-level changes; companion patches in news.py same release. (a) RSS_FEEDS: dropped "TrendForce": "https://www.trendforce.com/news/feed" — that URL no longer publishes XML, replaced by "DRAMeXchange Weekly Research": "https://www.dramexchange.com/rss.xml". DRAMeXchange is TrendForce's sister property and the RSS is well-formed, current (most-recent items within a few days), and carries TrendForce-authored weekly research commentary which is exactly the behavioral-signal language Tier 1 t1_price_cuts_no_demand and t1_oem_inventory look for. (b) SCRAPE_TARGETS: "TrendForce News" URL fixed from /news/category/dram to /news/category/semiconductors/dram/ (TrendForce restructured the path; old URL returned 200 with 0 matching <article> selectors → silent zero). news.py scrape_trendforce() updated to match. (c) SCRAPE_TARGETS: added "TrendForce DRAM Spot (price table)" → /price/dram/dram_spot — handled by new scrape_trendforce_prices() in news.py with table parsing + freshness guard (stale snapshots tagged [STALE] in NewsItem title so Layer 2 won't fire Tier 1 on them).
@@ -115,24 +117,29 @@ INDICATORS: list[Indicator] = [
     Indicator(
         id="t1_spot_decline",
         tier=1,
-        name="Cycle matrix — contract growth × spot drawdown",
-        short_label="Cycle matrix",
+        # v3.39.7.3 — display name updated from "Cycle matrix" / "DDR5 spot first
+        # MoM decline" to "DRAM Price Evolution (spot + contract matrix)" to
+        # reflect that the matrix encompasses BOTH spot drawdown and contract
+        # growth dynamics, not just spot. The ID t1_spot_decline is preserved
+        # for state-file backward compatibility (prior_state.json keys on it).
+        name="DRAM Price Evolution (spot + contract matrix)",
+        short_label="DRAM Price Evolution",
         description=(
             "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against "
             "DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). "
-            "Returns Hold / Warn / Fire per cell. Replaces the v3.39 absolute-"
-            "threshold trigger ($38.2 spot / $950 module). The matrix is the "
-            "framework's canonical early-warning signal — spot drawdown leads "
-            "contract direction by 6-10 weeks. Matrix engine: "
+            "Returns Not fired / Partially fired / Fired per cell. Replaces the "
+            "v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The "
+            "matrix is the framework's canonical early-warning signal — spot "
+            "drawdown leads contract direction by 6-10 weeks. Matrix engine: "
             "src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py."
         ),
         what_to_look_for=(
             "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): "
             "R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. "
             "COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, "
-            "C3 5-10% off, C4 10-20% off, C5 >=20% off. HOLD = R1/R2 with low "
-            "drawdown (full position). WARN = mid-band (review thesis, consider "
-            "25-33% trim). FIRE = any R4-R5 row, any C5 column, or R3+C4. "
+            "C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low "
+            "drawdown (full position). Partially fired = mid-band (review thesis, "
+            "consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. "
             "Historical cycle peaks all landed in R5 by the time contract growth "
             "hit ~0% — the matrix exists to act BEFORE that. Contract row uses a "
             "SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, "
@@ -1948,11 +1955,14 @@ CYCLE_MATRIX_ROLLING_PEAK_WINDOW_WEEKS = 12
 # Cost control: max number of Haiku extractions per pipeline run
 CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN = 10
 
-# Status mapping: matrix verdict cell -> indicator status badge
-# Used in fast_tier.py to override the LLM's t1_spot_decline assessment
-# with the deterministic matrix verdict.
+# Status mapping: matrix verdict cell -> indicator status badge.
+# v3.39.7.1 — MatrixCell.HOLD/WARN/FIRE .value strings were changed to
+# "Not fired" / "Partially fired" / "Fired" directly, so this map is now
+# the identity. Kept as a constant for documentation and so fast_tier.py's
+# override code reads naturally ("here we map the matrix verdict to the
+# indicator status") without callers needing to know they're identical.
 CYCLE_MATRIX_STATUS_MAP = {
-    "Hold": "Not fired",
-    "Warn": "Partially fired",
-    "Fire": "Fired",
+    "Not fired": "Not fired",
+    "Partially fired": "Partially fired",
+    "Fired": "Fired",
 }

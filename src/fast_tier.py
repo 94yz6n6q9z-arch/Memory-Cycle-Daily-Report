@@ -24,6 +24,7 @@ Failure modes — see src/state.py for retry/cache policy. Critical sources
 sources use cached payload tagged STALE; nice-to-have just skip.
 
 CHANGELOG (this file):
+  v3.39.7.3 (2026-05-20) — INDICATOR EVIDENCE STORE integration. Before Layer 2, load state/indicator_evidence.json (per-indicator current_status + evidence_log + reversal_conditions) via src/state.py:load_indicator_evidence_store. Pass to reason_all_signals as indicator_evidence_store=. After Layer 2, mutate the store via update_evidence_after_layer2 (records status transitions + new evidence entries) and persist via save_indicator_evidence_store. The store is committed via fast_tier.yml so tomorrow's run sees today's decisions. Solves the v3.39.6/v3.39.7 regression where Layer 2's silence-on-quiet-day caused cumulative-state indicators (capex, LTAs, P/E, OEM inventory, etc.) to inappropriately downgrade. Bootstrap from May 9, 2026 framework doc lives at state/indicator_evidence.json with 10 indicators pre-fired. Also: signal_name in _inject_matrix_verdict_into_signal_reasonings updated to "DRAM Price Evolution (spot + contract matrix)" to match the renamed display label in config.py. Safe-failing: any exception in load/save/update is logged and the brief still ships.
   v3.39.7.1 (2026-05-20) — Three changes. (1) Cycle matrix step MOVED from "between Layer 3 and email build" to "between Layer 2 and Layer 3", so Sonnet's prompt sees the matrix verdict via the v3.39.6 LAYER 2 PER-SIGNAL VERDICTS block. (2) Part 5a: new helper _inject_matrix_verdict_into_signal_reasonings() appended at bottom — constructs a SignalReasoning with the matrix structured fields in raw_evidence_dump.signal_specific_data.matrix_verdict (cell, cell_label, contract_row, spot_col, synthetic_central_pct, synthetic_low/high, anchor_quarter, anchor_central_pct, anchor_age_days, drawdown_pct, current_session_avg, rolling_peak_price, rolling_peak_date, weeks_since_peak, adjustments list + warnings) + replaces any existing t1_spot_decline entry in-place (appends if missing). Convergence/confidence derived from count of adjustments with data: ≥2→high, 1→medium, 0→low. (3) Subject suffix wording aligned: [Hold|Warn|Fire] → [Not fired|Partially fired|Fired] (driven directly off verdict.cell.value which is now those strings). _override_t1_spot_decline_from_matrix no longer needs the CYCLE_MATRIX_STATUS_MAP lookup since the cell value IS the status; map is kept as identity in config for documentation.
   v3.39.7 (2026-05-20) — Cycle matrix step inserted between Layer 3 and chart generation. New helper run_cycle_matrix_step() (a) calls scrape_trendforce_spot_structured() + scrape_trendforce_contract() + persist_*() (b) Haiku-extracts tone/forecast signals from up to CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN articles (c) evaluates the matrix via cycle_matrix.evaluate_matrix(). The matrix verdict OVERRIDES the LLM's t1_spot_decline indicator status via CYCLE_MATRIX_STATUS_MAP: Hold→Not fired, Warn→Partially fired, Fire→Fired. The where_we_stand text is rewritten from the matrix narrative so the cell/drawdown/synthetic numbers are deterministic, not LLM-paraphrased. Both cycle charts are rendered via render_cycle_charts_from_verdict() and passed to build_email_html. Cycle step is safe-failing — exception at any sub-step logs and continues; LLM's t1_spot_decline assessment used as fallback. Email subject also gets a [Hold|Warn|Fire] suffix when matrix verdict is available.
   v3.38.6 (2026-05-17) — FORCE_RUN env var bypass for the Step 0 idempotency check. Set automatically by fast_tier.yml when event_name == 'workflow_dispatch' (manual run from the Actions UI); scheduled cron triggers leave it empty so the existing primary/fallback/safety cron coordination via state/brief_sent_dates.json continues to work. Motivation: after the v3.38.5 push, manually re-running the fast tier to validate the fix bundle was a no-op because the morning 16:25 UTC run had already marked today. Manual dispatch always means "I want this to run right now" (test/validate/recover) — auto-bypass is the right default. `os` added to imports. No behavior change for scheduled runs.
@@ -90,6 +91,10 @@ from src.state import (
     Criticality,
     PRIOR_STATE_FILE,
     STATE_DIR,
+    # v3.39.7.3 — persistent evidence store API
+    load_indicator_evidence_store,
+    save_indicator_evidence_store,
+    update_evidence_after_layer2,
 )
 from src.diagnostics import (
     DiagnosticsCollector, SourceFetchStatus,
@@ -453,6 +458,23 @@ def run_fast_tier() -> int:
         for a in (prior_state.get("indicator_assessments") or [])
     }
 
+    # v3.39.7.3 — load the persistent indicator evidence store. Each indicator
+    # carries a full evidence_log + reversal_conditions so Layer 2 (Haiku) can
+    # preserve prior fired state against silence in today's news. Cumulative
+    # state evidence (capex announcements, multi-year LTAs, IDC forecasts,
+    # supplier inventory prints) is durable — silence ≠ reversal.
+    #
+    # Bootstrap from May 9, 2026 framework doc lives at state/indicator_evidence.json
+    # (committed to repo). After Layer 2 runs, status transitions and new
+    # evidence are appended back to the store and committed via the GHA
+    # workflow's commit step.
+    indicator_evidence_store = load_indicator_evidence_store()
+    if not indicator_evidence_store:
+        logger.warning(
+            "v3.39.7.3 evidence store empty — Layer 2 will run without "
+            "prior-evidence carry-forward this run. Check state/indicator_evidence.json."
+        )
+
     logger.info("Running Layer 2 per-signal reasoning across all 22 indicators...")
     signal_reasonings = reason_all_signals(
         digests=digests,
@@ -468,8 +490,23 @@ def run_fast_tier() -> int:
         ],
         computed_metrics=computed_metrics,
         prior_status_map=prior_status_map,
+        indicator_evidence_store=indicator_evidence_store,  # v3.39.7.3
     )
     logger.info(f"Layer 2 produced {len(signal_reasonings)} signal reasonings")
+
+    # v3.39.7.3 — update the evidence store with any status transitions from
+    # this Layer 2 run, then persist back to disk. The GHA workflow's commit
+    # step (extended in v3.39.7.3 to include indicator_evidence.json) pushes
+    # the updated state back to the repo so tomorrow's run sees today's
+    # decisions. Safe-failing: any exception is logged and the brief still ships.
+    try:
+        update_evidence_after_layer2(indicator_evidence_store, signal_reasonings)
+        save_indicator_evidence_store(indicator_evidence_store)
+        logger.info(
+            f"Indicator evidence store updated: {len(indicator_evidence_store)} indicators persisted"
+        )
+    except Exception as e:
+        logger.error(f"Could not update indicator evidence store: {e}", exc_info=True)
 
     # ----- v3.39.7 cycle matrix step (BETWEEN Layer 2 and Layer 3) -----
     # v3.39.7.1 — moved from "between Layer 3 and email build" to here so
@@ -1159,7 +1196,7 @@ def _inject_matrix_verdict_into_signal_reasonings(
 
     sr = SignalReasoning(
         signal_id="t1_spot_decline",
-        signal_name="Cycle matrix — contract growth × spot drawdown",
+        signal_name="DRAM Price Evolution (spot + contract matrix)",
         tier=1,
         evidence_count=adj_with_data,
         evidence_sources=evidence_sources,

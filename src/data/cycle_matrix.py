@@ -5,7 +5,7 @@ Implements the 5x5 DRAM cycle trigger matrix that maps:
   - Y-axis (rows): DRAM contract QoQ growth bands (1=>=+30%  ...  5=<=+5%)
   - X-axis (cols): DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak
                    (1=at new highs ... 5=>=20% drop from peak)
-  - Output: HOLD / WARN / FIRE verdict per cell.
+  - Output: Not fired / Partially fired / Fired verdict per cell.
 
 Position rules:
   - Spot column derived from drawdown MAGNITUDE only.
@@ -31,6 +31,10 @@ human-readable narrative ready for inclusion in the email body.
 
 This module does NO I/O of its own beyond reading the CSVs it is handed.
 Scraping and persistence live elsewhere; this module is the analytical engine.
+
+CHANGELOG (this file):
+  v3.39.7.1 (2026-05-20) — MatrixCell enum `.value` strings changed from "Hold"/"Warn"/"Fire" to "Not fired"/"Partially fired"/"Fired" to align with the rest of the framework's status vocabulary. Python identifiers (HOLD/WARN/FIRE) unchanged — MATRIX dict + tests + all downstream code still reference MatrixCell.HOLD/WARN/FIRE as before. Display strings auto-propagate to email badge, chart cell labels, narrative text, subject suffix, and cell_label ("Not fired (R1 / C2)"). Narrative phrasing in `_generate_narrative` updated to "No firing condition met — hold full position." / "Partially fired — review thesis, prepare partial trim (25-33%)." / "Fired — exit substantial portion or full position."
+  v3.39.7 (2026-05-20) — NEW FILE. 5x5 cycle matrix evaluator. Spot column from rolling 12w peak drawdown. Contract row from synthetic estimate (anchor + 0.4*tone + 0.4*supplier + 0.2*spot_lead, each capped +/-30pp). Anchor priority: server_ddr5 > conventional_dram_aggregate > supplier_specific. CSV schemas documented at bottom of file.
 """
 
 from __future__ import annotations
@@ -114,9 +118,17 @@ CONTRACT_ROW_THRESHOLDS = [
 # ----------------------------------------------------------------------------
 
 class MatrixCell(Enum):
-    HOLD = "Hold"
-    WARN = "Warn"
-    FIRE = "Fire"
+    # v3.39.7.1 — wording aligned with the rest of the framework's status
+    # vocabulary. The Python identifiers stay HOLD/WARN/FIRE (used internally
+    # by MATRIX dict + tests + downstream code) but the .value strings are
+    # the displayed labels that appear in the email badge, chart cells,
+    # narrative text, and subject line. Mapping is intentional:
+    #   HOLD → "Not fired"   (no concerning signal yet)
+    #   WARN → "Partially fired"  (mid-band review trigger)
+    #   FIRE → "Fired"       (action required)
+    HOLD = "Not fired"
+    WARN = "Partially fired"
+    FIRE = "Fired"
 
 
 MATRIX: dict[tuple[int, int], MatrixCell] = {
@@ -876,9 +888,9 @@ def _generate_narrative(
     """Build a human-readable narrative paragraph for the email."""
 
     cell_phrasing = {
-        MatrixCell.HOLD: "Hold full position.",
-        MatrixCell.WARN: "Warn: review thesis, prepare partial trim (25-33%).",
-        MatrixCell.FIRE: "Fire: exit substantial portion or full position.",
+        MatrixCell.HOLD: "No firing condition met — hold full position.",
+        MatrixCell.WARN: "Partially fired — review thesis, prepare partial trim (25-33%).",
+        MatrixCell.FIRE: "Fired — exit substantial portion or full position.",
     }[cell]
 
     spot_phrase = (

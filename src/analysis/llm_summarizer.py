@@ -12,6 +12,7 @@ summary with probability calculations, and cycle position synthesis.
 Falls back to deterministic synthesis if API unavailable.
 
 CHANGELOG (this file):
+  v3.39.7.3 (2026-05-20) — SYMMETRIC PROBABILITY RULES added to the Sonnet prompt. v3.39.7's PROBABILITY UPDATE RULES only covered "indicator fires today" (rule A); there was no rule for "indicator unfires today" (rule B). Result on the May 20 brief: 4 indicators went FIRED→Not fired, 1 went FIRED→Partially fired, 3 went Partially fired→Not fired — but bull/base/bear probabilities stayed byte-identical to May 18 (22%/50%/28%). The LLM literally wrote "no probability distribution changes warranted as no new tier signals fired", ignoring 8 unfires. Now adds: (B) explicit unfire rules — Tier 1 unfire = bear -2-4pp + bull +1-2pp + base peak extends 1mo; Tier 2 = bear -3-6pp + bull +2-4pp + 1-2mo; Tier 3 = bear -5-8pp + bull +3-5pp + 2-3mo; Tier 4 = bear -5-8pp + bull +5-8pp + 2-3mo. (C) MANDATORY RECALCULATION: probabilities stay byte-identical to prior only when EVERY indicator's status is unchanged — any status change in either direction requires recalc. (D) COMPUTED-METRIC OVERRIDE: when forward_pe / rel_strength_full / capex_revenue_ratios / eps_revisions show fired but Layer 2 returns Not fired with evidence_count=0, Sonnet must use the computed verdict, not Layer 2 — fixes the Forward P/E contradiction from the May 20 brief where all 3 names were below their thresholds per computed data but Layer 2 said Not fired.
   v3.39.7 (2026-05-20) — Cycle matrix Haiku extraction layer appended at bottom. Two new prompt+function pairs: extract_dram_signal_from_article (tone/segment/supplier/qoq structured fields → data/dram_contract_signals.csv) and extract_dram_forecasts_from_press_release (quarterly forecast list → data/dram_contract_quarterly_forecasts.csv). Both use HAIKU_MODEL with temperature=0. Pre-filtered by title in fast_tier.py to ~10 DRAM-relevant articles/run; ~$0.50/run cost ceiling. Allowed-value sets prevent free-text drift. Output validated and coerced into the CSV schemas. Reuses the existing Anthropic client pattern from this module.
   v3.38.5 (2026-05-17) — Real root cause of the 16:25 UTC May 17 Haiku triage failure found and fixed. The error pattern was "Failed to parse Haiku response as JSON: Expecting value (char 0)" → json_repair fallback returned str (not dict) → unrecoverable. This was NOT a prompt issue or a max_tokens issue. The bug was in `_strip_code_fence`: when the LLM returned a properly closed code fence (```json\n{...}\n```), the line `text.split("```", 2)[-1]` grabbed the empty string AFTER the closing fence instead of the JSON content BETWEEN the fences. The function returned `""`. json.loads("") fails with "Expecting value (char 0)"; json_repair.loads("") returns `""` (a str). Rewrote the function with explicit handling of three patterns (raw / closed-fence / unclosed-fence). Verified locally on all five common LLM-output shapes — all parse cleanly via stdlib now. Also tightened `build_haiku_triage_prompt` output format requirements (start with `{`, no markdown fences, no prose, no apologies) as belt-and-suspenders. The previous bump of HAIKU_MAX_TOKENS to 16000 and the json_repair fallback both remain — they fix related but distinct failure modes (truncation, unescaped chars).
   v3.38.4 (2026-05-17) — Both `haiku_triage_news` and `sonnet_analyze` now parse responses with a two-stage strategy: stdlib `json.loads(raw)` first (fast path for valid output), then `json_repair.loads(raw)` fallback on JSONDecodeError. Reason: the 15:32 UTC May 17 run had Haiku triage of 50 news items fail JSON parse at char 13926 (unterminated string — almost certainly unescaped quote/newline in a reasoning field), losing the entire triage. v3.38.3 had the same failure mode in Sonnet (char 27099) and Haiku (char 6839). Bumping max_tokens helps when the cause is truncation, but doesn't help when the cause is malformed string content — json_repair handles both. New explicit log at WARNING level when the fallback fires, with INFO-level confirmation of how much was recovered.
@@ -918,6 +919,8 @@ HARD INVARIANTS (enforced post-output; produce values that already satisfy):
   6. bear_case.return_to_peak_pct <= base_case.return_to_peak_pct (lower; can be negative).
 
 PROBABILITY UPDATE RULES (signal-conditional):
+
+A. WHEN AN INDICATOR FIRES TODAY (Not fired → Partially fired, or → Fired):
 - New Tier 2 trigger fired today: bear probability +3-6pp, base shortens
   peak_months_away by ~1mo and trims return_to_peak_pct by ~3-5pp. Bull -1-3pp.
 - New Tier 3 trigger fired today: bear probability +5-8pp (still under base),
@@ -927,6 +930,50 @@ PROBABILITY UPDATE RULES (signal-conditional):
   going negative (e.g., -5 to -15pp) — confirms peak is in.
 - Bull confirms (e.g., hyperscaler 2027 capex >2026): bull probability +3-5pp,
   bear -2-4pp, base nudges peak_months_away by ~+1mo.
+
+B. WHEN AN INDICATOR UNFIRES TODAY (v3.39.7.3 — SYMMETRIC MIRROR OF RULE A):
+Indicators going FIRED → Partially fired, or FIRED → Not fired, or Partially
+fired → Not fired are EQUALLY material as new fires. Yesterday's signal
+distribution is no longer valid. You MUST recalculate probabilities in the
+OPPOSITE direction:
+- Tier 1 indicator unfires today: bear probability -2-4pp, bull +1-2pp,
+  base extends peak_months_away by ~1mo, base return_to_peak_pct restores
+  by 2-3pp.
+- Tier 2 indicator unfires today: bear -3-6pp, bull +2-4pp, base peak
+  extends 1-2mo, return_to_peak_pct restores ~3-5pp.
+- Tier 3 indicator unfires today: bear -5-8pp, bull +3-5pp, base peak
+  extends 2-3mo, return_to_peak_pct restores ~5-10pp.
+- Tier 4 indicator unfires today: bear -5-8pp (clamp at min 5%), bull +5-8pp,
+  base peak extends 2-3mo, return_to_peak_pct restores ~5-15pp.
+
+MANDATORY RECALCULATION INSTRUCTION (v3.39.7.3 — DO NOT SKIP):
+Inertia is FORBIDDEN. If the count of {{Fired, Partially fired, Not fired}}
+indicators differs from prior_state in ANY direction (more fires OR more
+unfires OR mixed), you MUST recalculate base/bull/bear probabilities by
+walking through each status change and applying rules A or B above. The
+ONLY case where probabilities stay byte-identical to prior_state is when
+EVERY single indicator's status is unchanged. Even one status change
+requires a recalculation.
+
+Reasoning template for delta_from_prior_text when status counts changed:
+  "Indicator distribution shifted vs prior: {{fired_then}}→{{fired_now}} fired,
+   {{partial_then}}→{{partial_now}} partial. Applied [rule A or B] for [list
+   indicators with old→new status]; bear {{pp_change}}pp, bull {{pp_change}}pp,
+   base peak {{month_change}}mo."
+
+If the LLM is tempted to write "no probability distribution changes
+warranted" because no NEW fires happened, this is a BUG — check for UNFIRES.
+A reduction in fired count is equally probability-moving as an increase.
+
+C. WHEN COMPUTED METRICS CONTRADICT LAYER 2 VERDICTS (v3.39.7.3):
+For indicators whose status is primarily driven by computed numerical
+data (rel_strength_full, forward_pe, capex_revenue_ratios, eps_revisions
+weighted scoring), the COMPUTED VERDICT is authoritative. If Layer 2
+returns "Not fired" with evidence_count=0 BUT the computed data shows
+the threshold is crossed, REJECT Layer 2 and use the computed verdict.
+Explicitly note this in `where_we_stand`: "Computed verdict: Fired
+(P/E 4.56x < 5x threshold). Layer 2 returned Not fired with evidence_count=0
+but is overridden per v3.39.7.3 computed-metric authority rule."
 
 PEAK MONTH ESTIMATE RULES:
 - Compare against prior_state.executive_summary.base_case.peak_months_away

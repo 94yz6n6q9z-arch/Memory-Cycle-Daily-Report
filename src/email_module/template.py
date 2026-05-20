@@ -13,6 +13,7 @@ Builds the email with:
    was actually reached and parsed during this run)
 
 CHANGELOG (this file):
+  v3.39.7.1 (2026-05-20) — _build_cycle_matrix_card hardcoded color dict ({"Hold": "#C0DD97", "Warn": "#FAC775", "Fire": "#D85A30"}) replaced with lookup into STATUS_COLORS — same color values (green/amber/red) but keyed on the new MatrixCell.value strings "Not fired" / "Partially fired" / "Fired" which now match STATUS_COLORS keys directly.
   v3.39.7 (2026-05-20) — Cycle matrix card injection. build_email_html() signature gains three optional kwargs (cycle_verdict, cycle_matrix_chart_b64, spot_contract_chart_b64). _build_indicators_section() now accepts and forwards them; when rendering t1_spot_decline AND both chart base64 strings are non-None, it appends a full-width "Cycle matrix snapshot" card row directly under the indicator row (colspan=5, 40/60 split: matrix dot left, dual-axis chart right). New helper _build_cycle_matrix_card() composes the card HTML. All other rendering unchanged; if kwargs are absent the section renders exactly as in v3.38. No new imports; the verdict is read via getattr() to avoid importing cycle_matrix types here.
   v3.38  (2026-05-17) — Added three new `_SOURCE_TYPE_LABELS` entries used by the deep tier diagnostics rows: "api" → "External API" (Finnhub, DART), "transcript" → "Earnings transcript source" (Yahoo / Motley Fool / IR scrapers), "broker_pdf" → "Korean broker note feed" (Mirae, NH, Samsung Securities). Without these, the new deep-tier rows would group under raw lowercase type-strings in the validation table.
 """
@@ -513,11 +514,10 @@ def _build_cycle_matrix_card(
         cell_obj = getattr(cycle_verdict, "cell", None)
         if cell_obj is not None:
             cell_value = getattr(cell_obj, "value", "")
-            cell_color = {
-                "Hold": "#C0DD97",
-                "Warn": "#FAC775",
-                "Fire": "#D85A30",
-            }.get(cell_value, "#CCCCCC")
+            # v3.39.7.1 — cell_value strings now match the framework's
+            # status vocabulary directly ("Not fired" / "Partially fired" /
+            # "Fired"), so the map keys are STATUS_COLORS keys.
+            cell_color = STATUS_COLORS.get(cell_value, "#CCCCCC")
 
     cell_badge = (
         f"<span style='display:inline-block;background:{cell_color};"

@@ -29,8 +29,13 @@ Sonnet at Layer 3 reasons over these compact outputs rather than raw
 transcripts.
 
 22 indicators × ~1 Haiku call each = ~22 calls. Each ~2-5K input tokens,
-~500 output. Cost: ~$0.10-0.30 per fast-tier run. Parallelizable via
-ThreadPoolExecutor — completes in 30-60 sec.
+~500 output. Cost: ~$0.10-0.30 per fast-tier run. v3.38.1 changed concurrent
+ThreadPoolExecutor to sequential with throttle; runtime is now ~3 min not
+~30s. Worth it for not losing signals to 429s.
+
+CHANGELOG (this file):
+  v3.39.7.3 (2026-05-20) — EVIDENCE STORE INTEGRATION. The PRIOR-STATUS PRESERVATION RULE added earlier in this session is upgraded from a string-based prior_status check to a full evidence-store-aware reasoning loop. Layer 2 now receives the full evidence_log + reversal_conditions for each indicator (from src/state.py:load_indicator_evidence_store), formatted into the user prompt via IndicatorEvidence.format_for_layer2_prompt(). REASONER_SYSTEM_PROMPT rewritten with DECISION RULES BY PERSISTENCE CATEGORY (live/permanent/quarterly/durable_contract/event_window) — each category has explicit instructions for when to preserve, escalate, or reverse status. INVALID DOWNGRADES section explicitly lists the v3.39.7 bugs (capex_parabolic, oem_inventory, demand_destruction, forward_pe) so Haiku doesn't repeat them. reason_one_signal gains optional indicator_evidence: IndicatorEvidence parameter; reason_all_signals gains optional indicator_evidence_store: dict parameter. Both default to None for backward-compat — when None, falls back to the v3.39.7 prior_status-only behavior. Diagnosed from the May 20 brief where 8 indicators inappropriately downgraded due to Layer 2 having no carry-forward.
+  v3.38.1 (2026-05-17) — Replaced ThreadPoolExecutor(max_workers=6) concurrent fan-out with sequential loop + `time.sleep(inter_call_delay_seconds)` between calls. Default delay = 7.0s. Reason: the May 17 13:42 UTC run burst input tokens at ~120k/min vs Haiku 4.5's 50k/min org rate limit, saturating the bucket in ~8s and losing 3/22 signals to 429 after SDK retries gave up. Math: 5k tokens/call × 10 calls/min ceiling = 6s minimum spacing; 7s for safety margin. Total wall-time moves from ~37s to ~191s. `max_workers` kwarg kept for backward-compat but ignored. Added `import time` at module top.
 """
 
 from __future__ import annotations
@@ -213,6 +218,53 @@ CRITICAL:
 - For STITCHED signals (e.g. t1_oem_inventory needs both supplier AND buyer side), fired requires BOTH sides confirmed simultaneously. Single side alone = "Not fired" even if dramatic.
 - For PATTERN+CADENCE signals, verify the cadence requirement (e.g. 2 articles within 14 days). Single article = "Partially fired" unless the cadence allows it.
 - Be conservative: when in doubt between "Fired" and "Partially fired", choose "Partially fired".
+
+EVIDENCE-STORE-AWARE REASONING (v3.39.7.3) — THE FUNDAMENTAL RULE:
+
+You are given an INDICATOR EVIDENCE STORE block above. It contains the cumulative record of WHY this indicator is in its current state — every prior evidence item that fired it, with its persistence category and reversal_condition. This is the framework's institutional memory. You MUST use it.
+
+Memory-cycle indicators are CUMULATIVE STATE, not daily news triggers. They fire on data that has happened (capex announcements, signed contracts, computed P/E values, supplier inventory prints), and they stay fired until the underlying condition is reversed. The evidence store records this. Your job is to decide if today's evidence:
+  (a) PRESERVES the current status (the recorded conditions still hold), OR
+  (b) REVERSES it (today's data matches the recorded reversal_condition), OR
+  (c) ESCALATES it (today's data fires a previously Not-fired signal)
+
+DECISION RULES BY PERSISTENCE CATEGORY:
+
+[A] LIVE persistence (forward P/E, relative strength, cycle matrix verdict, spot/contract spread):
+The signal is recomputed every run from current data. ALWAYS use today's computed value as the verdict. Don't preserve a prior fired status if today's computation says Not fired, and don't preserve Not fired if today's computation fires. The evidence store entry for live signals is informational — the latest computation is authoritative.
+Example: if t2_pe_compressed evidence store shows it fired on SK Hynix 4.56x < 5x, and today's computation shows SK Hynix at 4.5x (still below 5x), STATUS = Fired (computed value still crosses threshold). If today's computation shows SK Hynix at 5.2x (above threshold), STATUS = Not fired.
+
+[B] PERMANENT persistence (historical announcements, transactions):
+Once a permanent event is recorded, it cannot be unfired by silence in today's news. Status preserves. If aging applies (e.g., insider sales 12-month window per the evidence's reversal_condition), only age out per the explicit rule.
+Example: t1_efficiency_shock has TurboQuant announced March 24, 2026. This is permanent. Status stays Fired regardless of today's news.
+
+[C] QUARTERLY persistence (forecasts, capex announcements, inventory prints):
+Status preserves until today's evidence EXPLICITLY MATCHES the reversal_condition recorded in the store. Silence does NOT count as reversal — only explicit contradicting evidence does.
+Examples:
+  - t2_capex_parabolic reversal_condition: "Hyperscaler quarterly print shows capex CUT vs guidance". Today's news mentions no capex changes → STATUS PRESERVES (Fired).
+  - t1_demand_destruction reversal_condition: "IDC publishes upgraded PC/smartphone forecast". Today's news has no IDC update → STATUS PRESERVES (Fired). If today's news has IDC announcing UPGRADED forecast → STATUS = Not fired.
+
+[D] DURABLE_CONTRACT persistence (multi-year LTAs, sold-out commitments):
+Status preserves until explicit news of contract cancellation or buyer pull-out. These are durable agreements that don't expire on news cycles.
+Example: t2_ltas_signed fired on HBM3E sold-out + SK Hynix HBM4 LTAs with Nvidia. Status stays Fired unless news reports an LTA cancellation.
+
+[E] EVENT_WINDOW persistence (5d relative strength, single-day moves):
+Status decays after the window. If the window has expired without re-confirmation, the entry is dormant. Use today's computed metric (typically a live entry will accompany).
+
+INVALID DOWNGRADES (these are bugs the v3.39.7.3 fix eliminates):
+- "No new capex announcements in today's news feed" does NOT unfire t2_capex_parabolic. The $725B 2026 hyperscaler capex consensus and SK Hynix M15X are recorded. Silence is not reversal.
+- "Today's Layer 2 found zero supplier-side or buyer-side inventory data" does NOT unfire t1_oem_inventory. The September 2025 TrendForce print (supplier 2-3w, buyer 10w) stands until a new print reverses it.
+- "No IDC/Gartner/Counterpoint reports in today's feed" does NOT unfire t1_demand_destruction. The April 2026 IDC PC -2.4% to -11.3% forecast stands until IDC publishes an upgrade.
+- For Forward P/E (live category): if computed values show all three names BELOW their thresholds (SK Hynix <5x, Samsung <6x, Micron <8x), STATUS = Fired regardless of evidence_count=0 in news. The computed verdict IS the evidence.
+
+NEW EVIDENCE HANDLING:
+If today's news ADDS corroborating evidence (e.g., another capex announcement, another LTA), the status remains Fired and the new evidence is logged downstream. Mention the new evidence in `evidence_for_change_vs_yesterday`.
+
+If today's news matches a recorded reversal_condition, the status transitions:
+  - From Fired → set to "Reversed" (NOT "Not fired") to preserve the audit trail
+  - From Partially fired → set to "Not fired" if reversal is clean, "Partially fired" if mixed
+Explain the reversal in `evidence_for_change_vs_yesterday` with citation of the reversal evidence.
+
 - Quote no more than 3 verbatim excerpts, each under 15 words. These will be shown to the user.
 - Output VALID JSON only. No prose outside the JSON object."""
 
@@ -230,6 +282,11 @@ Cadence:          {cadence}
 Stitching:        {stitching}
 
 PRIOR STATUS (yesterday): {prior_status}
+
+INDICATOR EVIDENCE STORE (v3.39.7.3) — cumulative record of WHY this indicator
+is in its current state, with explicit reversal_conditions per evidence entry:
+
+{evidence_store_block}
 
 EVIDENCE (pre-filtered to items mentioning this signal's trigger patterns):
 
@@ -267,8 +324,17 @@ def reason_one_signal(
     edgar_items: list[dict],
     computed_metrics: dict,
     prior_status: Optional[str] = None,
+    indicator_evidence: Optional[Any] = None,  # IndicatorEvidence from src.state
 ) -> Optional[SignalReasoning]:
-    """Layer 2 for one indicator."""
+    """Layer 2 for one indicator.
+
+    v3.39.7.3: optional `indicator_evidence` parameter carries the persistent
+    evidence store entry for this indicator (an IndicatorEvidence dataclass
+    from src.state). When provided, the prompt includes the full evidence_log
+    + reversal_conditions so Haiku can preserve prior fired status against
+    silence in today's news. When None, falls back to the prior behavior
+    (just the prior_status string).
+    """
     if client is None:
         return None
 
@@ -276,6 +342,19 @@ def reason_one_signal(
         indicator, digests, fast_tier_news, naver_data, finnhub_data,
         edgar_items, computed_metrics, prior_status,
     )
+
+    # v3.39.7.3 — format the evidence store block for the prompt
+    if indicator_evidence is not None:
+        try:
+            evidence_store_block = indicator_evidence.format_for_layer2_prompt()
+        except Exception as e:
+            logger.warning(f"Could not format evidence store for {indicator.id}: {e}")
+            evidence_store_block = "(evidence store unavailable for this indicator)"
+    else:
+        evidence_store_block = (
+            "(no evidence store available — relying on prior_status alone; "
+            "this is the v3.39.7 behavior pre-v3.39.7.3)"
+        )
 
     user_msg = REASONER_USER_TEMPLATE.format(
         indicator_id=indicator.id,
@@ -287,6 +366,7 @@ def reason_one_signal(
         cadence=indicator.cadence or "—",
         stitching=indicator.stitching or "—",
         prior_status=prior_status or "unknown",
+        evidence_store_block=evidence_store_block,
         digests_json=json.dumps([
             {
                 "source_id": d.get("source_id"),
@@ -351,10 +431,17 @@ def reason_all_signals(
     edgar_items: list[dict],
     computed_metrics: dict,
     prior_status_map: Optional[dict] = None,
+    indicator_evidence_store: Optional[dict] = None,  # v3.39.7.3
     max_workers: int = 6,  # v3.38.1: kept for backward-compat, no longer used (was ThreadPoolExecutor count)
     inter_call_delay_seconds: float = 7.0,
 ) -> list[SignalReasoning]:
     """Run Layer 2 across every indicator — sequentially, with throttling.
+
+    v3.39.7.3: optional `indicator_evidence_store` parameter is a dict mapping
+    indicator_id → IndicatorEvidence (from src.state.load_indicator_evidence_store).
+    When provided, each indicator's evidence_log + reversal_conditions are
+    passed into the Layer 2 prompt, enabling carry-forward of prior fired
+    status against silence in today's news.
 
     v3.38.1: changed from concurrent ThreadPoolExecutor(max_workers=6) to
     sequential with a per-call delay. The concurrent path burst input tokens
@@ -378,12 +465,18 @@ def reason_all_signals(
     it — it's now ignored. `inter_call_delay_seconds` is the new lever.
     """
     prior_status_map = prior_status_map or {}
+    indicator_evidence_store = indicator_evidence_store or {}
     results: list[SignalReasoning] = []
     n = len(INDICATORS)
     logger.info(
         f"Layer 2: running {n} signals sequentially with {inter_call_delay_seconds}s "
         f"inter-call delay (est. {((n-1) * inter_call_delay_seconds + n * 2):.0f}s total)"
     )
+    if indicator_evidence_store:
+        logger.info(
+            f"Layer 2: evidence store loaded for "
+            f"{sum(1 for ind in INDICATORS if ind.id in indicator_evidence_store)}/{n} indicators"
+        )
 
     for i, ind in enumerate(INDICATORS):
         # Throttle before every call except the first one
@@ -393,6 +486,7 @@ def reason_all_signals(
             result = reason_one_signal(
                 ind, digests, fast_tier_news, naver_data, finnhub_data,
                 edgar_items, computed_metrics, prior_status_map.get(ind.id),
+                indicator_evidence=indicator_evidence_store.get(ind.id),
             )
             if result is not None:
                 results.append(result)
