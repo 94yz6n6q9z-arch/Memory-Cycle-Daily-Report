@@ -24,6 +24,7 @@ Failure modes — see src/state.py for retry/cache policy. Critical sources
 sources use cached payload tagged STALE; nice-to-have just skip.
 
 CHANGELOG (this file):
+  v3.39.7.1 (2026-05-20) — Three changes. (1) Cycle matrix step MOVED from "between Layer 3 and email build" to "between Layer 2 and Layer 3", so Sonnet's prompt sees the matrix verdict via the v3.39.6 LAYER 2 PER-SIGNAL VERDICTS block. (2) Part 5a: new helper _inject_matrix_verdict_into_signal_reasonings() appended at bottom — constructs a SignalReasoning with the matrix structured fields in raw_evidence_dump.signal_specific_data.matrix_verdict (cell, cell_label, contract_row, spot_col, synthetic_central_pct, synthetic_low/high, anchor_quarter, anchor_central_pct, anchor_age_days, drawdown_pct, current_session_avg, rolling_peak_price, rolling_peak_date, weeks_since_peak, adjustments list + warnings) + replaces any existing t1_spot_decline entry in-place (appends if missing). Convergence/confidence derived from count of adjustments with data: ≥2→high, 1→medium, 0→low. (3) Subject suffix wording aligned: [Hold|Warn|Fire] → [Not fired|Partially fired|Fired] (driven directly off verdict.cell.value which is now those strings). _override_t1_spot_decline_from_matrix no longer needs the CYCLE_MATRIX_STATUS_MAP lookup since the cell value IS the status; map is kept as identity in config for documentation.
   v3.39.7 (2026-05-20) — Cycle matrix step inserted between Layer 3 and chart generation. New helper run_cycle_matrix_step() (a) calls scrape_trendforce_spot_structured() + scrape_trendforce_contract() + persist_*() (b) Haiku-extracts tone/forecast signals from up to CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN articles (c) evaluates the matrix via cycle_matrix.evaluate_matrix(). The matrix verdict OVERRIDES the LLM's t1_spot_decline indicator status via CYCLE_MATRIX_STATUS_MAP: Hold→Not fired, Warn→Partially fired, Fire→Fired. The where_we_stand text is rewritten from the matrix narrative so the cell/drawdown/synthetic numbers are deterministic, not LLM-paraphrased. Both cycle charts are rendered via render_cycle_charts_from_verdict() and passed to build_email_html. Cycle step is safe-failing — exception at any sub-step logs and continues; LLM's t1_spot_decline assessment used as fallback. Email subject also gets a [Hold|Warn|Fire] suffix when matrix verdict is available.
   v3.38.6 (2026-05-17) — FORCE_RUN env var bypass for the Step 0 idempotency check. Set automatically by fast_tier.yml when event_name == 'workflow_dispatch' (manual run from the Actions UI); scheduled cron triggers leave it empty so the existing primary/fallback/safety cron coordination via state/brief_sent_dates.json continues to work. Motivation: after the v3.38.5 push, manually re-running the fast tier to validate the fix bundle was a no-op because the morning 16:25 UTC run had already marked today. Manual dispatch always means "I want this to run right now" (test/validate/recover) — auto-bypass is the right default. `os` added to imports. No behavior change for scheduled runs.
   v3.38.5 (2026-05-17) — Two error-message strings rewrote to reflect real causes. The previous strings ("deep tier hasn't run since v3.38 deploy" / "deep tier may not have run yet") implied the deep tier didn't run, when in practice the deep tier DID run but the v3.38 root-level state JSONs (state/deep_tier_diagnostics.json, state/transcript_status.json) weren't in the deep_tier.yml workflow's `git add` line. Files generated on the runner, destroyed at shutdown, never reached origin/main. Fixed in the deep_tier.yml workflow in same release. Error messages now name both possibilities: tier didn't run, OR tier ran but didn't commit.
@@ -470,6 +471,41 @@ def run_fast_tier() -> int:
     )
     logger.info(f"Layer 2 produced {len(signal_reasonings)} signal reasonings")
 
+    # ----- v3.39.7 cycle matrix step (BETWEEN Layer 2 and Layer 3) -----
+    # v3.39.7.1 — moved from "between Layer 3 and email build" to here so
+    # that Part 5a can inject the matrix verdict into signal_reasonings
+    # BEFORE Sonnet consumes the list. Otherwise the verdict reaches the
+    # email but not the exec summary, and Sonnet re-derives t1 numbers from
+    # prose. Order is now: Layer 2 → cycle matrix → inject verdict into
+    # signal_reasonings → Layer 3 → override indicator_assessments → email.
+    #
+    # Safe-failing: any exception at any sub-step is logged and Sonnet still
+    # runs (with the unmodified signal_reasonings list).
+    cycle_verdict = None
+    cycle_matrix_chart_b64 = None
+    spot_contract_chart_b64 = None
+    try:
+        cycle_verdict = _run_cycle_matrix_step(
+            news_items=news_items,
+            anthropic_client=anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None,
+            collector=collector,
+        )
+    except Exception as e:
+        logger.error(f"Cycle matrix step failed: {e}", exc_info=True)
+
+    if cycle_verdict is not None:
+        # Part 5a — inject matrix verdict into signal_reasonings list so
+        # Sonnet's exec summary references matrix numbers via the v3.39.6
+        # LAYER 2 PER-SIGNAL VERDICTS prompt block.
+        try:
+            _inject_matrix_verdict_into_signal_reasonings(
+                signal_reasonings, cycle_verdict,
+            )
+        except Exception as e:
+            logger.warning(
+                f"Could not inject matrix verdict into signal_reasonings: {e}"
+            )
+
     # ----- Step 5: Layer 3 (Sonnet) synthesis -----
     # v3.39 NOTE: Earlier code constructed a `layer3_input` dict and passed it
     # as `layer2_input=` to analyze_with_llm. That kwarg has never existed on
@@ -585,29 +621,20 @@ def run_fast_tier() -> int:
             eps_scoring_verdict = r.raw_evidence_dump.get("signal_specific_data", {}).get("weighted_scoring_verdict")
             break
 
-    # ----- v3.39.7: Cycle matrix step (between Layer 3 and email build) -----
-    # Safe-failing: any exception at any sub-step is logged and the rest of
-    # the brief still ships. The matrix verdict (when available) OVERRIDES
-    # the LLM's t1_spot_decline assessment so the status badge is
-    # deterministic, and both cycle charts are passed into build_email_html.
-    cycle_verdict = None
-    cycle_matrix_chart_b64 = None
-    spot_contract_chart_b64 = None
-    try:
-        cycle_verdict = _run_cycle_matrix_step(
-            news_items=news_items,
-            anthropic_client=anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None,
-            collector=collector,
-        )
-    except Exception as e:
-        logger.error(f"Cycle matrix step failed: {e}", exc_info=True)
-
+    # ----- v3.39.7 cycle matrix follow-up (override + charts) -----
+    # The matrix step itself runs earlier (between Layer 2 and Layer 3) so
+    # that signal_reasonings can be injected before Sonnet consumes them.
+    # Here we (1) override the LLM's t1_spot_decline assessment with the
+    # deterministic matrix verdict, and (2) render the two cycle charts
+    # for the email card. cycle_verdict is already in scope from above;
+    # if it's None (matrix step failed) both calls are skipped and the
+    # rest of the brief ships as usual.
     if cycle_verdict is not None:
-        # Override t1_spot_decline assessment status + where_we_stand with the
-        # deterministic matrix verdict (Hold/Warn/Fire → Not fired/Partially
-        # fired/Fired). Where_we_stand uses the matrix narrative so the
-        # numbers (cell, drawdown, synthetic, anchor) are deterministic,
-        # not paraphrased by the LLM.
+        # Override t1_spot_decline assessment status + where_we_stand with
+        # the deterministic matrix verdict. Status badge becomes
+        # "Not fired" / "Partially fired" / "Fired" (the MatrixCell.value
+        # strings since v3.39.7.1). Where_we_stand becomes the matrix
+        # narrative — deterministic numbers, no LLM paraphrase.
         try:
             _override_t1_spot_decline_from_matrix(
                 analysis.indicator_assessments, cycle_verdict,
@@ -615,7 +642,7 @@ def run_fast_tier() -> int:
         except Exception as e:
             logger.warning(f"Could not override t1_spot_decline from matrix: {e}")
 
-        # Render the two cycle charts.
+        # Render the two cycle charts (matrix dot + dual-axis spot/contract).
         try:
             cycle_matrix_chart_b64, spot_contract_chart_b64 = render_cycle_charts_from_verdict(
                 verdict=cycle_verdict,
@@ -644,8 +671,10 @@ def run_fast_tier() -> int:
     # Send
     try:
         # v3.39: send_email takes (subject, html_body, recipient=None).
-        # v3.39.7: subject gets [Hold|Warn|Fire] suffix when matrix verdict
-        # is available, mirroring the badge in the indicator card.
+        # v3.39.7.1: subject gets [Not fired|Partially fired|Fired] suffix
+        # when matrix verdict is available, mirroring the badge in the
+        # indicator card. The wording matches the rest of the framework's
+        # status vocabulary (no more [Hold|Warn|Fire]).
         subject = f"Memory Cycle Brief — {today.strftime('%a %b %d')}"
         if cycle_verdict is not None and getattr(cycle_verdict.cell, "value", None):
             subject += f" [{cycle_verdict.cell.value}]"
@@ -1041,3 +1070,128 @@ def _load_processed_signal_urls(signals_csv) -> set:
     except Exception as e:
         logger.warning(f"Could not load processed URLs: {e}")
         return set()
+
+
+def _inject_matrix_verdict_into_signal_reasonings(
+    signal_reasonings: list, verdict: MatrixVerdict,
+) -> None:
+    """Part 5a — construct a SignalReasoning for t1_spot_decline from the matrix
+    verdict and REPLACE any existing entry in signal_reasonings.
+
+    Sonnet's v3.39.6 prompt iterates over signal_reasonings to build the
+    LAYER 2 PER-SIGNAL VERDICTS block. Without this injection the matrix
+    verdict reaches the email card and the indicator badge but not the
+    Sonnet prompt — forcing Sonnet to re-derive t1_spot_decline numbers
+    from prose in indicator_assessments. With it, Sonnet can reference
+    cell, cell_label, contract_row, spot_col, synthetic_central_pct,
+    drawdown_pct, anchor_quarter, anchor_age_days, weeks_since_peak, and
+    the three adjustment values verbatim from raw_evidence_dump.
+
+    Mutates signal_reasonings in-place. Returns None.
+    """
+    from src.analysis.signal_reasoner import SignalReasoning
+
+    # Status string IS the cell value since v3.39.7.1 ("Not fired" / etc).
+    status = verdict.cell.value
+
+    # Convergence + confidence reflect the matrix's evidence base.
+    # We have 3+ signals over a 4w lookback feeding tone_adj, so call it
+    # "high" when there are signals, "medium" if only spot_lead has data,
+    # "low" otherwise.
+    adj_with_data = sum(1 for a in verdict.contract.adjustments if a.sources_count > 0)
+    if adj_with_data >= 2:
+        convergence = "high"
+        confidence = "high"
+    elif adj_with_data == 1:
+        convergence = "medium"
+        confidence = "medium"
+    else:
+        convergence = "low"
+        confidence = "low"
+
+    # Source list for the LAYER 2 block — show what the matrix consumed.
+    evidence_sources = []
+    for adj in verdict.contract.adjustments:
+        if adj.sources_count > 0:
+            evidence_sources.append(
+                f"{adj.component}: {adj.pp:+.1f}pp ({adj.sources_count} sources)"
+            )
+    if not evidence_sources:
+        evidence_sources = ["matrix evaluated with no fresh signals in lookback"]
+
+    # Build the raw evidence dump — Sonnet's prompt format shows this
+    # under "signal_specific_data" for each Layer 2 reasoning.
+    raw_dump = {
+        "signal_specific_data": {
+            "matrix_verdict": {
+                "cell": verdict.cell.value,
+                "cell_label": verdict.cell_label,
+                "contract_row": verdict.contract.contract_row,
+                "spot_col": verdict.spot.spot_column,
+                "synthetic_central_pct": verdict.contract.synthetic_central_pct,
+                "synthetic_low_pct": verdict.contract.synthetic_low_pct,
+                "synthetic_high_pct": verdict.contract.synthetic_high_pct,
+                "anchor_quarter": verdict.contract.anchor_quarter,
+                "anchor_central_pct": verdict.contract.anchor_central_pct,
+                "anchor_age_days": verdict.contract.anchor_age_days,
+                "drawdown_pct": verdict.spot.drawdown_pct,
+                "current_session_avg": verdict.spot.current_session_avg,
+                "rolling_peak_price": verdict.spot.rolling_peak_price,
+                "rolling_peak_date": (
+                    verdict.spot.rolling_peak_date.isoformat()
+                    if verdict.spot.rolling_peak_date else None
+                ),
+                "weeks_since_peak": verdict.spot.weeks_since_peak,
+                "adjustments": [
+                    {
+                        "component": a.component,
+                        "pp": a.pp,
+                        "weight": a.weight,
+                        "sources_count": a.sources_count,
+                        "notes": a.notes,
+                    }
+                    for a in verdict.contract.adjustments
+                ],
+            },
+        },
+        "warnings": list(verdict.warnings or []),
+    }
+
+    sr = SignalReasoning(
+        signal_id="t1_spot_decline",
+        signal_name="Cycle matrix — contract growth × spot drawdown",
+        tier=1,
+        evidence_count=adj_with_data,
+        evidence_sources=evidence_sources,
+        consensus_direction=(
+            f"Matrix {verdict.cell_label}: synthetic contract "
+            f"{verdict.contract.synthetic_central_pct:.1f}% QoQ, spot "
+            f"{verdict.spot.drawdown_pct:+.2f}% from rolling 12w peak"
+            if verdict.contract.synthetic_central_pct is not None
+            else f"Matrix {verdict.cell_label}: anchor unavailable"
+        ),
+        convergence=convergence,
+        fired_status=status,
+        fired_status_evidence=[
+            verdict.narrative[:300] if verdict.narrative else "",
+        ],
+        evidence_for_change_vs_yesterday="(matrix verdict computed fresh each run)",
+        key_quotes_consolidated=[],
+        confidence=confidence,
+        raw_evidence_dump=raw_dump,
+    )
+
+    # Replace any existing t1_spot_decline entry in-place; otherwise append.
+    for i, r in enumerate(signal_reasonings):
+        if getattr(r, "signal_id", None) == "t1_spot_decline":
+            signal_reasonings[i] = sr
+            logger.info(
+                f"  Matrix verdict injected into signal_reasonings "
+                f"(replaced existing t1_spot_decline entry; status={status})"
+            )
+            return
+    signal_reasonings.append(sr)
+    logger.info(
+        f"  Matrix verdict injected into signal_reasonings "
+        f"(appended new t1_spot_decline entry; status={status})"
+    )
