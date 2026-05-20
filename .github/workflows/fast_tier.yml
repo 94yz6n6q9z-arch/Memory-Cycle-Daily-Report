@@ -100,7 +100,18 @@ jobs:
         run: |
           git config --global user.name "memory-cycle-brief-bot"
           git config --global user.email "bot@memory-cycle-brief"
-          git add -A state/brief_sent_dates.json state/prior_state.json state/cache/
+          # v3.39.7: data/ CSVs added to commit set so the cycle matrix
+          # accumulates spot/contract/signal history across GHA runs. Without
+          # this, the runner's writes to data/dram_*_history.csv would be
+          # destroyed at runner shutdown and the matrix would only ever see
+          # the seeded data. Per-file staging avoids accidentally committing
+          # other untracked junk.
+          git add -A state/brief_sent_dates.json state/prior_state.json state/cache/ \
+                  data/dram_spot_history.csv \
+                  data/dram_contract_actuals.csv \
+                  data/dram_contract_quarterly_forecasts.csv \
+                  data/dram_contract_signals.csv \
+                  2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No state changes."
           else
