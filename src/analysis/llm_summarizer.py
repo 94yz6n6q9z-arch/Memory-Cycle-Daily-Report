@@ -12,6 +12,7 @@ summary with probability calculations, and cycle position synthesis.
 Falls back to deterministic synthesis if API unavailable.
 
 CHANGELOG (this file):
+  v3.39.7 (2026-05-20) — Cycle matrix Haiku extraction layer appended at bottom. Two new prompt+function pairs: extract_dram_signal_from_article (tone/segment/supplier/qoq structured fields → data/dram_contract_signals.csv) and extract_dram_forecasts_from_press_release (quarterly forecast list → data/dram_contract_quarterly_forecasts.csv). Both use HAIKU_MODEL with temperature=0. Pre-filtered by title in fast_tier.py to ~10 DRAM-relevant articles/run; ~$0.50/run cost ceiling. Allowed-value sets prevent free-text drift. Output validated and coerced into the CSV schemas. Reuses the existing Anthropic client pattern from this module.
   v3.38.5 (2026-05-17) — Real root cause of the 16:25 UTC May 17 Haiku triage failure found and fixed. The error pattern was "Failed to parse Haiku response as JSON: Expecting value (char 0)" → json_repair fallback returned str (not dict) → unrecoverable. This was NOT a prompt issue or a max_tokens issue. The bug was in `_strip_code_fence`: when the LLM returned a properly closed code fence (```json\n{...}\n```), the line `text.split("```", 2)[-1]` grabbed the empty string AFTER the closing fence instead of the JSON content BETWEEN the fences. The function returned `""`. json.loads("") fails with "Expecting value (char 0)"; json_repair.loads("") returns `""` (a str). Rewrote the function with explicit handling of three patterns (raw / closed-fence / unclosed-fence). Verified locally on all five common LLM-output shapes — all parse cleanly via stdlib now. Also tightened `build_haiku_triage_prompt` output format requirements (start with `{`, no markdown fences, no prose, no apologies) as belt-and-suspenders. The previous bump of HAIKU_MAX_TOKENS to 16000 and the json_repair fallback both remain — they fix related but distinct failure modes (truncation, unescaped chars).
   v3.38.4 (2026-05-17) — Both `haiku_triage_news` and `sonnet_analyze` now parse responses with a two-stage strategy: stdlib `json.loads(raw)` first (fast path for valid output), then `json_repair.loads(raw)` fallback on JSONDecodeError. Reason: the 15:32 UTC May 17 run had Haiku triage of 50 news items fail JSON parse at char 13926 (unterminated string — almost certainly unescaped quote/newline in a reasoning field), losing the entire triage. v3.38.3 had the same failure mode in Sonnet (char 27099) and Haiku (char 6839). Bumping max_tokens helps when the cause is truncation, but doesn't help when the cause is malformed string content — json_repair handles both. New explicit log at WARNING level when the fallback fires, with INFO-level confirmation of how much was recovered.
 """
@@ -1429,3 +1430,286 @@ def _fmt_pct(value: Optional[float]) -> str:
     if value is None:
         return "n/a"
     return f"{value:+.2f}%"
+
+
+# ============================================================================
+# v3.39.7 — Cycle matrix Haiku extraction
+# ============================================================================
+# Two extraction tasks consumed by data/dram_contract_*.csv:
+#   1. extract_dram_signal_from_article — tone/segment/supplier/qoq fields
+#      from any DRAM news article → dram_contract_signals.csv
+#   2. extract_dram_forecasts_from_press_release — quarterly forecasts
+#      from TrendForce press releases → dram_contract_quarterly_forecasts.csv
+#
+# Both use HAIKU_MODEL (already imported above) and the existing Anthropic
+# client pattern. Pre-filtered by title in fast_tier.py to limit cost.
+# ============================================================================
+
+import re as _re_v3397
+from datetime import date as _date_v3397
+
+
+SIGNAL_EXTRACTION_SYSTEM_PROMPT_V3397 = """You are a structured-data extractor for DRAM industry news. Your job is to read a news article and return a single JSON object describing what it says about DRAM contract pricing momentum.
+
+Output strictly valid JSON. No preamble, no markdown fences. The object must have exactly these fields:
+
+{
+  "tone_direction": one of ["rising", "stable", "softening", "cooling", "declining"] or null,
+  "tone_keywords": array of exact phrases from the article that informed the tone judgment (max 5),
+  "segment_mentioned": one of ["server_ddr5", "pc_dram", "hbm", "mobile_dram", "graphics_dram", "nand_flash", "general"] or null,
+  "qoq_pct_mentioned": number (explicit QoQ % cited) or null,
+  "qoq_quarter_mentioned": string like "Q1_2026", "Q2_2026" or null,
+  "supplier_mentioned": one of ["samsung", "sk_hynix", "micron", "kingston", "transcend", "trendforce", "multiple"] or "" if none,
+  "is_quarterly_forecast": true if the article cites a forward-looking quarterly forecast with explicit % range, else false,
+  "forecast_low_pct": number or null (only if is_quarterly_forecast),
+  "forecast_high_pct": number or null (only if is_quarterly_forecast)
+}
+
+Rules:
+- tone_direction reflects DRAM PRICING MOMENTUM specifically:
+  * "rising" = prices increasing, supply tightening, demand strong, suppliers raising
+  * "stable" = flat, sustained, balanced, holding
+  * "softening" = momentum slowed, modest deceleration, mild pullback
+  * "cooling" = cooling negotiations, ending seller's market, transactions slowing
+  * "declining" = prices falling, demand destruction, price cuts failing
+- tone_keywords are EXACT verbatim phrases from the article, not paraphrases.
+- segment_mentioned reflects the PRIMARY segment. "general" if mixed.
+- qoq_pct_mentioned: only include if a specific % cited. If a range is given, use midpoint AND populate forecast_low_pct/high_pct.
+- is_quarterly_forecast: TRUE only if a forward-looking forecast is TIED TO A SPECIFIC QUARTER.
+- supplier_mentioned: most prominently discussed supplier. "multiple" if equally featured. "" if none singled out.
+- Return strict JSON parseable by json.loads(). No trailing commas, no markdown."""
+
+
+FORECAST_EXTRACTION_SYSTEM_PROMPT_V3397 = """You are a structured-data extractor for TrendForce press releases announcing DRAM contract price forecasts.
+
+A typical press release contains sentences like:
+- "Conventional DRAM contract prices are expected to rise 58-63% QoQ in 2Q26"
+- "Server DRAM prices are projected to surge by more than 60% QoQ"
+- "1Q26 DRAM contract prices revised upward from 55-60% to 90-95%"
+
+Extract every distinct quarterly forecast announcement into a JSON array. Output strictly valid JSON, no preamble or markdown:
+
+{
+  "forecasts": [
+    {
+      "quarter": "Q1_2026" | "Q2_2026" | "Q3_2026" | "Q4_2026",
+      "segment": "conventional_dram_aggregate" | "server_ddr5" | "pc_dram" | "hbm" | "mobile_dram" | "graphics_dram" | "samsung_specific" | "sk_hynix_specific" | "micron_specific",
+      "low_pct": number,
+      "high_pct": number,
+      "is_revision": true if explicitly described as a revision of a prior forecast, else false,
+      "exact_quote": the exact sentence containing the forecast
+    }
+  ]
+}
+
+Rules:
+- One forecast per (quarter, segment). Both initial and revised values for the same (quarter, segment) -> include both as separate entries with is_revision flagged appropriately.
+- "conventional_dram_aggregate" applies to phrases like "conventional DRAM", general "DRAM contract prices" (not segment-specific). Use "server_ddr5" only when explicitly server/RDIMM/hyperscaler/AI-server.
+- For ranges like "58-63%", low_pct=58, high_pct=63.
+- For "more than 60%", treat as point estimate: low_pct=60, high_pct=60.
+- If no forecasts present, return {"forecasts": []}.
+- exact_quote should be the source sentence verbatim, useful for audit."""
+
+
+_ALLOWED_TONE_V3397 = {"rising", "stable", "softening", "cooling", "declining"}
+_ALLOWED_SEGMENTS_V3397 = {
+    "server_ddr5", "pc_dram", "hbm", "mobile_dram", "graphics_dram",
+    "nand_flash", "general",
+}
+_ALLOWED_SUPPLIERS_V3397 = {
+    "samsung", "sk_hynix", "micron", "kingston", "transcend", "trendforce",
+    "multiple", "",
+}
+_ALLOWED_FORECAST_SEGMENTS_V3397 = {
+    "conventional_dram_aggregate", "server_ddr5", "pc_dram",
+    "hbm", "mobile_dram", "graphics_dram",
+    "samsung_specific", "sk_hynix_specific", "micron_specific",
+}
+
+
+def _call_haiku_json_v3397(client, system_prompt: str, user_msg: str,
+                            max_tokens: int = 1024) -> Optional[dict]:
+    """Internal: Haiku call returning a parsed JSON dict (None on failure)."""
+    try:
+        response = client.messages.create(
+            model=HAIKU_MODEL,
+            max_tokens=max_tokens,
+            temperature=0.0,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_msg}],
+        )
+    except Exception as e:
+        logger.error(f"Haiku call failed (v3.39.7 extraction): {e}")
+        return None
+    if not response.content:
+        return None
+    text = response.content[0].text.strip()
+    text = _re_v3397.sub(r"^```(?:json)?\s*", "", text)
+    text = _re_v3397.sub(r"\s*```$", "", text)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        logger.error(f"Haiku v3.39.7 returned invalid JSON: {e}\nResponse: {text[:500]}")
+        return None
+
+
+def _safe_num_v3397(value) -> Optional[float]:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value.strip().rstrip("%"))
+        except ValueError:
+            return None
+    return None
+
+
+def extract_dram_signal_from_article(
+    client, title: str, article_body: str, url: str,
+    published_date: Optional[_date_v3397] = None,
+) -> Optional[dict]:
+    """Extract a structured DRAM signal from an article via Haiku.
+
+    Returns a dict matching the dram_contract_signals.csv schema, ready to
+    pass to upsert_contract_signals() in news.py. None if extraction failed
+    or article is too short.
+    """
+    if not article_body or len(article_body) < 100:
+        logger.debug(f"Skipping article with insufficient body: {url}")
+        return None
+
+    body = article_body[:6000]
+    user_msg = (
+        f"Title: {title}\n"
+        f"Published: {published_date.isoformat() if published_date else 'unknown'}\n"
+        f"URL: {url}\n\n"
+        f"Article body:\n{body}\n\n"
+        f"Return the JSON object."
+    )
+    parsed = _call_haiku_json_v3397(client, SIGNAL_EXTRACTION_SYSTEM_PROMPT_V3397, user_msg)
+    if parsed is None:
+        return None
+
+    tone = parsed.get("tone_direction")
+    if isinstance(tone, str):
+        tone = tone.lower()
+        if tone not in _ALLOWED_TONE_V3397:
+            tone = ""
+    else:
+        tone = ""
+
+    kw = parsed.get("tone_keywords", [])
+    keywords_str = ",".join(str(k).strip() for k in kw if k)[:500] if isinstance(kw, list) else ""
+
+    segment = parsed.get("segment_mentioned")
+    if isinstance(segment, str):
+        segment = segment.lower()
+        if segment not in _ALLOWED_SEGMENTS_V3397:
+            segment = "general"
+    else:
+        segment = ""
+
+    supplier = parsed.get("supplier_mentioned", "") or ""
+    if isinstance(supplier, str):
+        supplier = supplier.lower()
+        if supplier not in _ALLOWED_SUPPLIERS_V3397:
+            supplier = ""
+    else:
+        supplier = ""
+
+    qoq_pct = _safe_num_v3397(parsed.get("qoq_pct_mentioned"))
+    is_forecast = bool(parsed.get("is_quarterly_forecast", False))
+    article_date = published_date or _date_v3397.today()
+
+    url_l = url.lower()
+    if "trendforce.com/presscenter" in url_l:
+        source_name = "trendforce_press_release"
+    elif "trendforce.com" in url_l:
+        source_name = "trendforce_news"
+    elif "digitimes.com" in url_l:
+        source_name = "digitimes"
+    elif "etnews.com" in url_l:
+        source_name = "electronic_times"
+    elif "chosun.com" in url_l:
+        source_name = "chosunbiz"
+    elif "businesskorea" in url_l:
+        source_name = "businesskorea"
+    elif "theelec" in url_l:
+        source_name = "theelec"
+    else:
+        source_name = "unknown"
+
+    return {
+        "date": article_date.isoformat(),
+        "source_name": source_name,
+        "source_url": url,
+        "headline": title,
+        "tone_direction": tone,
+        "tone_keywords": keywords_str,
+        "segment_mentioned": segment,
+        "qoq_pct_mentioned": qoq_pct,
+        "supplier_mentioned": supplier,
+        "raw_snippet": article_body[:500],
+        "is_quarterly_forecast": is_forecast,
+    }
+
+
+def extract_dram_forecasts_from_press_release(
+    client, title: str, article_body: str, url: str,
+    published_date: Optional[_date_v3397] = None,
+) -> list[dict]:
+    """Extract structured quarterly forecasts from a TrendForce press release.
+
+    Returns a list of dicts matching dram_contract_quarterly_forecasts.csv
+    schema, ready to pass to upsert_contract_forecasts() in news.py. Empty
+    list if nothing found.
+    """
+    if not article_body or len(article_body) < 100:
+        return []
+    body = article_body[:8000]
+    user_msg = (
+        f"Title: {title}\n"
+        f"Published: {published_date.isoformat() if published_date else 'unknown'}\n"
+        f"URL: {url}\n\n"
+        f"Article body:\n{body}\n\n"
+        f"Return the JSON object."
+    )
+    parsed = _call_haiku_json_v3397(
+        client, FORECAST_EXTRACTION_SYSTEM_PROMPT_V3397, user_msg, max_tokens=1500,
+    )
+    if parsed is None:
+        return []
+    raw = parsed.get("forecasts", [])
+    if not isinstance(raw, list):
+        return []
+    pub_date = (published_date or _date_v3397.today()).isoformat()
+
+    out = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        quarter = entry.get("quarter", "")
+        if not isinstance(quarter, str) or not _re_v3397.match(r"^Q[1-4]_\d{4}$", quarter):
+            continue
+        segment = entry.get("segment", "")
+        if segment not in _ALLOWED_FORECAST_SEGMENTS_V3397:
+            continue
+        low = _safe_num_v3397(entry.get("low_pct"))
+        high = _safe_num_v3397(entry.get("high_pct"))
+        if low is None or high is None:
+            continue
+        is_rev = bool(entry.get("is_revision", False))
+        notes = ("REVISION: " if is_rev else "") + str(entry.get("exact_quote", ""))[:500]
+        out.append({
+            "quarter": quarter, "segment": segment,
+            "low_pct": low, "high_pct": high,
+            "central_pct": (low + high) / 2.0,
+            "source": "trendforce_press_release",
+            "source_url": url,
+            "published_date": pub_date,
+            "supersedes_id": None,
+            "notes": notes,
+        })
+    return out
