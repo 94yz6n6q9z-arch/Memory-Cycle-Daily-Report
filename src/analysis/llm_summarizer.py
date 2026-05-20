@@ -143,6 +143,57 @@ def _tier_from_id(indicator_id: str) -> int:
     return 0
 
 
+def _compute_tier_status_summary(assessments: list) -> str:
+    """Deterministically compute the `tier_status_summary` string from the
+    parsed `indicator_assessments` list.
+
+    v3.39.7.4 — Sonnet's self-counted `tier_status_summary` in the exec
+    summary has historically diverged from the per-card statuses in the
+    body of the same brief (e.g. May 20 2026 16:00 UTC brief: body showed
+    4 Tier 1 indicators with `Fired` badges, but exec summary said
+    `T1: 3/6 fired`; T2 had the symmetric problem where a `Partially fired`
+    body card was counted as fired in the exec total `T2: 6/7`). Off-by-
+    one arithmetic errors in the LLM's prose are not fixable by prompt
+    tightening alone, so this helper recomputes the count post-parse from
+    the structured assessments and overrides Sonnet's string.
+
+    Counting convention (locked in 2026-05-20 with user):
+    - `Fired` and `Partially fired` both count toward the tier total.
+      Rationale: a Partially fired indicator has met the trigger criteria
+      on at least one of multiple stitched dimensions, which is
+      directionally the same as Fired. Treating partial as fired makes
+      the tier count monotonic in "progress toward firing".
+    - When ANY tier has Partially fired indicators (>0), append a
+      "(N partial)" annotation so the reader knows the full-fire breakdown.
+    - The denominator per tier is fixed: T1=6, T2=7, T3=5, T4=4.
+
+    Output format examples:
+      "T1: 3/6 fired | T2: 5/7 fired (1 partial) | T3: 0/5 fired | T4: 0/4 fired"
+      "T1: 0/6 fired | T2: 0/7 fired | T3: 0/5 fired | T4: 0/4 fired"
+    """
+    TIER_DENOMINATORS = {1: 6, 2: 7, 3: 5, 4: 4}
+    counts = {1: [0, 0], 2: [0, 0], 3: [0, 0], 4: [0, 0]}  # [fired_total, partial_subset]
+    for a in assessments:
+        tier = getattr(a, "tier", 0) or _tier_from_id(getattr(a, "id", ""))
+        if tier not in TIER_DENOMINATORS:
+            continue
+        status = (getattr(a, "current_status", "") or "").strip().lower()
+        if status == "fired":
+            counts[tier][0] += 1
+        elif status.startswith("partial"):
+            counts[tier][0] += 1
+            counts[tier][1] += 1
+    parts = []
+    for tier in (1, 2, 3, 4):
+        fired, partial = counts[tier]
+        denom = TIER_DENOMINATORS[tier]
+        seg = f"T{tier}: {fired}/{denom} fired"
+        if partial > 0:
+            seg += f" ({partial} partial)"
+        parts.append(seg)
+    return " | ".join(parts)
+
+
 def _safe_indicator_assessment(a: dict) -> IndicatorAssessment:
     """Construct an IndicatorAssessment from a possibly-partial dict.
 
@@ -757,17 +808,48 @@ def build_sonnet_analysis_prompt(
 
         crr = computed_metrics.get("capex_revenue_ratios") or {}
         if crr:
-            computed_text += "\n  Hyperscaler capex/revenue ratios (most recent quarter per name):\n"
+            # v3.39.7.4: lead with capex/OCF (primary trigger metric) and the
+            # 4-hyperscaler mean of last published quarter. capex/revenue
+            # kept for context but is NOT the trigger anymore — empirical
+            # analysis (May 20 session) showed capex/revenue >40% never
+            # fired across the 4 actual hyperscalers historically.
+            mean_co_ratio = computed_metrics.get("mean_capex_ocf_ratio_latest_q")
+            n_co = computed_metrics.get("n_companies_with_capex_ocf_latest_q", 0)
+            computed_text += (
+                "\n  Hyperscaler capex/OCF strain (PRIMARY trigger for t2_hyperscaler_capex_revenue):\n"
+            )
+            if mean_co_ratio is not None:
+                # Determine band relative to thresholds
+                if mean_co_ratio > 0.50:
+                    band = "FIRED (>50%)"
+                elif mean_co_ratio > 0.40:
+                    band = "PARTIALLY FIRED (>40%)"
+                else:
+                    band = "Not fired (<40%)"
+                computed_text += (
+                    f"    Aggregate (mean of {n_co} hyperscalers, last published quarter): "
+                    f"{mean_co_ratio*100:.1f}%  →  {band}\n"
+                    f"    Historical reference: mean >40% in all 3 memory crashes "
+                    f"(2014/2018/2022); stays <40% in non-crash years.\n"
+                )
+            else:
+                computed_text += "    Aggregate: insufficient data (no last-quarter ratios available).\n"
+            computed_text += "\n  Per-company last published quarter (capex/OCF primary, capex/rev for context):\n"
             for ticker, quarters in crr.items():
                 if not quarters:
                     continue
-                latest = quarters[-1]
+                # Snapshots are sorted newest-first — first entry is last published quarter
+                latest = quarters[0]
+                co_r = latest.get('capex_ocf_ratio')
+                cr_r = latest.get('capex_revenue_ratio')
+                co_s = f"{co_r*100:.1f}%" if co_r is not None else "n/a"
+                cr_s = f"{cr_r*100:.1f}%" if cr_r is not None else "n/a"
+                strain_flag = "  ⚠ severe single-co strain >100%" if latest.get('fired_threshold') else ""
                 computed_text += (
                     f"    {ticker:<6} {latest.get('quarter_iso', '?')}: "
                     f"capex ${latest.get('capex_usd_b', '?')}B / "
-                    f"rev ${latest.get('revenue_usd_b', '?')}B → "
-                    f"ratio {latest.get('ratio', '?')} "
-                    f"(fired_threshold={latest.get('fired_threshold', False)})\n"
+                    f"OCF ${latest.get('ocf_usd_b', 'n/a')}B = capex/OCF {co_s}  |  "
+                    f"capex/rev {cr_s}{strain_flag}\n"
                 )
 
         dart = computed_metrics.get("dart_material_disclosures") or {}
@@ -974,6 +1056,43 @@ the threshold is crossed, REJECT Layer 2 and use the computed verdict.
 Explicitly note this in `where_we_stand`: "Computed verdict: Fired
 (P/E 4.56x < 5x threshold). Layer 2 returned Not fired with evidence_count=0
 but is overridden per v3.39.7.3 computed-metric authority rule."
+
+D. BEAR CASE MAGNITUDE CALIBRATION (v3.39.7.4 — DO NOT SKIP):
+
+The May 20 2026 brief produced bear `return_to_peak_pct` = -12% with 4 T1
++ 2 T2 indicators fired. This was empirically 3-4x too mild. Rules A/B/C
+above govern PROBABILITY shifts; this block governs MAGNITUDE.
+
+The bear case is calibrated to historical SK Hynix peak-to-trough drawdowns
+in completed memory cycles:
+- 2014 NAND mini-cycle: -36%
+- 2018 DRAM cycle: -43%
+- 2022 DRAM/NAND cycle: -49%
+- AVERAGE: -43%
+
+The bear case is NOT a small downward drift from base case. It is the
+AVERAGE historical drawdown scaled by current signal density. As more
+indicators fire, bear `return_to_peak_pct` must approach this historical
+norm.
+
+Bear `return_to_peak_pct` magnitude bands (apply ON TOP of A/B/C):
+
+| Fired-indicator regime                  | Bear return_to_peak_pct |
+|-----------------------------------------|-------------------------|
+| 0-1 T1 + 0-2 T2 fired (early cycle)     | -10 to -20%             |
+| 2-3 T1 OR 3-4 T2 (mid escalation)       | -25 to -35%             |
+| 4+ T1 OR 5+ T2 (late, peak imminent)    | -35 to -45%             |
+| Any T3 fired (post-peak confirmation)   | -40 to -50%             |
+| Any T4 fired (cycle bottom approaching) | -45 to -55%             |
+
+When you write bear `return_to_peak_pct`, refer to these bands directly.
+If you find yourself writing a number above -20% with majority-T1 fired,
+that is a BUG — go back and apply the band rules.
+
+Anchoring instruction: cite the historical reference verbatim in
+`delta_from_prior_text` when bear case changes magnitude band:
+  "Bear case calibrated to historical average drawdown (-43%, mean of
+   2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough)."
 
 PEAK MONTH ESTIMATE RULES:
 - Compare against prior_state.executive_summary.base_case.peak_months_away
@@ -1259,6 +1378,22 @@ def sonnet_analyze(
             f"Dropped {len(raw_assessments) - len(assessments)} indicator(s) "
             f"with missing or invalid id from Sonnet output."
         )
+
+    # v3.39.7.4 — deterministic tier_status_summary override.
+    # Sonnet's self-counted exec summary string has historically diverged
+    # from the per-card statuses in the body of the same brief (off-by-one
+    # arithmetic in the LLM's prose). Recompute from the parsed
+    # indicator_assessments and override. Log when Sonnet's value differed
+    # so we have signal on the underlying prompt quality.
+    sonnet_summary = exec_summary.tier_status_summary
+    deterministic_summary = _compute_tier_status_summary(assessments)
+    if sonnet_summary != deterministic_summary:
+        logger.warning(
+            f"tier_status_summary override (Sonnet→deterministic): "
+            f"{sonnet_summary!r} → {deterministic_summary!r}"
+        )
+    exec_summary.tier_status_summary = deterministic_summary
+
     return BriefAnalysis(
         executive_summary=exec_summary,
         big_movers=big_movers,

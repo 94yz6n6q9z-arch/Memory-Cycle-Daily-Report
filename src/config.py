@@ -58,12 +58,18 @@ BENCHMARKS = {
 }
 
 # Hyperscaler watch list for capex monitoring
+# v3.39.7.4 — Oracle dropped. Empirical analysis (May 20 session) showed
+# ORCL's capex/revenue (57%) was the only one ever to cross the 40% trigger
+# threshold across the 4-hyperscaler cohort, but ORCL is structurally
+# different — its revenue base ($15B/Q vs MSFT's $70B/Q) and recent OCI
+# catch-up push distort the ratio. Including it produced false signals
+# (indicator always "fired" because of ORCL) while masking the real
+# cycle behaviour of the four genuine hyperscalers.
 HYPERSCALERS = {
     "Microsoft": "MSFT",
     "Alphabet": "GOOGL",
     "Meta": "META",
     "Amazon": "AMZN",
-    "Oracle": "ORCL",
 }
 
 ALL_TICKERS = {**WIDER_BASKET, **BENCHMARKS, **HYPERSCALERS}
@@ -587,25 +593,51 @@ INDICATORS: list[Indicator] = [
     Indicator(
         id="t2_hyperscaler_capex_revenue",
         tier=2,
-        name="Hyperscaler capex/revenue >40%",
-        short_label="Capex/rev >40%",
-        description="Capex/revenue ratios at historic norms 12-18%. Above 40% is unsustainable.",
-        what_to_look_for=(
-            "Any of MSFT/GOOG/META/AMZN/ORCL prints capex/revenue >40% in quarterly "
-            "filings. Already fired: MSFT 45%, Oracle 57%. Watch for FCF projections cratering."
+        # v3.39.7.4 — display name changed from "Hyperscaler capex/revenue >40%"
+        # to "Hyperscaler capex/OCF strain >50%". ID kept stable for prior_state
+        # back-compat. Empirical analysis (May 20 session) showed the prior
+        # capex/revenue >40% trigger NEVER fired across the 3 historical memory
+        # crashes (2014/2018/2022) — the 4 hyperscalers' max capex/revenue
+        # historically peaked at ~27% (META 2022). Capex/OCF is dramatically
+        # better: mean across 4 hyperscalers crossed 40% in all 3 crash years
+        # and is at 62% TTM today. ORCL dropped (structural noise).
+        name="Hyperscaler capex/OCF strain >50%",
+        short_label="Capex/OCF strain",
+        description=(
+            "Capex relative to operating cash flow signals financing strain. "
+            "Historic non-crash years: mean <40% across MSFT/GOOGL/AMZN/META. "
+            "Memory cycle crash years (2014/2018/2022): mean >40%. "
+            "Capex/OCF >100% for any single co. = company must tap debt/equity "
+            "to fund capex (the 'they can't rely on operations' regime)."
         ),
-        sources=["yfinance quarterly capex + revenue", "Finnhub company financials",
-                 "SEC EDGAR 10-Q filings"],
+        what_to_look_for=(
+            "Last-published quarter capex/OCF ratio per company. "
+            "Partial fire: mean across MSFT/GOOGL/AMZN/META >40%. "
+            "Full fire: mean across MSFT/GOOGL/AMZN/META >50%. "
+            "Single-company strain overlay: any company >100% capex/OCF "
+            "(Amazon 2021-22 reached 120-125% during cycle peak)."
+        ),
+        sources=["yfinance quarterly cashflow (capex + OCF)", "SEC EDGAR 10-Q filings"],
         trigger_patterns=[],  # pure numeric
+        # v3.39.7.4 — trigger keyed on capex/OCF ratio per company. The aggregate
+        # mean rule is applied in Layer 2 / Layer 3 (which see all 4 ratios),
+        # not via single-company threshold (which would be too sensitive at AMZN's
+        # structurally-elevated baseline of 50-70%). Individual >100% still flags
+        # severe single-company strain as a secondary signal.
         trigger_numeric={
-            "msft_capex_revenue_ratio": {"trigger_above": 0.40},
-            "googl_capex_revenue_ratio": {"trigger_above": 0.40},
-            "meta_capex_revenue_ratio": {"trigger_above": 0.40},
-            "amzn_capex_revenue_ratio": {"trigger_above": 0.40},
-            "orcl_capex_revenue_ratio": {"trigger_above": 0.40},
+            "msft_capex_ocf_ratio": {"trigger_above": 1.00},   # >100% single-co strain
+            "googl_capex_ocf_ratio": {"trigger_above": 1.00},
+            "meta_capex_ocf_ratio": {"trigger_above": 1.00},
+            "amzn_capex_ocf_ratio": {"trigger_above": 1.00},
+            "mean_capex_ocf_ratio": {"trigger_above": 0.50},  # primary aggregate fire
         },
         cadence="Quarterly (each 10-Q filing)",
-        stitching="Pure numeric — computed in estimates.py from yfinance + Finnhub fallback.",
+        stitching=(
+            "Pure numeric — computed in estimates.py from yfinance quarterly_cashflow. "
+            "Uses LAST published quarter per company (NOT TTM), per user decision "
+            "2026-05-20: 'we are saying that this will crash in 3 months, so we go "
+            "with last published quarter' — responsiveness over smoothness."
+        ),
     ),
 
     Indicator(

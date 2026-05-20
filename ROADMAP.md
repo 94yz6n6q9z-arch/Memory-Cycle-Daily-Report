@@ -344,3 +344,38 @@ architecturally central than a bolt-on.
 **Files**: probably a new script in `scripts/` consuming the GHA-committed `state/indicator_evidence.json` history via `git log`.
 
 ---
+
+## v3.39.7.4 — ✅ SHIPPED 2026-05-20 (Batches 1 + 2)
+
+Two-batch correction following the May 20 production diagnostic. Details in CHANGES.md.
+
+**Batch 1** (4 surgical fixes):
+- 1a: matrix NameError (file ordering bug, fixed)
+- 1b: tier count mismatch (deterministic post-processing, fixed)
+- 1c: idempotency checkout race (`_refresh_from_origin_main()` added)
+- 1d: cron schedule overlap + silent push failures (4 crons at 30-min spacing + hardened push)
+
+**Batch 2** (bear case + capex/OCF):
+- 2a: bear case magnitude calibration via Sonnet prompt section D (historical anchor -43%, bands keyed to fired-indicator regime)
+- 2b: capex/OCF metric rebuild — ORCL dropped, last-published-quarter ratio per company + cross-company mean, thresholds 40% partial / 50% fired, severe-single-co-strain flag at >100%
+
+160 tests pass (150 prior + 10 new). Files touched: src/fast_tier.py, src/analysis/llm_summarizer.py, src/analysis/signal_reasoner.py, src/data/estimates.py, src/config.py, .github/workflows/fast_tier.yml, tests/test_tier_status_summary.py (NEW), tests/test_v3_39_6_calculation_driven.py (updated).
+
+---
+
+## Follow-up watch items (post-shipping)
+
+Items to monitor across the first ~2 weeks of v3.39.7.4 production runs. Not bugs — observability targets.
+
+**Tier count overrides**: the v3.39.7.4 `_compute_tier_status_summary` logs `WARNING` whenever Sonnet's prose count differs from the deterministic count. Watch the cadence of these in the brief logs:
+- High rate (>50% of runs override) → Sonnet's arithmetic is consistently off, prompt could be tightened to remove `tier_status_summary` from Sonnet's output entirely (drop the field from the JSON schema)
+- Low rate (<10%) → keep current setup, prompt is mostly working
+- Zero rate over a week → consider deleting the override (Sonnet is reliable)
+
+**Capex/OCF threshold calibration**: the 40/50% thresholds were calibrated against annual data. Quarterly data has higher variance — a single capex spike from a one-off data center buildout could push >50% in a normally-calm cycle period. If we see the indicator firing in periods where the cycle isn't actually rolling, raise the threshold (probably to 50/60% for partial/fired).
+
+**OCF row label discovery**: yfinance can return any of `Operating Cash Flow` / `Total Cash From Operating Activities` / `Cash Flow From Continuing Operating Activities` / `OperatingCashFlow` / `Cash Flow From Operating Activities`. Watch the warning logs for `No operating cash flow row found in yfinance cashflow for {ticker_symbol}` — if any of the 4 hyperscalers stops returning OCF, the mean computation degrades (drops to mean of 3). The candidate list may need extending.
+
+**Cron race elimination verification**: after v3.39.7.4 deploys, monitor for ~3 days that the 11:43 / 12:13 / 12:43 UTC crons all no-op cleanly (~30s runs) once the 11:13 cron succeeds. If any of them runs the full pipeline despite a successful 11:13, the `_refresh_from_origin_main()` mechanism isn't enough and we'd need a stronger barrier (probably a `git log --grep` check).
+
+---

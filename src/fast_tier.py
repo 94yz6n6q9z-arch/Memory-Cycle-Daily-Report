@@ -42,6 +42,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import subprocess
 import sys
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -174,20 +175,92 @@ def save_state(analysis) -> None:
         logger.warning(f"Could not persist prior state: {e}")
 
 
+def _refresh_from_origin_main() -> bool:
+    """Fast-forward the local checkout to origin/main if behind.
+
+    v3.39.7.4 — hardening for the cron-overlap race. With 30-min cron
+    spacing (11:13 / 11:43 / 12:13 / 12:43 UTC) and ~25-min runs, the
+    11:13 run typically commits/pushes ~11:38-11:39. The 11:43 cron then
+    starts and `actions/checkout` resolves origin/main — but there's a
+    short window (seconds to a minute) where GitHub's API has accepted
+    the push but the runner's fetch might still see the prior tip.
+    Without this refresh, the 11:43 run can see a `brief_sent_dates.json`
+    that doesn't yet have today's date, fail idempotency, and run the
+    full pipeline → duplicate email.
+
+    Belt-and-suspenders: do an explicit `git fetch origin main` and, if
+    origin is ahead, hard-reset to it. Runs at the very start of
+    run_fast_tier() before any state is written by the runner, so the
+    reset is safe (no local changes to lose).
+
+    Returns True if a refresh happened (or no-op was needed); False if
+    we couldn't reach origin (in which case we proceed with the local
+    checkout — degraded but functional).
+    """
+    try:
+        # Quick check: are we actually in a git checkout?
+        subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            check=True, capture_output=True, timeout=5,
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+        logger.info("Not in a git checkout (likely local dev run). Skipping origin/main refresh.")
+        return False
+    try:
+        subprocess.run(
+            ["git", "fetch", "origin", "main"],
+            check=True, capture_output=True, timeout=30,
+        )
+        # How many commits is HEAD behind origin/main?
+        result = subprocess.run(
+            ["git", "rev-list", "--count", "HEAD..origin/main"],
+            check=True, capture_output=True, text=True, timeout=10,
+        )
+        behind = int(result.stdout.strip())
+        if behind == 0:
+            logger.info("Local checkout matches origin/main. No refresh needed.")
+            return True
+        logger.info(
+            f"Local checkout is {behind} commit(s) behind origin/main. "
+            f"Hard-resetting before idempotency check to avoid stale-state duplicate-run race."
+        )
+        subprocess.run(
+            ["git", "reset", "--hard", "origin/main"],
+            check=True, capture_output=True, timeout=30,
+        )
+        return True
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        logger.warning(
+            f"Could not refresh from origin/main ({e}). "
+            f"Proceeding with whatever the runner checked out — idempotency check may see stale state."
+        )
+        return False
+
+
 def run_fast_tier() -> int:
     """Execute the fast-tier pipeline. Returns exit code (0 = success)."""
     today = date.today()
     started_at = datetime.now(UTC)
 
-    # ----- Step 0: Idempotency check -----
+    # ----- Step 0a: Pre-flight state refresh (v3.39.7.4) -----
+    # Ensure the local checkout reflects origin/main BEFORE we read
+    # state/brief_sent_dates.json for the idempotency check. Without
+    # this, a run that started while a prior run's push was still
+    # propagating could see stale state and send a duplicate brief.
+    # FORCE_RUN bypasses this so manual dispatches don't pay the
+    # network round-trip cost when iterating during development.
+    force_run = os.environ.get("FORCE_RUN", "").strip().lower() in ("1", "true", "yes")
+    if not force_run:
+        _refresh_from_origin_main()
+
+    # ----- Step 0b: Idempotency check -----
     # v3.38.6: FORCE_RUN env var bypasses this check. Set automatically by
     # the fast_tier.yml workflow when event_name == 'workflow_dispatch' (i.e.
     # manual run from Actions UI). Scheduled cron runs leave it empty and
-    # the check fires as before — important, since the three crons
-    # (11:00 / 11:30 / 12:05 UTC) explicitly rely on idempotency so that
-    # the fallback/safety crons no-op when the primary succeeded.
+    # the check fires as before — important, since the multiple scheduled
+    # crons rely on idempotency so fallback/safety crons no-op when the
+    # primary succeeded.
     already_sent = has_brief_been_sent_today(today)
-    force_run = os.environ.get("FORCE_RUN", "").strip().lower() in ("1", "true", "yes")
     if already_sent and not force_run:
         logger.info(f"Brief already sent today ({today.isoformat()}). Exiting early — no-op.")
         return 0
@@ -197,15 +270,15 @@ def run_fast_tier() -> int:
             "but FORCE_RUN is set — bypassing idempotency check and running full pipeline."
         )
 
-    # ----- Step 0b: Cascade gate — wait for deep_tier -----
+    # ----- Step 0c: Cascade gate — wait for deep_tier -----
     # v3.39.3: hard gate on deep_tier completion. The fast_tier consumes
     # deep_tier's Layer 1 Haiku digests (state/digests/) and the diagnostics
     # file (state/deep_tier_diagnostics.json). Running fast_tier before
     # deep_tier produces a degraded brief — historically this was surfaced
     # only as a WARN row in the email's data source table while still
     # sending the email, which is the wrong default. Now we exit cleanly
-    # and wait for the next scheduled trigger (7 attempts spread 11:13-12:43
-    # UTC). FORCE_RUN bypasses this gate for manual recovery scenarios.
+    # and wait for the next scheduled trigger. FORCE_RUN bypasses this gate
+    # for manual recovery scenarios.
     if not force_run:
         deep_diag_path = Path("state") / "deep_tier_diagnostics.json"
         today_iso = today.isoformat()
@@ -408,8 +481,11 @@ def run_fast_tier() -> int:
     performance = calculate_performance(price_history, WIDER_BASKET)
     big_movers = identify_big_movers(performance, BIG_MOVER_THRESHOLD_PCT)
 
-    # Compute hyperscaler capex/revenue ratios — feeds t2_hyperscaler_capex_revenue
-    logger.info("Computing hyperscaler capex/revenue ratios...")
+    # v3.39.7.4: Compute hyperscaler capex/OCF + capex/revenue — feeds
+    # t2_hyperscaler_capex_revenue (now: capex/OCF strain). The mean-across-
+    # companies aggregate is computed inside fetch_all_hyperscaler_capex and
+    # surfaces below as `mean_capex_ocf_ratio_latest_q`.
+    logger.info("Computing hyperscaler capex/OCF + capex/revenue ratios...")
     try:
         hyperscaler_capex = fetch_all_hyperscaler_capex(HYPERSCALERS, collector=collector)
     except Exception as e:
@@ -426,7 +502,26 @@ def run_fast_tier() -> int:
         logger.warning(f"Relative strength evaluation failed: {e}")
         rel_strength_verdict = {}
 
+    # v3.39.7.4: Compute the aggregate trigger value — mean(capex_ocf_ratio)
+    # across the 4 hyperscalers using EACH COMPANY'S LAST PUBLISHED QUARTER.
+    # Per user 2026-05-20 decision: NOT TTM. Last quarter is more responsive
+    # at the cost of single-quarter noise — acceptable for a Tier 2
+    # confirmatory signal.
+    latest_q_capex_ocf = []
+    for snaps in hyperscaler_capex.values():
+        if snaps and snaps[0].capex_ocf_ratio is not None:
+            latest_q_capex_ocf.append(snaps[0].capex_ocf_ratio)
+    mean_capex_ocf_latest_q = (
+        round(sum(latest_q_capex_ocf) / len(latest_q_capex_ocf), 4)
+        if latest_q_capex_ocf else None
+    )
+
     # Build computed_metrics block — Layer 2 consumes this
+    # NOTE: the dict key `capex_revenue_ratios` is kept for back-compat with
+    # downstream readers (llm_summarizer.py + signal_reasoner.py). Inside,
+    # each quarter entry now carries BOTH capex_revenue_ratio AND
+    # capex_ocf_ratio. The aggregate `mean_capex_ocf_ratio_latest_q` is the
+    # primary trigger value for the t2_hyperscaler_capex_revenue indicator.
     computed_metrics = {
         "forward_pe": {
             t: estimates_map.get(t, {}).get("forward_pe") if hasattr(estimates_map.get(t, {}), "get")
@@ -440,6 +535,12 @@ def run_fast_tier() -> int:
                     "quarter_iso": s.quarter_iso,
                     "capex_usd_b": s.capex_usd_b,
                     "revenue_usd_b": s.revenue_usd_b,
+                    "ocf_usd_b": s.ocf_usd_b,                          # v3.39.7.4 NEW
+                    "capex_revenue_ratio": s.capex_revenue_ratio,
+                    "capex_ocf_ratio": s.capex_ocf_ratio,              # v3.39.7.4 NEW (primary)
+                    # Legacy field name `ratio` kept for back-compat — still
+                    # capex/revenue (NOT capex/OCF) so existing prompt text
+                    # that references it doesn't silently change meaning.
                     "ratio": s.capex_revenue_ratio,
                     "fired_threshold": s.fired_threshold,
                 }
@@ -447,6 +548,11 @@ def run_fast_tier() -> int:
             ]
             for ticker, snaps in hyperscaler_capex.items()
         },
+        # v3.39.7.4: aggregate trigger value — Layer 2 + Layer 3 fire when:
+        #   mean_capex_ocf_ratio_latest_q > 0.40 → Partially fired
+        #   mean_capex_ocf_ratio_latest_q > 0.50 → Fired
+        "mean_capex_ocf_ratio_latest_q": mean_capex_ocf_latest_q,
+        "n_companies_with_capex_ocf_latest_q": len(latest_q_capex_ocf),
         "relative_strength_full": rel_strength_verdict,
         "dart_material_disclosures": dart_data or {},
     }
@@ -931,11 +1037,6 @@ def _surface_deep_tier_diagnostics(collector) -> None:
         collector.record(s)
     logger.info(f"Surfaced {len(deep_statuses)} deep-tier diagnostic rows from {run_date_str or 'unknown date'}")
 
-
-if __name__ == "__main__":
-    sys.exit(run_fast_tier())
-
-
 # ============================================================================
 # v3.39.7 — Cycle matrix helpers
 # ============================================================================
@@ -1232,3 +1333,11 @@ def _inject_matrix_verdict_into_signal_reasonings(
         f"  Matrix verdict injected into signal_reasonings "
         f"(appended new t1_spot_decline entry; status={status})"
     )
+
+
+# ============================================================================
+# Module entry point
+# ============================================================================
+
+if __name__ == "__main__":
+    sys.exit(run_fast_tier())

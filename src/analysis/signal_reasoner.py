@@ -178,7 +178,15 @@ def _gather_evidence_for_signal(
         signal_specific["computed_forward_pe"] = computed_metrics.get("forward_pe", {})
 
     if indicator.id == "t2_hyperscaler_capex_revenue":
+        # v3.39.7.4: Layer 2 now sees BOTH the per-company quarterly snapshots
+        # (which include capex/OCF + capex/revenue) AND the cross-company
+        # aggregate mean for the last published quarter. The aggregate is
+        # the primary trigger: >0.40 = Partially fired, >0.50 = Fired.
         signal_specific["computed_capex_revenue"] = computed_metrics.get("capex_revenue_ratios", {})
+        signal_specific["mean_capex_ocf_ratio_latest_q"] = computed_metrics.get("mean_capex_ocf_ratio_latest_q")
+        signal_specific["n_companies_with_capex_ocf_latest_q"] = computed_metrics.get(
+            "n_companies_with_capex_ocf_latest_q", 0
+        )
 
     if indicator.id == "t3_relative_strength":
         # Full verdict from prices.evaluate_relative_strength_signal — all 3 sub-triggers

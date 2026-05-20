@@ -233,34 +233,58 @@ def fetch_all_estimates(
 
 
 # ============================================================
-# Hyperscaler capex/revenue ratio computation (Indicator t2_hyperscaler_capex_revenue)
+# Hyperscaler capex/OCF ratio computation (Indicator t2_hyperscaler_capex_revenue)
 # ============================================================
-# Trigger: any of MSFT/GOOG/META/AMZN/ORCL prints capex/revenue >40% in
-# any quarter. Historic norms are 12-18%; >40% is unsustainable and
-# precedes capex pullbacks (which would crater memory demand).
+# v3.39.7.4 — Primary metric is now capex/OCF (operating cash flow), not
+# capex/revenue. Empirical analysis (May 20 session) showed capex/revenue
+# >40% NEVER fires across the 4 actual hyperscalers historically — the
+# trigger only ever fired because of ORCL. Capex/OCF cleanly separates
+# crash years (mean >40% in 2014/2018/2022) from non-crash years.
 #
-# We fetch quarterly capex (from cashflow statement) and quarterly revenue
-# (from income statement) via yfinance, compute the ratio for the most
-# recent 4 quarters, and write to state/hyperscaler_capex_baselines.json.
-# The state file is consumed by Layer 2 for trigger evaluation and by
-# Layer 1 digesters when processing new earnings calls.
+# Triggers (applied downstream in Layer 2 + Layer 3, not in this module):
+#   - Partially fired: mean(capex_ocf_ratio across 4 hyperscalers) > 0.40
+#                      using the LAST PUBLISHED QUARTER per company (NOT TTM)
+#   - Fired:           mean(capex_ocf_ratio) > 0.50
+#   - Severe single-company strain (secondary): any company capex/OCF > 1.00
+#
+# We fetch quarterly capex + OCF (both from cashflow statement) and quarterly
+# revenue (from income statement) via yfinance. capex/revenue is computed
+# alongside capex/OCF for context but is NOT the trigger metric.
+#
+# The state file state/hyperscaler_capex_baselines.json is consumed by
+# Layer 2 for trigger evaluation and by Layer 1 digesters when processing
+# new earnings calls.
 
 
 @dataclass
 class HyperscalerCapexSnapshot:
-    """Quarterly capex/revenue ratio snapshot for one hyperscaler."""
+    """Quarterly snapshot of one hyperscaler's capex strain.
+
+    v3.39.7.4: ocf_usd_b + capex_ocf_ratio added. `capex_revenue_ratio` kept
+    for context but is no longer the trigger metric. `fired_threshold`
+    semantic was "capex/revenue > 0.40" pre-v3.39.7.4 (deprecated, never
+    fired in production); now means "capex/OCF > 1.00" (the severe single-
+    company strain flag — Amazon 2021-22 hit 120-125% during cycle peak).
+    """
     ticker: str
     name: str
     quarter_iso: str              # e.g. "2026-Q1"
     capex_usd_b: Optional[float]
     revenue_usd_b: Optional[float]
-    capex_revenue_ratio: Optional[float]
-    fired_threshold: bool         # True if ratio > 0.40
+    ocf_usd_b: Optional[float]                # v3.39.7.4 NEW
+    capex_revenue_ratio: Optional[float]      # kept for context
+    capex_ocf_ratio: Optional[float]          # v3.39.7.4 NEW — primary trigger metric
+    fired_threshold: bool                     # v3.39.7.4: now means capex/OCF > 1.00
     fy_capex_run_rate_usd_b: Optional[float]  # 4-quarter rolling sum
 
 
 def _fetch_hyperscaler_capex_one(ticker_symbol: str, ticker_name: str) -> list[HyperscalerCapexSnapshot]:
-    """Pull last 4 quarters of capex + revenue for one hyperscaler from yfinance."""
+    """Pull last 4 quarters of capex + revenue + OCF for one hyperscaler from yfinance.
+
+    v3.39.7.4: OCF extraction added. Operating cash flow line label varies
+    across yfinance versions / company filing styles — we try several
+    candidate labels in order of frequency.
+    """
     snapshots: list[HyperscalerCapexSnapshot] = []
     try:
         t = yf.Ticker(ticker_symbol)
@@ -286,6 +310,32 @@ def _fetch_hyperscaler_capex_one(ticker_symbol: str, ticker_name: str) -> list[H
         logger.warning(f"No capex row found in yfinance cashflow for {ticker_symbol}")
         return snapshots
 
+    # v3.39.7.4: Operating cash flow row — primary trigger metric is now capex/OCF.
+    # yfinance label varies: 'Operating Cash Flow' (most common), older filings
+    # use 'Total Cash From Operating Activities', some use 'Cash Flow From
+    # Continuing Operating Activities', and the camelCase form appears in
+    # some yfinance versions.
+    ocf_row_candidates = [
+        "Operating Cash Flow",
+        "Total Cash From Operating Activities",
+        "Cash Flow From Continuing Operating Activities",
+        "OperatingCashFlow",
+        "Cash Flow From Operating Activities",
+    ]
+    ocf_row = None
+    for candidate in ocf_row_candidates:
+        if candidate in qcf.index:
+            ocf_row = qcf.loc[candidate]
+            break
+    if ocf_row is None:
+        # Soft-fail: we keep producing snapshots with capex/revenue but no
+        # capex/OCF. Layer 2 sees capex_ocf_ratio=None and treats that as
+        # missing data, not as a "Not fired" signal.
+        logger.warning(
+            f"No operating cash flow row found in yfinance cashflow for {ticker_symbol}; "
+            f"capex/OCF ratio will be None. Available rows: {list(qcf.index)[:10]}"
+        )
+
     revenue_row_candidates = ["Total Revenue", "Revenue", "Operating Revenue"]
     revenue_row = None
     for candidate in revenue_row_candidates:
@@ -308,9 +358,26 @@ def _fetch_hyperscaler_capex_one(ticker_symbol: str, ticker_name: str) -> list[H
         except (ValueError, TypeError, KeyError):
             continue
 
-        ratio = None
+        # OCF for the same quarter (may be None if row wasn't found)
+        ocf_val: Optional[float] = None
+        if ocf_row is not None and col_date in ocf_row.index:
+            try:
+                # yfinance gives OCF as positive (inflow), but be defensive
+                raw_ocf = ocf_row[col_date]
+                if raw_ocf is not None:
+                    ocf_val = float(raw_ocf)
+            except (ValueError, TypeError):
+                ocf_val = None
+
+        # capex/revenue ratio (kept for context)
+        capex_rev_ratio = None
         if rev_val and rev_val > 0:
-            ratio = round(capex_val / rev_val, 4)
+            capex_rev_ratio = round(capex_val / rev_val, 4)
+
+        # v3.39.7.4: capex/OCF ratio — PRIMARY trigger metric
+        capex_ocf_ratio = None
+        if ocf_val and ocf_val > 0:
+            capex_ocf_ratio = round(capex_val / ocf_val, 4)
 
         # Quarter label
         quarter = f"{col_date.year}-Q{((col_date.month - 1) // 3) + 1}" if hasattr(col_date, "year") else str(col_date)
@@ -323,8 +390,15 @@ def _fetch_hyperscaler_capex_one(ticker_symbol: str, ticker_name: str) -> list[H
             quarter_iso=quarter,
             capex_usd_b=round(capex_val / 1e9, 2) if capex_val else None,
             revenue_usd_b=round(rev_val / 1e9, 2) if rev_val else None,
-            capex_revenue_ratio=ratio,
-            fired_threshold=(ratio is not None and ratio > 0.40),
+            ocf_usd_b=round(ocf_val / 1e9, 2) if ocf_val else None,
+            capex_revenue_ratio=capex_rev_ratio,
+            capex_ocf_ratio=capex_ocf_ratio,
+            # v3.39.7.4: fired_threshold semantic changed from "capex/rev > 40%"
+            # (which never fired in practice for the 4 actual hyperscalers) to
+            # "capex/OCF > 100%" — severe single-company strain (Amazon
+            # historical: hit 120-125% during 2021-22 cycle peak). The
+            # aggregate mean-based trigger lives downstream in computed_metrics.
+            fired_threshold=(capex_ocf_ratio is not None and capex_ocf_ratio > 1.00),
             fy_capex_run_rate_usd_b=None,  # filled in after loop
         ))
 
@@ -339,27 +413,49 @@ def fetch_all_hyperscaler_capex(
     hyperscalers: dict[str, str],
     collector: Optional[DiagnosticsCollector] = None,
 ) -> dict[str, list[HyperscalerCapexSnapshot]]:
-    """Fetch capex/revenue ratios for every hyperscaler.
+    """Fetch capex + OCF + revenue ratios for every hyperscaler.
+
+    v3.39.7.4: aggregate mean(capex_ocf_ratio) across hyperscalers using
+    EACH COMPANY'S LAST PUBLISHED QUARTER is the primary trigger value.
+    Per user decision 2026-05-20: "we go with last published quarter"
+    (NOT TTM — TTM is one year stale; cycle calls need responsiveness).
 
     Returns dict: ticker_symbol → list of 4 quarterly snapshots (most recent first).
-    Writes results to state/hyperscaler_capex_baselines.json for Layer 2 consumption.
+    Writes results to state/hyperscaler_capex_baselines.json including the
+    computed aggregate, for Layer 2 consumption.
     """
     out: dict[str, list[HyperscalerCapexSnapshot]] = {}
-    n_fired_any = 0
+    n_severe_strain = 0  # >100% capex/OCF, any company
 
     if collector is not None:
-        with collector.track("yfinance / hyperscaler capex+revenue", "yfinance") as t:
+        with collector.track("yfinance / hyperscaler capex+OCF+revenue", "yfinance") as t:
             for name, ticker_symbol in hyperscalers.items():
                 snaps = _fetch_hyperscaler_capex_one(ticker_symbol, name)
                 out[ticker_symbol] = snaps
                 if any(s.fired_threshold for s in snaps):
-                    n_fired_any += 1
+                    n_severe_strain += 1
             t.items_returned = sum(len(v) for v in out.values())
-            t.detail = f"{n_fired_any}/{len(hyperscalers)} hyperscalers above 40% capex/rev threshold in last 4Q"
+            t.detail = (
+                f"{n_severe_strain}/{len(hyperscalers)} hyperscalers showing severe "
+                f"single-company strain (capex/OCF >100%) in any of the last 4Q"
+            )
     else:
         for name, ticker_symbol in hyperscalers.items():
             snaps = _fetch_hyperscaler_capex_one(ticker_symbol, name)
             out[ticker_symbol] = snaps
+
+    # v3.39.7.4: Compute the aggregate trigger value — mean(capex_ocf_ratio)
+    # across hyperscalers using EACH COMPANY'S LAST PUBLISHED QUARTER
+    # (= snapshots[0] since they're sorted newest-first).
+    latest_quarter_ratios = []
+    for snaps in out.values():
+        if snaps and snaps[0].capex_ocf_ratio is not None:
+            latest_quarter_ratios.append(snaps[0].capex_ocf_ratio)
+    mean_capex_ocf_ratio_latest_q: Optional[float] = None
+    if latest_quarter_ratios:
+        mean_capex_ocf_ratio_latest_q = round(
+            sum(latest_quarter_ratios) / len(latest_quarter_ratios), 4
+        )
 
     # Persist to state for Layer 2 consumption
     try:
@@ -370,6 +466,12 @@ def fetch_all_hyperscaler_capex(
         baselines_file = state_dir / "hyperscaler_capex_baselines.json"
         baseline_payload = {
             "computed_at_iso": datetime.utcnow().isoformat(),
+            # v3.39.7.4: aggregate trigger value computed across companies'
+            # last published quarter. Layer 2 / Layer 3 fire on:
+            #   > 0.40 → Partially fired
+            #   > 0.50 → Fired
+            "mean_capex_ocf_ratio_latest_q": mean_capex_ocf_ratio_latest_q,
+            "n_companies_with_latest_q_data": len(latest_quarter_ratios),
             "data": {
                 ticker: [
                     {
@@ -378,7 +480,9 @@ def fetch_all_hyperscaler_capex(
                         "quarter_iso": s.quarter_iso,
                         "capex_usd_b": s.capex_usd_b,
                         "revenue_usd_b": s.revenue_usd_b,
+                        "ocf_usd_b": s.ocf_usd_b,                          # v3.39.7.4 NEW
                         "capex_revenue_ratio": s.capex_revenue_ratio,
+                        "capex_ocf_ratio": s.capex_ocf_ratio,              # v3.39.7.4 NEW (primary)
                         "fired_threshold": s.fired_threshold,
                         "fy_capex_run_rate_usd_b": s.fy_capex_run_rate_usd_b,
                     }

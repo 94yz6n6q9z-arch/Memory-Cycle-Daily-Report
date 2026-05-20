@@ -116,7 +116,7 @@ All persisted state in `state/`:
 - `brief_sent_dates.json` — idempotency for fast-tier triggers
 - `prior_state.json` — yesterday's analysis for diff/change-tracking
 - `eps_revisions_running.json` — rolling 60-day broker actions for Indicator 3
-- `hyperscaler_capex_baselines.json` — auto-updating capex/revenue for Indicator 2
+- `hyperscaler_capex_baselines.json` — auto-updating capex/OCF + capex/revenue per quarter for Indicator 2 (v3.39.7.4: primary trigger is now capex/OCF; capex/revenue retained for context)
 - `inventory_weeks_running.json` — quarterly trajectory for Indicator 4
 - `cache/<source_id>.json` — per-source cached payloads for stale-fallback
 - `digests/YYYY-MM-DD/*.json` — Layer 1 outputs from deep tier

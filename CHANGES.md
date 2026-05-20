@@ -6,6 +6,103 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39.7.4 (Batch 1 + Batch 2) — Surgical fixes + bear case calibration + capex/OCF metric rebuild
+
+Two-batch correction sequence following the May 20 2026 production diagnostic. Batch 1 unblocks the matrix and fixes the tier-count + idempotency issues. Batch 2 calibrates the bear case to historical drawdowns and replaces the broken capex/revenue trigger with capex/OCF.
+
+### Issue 1a — Cycle matrix `NameError: _run_cycle_matrix_step is not defined`
+
+**Root cause**: file-ordering bug in `src/fast_tier.py`. The `if __name__ == "__main__":` block was placed at line 935, with the cycle-matrix helper functions (`_run_cycle_matrix_step`, `_override_t1_spot_decline_from_matrix`, `_is_dram_relevant_v3397`, `_load_processed_signal_urls`, `_inject_matrix_verdict_into_signal_reasonings`) defined AFTER it at lines 943-1234. When Python ran `python -m src.fast_tier`, it executed top-to-bottom: hit `if __name__ == "__main__":` at line 935, called `run_fast_tier()` on line 936, and `sys.exit()`'d before reaching the helper definitions. The helpers were never added to the module namespace, so `run_fast_tier`'s call to `_run_cycle_matrix_step` at line 525 raised NameError. This was a v3.39.7.3 packaging error from when the cycle-matrix helpers were appended to the wrong end of the file.
+
+**Symptom in production**: brief subject line missing `[Fire|Warn|Hold]` suffix; section 4 "DRAM Price Evolution" body card had Layer 2's own approximate matrix calculation but no matrix chart and no injected verdict text; `state/dram_*_history.csv` files never updated (since `_run_cycle_matrix_step` is where scrapes happen).
+
+**Fix**: moved the `if __name__ == "__main__":` block to the actual end of the file (line 1236) with a clarifying `# Module entry point` header. All helpers are now defined before the entry point, so they're in the module namespace by the time `run_fast_tier()` runs. Verified by direct `importlib` smoke check + 160 unit tests pass.
+
+### Issue 1b — Tier count mismatch between exec summary and body cards
+
+**Root cause**: Sonnet wrote `tier_status_summary` (e.g. `"T1: 3/6 fired | T2: 6/7 fired ..."`) as prose, computing the counts from its own internal reasoning rather than from the structured `indicator_assessments` list it also emits. Off-by-one arithmetic errors happened in two directions: T1 undercounted (body showed 4 Fired badges, exec said 3/6); T2 over-counted (body showed 1 Partially fired card, exec counted it as fully Fired in 6/7). This had also affected T3 by the May 20 16:00 UTC brief (exec said T3 1/5 fired, body showed 0/5). The error is inherent to LLM prose arithmetic and not addressable via prompt tightening alone.
+
+**Fix**: new helper `_compute_tier_status_summary(assessments)` in `src/analysis/llm_summarizer.py` deterministically counts the parsed `indicator_assessments` per tier and formats the string. Called after assessments are parsed; the result overrides `exec_summary.tier_status_summary`. Counting convention (locked with user 2026-05-20): `Fired` and `Partially fired` both count toward the tier total (monotonic in "progress toward firing"); when a tier has any Partials, append `(N partial)` annotation. Sonnet's original value is logged with `logger.warning` whenever it disagrees with the deterministic result — gives us observability into LLM arithmetic quality over time. 10 unit tests covering the May 20 actual pattern + edge cases (case-insensitive status strings, missing tier fields, invalid-tier skipping, saturation, empty list).
+
+### Issue 1c — Idempotency check defeated by checkout race
+
+**Root cause**: with 14-min cron spacing (v3.39.3) and ~25-min run duration, cron N starts WHILE cron N-1 is still running. `concurrency: cancel-in-progress=false` queues them rather than parallelizing, so cron N starts after cron N-1 finishes the entire job (including commit/push). But there's a short propagation window (seconds to a minute) between when cron N-1's push is accepted by GitHub and when cron N's `actions/checkout fetch --depth=1` resolves origin/main. If cron N checks out the pre-push tip, it sees a `state/brief_sent_dates.json` without today's date, fails the idempotency check, and runs the full pipeline → duplicate email.
+
+**Fix**: new `_refresh_from_origin_main()` helper in `src/fast_tier.py` called as Step 0a before the idempotency check. Does `git fetch origin main`; if HEAD is behind origin/main, hard-resets to fast-forward. Belt-and-suspenders so even a stale checkout self-corrects. Safe-failing: if not in a git checkout or fetch fails, logs warning and proceeds with local state. FORCE_RUN bypasses this so manual dispatches don't pay the network round-trip during development iteration.
+
+### Issue 1d — Cron schedule overlap + silent push failures
+
+**Two related fixes:**
+
+(a) **Thinned cron schedule** in `.github/workflows/fast_tier.yml` from 7 crons at 14-16 min spacing (11:13/11:27/11:43/11:57/12:13/12:27/12:43 UTC) to 4 crons at 30-min spacing (11:13/11:43/12:13/12:43 UTC). With each run taking ~25 min, 30-min spacing leaves a 5-min window for the prior run's commit to propagate to origin/main before the next checkout. Combined with 1c's `_refresh_from_origin_main()`, eliminates the race window entirely. Last-attempt time unchanged (12:43 UTC = 47 min before US open).
+
+(b) **Hardened commit/push step** to fail loudly. The prior `git push || (sleep 5 && git pull --rebase origin main && git push)` swallowed both-failed cases — committing today's `brief_sent_dates.json` locally but never pushing it to main, which is what caused the May 20 morning's "No state changes" pattern followed by the afternoon's duplicate runs. New logic uses `set -euo pipefail` + explicit exit codes + `::error::` annotations on each failure path, so the existing "Create issue on critical failure" GHA step downstream picks up the failure and surfaces it.
+
+### Issue 2a — Bear case magnitude calibration
+
+**Root cause**: The May 20 brief produced `bear_case.return_to_peak_pct = -12%` with 4 T1 + 2 T2 indicators fired. Empirically this is 3-4x too mild — historical SK Hynix peak-to-trough drawdowns in completed memory cycles averaged -43% (2014/-36%, 2018/-43%, 2022/-49%). The Sonnet prompt's PROBABILITY UPDATE RULES had explicit RULE A and B for probability-percentage shifts per fired-indicator tier, but no rules for the MAGNITUDE of `return_to_peak_pct`. With nothing anchoring it, Sonnet stayed near the example value (-8%) and only drifted a few percentage points under accumulating fires.
+
+**Fix**: new section D `BEAR CASE MAGNITUDE CALIBRATION` added to the prompt in `src/analysis/llm_summarizer.py`, after sections A/B/C. Cites the historical average (-43%) explicitly and provides magnitude bands keyed to fired-indicator regime: 0-1 T1 + 0-2 T2 → -10 to -20%; 2-3 T1 OR 3-4 T2 → -25 to -35%; 4+ T1 OR 5+ T2 → -35 to -45%; any T3 → -40 to -50%; any T4 → -45 to -55%. Includes anchoring instruction: when bear case crosses a band, cite the historical reference in `delta_from_prior_text`. No code logic — pure prompt addition.
+
+### Issue 2b — Capex/OCF metric rebuild
+
+**Root cause**: empirical analysis (May 20 session) showed the existing `capex/revenue > 40%` trigger never fires across the 3 historical memory crashes (2014/2018/2022). The 4 actual hyperscalers (MSFT, GOOGL, AMZN, META) all stay in the 5-27% capex/revenue range historically; only ORCL has ever exceeded 40%, and ORCL's $15B/Q revenue base + OCI catch-up push make the ratio structurally different from the others. Including ORCL produced false positives (the indicator was "Fired" because of ORCL) while masking the real cycle behavior of the 4 genuine hyperscalers. Meanwhile capex/OCF cleanly separates: mean across the 4 crossed 40% in all 3 crash years, stayed below 40% in non-crash years (2015/2016/2017/2019/2023), and is at 48% (2024) → 62% (2025 TTM) today.
+
+**Decisions locked with user 2026-05-20** (and re-confirmed during Batch 2 build):
+- **Drop ORCL** from the hyperscaler watch list (categorically different revenue base + OCI catch-up dynamics)
+- **Backward-looking, NOT forward-looking** — META gives explicit annual capex guidance every quarter but MSFT/AMZN don't. Building the trigger on forward data would silently degrade when MSFT/AMZN refuse to disclose. Forward color still flows to Layer 3 via the existing earnings-transcript digester pipeline.
+- **Last published quarter, NOT TTM** — TTM is "one year stale" per user; for a 3-month-ahead cycle call, responsiveness > smoothness
+- **Thresholds**: aggregate mean across MSFT/GOOGL/AMZN/META: `>40%` = Partially fired, `>50%` = Fired
+- **Secondary single-company strain flag**: any company `capex/OCF >100%` (the "they need to tap markets, can't rely on operations" regime — Amazon hit 120-125% during 2021-22 cycle peak)
+
+**Fix** (4 files, ~120 lines net):
+
+`src/config.py`:
+- Dropped Oracle from `HYPERSCALERS` dict (rationale comment added)
+- Rewrote `t2_hyperscaler_capex_revenue` indicator definition. ID kept stable for prior_state back-compat (same pattern as the v3.39.7.3 t1_spot_decline rename). New name "Hyperscaler capex/OCF strain >50%". Description + what_to_look_for rewritten around the new metric. `trigger_numeric` now keys on `msft/googl/meta/amzn_capex_ocf_ratio` (>1.00 threshold = severe single-co strain) plus `mean_capex_ocf_ratio` (>0.50 = aggregate fire). Sources updated. Stitching note documents the user's locked decisions.
+
+`src/data/estimates.py`:
+- `HyperscalerCapexSnapshot` dataclass: added `ocf_usd_b` + `capex_ocf_ratio` fields. `capex_revenue_ratio` retained for context. `fired_threshold` semantic changed from "capex/rev > 40%" (which never fired) to "capex/OCF > 100%" (severe single-co strain).
+- `_fetch_hyperscaler_capex_one()`: extracts OCF from yfinance's `quarterly_cashflow` via candidate label list (`Operating Cash Flow` / `Total Cash From Operating Activities` / `Cash Flow From Continuing Operating Activities` / `OperatingCashFlow` / `Cash Flow From Operating Activities`). Soft-fails to `capex_ocf_ratio = None` if OCF row not found (Layer 2 then treats as missing data, not "Not fired").
+- `fetch_all_hyperscaler_capex()`: computes `mean_capex_ocf_ratio_latest_q` across hyperscalers using each company's `snapshots[0]` (last published quarter). Includes it in the `state/hyperscaler_capex_baselines.json` payload.
+- Collector detail string updated from "above 40% capex/rev" to "severe single-company strain (capex/OCF >100%)" wording.
+
+`src/fast_tier.py`:
+- Comment + log message updated to reflect the new primary metric
+- `computed_metrics["capex_revenue_ratios"]` dict key kept for downstream compat. Each quarter entry now includes both `capex_ocf_ratio` and `capex_revenue_ratio`. Legacy `ratio` field aliased to capex/revenue so existing prompt text that references it doesn't silently change meaning.
+- New top-level `mean_capex_ocf_ratio_latest_q` + `n_companies_with_capex_ocf_latest_q` keys for Layer 2 / Layer 3 to consume
+
+`src/analysis/llm_summarizer.py`:
+- COMPUTED METRICS prompt block rewritten to lead with the cross-company mean capex/OCF (primary trigger value, classified into band: FIRED >50% / PARTIALLY FIRED >40% / Not fired <40%) + the historical reference (mean >40% in all 3 crash years). Then per-company last-published quarter showing both ratios with capex/OCF first. Severe-strain flag (capex/OCF >100% any single co.) annotated inline.
+- **Quiet bug fix**: the old code used `latest = quarters[-1]` to pick the "most recent" quarter, but production sorts snapshots newest-first (so `quarters[0]` is newest, `quarters[-1]` is oldest). The old block was showing the OLDEST of the 4 quarters as "most recent quarter per name". New code reads `quarters[0]`. Test fixture also corrected to match production ordering.
+
+`src/analysis/signal_reasoner.py`:
+- For `t2_hyperscaler_capex_revenue`, `signal_specific` now includes the aggregate `mean_capex_ocf_ratio_latest_q` + `n_companies_with_capex_ocf_latest_q` alongside the legacy `computed_capex_revenue` payload. Layer 2 Haiku can fire deterministically on the aggregate.
+
+`tests/test_v3_39_6_calculation_driven.py`:
+- `test_capex_revenue_ratios_render_latest_quarter` updated to match the new prompt format (asserts on "Hyperscaler capex/OCF strain", "Aggregate (mean of N hyperscalers", percentage formatting, band classification, historical reference, etc.). Test fixture re-ordered to newest-first to match production convention.
+
+### Files changed in v3.39.7.4
+
+- `src/fast_tier.py` — 1a, 1c, 2b computed_metrics wiring
+- `src/analysis/llm_summarizer.py` — 1b, 2a, 2b prompt block rewrite
+- `src/analysis/signal_reasoner.py` — 2b Layer 2 plumbing
+- `src/data/estimates.py` — 2b OCF extraction + aggregate
+- `src/config.py` — 2b ORCL drop + indicator config rewrite
+- `.github/workflows/fast_tier.yml` — 1d
+- `tests/test_tier_status_summary.py` — NEW (10 tests for 1b)
+- `tests/test_v3_39_6_calculation_driven.py` — updated 2b test
+- 160 tests pass.
+
+### What v3.39.7.4 does NOT change
+
+- Layer 2 system prompt (`REASONER_SYSTEM_PROMPT` in signal_reasoner.py): unchanged
+- Evidence store schema or contents: unchanged
+- Other indicator configs: unchanged
+- All Layer 1 digester logic: unchanged
+
+---
+
 ## v3.39.7.3 — Persistent evidence store: memory/data preservation, not just status preservation
 
 A diagnostic session against the May 9 doc, May 18 brief, and May 20 brief revealed a fundamental architectural gap: the system had no institutional memory of WHY each indicator fired. Layer 2 (Haiku) saw only today's news + computed metrics + (a string label) prior_status. So cumulative-state signals — capex announcements, multi-year LTAs, IDC forecasts, supplier inventory prints, insider transactions — got reset every morning when today's news didn't reaffirm them.
