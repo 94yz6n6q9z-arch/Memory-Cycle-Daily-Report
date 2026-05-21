@@ -1,33 +1,33 @@
 {
   "_metadata": {
     "schema_version": "1.0",
-    "bootstrap_source": "memory_supercycle_analysis.docx, May 9, 2026 — Part 5 firing table (lines 285-326 in extracted text)",
-    "last_full_update": "2026-05-20",
+    "bootstrap_source": "memory_supercycle_analysis.docx, May 9, 2026 \u2014 Part 5 firing table (lines 285-326 in extracted text)",
+    "last_full_update": "2026-05-21",
     "description": "Persistent evidence store. Per-indicator: current_status, fired_since, evidence_log of WHAT data fired it and reversal_condition. Layer 2 reads this on each run, preserves prior fired state unless today's evidence matches the reversal_condition. Live-persistence indicators (forward_pe, rel_strength, cycle matrix) are recomputed each run regardless. See src/state.py for the API and docstrings."
   },
   "indicators": {
     "t1_spot_decline": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-20",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-20",
           "type": "computed",
-          "value": "Framework upgraded v3.39.7: spot-only trigger replaced by 5x5 cycle matrix (contract growth × spot drawdown). May 9 doc had this fired on DDR4 spot -5% in late April, but that single-SKU signal is now subsumed into the matrix. Current matrix verdict: R1/C2 (contract +54.6% QoQ R1 band, spot drawdown -2.07% C2 band) = Not fired.",
+          "value": "Framework upgraded v3.39.7: spot-only trigger replaced by 5x5 cycle matrix (contract growth \u00d7 spot drawdown). May 9 doc had this fired on DDR4 spot -5% in late April, but that single-SKU signal is now subsumed into the matrix. Current matrix verdict: R1/C2 (contract +54.6% QoQ R1 band, spot drawdown -2.07% C2 band) = Not fired.",
           "source": "src/data/cycle_matrix.py, computed each run",
           "persistence": "live",
           "reversal_condition": "Matrix cell moves to Partially fired (R3 mid-band, or R2+C3) or Fired (R4-R5 or C5 column or R3+C4) per cycle_matrix.MATRIX dict"
         }
       ],
       "next_check_due": null,
-      "display_name": "DRAM Price Evolution (spot + contract matrix)",
-      "notes": "Renamed from 'DDR5 spot first MoM decline' to 'DRAM Price Evolution' in v3.39.7.3 to reflect that the matrix encompasses both spot and contract dynamics. The ID t1_spot_decline is preserved for state-file backward compatibility."
+      "notes": "Renamed from 'DDR5 spot first MoM decline' to 'DRAM Price Evolution' in v3.39.7.3 to reflect that the matrix encompasses both spot and contract dynamics. The ID t1_spot_decline is preserved for state-file backward compatibility.",
+      "display_name": "DRAM Price Evolution (spot + contract matrix)"
     },
     "t1_lead_times": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -43,12 +43,12 @@
     "t1_price_cuts_no_demand": {
       "current_status": "Fired",
       "fired_since": "2026-04-28",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-04-28",
           "type": "announcement",
-          "value": "TrendForce explicit statement: 'DDR4 price cuts failed to revive purchasing activity' — classic demand destruction signature where buyers don't exist at any price",
+          "value": "TrendForce explicit statement: 'DDR4 price cuts failed to revive purchasing activity' \u2014 classic demand destruction signature where buyers don't exist at any price",
           "source": "TrendForce, April 28 2026 (cited in May 9 framework doc)",
           "persistence": "quarterly",
           "reversal_condition": "TrendForce or peer publishes statement that DDR4/DDR5 price cuts ARE reviving purchasing activity, or that demand has returned"
@@ -59,7 +59,7 @@
     "t1_oem_inventory": {
       "current_status": "Fired",
       "fired_since": "2025-09-01",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2025-09-01",
@@ -75,15 +75,15 @@
     "t1_efficiency_shock": {
       "current_status": "Fired",
       "fired_since": "2026-03-24",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-03-24",
           "type": "announcement",
-          "value": "Google TurboQuant published — 6x KV-cache compression and 8x speedup on H100. This is an algorithmic memory-bandwidth substitute that reduces HBM demand per workload.",
+          "value": "Google TurboQuant published \u2014 6x KV-cache compression and 8x speedup on H100. This is an algorithmic memory-bandwidth substitute that reduces HBM demand per workload.",
           "source": "Google Research announcement, March 24 2026 (cited in May 9 framework doc)",
           "persistence": "permanent",
-          "reversal_condition": "Not applicable — once a published technique is in the literature, it cannot be unannounced. The efficiency gain is permanent."
+          "reversal_condition": "Not applicable \u2014 once a published technique is in the literature, it cannot be unannounced. The efficiency gain is permanent."
         }
       ],
       "next_check_due": null
@@ -91,7 +91,7 @@
     "t1_demand_destruction": {
       "current_status": "Fired",
       "fired_since": "2026-04-15",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-04-15",
@@ -107,7 +107,7 @@
     "t2_eps_revisions": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -124,7 +124,7 @@
     "t2_capex_parabolic": {
       "current_status": "Fired",
       "fired_since": "2026-01-15",
-      "last_updated": "2026-05-18",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-01-15",
@@ -149,7 +149,7 @@
     "t2_ltas_signed": {
       "current_status": "Fired",
       "fired_since": "2025-12-01",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2025-12-01",
@@ -162,7 +162,7 @@
         {
           "date": "2026-05-09",
           "type": "data_point",
-          "value": "JPMorgan thesis: 'LTAs are eliminating cyclicality'; Nomura raised SK Hynix target +71% — sell-side consensus that LTAs structurally change the cycle (paradoxically a peak signal)",
+          "value": "JPMorgan thesis: 'LTAs are eliminating cyclicality'; Nomura raised SK Hynix target +71% \u2014 sell-side consensus that LTAs structurally change the cycle (paradoxically a peak signal)",
           "source": "JPMorgan + Nomura research (per May 9 framework doc)",
           "persistence": "durable_contract",
           "reversal_condition": "Buyers begin negotiating LTA renegotiations or volume reductions"
@@ -173,7 +173,7 @@
     "t2_insider_sales": {
       "current_status": "Fired",
       "fired_since": "2026-03-15",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-03-15",
@@ -190,7 +190,7 @@
     "t2_pe_compressed": {
       "current_status": "Fired",
       "fired_since": "2026-04-20",
-      "last_updated": "2026-05-20",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-20",
@@ -202,12 +202,12 @@
         }
       ],
       "next_check_due": null,
-      "notes": "Live-computed each run. May 9 doc cited SK Hynix 3.7x FY27 / 5.5x FY26 = same compression pattern as Nov 2018 peak. Today's values are still firmly below thresholds — fire stands."
+      "notes": "Live-computed each run. May 9 doc cited SK Hynix 3.7x FY27 / 5.5x FY26 = same compression pattern as Nov 2018 peak. Today's values are still firmly below thresholds \u2014 fire stands."
     },
     "t2_hyperscaler_capex_revenue": {
-      "current_status": "Fired",
+      "current_status": "Reversed",
       "fired_since": "2026-01-30",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-01-30",
@@ -216,6 +216,14 @@
           "source": "computed_metrics.capex_revenue_ratios + hyperscaler 10-Ks (cited in May 9 framework doc)",
           "persistence": "quarterly",
           "reversal_condition": "Hyperscaler capex/revenue ratios drop below 40% for the top names; or FCF projections recover materially"
+        },
+        {
+          "date": "2026-05-21",
+          "type": "data_point",
+          "value": "Layer 2 transition Fired -> Reversed. Reasoning: Latest quarterly data (2026-Q1) shows Amazon capex/OCF ratio at 1.698x (>100% threshold fired), but mean across MSFT/GOOGL/META/AMZN is 0.932x, below the 50% full-fire threshold and below the 40% part",
+          "source": "Layer 2 reasoner (1 sources)",
+          "persistence": "live",
+          "reversal_condition": "Subsequent Layer 2 run reverses this transition with new evidence"
         }
       ],
       "next_check_due": "2026-07-22"
@@ -223,12 +231,12 @@
     "t2_spot_contract_spread": {
       "current_status": "Fired",
       "fired_since": "2026-04-01",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-04-01",
           "type": "data_point",
-          "value": "DDR4 spot prices have rolled (-5% late April) while DDR4 contract prices still rising — spread INVERTED. Classic late-cycle pattern where spot leads contract by 1 quarter.",
+          "value": "DDR4 spot prices have rolled (-5% late April) while DDR4 contract prices still rising \u2014 spread INVERTED. Classic late-cycle pattern where spot leads contract by 1 quarter.",
           "source": "TrendForce + May 9 framework doc",
           "persistence": "live",
           "reversal_condition": "DDR4 spot recovers above contract level; OR the spread closes to under 5pp; computed each run from spot/contract data"
@@ -240,7 +248,7 @@
     "t3_contract_decline": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -256,7 +264,7 @@
     "t3_supplier_inventory_rebuild": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -272,15 +280,15 @@
     "t3_relative_strength": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-20",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-03-15",
           "type": "data_point",
           "value": "March 2026: MU underperformed PHLX by 20% in 5 days (largest single-week relative underperformance since 2011)",
-          "source": "May 9 framework doc — historical reference",
+          "source": "May 9 framework doc \u2014 historical reference",
           "persistence": "event_window",
-          "reversal_condition": "Window expired — the May 2026 rally reversed the March spread; this fire is documented but no longer active"
+          "reversal_condition": "Window expired \u2014 the May 2026 rally reversed the March spread; this fire is documented but no longer active"
         },
         {
           "date": "2026-05-20",
@@ -292,12 +300,12 @@
         }
       ],
       "next_check_due": null,
-      "notes": "Live computed. May 9 doc noted 'fired then reversed' — the historical event is logged but the active status is from today's computation."
+      "notes": "Live computed. May 9 doc noted 'fired then reversed' \u2014 the historical event is logged but the active status is from today's computation."
     },
     "t3_wfe_orders_crack": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -313,7 +321,7 @@
     "t3_eps_miss_guidance": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -321,7 +329,7 @@
           "value": "SK Hynix Q1 2026 beat by 48.8% with 71.5% operating margin; Micron Q2 FY26 beat by 41.86% with guidance raised to $33.5B revenue",
           "source": "SK Hynix + Micron earnings (per May 9 framework doc)",
           "persistence": "quarterly",
-          "reversal_condition": "First quarter where beat magnitude drops materially or guidance fails to raise — watch SK Hynix Q2 2026 (July 29) and MU Q3 FY26 (June 24) carefully"
+          "reversal_condition": "First quarter where beat magnitude drops materially or guidance fails to raise \u2014 watch SK Hynix Q2 2026 (July 29) and MU Q3 FY26 (June 24) carefully"
         }
       ],
       "next_check_due": "2026-06-24"
@@ -329,7 +337,7 @@
     "t4_yoy_asp_negative": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -345,7 +353,7 @@
     "t4_guidance_cuts": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -361,7 +369,7 @@
     "t4_capex_slashed": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -377,7 +385,7 @@
     "t4_layoffs": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-21",
       "evidence_log": [
         {
           "date": "2026-05-09",
