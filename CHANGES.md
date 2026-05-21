@@ -6,6 +6,152 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39.7.9 — Six-fix release: capex/OCF authority, 2-quarter rolling mean, three-state status collapse, color scheme, NaN-guarded relative strength, section 3 numeric surfacing, value-chain inference
+
+Diagnosed from the May 21 2026 brief. Six distinct issues surfaced from a single brief; bundled here as one release since the changes are small and logically coherent (each fix touches at most 1-2 files; together they tighten the indicator → display → narrative pipeline).
+
+### Fix #1 — Capex/OCF is authoritative; capex_revenue_ratios removed everywhere
+
+**The bug.** Layer 2 returned "Reversed" for t2_hyperscaler_capex_revenue on the May 21 brief, citing capex/revenue ratios of 24-37% < 40%. But the COMPUTED METRICS block in the same brief showed capex/OCF mean at 93.2% (well above the 50% Fired threshold). The indicator's actual rule is capex/OCF >50%, not capex/revenue.
+
+**Two compounding root causes:**
+- `signal_reasoner.py:185` was passing `computed_capex_revenue = computed_metrics.get("capex_revenue_ratios", {})` to Layer 2 as part of signal_specific. Layer 2 saw both ratios and the prompt didn't say which was authoritative.
+- The evidence store's stored reversal_condition for t2_hyperscaler_capex_revenue was the legacy v3.39.7.4 text: "Hyperscaler capex/revenue ratios drop below 40% for the top names". When the indicator changed to capex/OCF in v3.39.7.4, this stored text was never updated. Layer 2 read it, checked today's capex/revenue (24-37%, below 40%), and dutifully returned Reversed per the framework's Rule C ("Layer 2 verdict is authoritative when it returns a computed verdict").
+
+**The fix.**
+- `signal_reasoner.py:180-200` no longer passes `computed_capex_revenue`. Instead exposes the new v3.39.7.9 keys: `mean_capex_ocf_ratio_2q`, `per_company_capex_ocf_2q`, `n_companies_with_2q_capex_ocf`.
+- `fast_tier.py` and `estimates.py` no longer include `capex_revenue_ratios` in `computed_metrics`. The per-company raw quarterly snapshots are now under the renamed key `hyperscaler_quarterly_snapshots` (still includes capex_ocf_ratio for narrative context, but no capex_revenue_ratio field).
+- `state/indicator_evidence.json` reversal_condition updated to: "Mean capex/OCF across MSFT/GOOGL/AMZN/META drops below 40% on the 2-quarter rolling average for two consecutive published quarters. (v3.39.7.9: rule changed from legacy capex/revenue <40% to capex/OCF <40% 2q-rolling. capex/revenue is no longer used anywhere in the system.)"
+- `REASONER_SYSTEM_PROMPT` "INVALID DOWNGRADES" section gets a new explicit entry: "For t2_hyperscaler_capex_revenue: the rule is capex/OCF >50% (Fired) / >40% (Partially fired). NOT capex/revenue. capex/revenue ratios are no longer passed in signal_specific and any historical reference to capex/revenue in the evidence store reversal_condition is LEGACY — ignore it."
+
+### Fix #2 — Two-quarter rolling capex/OCF mean per company
+
+**The bug.** Pre-v3.39.7.9 the aggregate used `snaps[0].capex_ocf_ratio` — single-quarter capex/OCF per company. Amazon Q1 2026 OCF dipped to $26.03B (vs Q4 2025 ~$54.46B), making AMZN capex/OCF look like 169.8% in isolation. This single-quarter spike contributed to the 93.2% cross-company mean, which technically fired the rule correctly but misled Layer 2 about persistence (Layer 2 saw single-quarter noise and reasonably treated it as transient).
+
+You explicitly chose single-quarter responsiveness in v3.39.7.4 ("we are saying that this will crash in 3 months, so we go with last published quarter"). The May 21 brief showed the noise cost of that choice in practice — Amazon's 169.8% is clearly an isolated OCF dip, not a structural change. Two-quarter rolling per company smooths this while preserving the cycle signal.
+
+**The fix.** `estimates.py:447-475` + `fast_tier.py:535-590` compute the per-company 2-quarter rolling mean first, then cross-company mean. For companies with only 1 published quarter (rare — recently-listed names), falls back to that single quarter. The cross-company aggregate is now `mean_capex_ocf_ratio_2q` (was `mean_capex_ocf_ratio_latest_q`). The per-company 2q ratios are exposed as a new dict `per_company_capex_ocf_2q` so Layer 2 can identify which companies drive the aggregate.
+
+Numerical example: Amazon Q1 2026 169.8% + Q4 2025 ~20% → 2q mean ~95% (still elevated but no longer the noisy spike).
+
+### Fix #3 — "Reversed" status collapsed into "Not fired"
+
+**The UX gap.** Pre-v3.39.7.9 `fired_status` had four values: `Fired`, `Not fired`, `Partially fired`, `Reversed`. The "Reversed" 4th state was designed to preserve audit trail ("this WAS fired but has now reversed" vs "Not fired" which means "never fired in the first place"). Real distinction in principle; visual confusion in practice. User feedback (2026-05-21): "there is no 'reversed' status, it reversed to 'Not Fired'".
+
+**The fix.** Three states only: `Fired` / `Partially fired` / `Not fired`. The audit trail moves to `evidence_for_change_vs_yesterday` (already exists per-indicator) and the trigger event banner in the exec summary. The status pill carries only the current state.
+
+Touched: `signal_reasoner.py` (fired_status enum comment, system prompt transition rule "From Fired → set to 'Not fired'", JSON schema in user template); `llm_summarizer.py` (IndicatorAssessment.current_status enum comment, output JSON schema); `email_module/template.py` (STATUS_COLORS dict drops the Reversed key).
+
+### Fix #4 — Color scheme: clearer red + change-flag matches destination status
+
+**Two related changes.**
+
+(a) Fired color darkened from `#D85A30` (red-orange that read as "amber" in the May 21 brief screenshot) to `#B91C1C` (clearer red — matches the v3.39.4 "RED fire" semantic).
+
+(b) The change-flag highlight (the `<span class='change-flag'>CHANGED: ...</span>` element next to the status pill when status_changed_today is True) was always rendered with hardcoded yellow `#FFEBA1` background — regardless of whether the indicator went FIRED→Not fired (un-fire, should look green), Not fired→Fired (new fire, should look red), or anywhere → Partially fired (yellow). Visually all transitions looked the same.
+
+**The fix.** Change-flag background is now `status_color` (the destination status's color). Text color flips to white on red (Fired background) for readability; dark text everywhere else. Per user direction 2026-05-21: "when something fires i want to see it in red (not yellow) and when something reverses to 'Not Fired' i want to see it in green background. When something moves or reverses to 'Partially Fired' / 'Warn' then yellow background is fine."
+
+### Fix #5 — QUIET state — already shipping, just an explanation
+
+(No code change.) QUIET was added in v3.39.7.6 as the 5th diagnostic health state alongside OK/WARN/FAIL/SKIPPED. Means: source was reached successfully (HTTP 200), returned 0 items, AND the source is flagged `expected_empty=True`. Applies to ~35 architectural Google News watcher queries (CXL 3.0, GDDR7, MTIA, HBF, OpenAI IPO, Anthropic IPO, etc.) + 5 SK Hynix pre-listing SEC EDGAR feeds. These watchers are designed to stay empty most days and fire only when a specific event happens (e.g., "OpenAI IPO filing" returns 0 items every day until the actual IPO happens). Pre-v3.39.7.6 they all rendered as WARN; now QUIET (informational only).
+
+The QUIET count in your section 7 diagnostic summary tells you how many architectural watchers are still on standby waiting for their event.
+
+### Fix #6 — Value-chain inference in Sonnet exec brief prompt
+
+**The gap.** User: "SK Hynix shifting capacity to HBM will mean less DDR5, which means higher spot prices in short term. I didnt see this reflected on exec summary or the signal info."
+
+The data IS captured (SK Hynix is Tier A in TRACKED_PURE_MEMORY, scores 9-10 at Pass 2; DDR5 spot prices via the TrendForce DRAM spot scraper at `src/data/news.py:402`). The capacity-shift news AND the DDR5 spot prices both reach Sonnet. Sonnet just doesn't draw the causal link unless explicitly prompted.
+
+**The fix.** New `VALUE-CHAIN INFERENCE` section added to the Sonnet executive brief specification prompt, with three explicit chain patterns:
+
+1. **CAPACITY-MIX SHIFTS** — SK Hynix/Samsung HBM capacity expansion → DDR5/LPDDR/NAND wafer reallocation → spot tightening short-term + contract acceleration 1-2 quarters out. Korean fab outage / labor disruption → near-term HBM AND DDR5/LPDDR spot tightening → t2_spot_contract_spread direction shifts.
+2. **DEMAND CASCADES** — Hyperscaler ups AI capex guidance (Tier C) → NVIDIA/AMD/Broadcom backlog increases (Tier B) → SK Hynix HBM revenue 1-2 quarters out. AI lab signs multi-billion infra deal → chip designer capacity commitment → memory order book.
+3. **COMPETITIVE / SUBSTITUTION** — CXMT/ChangXin capacity milestone → DDR4/DDR5 commodity oversupply risk → Samsung/SK Hynix spot pressure. Cerebras WSE-3 deployment / in-house ASIC milestone → HBM substitution risk → captive-ratio impact on SK Hynix HBM revenue.
+
+Inference style: "X implies Y because Z" rather than reporting X and Y separately. LIMITS section: only when both ends of the chain have evidence in today's brief or a recent (≤7d) carried-forward evidence entry — no speculation from one anchor.
+
+### Fix #7a — NaN-guarded relative strength computation
+
+**The bug.** May 21 brief section 4 (t3_relative_strength deep dive) showed "COMPUTED METRICS: SK Hynix 5d vs SOX: +nanpp; Micron 5d vs SOX: +nanpp". When `history[ticker_name].iloc[-1]` or `iloc[-days-1]` landed on a NaN price cell (e.g., MSCI ACWI Semiconductor has gaps when US and global trading calendars don't align), the arithmetic returned NaN. The downstream `is not None` guard at the render site doesn't catch NaN (NaN IS a valid float, just not a useful one). Format string `{skhx:+.2f}pp` then printed `+nanpp`.
+
+**Two-level fix.**
+
+(a) `prices.py:get_relative_strength_vs_sox` — explicit NaN guard. After extracting the four price values (ticker_end, ticker_start, sox_end, sox_start) via `iloc`, check `if any(pd.isna(v) for v in ...): return None`. Final guard on the computed returns themselves catches any remaining NaN. Pre-v3.39.7.9 these checks were absent.
+
+(b) `llm_summarizer.py` — defensive format-side check. The COMPUTED METRICS rendering block now uses a `_valid` helper that checks `is not None AND not math.isnan(...)`. If either path bypasses the upstream guard, the render block still produces "(not computed — SOX or X price cell missing in lookback window)" instead of "+nanpp".
+
+### Fix #7b — Section 3 t3_relative_strength card shows the numeric value
+
+**The display gap.** User: "i expect that on the 5d vs SOX i expect to see a number as a number is what will trigger a warn (partially fired) or fired."
+
+Pre-v3.39.7.9 section 3 (Tier indicators — daily status summary cards) showed for t3_relative_strength just: short label + status pill + brief description. To see the actual computed values (SK Hynix -3.2pp / Micron -2.1pp 5d vs SOX) you had to scroll to section 4 (deep dives). The number is what determines fired/partially-fired/not-fired — should be visible at a glance.
+
+**The fix.** New helper `_build_relative_strength_snippet()` in template.py generates a color-coded inline block with the three computed values:
+
+- SK Hynix 5d vs SOX: ±X.XXpp
+- Micron 5d vs SOX: ±X.XXpp
+- DRAM ETF 5d vs SMH: ±X.XXpp
+
+Each badge is colored by its band:
+- ≤ -10pp → Fired color (red)
+- -10 to -5pp → Partially fired color (yellow)
+- > -5pp → Not fired color (green)
+- NaN/None → grey "(not computed)"
+
+A small thresholds legend appears below the three badges. The snippet is prepended to the t3_relative_strength row's "Where we stand" cell only (other indicators don't have a clean single-number to surface).
+
+`_build_indicators_section()` gets a new optional `rel_strength_verdict` kwarg; `build_email_html()` passes it through.
+
+### Files changed
+
+| Path | Change |
+|---|---|
+| `src/config.py` | Unchanged |
+| `src/data/estimates.py` | 2-quarter rolling per-company capex/OCF; renamed keys (mean_capex_ocf_ratio_latest_q → mean_capex_ocf_ratio_2q); capex_revenue_ratio kept in raw snapshot for narrative, not used for trigger |
+| `src/data/prices.py` | NaN guard in get_relative_strength_vs_sox + zero-start-price defense |
+| `src/data/news.py` | Unchanged |
+| `src/fast_tier.py` | Computes per_company_capex_ocf_2q + mean_capex_ocf_ratio_2q; drops capex_revenue_ratios from computed_metrics; new `hyperscaler_quarterly_snapshots` key for raw narrative data |
+| `src/analysis/signal_reasoner.py` | fired_status enum + JSON schema drop "Reversed"; transition rule "From Fired → Not fired"; INVALID DOWNGRADES has new v3.39.7.9 entry on capex/OCF authority; signal_specific no longer carries computed_capex_revenue |
+| `src/analysis/llm_summarizer.py` | math import; COMPUTED METRICS block uses 2q keys + math.isnan defensive check; VALUE-CHAIN INFERENCE section added to exec brief spec; current_status enum + JSON schema drop "Reversed"; NUMBER-FIRST format references capex/OCF instead of legacy capex/revenue; Rule C cites mean_capex_ocf_ratio_2q |
+| `src/email_module/template.py` | math import; STATUS_COLORS drops Reversed + Fired darkened to #B91C1C; change-flag uses dynamic status_color; new _build_relative_strength_snippet() helper; _build_indicators_section() injects snippet into t3_relative_strength row |
+| `state/indicator_evidence.json` | t2_hyperscaler_capex_revenue reversal_condition updated to cite capex/OCF 2q rolling (was legacy capex/revenue text) |
+| `tests/test_v3_39_6_calculation_driven.py` | Updated to new 2q key fixture; asserts capex/revenue is no longer in prompt |
+| `tests/test_v3_39_7_9_six_fixes.py` | NEW — 39 tests across 7 classes covering all 6 production fixes |
+
+### What v3.39.7.9 does NOT change
+
+- `TRACKED_COMPANIES` 4-tier structure (v3.39.7.8) — unchanged
+- HYPERSCALERS dict — unchanged
+- AMD/INTC/CBRS chip designer additions (v3.39.7.8) — unchanged
+- All v3.39.7.6 fixes (KRX, RECENCY, BENCHMARKS, QUIET state) — unchanged
+- v3.39.7.7 Pass 1 boundary fix — unchanged
+- Indicator configs, thresholds, IDs, names — unchanged
+- Cron schedule — unchanged
+
+### Test state
+
+312 tests pass:
+```bash
+PYTHONPATH=. python3 -m pytest tests/ -q
+# 312 passed, 14 warnings, 3 subtests passed in 1.57s
+```
+
+273 from v3.39.7.8 baseline + 39 new in `tests/test_v3_39_7_9_six_fixes.py`. Net +39.
+
+### Post-deploy acceptance criteria
+
+- [ ] t2_hyperscaler_capex_revenue status no longer flips between Fired and Reversed across runs — should settle on Fired given mean_capex_ocf_ratio_2q is currently ~85% (well above 50%)
+- [ ] Amazon's single-quarter OCF dips no longer trip false single-co-strain >100% in the brief narrative (the per-company display still shows them, but the trigger uses the 2q mean)
+- [ ] Section 3 t3_relative_strength row shows three color-coded badges: "SK Hynix 5d vs SOX: X.XXpp / Micron 5d vs SOX: Y.YYpp / DRAM ETF 5d vs SMH: Z.ZZpp"
+- [ ] No more "+nanpp" in section 4 verdict text; if data is genuinely missing, renders "(not computed — SOX or X price cell missing in lookback window)"
+- [ ] Change-flag highlight color matches destination status: red on new fires, green on un-fires, yellow on partial transitions
+- [ ] No "Reversed" status pills anywhere; un-fires render as "Not fired" with a green CHANGED highlight
+- [ ] Sonnet exec brief draws explicit causal chains when adjacent signals appear together (e.g., SK Hynix HBM capacity + DDR5 spot move in the same brief → explicit "X implies Y because Z" sentence)
+
+---
+
 ## v3.39.7.8 — Four-tier value-chain restructure: pure memory / chip designers / hyperscalers+labs / ecosystem; AMD + Intel + Cerebras added across all surfaces
 
 Restructures the v3.39.7.7 three-tier `TRACKED_COMPANIES` shape into four explicit value-chain tiers per user direction 2026-05-21. Adds AMD, Intel, and Cerebras to all four config surfaces (`TRACKED_COMPANIES`, `WIDER_BASKET`, `MOTLEY_FOOL_TICKERS`, `YAHOO_TRANSCRIPT_TICKERS`) — they were absent everywhere pre-v3.39.7.8.

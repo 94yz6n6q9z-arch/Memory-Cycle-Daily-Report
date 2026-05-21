@@ -345,6 +345,41 @@ architecturally central than a bolt-on.
 
 ---
 
+## v3.39.7.9 — ✅ SHIPPED 2026-05-21
+
+Six-fix release diagnosed from the May 21 brief:
+
+1. **Capex/OCF authority** — signal_reasoner.py no longer passes capex_revenue_ratios; evidence store reversal_condition updated; INVALID DOWNGRADES section explicitly tells Layer 2 the rule is capex/OCF >50%. Pre-v3.39.7.9 Layer 2 was using capex/revenue (24-37%) to override capex/OCF (93.2%).
+2. **2-quarter rolling capex/OCF mean per company** — replaces single-quarter snaps[0]. Smooths the Amazon Q1 169.8% OCF-dip noise without losing the cycle signal. New keys: mean_capex_ocf_ratio_2q + per_company_capex_ocf_2q.
+3. **"Reversed" status removed** — three states only (Fired/Partially fired/Not fired). Audit trail lives in change_vs_prior and the trigger banner.
+4. **Color scheme** — Fired darkened from #D85A30 to #B91C1C; change-flag color matches destination status (red on fires, green on un-fires, yellow on partial transitions).
+5. **QUIET state explanation** — no fix needed; semantics documented in CHANGES.md (source reached + 0 items + expected_empty flag = healthy informational state for ~35 architectural watchers + 5 SK Hynix pre-listing EDGAR feeds).
+6. **Value-chain inference** — Sonnet exec brief prompt gains a VALUE-CHAIN INFERENCE section instructing Sonnet to draw causal chains across adjacent signals (HBM capacity → DDR5 spot; hyperscaler capex → NVIDIA backlog → SK Hynix revenue; CXMT capacity → spot pressure; Cerebras → HBM substitution risk).
+7. **NaN-guarded relative strength** — get_relative_strength_vs_sox returns None on NaN; defensive math.isnan check in llm_summarizer COMPUTED METRICS render. No more "+nanpp" leakage.
+8. **Section 3 numeric surfacing for t3_relative_strength** — new _build_relative_strength_snippet() helper renders SK Hynix / Micron / DRAM-ETF 5d-vs-SOX as color-coded badges with threshold legend. The number is visible at the section 3 summary, not just section 4 deep dive.
+
+312 tests pass (273 from v3.39.7.8 baseline + 39 new in `tests/test_v3_39_7_9_six_fixes.py`).
+
+Files: src/data/estimates.py, src/data/prices.py, src/fast_tier.py, src/analysis/signal_reasoner.py, src/analysis/llm_summarizer.py, src/email_module/template.py, state/indicator_evidence.json, tests/test_v3_39_6_calculation_driven.py (existing test updated for new keys), tests/test_v3_39_7_9_six_fixes.py (NEW).
+
+---
+
+## v3.39.7.9 — Follow-up watch items (post-shipping)
+
+**Sonnet drawing value-chain inferences**: monitor the first 1-2 briefs post-deploy to see if Sonnet actually draws the causal chains when adjacent signals appear. If it doesn't, the prompt examples may be too abstract — strengthen with concrete sentence templates ("X implies Y in T months because Z mechanism").
+
+**Section 3 t3_relative_strength snippet rendering on mobile**: the three-badge layout is designed for desktop email width. On narrow mobile, badges may wrap. If wrapping breaks visual flow, switch to stacked vertical layout for narrow viewports via CSS media query.
+
+**capex/OCF 2-quarter rolling — re-evaluate responsiveness**: the v3.39.7.4 design choice was "responsiveness over smoothness". v3.39.7.9 reverses that. Watch for the OPPOSITE failure mode — an indicator that should have fired but didn't because the previous quarter was below threshold and dragged the 2q mean down. If observed, may need a hybrid: 2q mean for primary trigger, single-quarter spike override at >100% for any company.
+
+**Color contrast on the Fired badge**: #B91C1C with white text should be readable, but if user feedback says otherwise, consider switching to #DC2626 (slightly lighter red) or testing #991B1B (darker still). The Fired/Not fired/Partially fired triad of colors works as a system — any change should be evaluated together.
+
+**Cerebras WSE-3 substitution-risk capture**: the value-chain inference prompt explicitly mentions Cerebras as an HBM-substitution-risk signal. Monitor whether Cerebras news (when it appears in section 5) actually triggers the captive-ratio inference language Sonnet produces. If not, the v3.4 captive-ratio indicator work may need to formalize this as a first-class indicator rather than relying on Sonnet's inference.
+
+**Status pill semantic for indicators with NO change today**: currently the brief shows the status pill (Fired/Partially fired/Not fired) for every indicator regardless of whether it changed today. The change_vs_prior CHANGED flag highlights transitions. If you want a clearer "today's brief had no changes for this indicator" indicator, we'd need to add a fourth visual treatment (e.g., a small dot or "unchanged" tag). Defer until you have a brief where the change-vs-static distinction matters.
+
+---
+
 ## v3.39.7.8 — ✅ SHIPPED 2026-05-21
 
 Four-tier value-chain restructure of `TRACKED_COMPANIES` per user direction. The v3.39.7.7 three-tier shape conflated chip designers (NVIDIA, Broadcom) with ecosystem peers (ASML, TSMC, OEMs) in the same TRACKED_REST bucket. v3.39.7.8 splits into:
