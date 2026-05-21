@@ -345,6 +345,105 @@ architecturally central than a bolt-on.
 
 ---
 
+## v3.39.7.8 — ✅ SHIPPED 2026-05-21
+
+Four-tier value-chain restructure of `TRACKED_COMPANIES` per user direction. The v3.39.7.7 three-tier shape conflated chip designers (NVIDIA, Broadcom) with ecosystem peers (ASML, TSMC, OEMs) in the same TRACKED_REST bucket. v3.39.7.8 splits into:
+
+- **Tier A — Pure memory + rivals**: SK Hynix, Micron, Samsung, CXMT, ChangXin *(CXMT/ChangXin moved up from old Tier C — they're competitive rivals in the same product market)*
+- **Tier B — Chip designers / first-layer bill-payers**: NVIDIA, AMD (NEW), Intel (NEW), Broadcom, Cerebras (NEW)
+- **Tier C — Hyperscalers + AI labs / second-layer bill-payers**: MSFT/Azure, Google/Alphabet, Amazon/AWS, Meta, OpenAI, Anthropic
+- **Tier D — Ecosystem**: ASML, AMAT, TSMC, Oracle, Dell, HPE
+
+AMD, Intel, and Cerebras were absent from ALL config surfaces pre-v3.39.7.8 (no TRACKED_COMPANIES, no MOTLEY_FOOL_TICKERS, no YAHOO_TRANSCRIPT_TICKERS, no WIDER_BASKET). Now added to all four. Cerebras IPO'd 2026-05-14 (CBRS on Nasdaq); their WSE-3 uses on-chip SRAM not HBM, making them an HBM-substitution-risk signal directly relevant to the v3.4 captive-ratio indicator work.
+
+Pass 2 Haiku rubric rewritten with the 4-tier structure and explicit CONCURRENT (Tier B) vs LEADING (Tier C) signal-type distinction. Both peak at 8-9 but for different reasons — Tier B tells us what chip designers ARE buying today, Tier C tells us what hyperscalers WILL spend in 6-12 months.
+
+273 tests pass (200 from v3.39.7.6 baseline + 73 new in `tests/test_v3_39_7_8_four_tier_restructure.py`; the v3.39.7.7 test file was deleted as the 4-tier structure supersedes the 3-tier it tested).
+
+Files: src/config.py, src/data/news.py, tests/test_v3_39_7_8_four_tier_restructure.py (NEW); deleted tests/test_v3_39_7_7_tracked_companies.py.
+
+---
+
+## v3.39.7.8 — Follow-up watch items (post-shipping)
+
+**Cerebras transcript capture**: first earnings call expected Aug/Sep 2026 (~3 months after May 14 IPO). Watch for "Transcript: Cerebras (Motley Fool)" or "(Yahoo Finance)" row in section 7 when it lands. If the cascade returns `nothing` while Motley Fool / Yahoo clearly have the transcript, investigate — Cerebras is new enough that the platforms may use a non-standard URL pattern.
+
+**Section 1 price table for Cerebras**: CBRS has ~1 week of trading history. The 1Y / 3M / 6M / 1M columns will display "—" until enough days accumulate. By August 2026 the 3M column should populate; 1Y not until May 2027. Don't read missing-percent as a fetch failure.
+
+**AMD and Intel news volume**: AMD ships gaming GPUs (RDNA) + consumer CPUs (Ryzen) + datacenter (EPYC + MI accelerators); Intel ships consumer CPUs + Xeon + Gaudi + foundry. Most of their news is NOT memory-cycle-relevant. The Pass 2 Haiku rubric scores generic AMD/Intel gaming/consumer news at 0-3 (drops). If `state/news_dropped_*.json` shows lots of low-scored AMD/Intel headlines, that's the rubric working as intended. If LOTS of high-scored AMD/Intel headlines flood the brief with non-memory commentary, the Tier B rubric is too permissive and needs tightening (most likely lower the 8-9 band to require explicit HBM/data-center backlog commentary).
+
+**Pass 2 token cost monitoring**: each tier expansion adds ~10-20% more headlines reaching Pass 2. Cumulative effect since v3.39.7.6 baseline is roughly +30-50% Haiku batch calls per run. Still well within rate limits (Haiku 8K input × ~10 batches/run = 80K tokens, comfortably below limits), but worth monitoring for token cost trend in the Anthropic console.
+
+**CXMT/ChangXin scoring uplift**: now in Tier A, CXMT production milestones / capacity-expansion news now score 9-10 (was 7-8 in old Tier C). The May 21 brief surfaced "CXMT 1688% profit surge" as a meaningful supply-side risk signal — that kind of headline should now trigger higher relevance and more Sonnet attention.
+
+**Deferred: TRACKED_CHIP_DESIGNERS dict for downstream indicators**. If a future v3.4 indicator wants to compute "aggregate chip designer HBM purchase commentary" or similar, we'd need a `{name: ticker}` dict analogous to `HYPERSCALERS`. Defer until needed — current scope doesn't have an indicator requiring this aggregation.
+
+---
+
+## v3.39.7.7 — ✅ SHIPPED 2026-05-21
+
+Tracked-company expansion closes the news-pipeline blind spot where direct headlines about NVIDIA / hyperscalers / AI labs were silently filtered at Pass 1.
+
+- **Diagnosis**: pre-v3.39.7.7 `TRACKED_COMPANIES` was a flat 7-entity list (memory pure-plays + equipment + competitors); zero customers. Direct CNBC / Reuters / Bloomberg headlines for NVIDIA, MSFT, GOOGL, META, AMZN, OpenAI, Anthropic dropped at Pass 1.
+- **Fix**: split into three explicit relevance tiers per user direction. Tier A (pure memory): SK Hynix, Micron, Samsung. Tier B (key customers / bill-payers): OpenAI, Anthropic, Microsoft/Azure, Google/Alphabet, Amazon/AWS, Meta. Tier C (peers, equipment, OEMs): NVIDIA, Broadcom, TSMC, ASML, AMAT, Oracle, Dell, HPE, CXMT. `TRACKED_COMPANIES` derived as union for back-compat.
+- **Pass 2 rubric**: rewrote with explicit per-tier scoring bands (Tier A 9-10 direct / 7-8 thematic; Tier B 8-9 capex / 6-7 general earnings; Tier C 7-8 NVIDIA-class earnings / 5-6 general; architectural shifts 8-10 first-of-kind).
+- **Incidental fix**: latent Pass 1 boundary bug since v3.1 — padded keywords (" MU ", " AWS ", " HPE ") failed to match at start/end of headlines because the text being searched wasn't padded. Fixed by padding text with leading + trailing space.
+
+41 new tests in `tests/test_v3_39_7_7_tracked_companies.py` (config structure + Pass 1 acceptance + Pass 1 false-positive resistance including boundary fix + Pass 2 rubric structure). 241 total tests pass.
+
+Files: src/config.py, src/data/news.py, tests/test_v3_39_7_7_tracked_companies.py (NEW).
+
+---
+
+## v3.39.7.7 — Follow-up watch items (post-shipping)
+
+**Pass 1 expansion verification — section 5 includes NVIDIA + hyperscalers + AI labs**: the next fast tier run should now surface direct headlines for these companies. Specifically:
+- NVIDIA earnings articles from CNBC, Reuters, Bloomberg (CNBC Technology RSS has 30 items/run)
+- Microsoft Azure capex / Google TPU / Meta MTIA / Amazon AWS Trainium articles
+- OpenAI infrastructure deals / Anthropic funding rounds when they appear
+
+If these still don't appear, the gap is no longer in TRACKED_COMPANIES — it's in source availability. Next iteration would add dedicated Google News queries: "NVIDIA earnings data center revenue", "Microsoft Azure AI capex commitment", "OpenAI compute infrastructure", "Anthropic capacity expansion", etc.
+
+**Pass 2 token cost monitoring**: more headlines now reach Pass 2 (Tier B and expanded Tier C). Estimated +30-50% Pass 2 Haiku calls per run. Watch the `state/news_dropped_YYYY-MM-DD.json` file size — if it grows substantially, that's healthy (more headlines getting filtered at Pass 2 vs silent Pass 1 drops). If it explodes (10x), the rubric may be too permissive on Tier B/C and needs tightening.
+
+**Boundary fix retroactive effect**: the padding fix at `score_relevance` will also unlock matches that were silently failing on ` MU ` at start/end of headlines pre-v3.39.7.7. If Micron-themed headlines suddenly appear with more frequency vs the historical baseline, that's the boundary fix taking effect on real data — not a relevance regression.
+
+**Deferred follow-up — dedicated Google News queries for hyperscaler/AI lab capex**: the existing RSS feeds (CNBC, Benzinga, KED, etc.) cover most NVIDIA/MSFT/GOOGL/META coverage organically. But targeted Google News queries would catch articles in publications NOT in the RSS feed list. Candidates: "Microsoft Azure AI capex 2027", "Google capex AI infrastructure", "Meta capex AI buildout", "Amazon AWS Trainium production", "OpenAI Stargate buildout", "Anthropic compute commitment", "NVIDIA Q1 FY27 data center revenue". Each query would add one Pass 1 fetch (well within the existing 70+ Google News query budget). Estimated effort: 30 min. Gate: run v3.39.7.7 for 1-2 weeks first to see how much organic coverage the RSS feeds already provide vs how much these queries would add.
+
+---
+
+## v3.39.7.6 — ✅ SHIPPED 2026-05-21
+
+Four-issue release addressing user feedback on the May 21 v3.39.7.5 brief. Details in CHANGES.md.
+
+- **Issue 1** — Exec summary duplicate fix: the old `delta_from_prior_text` italic block survived the v3.39.7.5 consolidation cleanup and rendered alongside the new `executive_brief` paragraph. Removed `delta_line` construction + return concatenation in `_build_executive_summary`. Field stays on dataclass for prior_state.json back-compat.
+- **Issue 2** — BENCHMARKS regression repair: `fast_tier.py` was calling `fetch_price_history(WIDER_BASKET, ...)` which silently broke `get_relative_strength_vs_sox` and `get_dram_etf_vs_smh` because `^SOX` / `SMH` / `DRAM` columns were never fetched. `t3_relative_strength` had been rendering "(not computed)" for SOX spreads across an unknown number of releases. Swapped to `ALL_TICKERS`; dead `BENCHMARKS` import (smoking gun of the refactor that broke it) removed.
+- **Issue 3** — Sonnet RECENCY rule on contradicting events: May 21 brief wrote about a Samsung strike "commencing" when Korea Herald had already reported it was called off one hour before launch. Two compounding architectural gaps: no prompt rule for recency-on-contradiction, AND triage block had no timestamps. Fixed both: new RECENCY ON CONTRADICTING EVENTS block in Sonnet prompt (5 operational rules, May 21 case as worked example), `news_items` parameter threaded through `build_sonnet_analysis_prompt`/`sonnet_analyze`/`analyze_with_llm` to stamp each triage item with its published timestamp. Per user direction: prompt-level fix, not keyword hardcoding.
+- **Issue 4** — Diagnostics 5th health state `quiet`: forward-looking architecture Google News watchers (CXL 3.0 production, GDDR7 inference accelerator, HBF, MTIA, etc.) and pre-listing SK Hynix SEC EDGAR feeds rendered as WARN indistinguishable from real failures, training the reader to ignore the WARN column. New `expected_empty` field on `SourceFetchStatus` → new `quiet` health when reached+0+expected_empty. `WATCH_GOOGLE_QUERIES` + `EXPECTED_EMPTY_EDGAR_FEEDS` sets in config.py enumerate the speculative watchers. Template renders QUIET as muted gray pill vs WARN amber. Back-compat: defaults preserve prior behavior for all existing callers; persisted v3.39.7.5 statuses load via dataclass default.
+
+200 tests pass (180 prior + 20 new in `tests/test_v3_39_7_6_fixes.py`, organized as one test class per issue: 3 + 3 + 4 + 10 covering core path, back-compat, and edge cases for each fix).
+
+Files: src/email_module/template.py, src/fast_tier.py, src/analysis/llm_summarizer.py, src/diagnostics.py, src/config.py, src/data/news.py, tests/test_v3_39_7_6_fixes.py (NEW).
+
+---
+
+## v3.39.7.6 — Follow-up watch items (post-shipping)
+
+**Issue 2 verification — t3_relative_strength fires when it should**: with the BENCHMARKS fetch restored, the next brief's `t3_relative_strength` indicator card should show NUMERIC values for SK Hynix 5d vs SOX and Micron 5d vs SOX (no more "(not computed)"). Given recent moves (SK Hynix 1W -11.69% per the May 21 brief vs SOX roughly flat), the indicator should fire RED. If it doesn't fire despite numeric values clearly below -10pp, investigate the column-name match in `get_relative_strength_vs_sox` directly (the column name "MSCI ACWI Semiconductor" is hardcoded in `prices.py:394`; any future config rename in `BENCHMARKS` would silently break it again).
+
+**Issue 3 verification — Sonnet honors recency on contradicting events**: hard to verify until another contradicting-events story appears organically. Two diagnostic surfaces to watch:
+- The Sonnet prompt itself (via the prompt-capture mechanism, if added) — confirm the RECENCY block is present and triage items are stamped with timestamps in production runs.
+- The `executive_brief` text — when a story DOES reverse intra-day, the paragraph should explicitly note the reversal rather than describe the older state. If Sonnet still ignores the rule, consider tightening: making the rule a top-level prompt section (not nested under EXECUTIVE BRIEF SPECIFICATION), or moving it earlier in the prompt before the news triage block.
+
+**Issue 4 verification — QUIET classification doesn't mask real WARNs**: the table should now show ~30-40 entries in the QUIET state (the architectural watchers + SK Hynix EDGAR) and a substantially reduced WARN count. After 1-2 weeks of production:
+- Audit any feed that's been WARN for 3+ consecutive runs — that's a candidate for either (a) it's genuinely broken (fix it) or (b) it actually belongs in WATCH_GOOGLE_QUERIES (re-categorize)
+- Audit any feed that's been QUIET continuously but starts returning items — that's the intended signal trigger; verify the items are actually relevant to the captive-ratio indicators
+- Korea Herald, KED Global, Benzinga, etc. should NOT be quiet — if they ever show QUIET, something is misclassified
+
+**Issue 4 follow-up — extend `expected_empty` to other source types**: the v3.39.7.6 release only annotated Google News + EDGAR. RSS feeds with similar semantics (e.g., DRAMeXchange Weekly Research, which only publishes once a week) might benefit. Defer pending observability data — if any RSS feed routinely WARNs on weekdays where no publication is expected, add it to a future `EXPECTED_EMPTY_RSS_FEEDS` set with the same plumbing.
+
+---
+
 ## v3.39.7.5 — ✅ SHIPPED 2026-05-20
 
 Five-issue release addressing user feedback on the May 20 v3.39.7.4 brief. Details in CHANGES.md.
