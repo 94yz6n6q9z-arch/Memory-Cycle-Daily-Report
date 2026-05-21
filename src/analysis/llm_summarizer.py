@@ -576,6 +576,7 @@ def build_sonnet_analysis_prompt(
     digests: Optional[list[dict]] = None,
     signal_reasonings: Optional[list] = None,
     computed_metrics: Optional[dict] = None,
+    news_items: Optional[list[NewsItem]] = None,
 ) -> str:
     """Construct the Sonnet analysis prompt using Haiku-triaged data.
 
@@ -595,7 +596,33 @@ def build_sonnet_analysis_prompt(
     the actual 5-day computed spread was below threshold. Sonnet now sees
     the verdict directly and is instructed to LEAD with the numbers and
     keep commentary to ≤1/3 of indicator text.
+
+    v3.39.7.6: New `news_items` parameter. The Haiku triage output
+    (`relevant_news`) carries source/title/url/summary but NOT the
+    published timestamp — and without timestamps Sonnet cannot apply
+    the RECENCY ON CONTRADICTING EVENTS rule. When `news_items` is
+    passed in, we build a URL→published lookup and stamp each triage
+    item with its timestamp in the prompt. The May 21 2026 brief
+    surfaced this when Sonnet wrote about a Samsung strike "commencing
+    May 21" as a live event despite a later Korea Herald article in
+    the same feed reporting the strike was called off one hour before
+    launch — Sonnet had both items but no way to tell which was later.
     """
+
+    # v3.39.7.6 — URL → published-timestamp lookup. Joins the original
+    # NewsItem objects back to Haiku's triaged subset. URL is the join
+    # key (Haiku doesn't mangle URLs in its output schema). Falls back
+    # to title-match for items where URL is missing or differs.
+    published_by_url: dict[str, str] = {}
+    published_by_title: dict[str, str] = {}
+    if news_items:
+        for n in news_items:
+            if n.published:
+                ts = n.published.strftime("%Y-%m-%d %H:%M UTC")
+                if n.url:
+                    published_by_url[n.url] = ts
+                if n.title:
+                    published_by_title[n.title] = ts
 
     perf_text = "PERFORMANCE DATA (Yahoo Finance):\n"
     for p in performance_data:
@@ -622,10 +649,25 @@ def build_sonnet_analysis_prompt(
 
     triage_text = f"\nNEWS TRIAGE OUTPUT (pre-processed by Haiku):\n"
     triage_text += f"\nRelevant news items ({len(triage.relevant_news)}):\n"
+    triage_text += (
+        "Each item shows its PUBLISHED TIMESTAMP. When two items reference the\n"
+        "same event with contradictory direction, the LATER timestamp is the\n"
+        "operative state of the world per the RECENCY ON CONTRADICTING EVENTS\n"
+        "rule above.\n"
+    )
     for item in triage.relevant_news[:50]:
-        triage_text += f"- [{item.get('source', '?')}] {item.get('title', '')}\n"
+        url = item.get("url", "")
+        title = item.get("title", "")
+        # v3.39.7.6 — published timestamp lookup. URL match first (stable
+        # join key); title match second; "?" if both miss.
+        pub_str = (
+            published_by_url.get(url)
+            or published_by_title.get(title)
+            or "?"
+        )
+        triage_text += f"- [{item.get('source', '?')} | published {pub_str}] {title}\n"
         triage_text += f"  Takeaway: {item.get('summary', '')}\n"
-        triage_text += f"  URL: {item.get('url', '')}\n"
+        triage_text += f"  URL: {url}\n"
 
     triage_text += f"\nBroker actions detected ({len(triage.broker_actions)}):\n"
     for ba in triage.broker_actions[:30]:
@@ -967,6 +1009,19 @@ The template substitutes `[→§N]` into clickable HTML anchors. Use them libera
 
 Tone: institutional analyst, declarative, no hedging language ("might", "could", "perhaps"). State the facts as observed.
 
+RECENCY ON CONTRADICTING EVENTS (v3.39.7.6):
+
+When two or more news items in today's feed reference the SAME real-world event but report contradictory direction (e.g. one says "Samsung strike to launch", another says "Samsung union calls off strike"), you MUST resolve the contradiction by published timestamp, not by item count.
+
+Operational rules:
+  (a) Identify event clusters — items are in the same cluster when they reference the same company/entity AND the same event window (a strike, a wage negotiation, an earnings beat, a regulatory ruling, a deal closure, etc.).
+  (b) Within a cluster, the item with the LATEST published timestamp is the operative state of the world. Earlier items in the cluster are superseded — treat them as background context, not as current facts.
+  (c) If the cluster contains a REVERSAL (event was on, then called off; or event was averted, then re-triggered), the executive_brief MUST explicitly note the reversal. Do not write as if the older state still holds. Example: do NOT write "the Samsung 45,000-worker strike commencing May 21 tightens HBM supply" if a later item in the same cluster reports the strike was called off — the operative narrative is "the planned Samsung strike was called off one hour before launch, removing the near-term HBM supply tightening risk that was previously priced in".
+  (d) The reversal itself is news — surface it explicitly. The framework cares about state changes, not historical states.
+  (e) This rule applies to the executive_brief paragraph AND to the key_news_summary block AND to per-indicator commentary. Apply it everywhere news drives narrative.
+
+This rule does NOT change the relevance filter or which items reach you — it changes how you SYNTHESIZE items that all reach you. Multiple contradicting items in your context window is the normal case for fast-moving stories; you are responsible for resolving them.
+
 OUTPUT FORMAT - respond with ONLY a JSON object:
 
 {{
@@ -1226,6 +1281,7 @@ def sonnet_analyze(
     digests: Optional[list[dict]] = None,
     signal_reasonings: Optional[list] = None,
     computed_metrics: Optional[dict] = None,
+    news_items: Optional[list[NewsItem]] = None,
 ) -> Optional[BriefAnalysis]:
     """Run Sonnet to produce the full analysis with exec summary.
 
@@ -1234,6 +1290,10 @@ def sonnet_analyze(
     `computed_metrics` (numerical deterministic verdicts). Threaded into
     the prompt so Sonnet quotes exact numbers and defers to Layer 2 on
     per-signal status, rather than speculating from news headlines.
+    v3.39.7.6: Accepts `news_items` (raw NewsItem list). Threaded into
+    `build_sonnet_analysis_prompt` so triage items in the Sonnet prompt
+    carry their published timestamps — required for the RECENCY ON
+    CONTRADICTING EVENTS prompt rule to be actionable.
     """
     if not api_key:
         if collector is not None:
@@ -1250,6 +1310,7 @@ def sonnet_analyze(
         digests=digests,
         signal_reasonings=signal_reasonings,
         computed_metrics=computed_metrics,
+        news_items=news_items,
     )
 
     # v3.39: switch from messages.create to messages.stream. Two motivations:
@@ -1521,6 +1582,7 @@ def analyze_with_llm(
         digests=digests,
         signal_reasonings=signal_reasonings,
         computed_metrics=computed_metrics,
+        news_items=news_items,
     )
     return analysis
 

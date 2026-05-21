@@ -43,6 +43,17 @@ WIDER_BASKET = {
     "NVIDIA": "NVDA",
     "Broadcom": "AVGO",
     "TSMC": "TSM",
+    # v3.39.7.8 — Chip designer expansion per user direction 2026-05-21.
+    # These join NVDA/AVGO as Tier B "first-layer bill-payers" — companies
+    # that BUY memory chips and integrate them into GPUs/CPUs/AI
+    # accelerators. Daily price moves now visible in the section 1 price
+    # table alongside the rest of the WIDER_BASKET. Cerebras IPO'd
+    # 2026-05-14 on Nasdaq at $185 (closed first day at $331, +68%); the
+    # ticker has limited price history so the section 1 1Y / 3M / 6M /
+    # 1M columns will show "—" until enough days accumulate.
+    "AMD": "AMD",
+    "Intel": "INTC",
+    "Cerebras": "CBRS",
 }
 
 BENCHMARKS = {
@@ -1398,6 +1409,15 @@ YAHOO_TRANSCRIPT_TICKERS = {
     "Oracle":               "ORCL",
     "Dell":                 "DELL",
     "HPE":                  "HPE",
+    # v3.39.7.8 — Chip designer expansion. AMD MI400 + Intel Gaudi
+    # consume HBM at scale; Cerebras WSE-3 uses on-chip SRAM (NOT HBM)
+    # making Cerebras an HBM-substitution-risk signal — earnings calls
+    # explicitly relevant to the v3.4 captive-ratio indicator work.
+    # Cerebras IPO'd 2026-05-14 so first earnings call ~3 months out;
+    # entry added now so the cascade catches it when it appears.
+    "AMD":                  "AMD",
+    "Intel":                "INTC",
+    "Cerebras":             "CBRS",
 }
 
 # Motley Fool transcript coverage — US-listed names with English earnings calls.
@@ -1420,6 +1440,15 @@ MOTLEY_FOOL_TICKERS = {
     "Dell":              {"exchange": "nyse",   "ticker": "DELL"},    # OEM inventory (buyer-side)
     "HPE":               {"exchange": "nyse",   "ticker": "HPE"},     # OEM inventory (buyer-side)
     "ASML":              {"exchange": "nasdaq", "ticker": "ASML"},    # equipment — coverage less consistent; flag will tell us
+    # v3.39.7.8 — Chip designer expansion. AMD + Intel are Tier B
+    # "first-layer bill-payers" (BUY memory chips for GPU/CPU/AI
+    # accelerator integration). Cerebras IPO'd 2026-05-14; first
+    # earnings call ~3 months out — entry added now so Motley Fool
+    # captures it when it appears. Cerebras represents HBM-substitution
+    # risk (WSE-3 uses on-chip SRAM not HBM).
+    "AMD":               {"exchange": "nasdaq", "ticker": "AMD"},     # MI300X / MI400 — HBM demand driver
+    "Intel":             {"exchange": "nasdaq", "ticker": "INTC"},    # Gaudi accelerators — HBM2e/HBM3 demand
+    "Cerebras":          {"exchange": "nasdaq", "ticker": "CBRS"},    # WSE-3 wafer-scale — HBM substitution signal
 }
 
 # AI labs — NOT yet publicly traded. Dormant entries: when either lists, fill in
@@ -1560,6 +1589,94 @@ GOOGLE_NEWS_QUERIES = [
 ]
 
 
+# v3.39.7.6 — Watch-type queries (forward-looking event detectors).
+# These queries are SUPPOSED to stay quiet most days — they exist to catch
+# specific architectural / corporate-event signals when they happen.
+# Examples:
+#   - "CXL 3.0 memory pooling production" fires when the FIRST hyperscaler
+#     announces production CXL pooling (the v3.4 indicator 24 trigger)
+#   - "GDDR7 inference accelerator" fires when a vendor ships a GDDR7-based
+#     inference part displacing HBM
+#   - "OpenAI IPO filing" fires when (if) OpenAI files an S-1
+#   - "Etched Sohu Tenstorrent inference accelerator" fires on production-
+#     scale architecture-shift announcements
+# 0 items returned for these is the EXPECTED routine state, not a problem.
+# The diagnostics table renders them as 'quiet' (informational, muted)
+# instead of 'warn' (might be broken). When they DO return items, the
+# alert value is high.
+#
+# Queries NOT in this set are "live" feeds expected to have a steady news
+# flow (analyst broker queries, earnings queries, Korean labor queries).
+# 0 items from those IS suspicious and stays 'warn'.
+WATCH_GOOGLE_QUERIES = {
+    # v3.2 architectural-shift watchers
+    "vLLM release inference",
+    "SGLang serving framework",
+    "TensorRT-LLM release",
+    "INT4 quantization LLM inference",
+    "INT2 quantization research",
+    "MoE Mixture of Experts efficiency",
+    "speculative decoding deployment",
+    "KV cache compression inference",
+    "MLA multi-latent attention",
+    "disaggregated serving inference",
+    "CXL 3.0 memory pooling production",
+    "Astera Labs CXL revenue",
+    "Samsung CMM-D CXL DRAM",
+    "LPDDR datacenter design win",
+    "LPDDR5X server",
+    "NVIDIA Grace LPDDR datacenter",
+    "Samsung LPDDR datacenter Hynix Micron",
+    "TPU v7 memory architecture",
+    "Trainium 2 memory HBM LPDDR",
+    "MTIA Meta memory architecture",
+    "Maia Microsoft memory",
+    "Artificial Analysis tokens per dollar",
+    "inference cost reduction hyperscaler",
+    "Etched Sohu Tenstorrent inference accelerator",
+    "GDDR7 inference accelerator",
+    "HBF High Bandwidth Flash SanDisk",
+    "HotChips memory architecture",
+    "MICRO ISCA semiconductor memory",
+    "wafer allocation HBM DDR5",
+    "memory capex mix HBM",
+    # AI lab listing watchers
+    "OpenAI IPO filing",
+    "OpenAI public listing",
+    "Anthropic IPO",
+    "Anthropic public listing",
+    # SK Hynix ADR-event tracking (pre-listing speculative)
+    "SK Hynix F-1 SEC filing",
+    "SK Hynix ADR roadshow",
+    "SK Hynix US listing pricing",
+    # Specific-analyst queries (only fire when that analyst publishes)
+    "Bernstein semiconductor Rasgon",
+    "Mirae Asset memory analyst",
+    "Mizuho semiconductor memory",
+    # Competitor watchers (binary-ish events)
+    "CXMT DDR5",
+    "ChangXin Memory production",
+    "Chinese DRAM OEM",
+}
+
+
+# v3.39.7.6 — SEC EDGAR feeds where 0-item is the EXPECTED state.
+# SK Hynix isn't yet US-listed; the ADR / SPO is in progress (Indicator 7).
+# Until the ADR lists, the F-1 / F-1/A / 424 / 6-K / 20-F atom feeds should
+# stay empty — that emptiness is the indicator's NORMAL state. Once one of
+# these fires (a filing actually appears), it's a major event. Diagnostics
+# table should reflect "still pre-listing" rather than "feed broken".
+# Micron Form 4 is NOT in this set — Micron files Form 4s regularly when
+# insiders trade, so a 0-item Micron Form 4 IS legitimately suspicious.
+EXPECTED_EMPTY_EDGAR_FEEDS = {
+    "SEC EDGAR / SK Hynix F-1 (registration)",
+    "SEC EDGAR / SK Hynix F-1/A (amendments)",
+    "SEC EDGAR / SK Hynix 424 (final prospectus)",
+    "SEC EDGAR / SK Hynix 6-K (material events)",
+    "SEC EDGAR / SK Hynix 20-F (annual)",
+}
+
+
 # ============================================================
 # Analyst / broker / company tracking — used by news relevance filter
 # Keyword matching here decides which headlines make it past Pass 1.
@@ -1589,13 +1706,137 @@ TRACKED_ANALYSTS = {
 }
 
 TRACKED_COMPANIES = [
+    # v3.39.7.7 — TRACKED_COMPANIES is now derived (see end of this block).
+    # The three explicit tier lists below are the source of truth; they
+    # capture both Pass 1 keyword matching (here) and Pass 2 Haiku scoring
+    # rubric (in src/data/news.py score_relevance). The rubric explicitly
+    # references the three tiers by name so Haiku gives news on each tier
+    # the right relevance weight.
+    #
+    # The historical (pre-v3.39.7.7) shape of TRACKED_COMPANIES was a flat
+    # list containing only SK Hynix/Hynix, Micron/MU, Samsung/Samsung
+    # Electronics, ASML, Applied Materials/AMAT, CXMT/ChangXin. That made
+    # the news pipeline blind to the customer ecosystem (hyperscalers, AI
+    # labs, NVIDIA), causing direct headlines like "NVIDIA Q1 FY27 Data
+    # Center revenue $35B" to drop at Pass 1 because no tracked keyword
+    # appeared. The May 21 2026 brief surfaced this gap when the Samsung
+    # strike + NVIDIA earnings dominated semis news and the framework
+    # could only see NVIDIA second-hand via Samsung/Micron-mentioning
+    # articles. The deep tier transcript captured the call itself but
+    # the fast tier news section had no direct NVIDIA coverage.
+]
+
+# v3.39.7.8 — Restructured from v3.39.7.7's three tiers into four value-
+# chain tiers per user direction 2026-05-21. The v3.39.7.7 layout
+# conflated "chip designers that BUY memory chips" (NVIDIA, Broadcom,
+# AMD, Intel, Cerebras) with "ecosystem peers" (ASML, TSMC, Oracle,
+# Dell, HPE) and put both into the same TRACKED_REST bucket. User's
+# framing: chip designers are the FIRST-LAYER bill-payers from SK
+# Hynix's perspective — they're the direct customers paying memory
+# makers for HBM/DRAM. Hyperscalers + AI labs are the SECOND-LAYER —
+# they pay the chip designers for finished GPU/accelerator systems.
+# Ecosystem (equipment, foundry, OEMs) sits to the side.
+#
+# Additionally CXMT and ChangXin (Chinese DRAM) were in v3.39.7.7's
+# TRACKED_REST as "competitors" but they're competitive RIVALS in the
+# same product market as SK Hynix — they belong in Tier A.
+
+# Tier A — Pure memory makers and competitive rivals. The assets the
+# framework tracks (SK Hynix, Micron, Samsung) plus the up-and-coming
+# Chinese rivals producing the same product class. Highest baseline
+# relevance — anything mentioning these names is first-order signal
+# for the memory cycle. Haiku rubric: 9-10 for direct analyst action /
+# TrendForce-DigiTimes pricing / Korean labor news affecting Samsung
+# or SK Hynix production / insider sales filings / earnings; 7-8 for
+# thematic notes naming these companies.
+TRACKED_PURE_MEMORY = [
     "SK Hynix", "Hynix",
-    "Micron", " MU ",  # spaces to avoid matching "museum" etc
+    "Micron", " MU ",  # spaces around MU avoid matching "museum", "amused", etc.
     "Samsung", "Samsung Electronics",
+    "CXMT", "ChangXin",  # Chinese DRAM up-and-coming rivals (Indicator 6A)
+]
+
+# Tier B — Chip designers / first-layer bill-payers. Companies that BUY
+# memory chips and integrate them into GPUs / CPUs / AI accelerators.
+# NVIDIA is the dominant HBM consumer (their GPUs contain SK Hynix HBM3E
+# and HBM4); AMD MI300X/MI400 + Intel Gaudi accelerators consume HBM at
+# scale; Broadcom manufactures custom AI silicon (Google TPU, Meta MTIA)
+# which contains HBM; Cerebras WSE-3 uses on-chip SRAM (NOT HBM) which
+# makes Cerebras especially relevant as an HBM-SUBSTITUTION signal —
+# i.e. a direct read on the v3.4 captive-ratio risk.
+#
+# From SK Hynix's perspective these are the direct customers — the
+# invoice goes to them. Haiku rubric: 8-9 for earnings + HBM/data-center
+# backlog commentary / GPU+HBM supply agreements with named volume;
+# 6-7 for general product launches without quantified memory demand
+# impact. Tier B is the CONCURRENT HBM demand signal (these companies
+# tell us what they ARE buying today).
+TRACKED_CHIP_DESIGNERS = [
+    "NVIDIA", "Nvidia", "NVDA",
+    "AMD", "Advanced Micro Devices",  # AMD short enough to skip padding — no common false-positive substrings
+    "Intel", "INTC",
+    "Broadcom", "AVGO",
+    "Cerebras", "CBRS",  # IPO'd 2026-05-14 on Nasdaq; WSE-3 uses on-chip SRAM not HBM — HBM substitution-risk signal
+]
+
+# Tier C — Hyperscalers + AI labs / second-layer bill-payers. They buy
+# finished GPUs / AI accelerator systems FROM the chip designers (Tier
+# B). Their capex commitments flow downhill through the value chain:
+# Microsoft commits $80B to Azure → flows to NVIDIA → flows to SK
+# Hynix HBM. OpenAI / Anthropic are private — no earnings call to
+# capture, but their capex commitments, model deployments, and
+# infrastructure partnership announcements directly inform memory demand.
+#
+# Tier C is the LEADING capex commitment signal (6-12 months ahead of
+# memory cycle peak). Haiku rubric: 8-9 for capex commitments / multi-
+# billion infrastructure deals / hyperscaler earnings with explicit
+# memory or chip-supply commentary / AI lab funding rounds at $5B+;
+# 6-7 for model releases / general earnings without infra detail.
+TRACKED_HYPERSCALERS_AND_LABS = [
+    # AI labs (private — no earnings call; news mentions only)
+    "OpenAI", "Open AI",
+    "Anthropic",
+    # Hyperscalers (public — also covered by transcript cascade)
+    "Microsoft", "MSFT", "Azure",
+    "Alphabet", "Google", "GOOGL",
+    "Amazon", "AMZN", " AWS ",  # spaces around AWS avoid "laws", "jaws", "outlaws"
+    "Meta", "Facebook",  # "Meta" intentionally unpadded — too many real headlines use it bare ("Meta Platforms", "Meta Q3"); cost of false-positive on "metadata"/"metaphor" is one Haiku call that drops at 0-3
+]
+
+# Tier D — Ecosystem. Suppliers, foundry partners, OEMs, distributors.
+# ASML (lithography supplier to memory + chip makers); TSMC (foundry —
+# manufactures for AMD/NVIDIA/Broadcom/Cerebras; CoWoS packaging is the
+# HBM integration bottleneck); Applied Materials (deposition equipment
+# supplier); Oracle (cloud — secondary hyperscaler); Dell/HPE (server
+# OEMs whose inventory commentary is the t3_supplier_inventory_rebuild
+# input).
+#
+# Haiku rubric: 6-7 for equipment WFE earnings + memory mix commentary /
+# TSMC CoWoS commentary / OEM channel inventory; 4-5 for general
+# equipment news naming these companies without memory-specific
+# implication.
+TRACKED_ECOSYSTEM = [
+    # Equipment
     "ASML",
     "Applied Materials", "AMAT",
-    "CXMT", "ChangXin",  # Chinese DRAM (Indicator 6A)
+    # Foundry / packaging
+    "TSMC", "TSM",
+    # Hyperscaler-adjacent (Oracle as secondary cloud)
+    "Oracle", "ORCL",
+    # OEMs (server box vendors — Tier 3 channel inventory signal)
+    "Dell", " HPE ",  # spaces around HPE avoid false matches in "shape", "stripes"
 ]
+
+# Back-compat merged union — keep TRACKED_COMPANIES symbol stable so the
+# single call site (src/fast_tier.py:468) doesn't need to change. Any
+# external scripts importing TRACKED_COMPANIES continue to work; the
+# union now spans all four tiers.
+TRACKED_COMPANIES = (
+    TRACKED_PURE_MEMORY
+    + TRACKED_CHIP_DESIGNERS
+    + TRACKED_HYPERSCALERS_AND_LABS
+    + TRACKED_ECOSYSTEM
+)
 
 TRACKED_BROKERS = [
     "Morgan Stanley", "Goldman Sachs", "JPMorgan", "JP Morgan", "Mizuho",

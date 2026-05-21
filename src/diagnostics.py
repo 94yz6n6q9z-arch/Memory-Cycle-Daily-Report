@@ -43,17 +43,34 @@ class SourceFetchStatus:
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     detail: Optional[str] = None  # optional short note (e.g. "skipped, no API key")
     skipped: bool = False         # True if intentionally not called (e.g. no API key)
+    # v3.39.7.6 — declares whether 0-item is the EXPECTED routine state for
+    # this source. True for forward-looking event detectors (the v3.2
+    # architectural watch Google News queries: CXL production, HBF, MTIA,
+    # Maia, GDDR7-as-HBM-substitute, Etched Sohu, etc.) and for the SK
+    # Hynix SEC EDGAR feeds prior to ADR listing. When True and 0 items
+    # returned, health is 'quiet' (informational, expected) instead of
+    # 'warn' (might be broken, worth investigating). Default False
+    # preserves the prior behavior for every existing caller.
+    expected_empty: bool = False
 
     @property
     def health(self) -> str:
-        """Four-state health classification used by the email template.
+        """Five-state health classification used by the email template.
 
         - 'skipped' = intentionally not queried (e.g. FMP with no API key);
           surfaces in the validation table so a never-configured source
           can't hide for months
         - 'fail'    = network/auth/parse error
-        - 'warn'    = reached but returned 0 items (could be legitimate empty
-          window, or a parsing issue worth investigating)
+        - 'quiet'   = (v3.39.7.6) reached, returned 0 items, AND the source
+          is flagged `expected_empty=True` — informational, not a problem.
+          Used for forward-looking watcher queries that ARE supposed to
+          stay quiet most days and only fire when a specific event
+          happens (architecture-shift Google News queries, pre-listing
+          SK Hynix SEC filings, etc.)
+        - 'warn'    = reached but returned 0 items AND not expected_empty
+          (could be legitimate empty window, or a parsing issue worth
+          investigating — the table surfaces it so a broken feed doesn't
+          hide for months)
         - 'ok'      = reached and returned items
         """
         if self.skipped:
@@ -61,7 +78,7 @@ class SourceFetchStatus:
         if not self.reached:
             return "fail"
         if self.items_returned == 0:
-            return "warn"
+            return "quiet" if self.expected_empty else "warn"
         return "ok"
 
     def to_dict(self) -> dict:
@@ -75,6 +92,11 @@ class _TrackHandle:
     def __init__(self):
         self.items_returned: int = 0
         self.detail: Optional[str] = None
+        # v3.39.7.6 — caller can mark this source as expected-empty (event
+        # detector / pre-listing filing). When set + items_returned=0,
+        # health becomes 'quiet' instead of 'warn'. See SourceFetchStatus
+        # docstring for full semantics.
+        self.expected_empty: bool = False
 
 
 class DiagnosticsCollector:
@@ -127,6 +149,7 @@ class DiagnosticsCollector:
                 latency_ms=latency_ms,
                 error=error,
                 detail=handle.detail,
+                expected_empty=handle.expected_empty,
             ))
 
     def all(self) -> list[SourceFetchStatus]:
@@ -137,8 +160,9 @@ class DiagnosticsCollector:
         warn = sum(1 for s in self.statuses if s.health == "warn")
         fail = sum(1 for s in self.statuses if s.health == "fail")
         skipped = sum(1 for s in self.statuses if s.health == "skipped")
+        quiet = sum(1 for s in self.statuses if s.health == "quiet")  # v3.39.7.6
         return {
-            "ok": ok, "warn": warn, "fail": fail, "skipped": skipped,
+            "ok": ok, "warn": warn, "fail": fail, "skipped": skipped, "quiet": quiet,
             "total": len(self.statuses),
         }
 

@@ -53,7 +53,7 @@ from typing import Any
 
 from src.config import (
     ANTHROPIC_API_KEY,
-    BENCHMARKS,
+    ALL_TICKERS,
     BIG_MOVER_THRESHOLD_PCT,
     CORE_TICKERS,
     CYCLE_PHASE_COLORS,
@@ -61,6 +61,7 @@ from src.config import (
     CYCLE_TROUGH_DATE,
     EDGAR_FEEDS,
     EMAIL_TO,
+    EXPECTED_EMPTY_EDGAR_FEEDS,
     FMP_API_KEY,
     GOOGLE_NEWS_QUERIES,
     HAIKU_MODEL,
@@ -73,6 +74,7 @@ from src.config import (
     TRACKED_BROKERS,
     TRACKED_COMPANIES,
     TRACKED_CONCEPTS,
+    WATCH_GOOGLE_QUERIES,
     WIDER_BASKET,
     get_upcoming_events,
     # v3.39.7 — cycle matrix config
@@ -361,12 +363,40 @@ def run_fast_tier() -> int:
             #     it with margin. Defense-in-depth: pct_change_lookback also
             #     hardened in prices.py to fall back gracefully even when
             #     the series is shorter than the requested window.
-            pool.submit(_run, "prices",    lambda: fetch_price_history(WIDER_BASKET, period="3y", collector=collector, fmp_api_key=FMP_API_KEY or None)),
+            # v3.39.7.6 — was WIDER_BASKET, swapped to ALL_TICKERS so
+            #     BENCHMARKS (^SOX, ^GSPC, ^KS11, DRAM ETF, SMH) get
+            #     fetched alongside the portfolio names. The previous
+            #     call silently broke `get_relative_strength_vs_sox()`
+            #     and `get_dram_etf_vs_smh()` in src/data/prices.py
+            #     because they look for columns named
+            #     "MSCI ACWI Semiconductor", "Roundhill DRAM ETF",
+            #     "VanEck Semi ETF (SMH)" — none of which were in the
+            #     fetched columns when only WIDER_BASKET was requested.
+            #     Result: t3_relative_strength always returned
+            #     `(not computed)` for SOX spreads regardless of the
+            #     actual move. The May 21 2026 brief surfaced this when
+            #     SK Hynix 1W was -11.69% (red-fire territory) while
+            #     SOX moved approximately flat — a clear underperformance
+            #     that the indicator card silently failed to detect.
+            #     `calculate_performance(price_history, WIDER_BASKET)`
+            #     at the section-1 price table call site is unchanged —
+            #     that table should keep showing portfolio names only,
+            #     not the benchmark indices.
+            pool.submit(_run, "prices",    lambda: fetch_price_history(ALL_TICKERS, period="3y", collector=collector, fmp_api_key=FMP_API_KEY or None)),
             pool.submit(_run, "estimates", lambda: fetch_all_estimates(CORE_TICKERS, fmp_api_key=FMP_API_KEY, collector=collector)),
             # v3.38: edgar_feeds passed as kwarg — fetch_all_news signature is
             # (rss, google, hours_back, edgar_feeds, collector); positional
             # placement of EDGAR_FEEDS lands in hours_back. See CHANGES.md.
-            pool.submit(_run, "news",      lambda: fetch_all_news(RSS_FEEDS, GOOGLE_NEWS_QUERIES, edgar_feeds=EDGAR_FEEDS, collector=collector)),
+            # v3.39.7.6: watch_google_queries + expected_empty_edgar_feeds
+            # threaded through so forward-looking watcher feeds render as
+            # 'quiet' (informational) on 0 items instead of 'warn'.
+            pool.submit(_run, "news",      lambda: fetch_all_news(
+                RSS_FEEDS, GOOGLE_NEWS_QUERIES,
+                edgar_feeds=EDGAR_FEEDS,
+                collector=collector,
+                watch_google_queries=WATCH_GOOGLE_QUERIES,
+                expected_empty_edgar_feeds=EXPECTED_EMPTY_EDGAR_FEEDS,
+            )),
             pool.submit(_run, "naver",     fetch_naver_with_retry),
             pool.submit(_run, "finnhub",   fetch_finnhub_with_retry),
             pool.submit(_run, "dart",      fetch_dart_with_retry),

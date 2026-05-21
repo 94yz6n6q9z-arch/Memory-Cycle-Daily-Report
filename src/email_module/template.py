@@ -150,10 +150,17 @@ def build_email_html(
       .validation-warn { background: #FAEEDA; color: #854F0B; }
       .validation-fail { background: #FCEBEB; color: #791F1F; }
       .validation-skipped { background: #ECEAE3; color: #5F5E5A; }
+      /* v3.39.7.6 — quiet = reached, 0 items, but 0 items was the
+         expected state for this watcher (e.g. "GDDR7 inference
+         accelerator" Google query, or pre-listing SK Hynix EDGAR
+         filings). Muted neutral gray distinguishes "nothing happened,
+         as expected" from "feed might be broken" (WARN). */
+      .validation-quiet { background: #ECEAE3; color: #6B6960; opacity: 0.85; }
       .source-row-ok td { background: #fff; }
       .source-row-warn td { background: #FFFBF1; }
       .source-row-fail td { background: #FCF3F3; }
       .source-row-skipped td { background: #F6F4EE; }
+      .source-row-quiet td { background: #F6F4EE; color: #6B6960; }
       .source-status-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
       .source-error { color: #791F1F; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
       .source-detail { color: #5F5E5A; font-size: 11px; font-style: italic; }
@@ -272,8 +279,11 @@ def build_email_html(
             "data source was reached, read, and parsed — guards against silent failures where "
             "the brief looks healthy but the underlying feed has been broken for weeks. "
             "<strong>OK</strong> = reached and returned items. "
-            "<strong>WARN</strong> = reached but returned 0 items (could be legitimately "
-            "empty, or a parsing issue). "
+            "<strong>WARN</strong> = reached but returned 0 items where items WERE expected "
+            "(could be a parsing issue or a quiet news day — investigate if it persists). "
+            "<strong>QUIET</strong> = reached, 0 items, but 0 items is the routine expected "
+            "state for this watcher (e.g. forward-looking architecture event detectors, "
+            "pre-listing SK Hynix SEC filings). Informational only. "
             "<strong>FAIL</strong> = network/auth/parse error — investigate. "
             "<strong>SKIPPED</strong> = source intentionally not queried (e.g. missing API key)."
             "</p>"
@@ -361,11 +371,14 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
         f"</div>"
     )
 
-    delta_line = (
-        f"<div class='delta-text'>"
-        f"{html.escape(es.delta_from_prior_text)}"
-        f"</div>"
-    )
+    # v3.39.7.6 — `delta_line` construction removed entirely. v3.39.7.5
+    # was supposed to consolidate the old three-block pattern
+    # (delta_from_prior_text + big_movers + market_summary) into the
+    # single `executive_brief` paragraph, but the delta_line render
+    # survived the cleanup by mistake and shipped duplicating content
+    # with the new brief. The `delta_from_prior_text` field stays on the
+    # ExecutiveSummary dataclass for prior_state.json back-compat
+    # (same pattern as the URGENT fields kept after v3.39.7.5).
 
     # v3.39.7.5 — consolidated executive brief paragraph.
     # Replaces the old 3-block pattern (delta_from_prior_text prose alone +
@@ -401,7 +414,6 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
         f"{trigger_text}"
         f"{peak_line}"
         f"{cases_line}"
-        f"{delta_line}"
         f"{brief_block}"
         f"</div>"
     )
@@ -664,12 +676,20 @@ def _build_data_source_validation(statuses: list[SourceFetchStatus]) -> str:
     Groups: shows a one-line summary pill, then a grouped table by source_type.
     Failures and warnings sort to the top within each group; skipped rows
     sort to the bottom.
+
+    v3.39.7.6 — fifth health state 'quiet' rendered. Sources flagged
+    `expected_empty=True` (forward-looking architecture watchers, pre-
+    listing SK Hynix EDGAR feeds) render as 'QUIET (0)' in muted gray
+    rather than as 'WARN'. The distinction is informational: the WARN
+    count now only contains sources that are unexpectedly empty (worth
+    investigating); QUIET counts the routine-quiet watchers (expected).
     """
     # Summary pills
     ok_count = sum(1 for s in statuses if s.health == "ok")
     warn_count = sum(1 for s in statuses if s.health == "warn")
     fail_count = sum(1 for s in statuses if s.health == "fail")
     skipped_count = sum(1 for s in statuses if s.health == "skipped")
+    quiet_count = sum(1 for s in statuses if s.health == "quiet")  # v3.39.7.6
     total = len(statuses)
 
     pills = (
@@ -677,6 +697,8 @@ def _build_data_source_validation(statuses: list[SourceFetchStatus]) -> str:
         f"<span class='validation-pill validation-warn'>WARN {warn_count}</span>"
         f"<span class='validation-pill validation-fail'>FAIL {fail_count}</span>"
     )
+    if quiet_count:
+        pills += f"<span class='validation-pill validation-quiet'>QUIET {quiet_count}</span>"
     if skipped_count:
         pills += f"<span class='validation-pill validation-skipped'>SKIPPED {skipped_count}</span>"
 
@@ -692,8 +714,10 @@ def _build_data_source_validation(statuses: list[SourceFetchStatus]) -> str:
     for s in statuses:
         groups.setdefault(s.source_type, []).append(s)
 
-    # Sort within each group: fail first, warn, ok, then skipped at the bottom
-    health_order = {"fail": 0, "warn": 1, "ok": 2, "skipped": 3}
+    # Sort within each group: fail first, warn, ok, quiet, then skipped at the bottom
+    # v3.39.7.6 — quiet sits below ok (informational, expected) and above
+    # skipped (intentionally not queried).
+    health_order = {"fail": 0, "warn": 1, "ok": 2, "quiet": 3, "skipped": 4}
     for group_list in groups.values():
         group_list.sort(key=lambda x: (health_order.get(x.health, 9), x.source_name))
 
@@ -718,12 +742,14 @@ def _build_data_source_validation(statuses: list[SourceFetchStatus]) -> str:
         "warn": "validation-warn",
         "fail": "validation-fail",
         "skipped": "validation-skipped",
+        "quiet": "validation-quiet",  # v3.39.7.6
     }
     badge_label_map = {
         "ok": "OK",
         "warn": "WARN",
         "fail": "FAIL",
         "skipped": "SKIPPED",
+        "quiet": "QUIET",  # v3.39.7.6
     }
 
     for tkey in type_order + [t for t in groups if t not in type_order]:

@@ -123,6 +123,7 @@ def fetch_edgar_feeds(
     feeds: dict[str, str],
     hours_back: int = 24 * 30,  # EDGAR filings are rare; widen window to 30 days
     collector: Optional[DiagnosticsCollector] = None,
+    expected_empty_feeds: Optional[set[str]] = None,
 ) -> list[NewsItem]:
     """Fetch SEC EDGAR atom feeds for SK Hynix filing types.
 
@@ -132,15 +133,27 @@ def fetch_edgar_feeds(
 
     Filings are titled with [FILING] prefix so they sort to the top of
     the news feed and the LLM gives them weight.
+
+    v3.39.7.6 — `expected_empty_feeds` is an optional set of source-name
+    strings (from `feeds` keys) whose 0-item state is expected. The SK
+    Hynix US-listing filings (F-1, F-1/A, 424, 6-K, 20-F) stay empty
+    until the ADR actually lists — that emptiness is the indicator's
+    routine state, not a fetch problem. Marked sources render as 'quiet'
+    in the data-source table instead of 'warn'.
     """
     items: list[NewsItem] = []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours_back)
+    expected_empty_set = expected_empty_feeds or set()
 
     for source_name, feed_url in feeds.items():
         per_feed_items: list[NewsItem] = []
         try:
             if collector is not None:
                 with collector.track(source_name, "edgar") as t:
+                    # v3.39.7.6 — mark pre-listing SK Hynix filings as
+                    # expected_empty so a quiet feed doesn't look broken.
+                    if source_name in expected_empty_set:
+                        t.expected_empty = True
                     resp = requests.get(feed_url, headers=EDGAR_HEADERS, timeout=20)
                     resp.raise_for_status()
                     parsed = feedparser.parse(resp.content)
@@ -229,13 +242,23 @@ def fetch_google_news(
     queries: list[str],
     hours_back: int = RECENT_HOURS_DEFAULT,
     collector: Optional[DiagnosticsCollector] = None,
+    watch_queries: Optional[set[str]] = None,
 ) -> list[NewsItem]:
     """Query Google News RSS for each query string and return recent items.
 
     Records one SourceFetchStatus per query.
+
+    v3.39.7.6 — `watch_queries` is an optional set of query strings that
+    are forward-looking event detectors (e.g. "CXL 3.0 memory pooling
+    production", "GDDR7 inference accelerator", "OpenAI IPO filing").
+    When a watch query returns 0 items, the status is marked
+    `expected_empty=True` so it renders as 'quiet' (informational) in the
+    data-source assessment table rather than 'warn' (might be broken).
+    Queries NOT in this set keep the default 'warn' on 0 items.
     """
     items: list[NewsItem] = []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours_back)
+    watch_set = watch_queries or set()
 
     for query in queries:
         url = f"https://news.google.com/rss/search?q={quote_plus(query)}+when:2d&hl=en&gl=US&ceid=US:en"
@@ -277,6 +300,11 @@ def fetch_google_news(
         try:
             if collector is not None:
                 with collector.track(f"Google News: {query}", "google_news") as t:
+                    # v3.39.7.6 — mark watch-type queries (event detectors)
+                    # as expected_empty so the diagnostics table doesn't
+                    # treat their routine 0-item state as suspicious.
+                    if query in watch_set:
+                        t.expected_empty = True
                     per_query_items = _fetch_and_parse()
                     t.items_returned = len(per_query_items)
             else:
@@ -557,19 +585,36 @@ def fetch_all_news(
     hours_back: int = RECENT_HOURS_DEFAULT,
     edgar_feeds: Optional[dict[str, str]] = None,
     collector: Optional[DiagnosticsCollector] = None,
+    watch_google_queries: Optional[set[str]] = None,
+    expected_empty_edgar_feeds: Optional[set[str]] = None,
 ) -> list[NewsItem]:
     """Aggregate news from all configured sources, deduplicate by title.
 
     The collector argument is forwarded to every sub-fetcher so the email
     template can render a per-source validation table.
+
+    v3.39.7.6 — `watch_google_queries` and `expected_empty_edgar_feeds`
+    forward through to the underlying fetchers so forward-looking
+    watcher feeds (architecture-shift Google News queries, pre-listing
+    SK Hynix SEC filings) render as 'quiet' on 0 items instead of
+    'warn'. Defaults preserve the prior behavior for any caller that
+    doesn't pass them.
     """
     all_items: list[NewsItem] = []
 
     all_items.extend(fetch_rss_feeds(rss_feeds, hours_back, collector=collector))
     if edgar_feeds:
         # EDGAR uses its own wider lookback window (30 days) inside the function
-        all_items.extend(fetch_edgar_feeds(edgar_feeds, collector=collector))
-    all_items.extend(fetch_google_news(google_queries, hours_back, collector=collector))
+        all_items.extend(fetch_edgar_feeds(
+            edgar_feeds,
+            collector=collector,
+            expected_empty_feeds=expected_empty_edgar_feeds,
+        ))
+    all_items.extend(fetch_google_news(
+        google_queries, hours_back,
+        collector=collector,
+        watch_queries=watch_google_queries,
+    ))
     all_items.extend(scrape_chosun_biz(hours_back, collector=collector))
     all_items.extend(scrape_trendforce(hours_back, collector=collector))
     # v3.39.3 — TrendForce DRAM Spot price table. Emits one high-priority
@@ -648,7 +693,17 @@ def score_relevance(
             auto_keep.append((item, 10, "TrendForce spot price table — auto-kept"))
             continue
 
-        text = f"{item.title} {item.summary or ''}".lower()
+        # v3.39.7.7 — pad text with leading + trailing space so that
+        # word-boundary-protected keywords (" MU ", " AWS ", " HPE ")
+        # correctly match when the keyword appears at the start or end
+        # of the headline. Pre-v3.39.7.7 the text was unpadded, so a
+        # headline like "MU files Q3" or "HPE acquires Juniper" silently
+        # failed Pass 1 — the padded keyword " mu " didn't have a leading
+        # space to match against. Latent bug since v3.1; the v3.39.7.7
+        # tracked-companies expansion surfaced it through the HPE test
+        # case. Safe everywhere: padding can only add matches at the
+        # boundaries, can't drop existing mid-sentence matches.
+        text = f" {item.title} {item.summary or ''} ".lower()
         hits = (
             any(a in text for a in analyst_names) or
             any(b in text for b in broker_names)  or
@@ -675,20 +730,67 @@ def score_relevance(
 
         prompt = (
             "You are a relevance filter for a daily memory semiconductor investment brief.\n"
-            "Score each headline 0-10 for relevance to: SK Hynix / Micron / Samsung memory cycle, "
-            "analyst upgrades/downgrades, DRAM/HBM/NAND pricing, hyperscaler capex, supply/demand signals, "
-            "AND architectural shifts that affect HBM captive ratio (inference efficiency techniques, "
-            "memory disaggregation, custom silicon memory architecture, LPDDR datacenter adoption).\n\n"
-            "Rules:\n"
-            "- 8-10: analyst action (upgrade/downgrade/PT change) on SK Hynix, Micron, Samsung; "
-            "major supply/pricing signal from TrendForce/DigiTimes; "
-            "first-of-kind architectural deployment (e.g. first hyperscaler CXL 3.0 production, "
-            "Samsung HBM4 qualification at NVIDIA, MTIA/Trainium memory architecture confirmed)\n"
-            "- 6-7: thematic analyst note on memory/HBM/AI inference; inference efficiency breakthrough "
-            "(major quantization/MoE/speculative-decoding advance); LPDDR datacenter design win; "
-            "vLLM/SGLang/TensorRT release adopting new efficiency technique; earnings commentary\n"
-            "- 4-5: adjacent — semi equipment, broader AI capex, Korean tech policy, incremental research papers\n"
-            "- 0-3: not relevant — general tech news, unrelated companies, noise\n\n"
+            "Score each headline 0-10 for relevance to the memory cycle: SK Hynix / Micron / "
+            "Samsung memory cycle, analyst upgrades/downgrades, DRAM/HBM/NAND pricing, chip "
+            "designer (NVIDIA/AMD/Intel/Broadcom/Cerebras) earnings on memory demand, hyperscaler "
+            "+ AI lab capex commitments, supply/demand signals, AND architectural shifts that "
+            "affect HBM captive ratio (inference efficiency techniques, memory disaggregation, "
+            "custom silicon memory architecture, LPDDR datacenter adoption).\n\n"
+            "RELEVANCE TIERS — apply by which company/companies the headline is primarily about. "
+            "v3.39.7.8: four value-chain tiers (memory makers → chip designers → hyperscalers/AI "
+            "labs → ecosystem). Tier B is the CONCURRENT HBM demand signal (chip designers tell "
+            "us what they ARE buying today). Tier C is the LEADING capex commitment signal (6-12 "
+            "months ahead of memory cycle peak). Both peak at 8-9 but for different reasons.\n\n"
+            "  TIER A — Pure memory + competitive rivals (SK Hynix, Micron, Samsung Electronics, "
+            "CXMT, ChangXin):\n"
+            "    9-10: analyst action (upgrade/downgrade/PT change/EPS revision) on these names; "
+            "TrendForce or DigiTimes supply/pricing print; Korean labor news affecting Samsung "
+            "or SK Hynix production (strike, wage deal, union action); insider sales filings; "
+            "earnings or guidance release on these names; CXMT/ChangXin capacity-expansion or "
+            "production-milestone news (Indicator 6A direct input)\n"
+            "    7-8: thematic analyst notes on the HBM/DRAM/NAND cycle that name these "
+            "companies; Korean macro news with direct read-through to memory production\n\n"
+            "  TIER B — Chip designers / first-layer bill-payers (NVIDIA, AMD, Intel, Broadcom, "
+            "Cerebras). These BUY memory chips and integrate them into GPUs/CPUs/AI accelerators. "
+            "From the memory makers' perspective these are the direct customers:\n"
+            "    8-9: earnings + HBM/data-center backlog commentary; GPU+HBM supply agreements "
+            "with named volume; NVIDIA quarterly print + Jensen forward commentary; AMD MI400 "
+            "production ramp news; Intel Gaudi unit-shipment commentary; Broadcom AI segment "
+            "+ custom-silicon-for-Google-Meta-commentary; Cerebras WSE-3 deployment news "
+            "(HBM-substitution signal — v3.4 captive-ratio indicator input)\n"
+            "    6-7: general product launches / strategic commentary without quantified memory "
+            "demand impact; gaming/auto NVIDIA news that explicitly mentions AI tie-in\n\n"
+            "  TIER C — Hyperscalers + AI labs / second-layer bill-payers (Microsoft/Azure, "
+            "Alphabet/Google, Amazon/AWS, Meta, OpenAI, Anthropic). They buy finished AI systems "
+            "FROM the chip designers; their capex flows downhill: Microsoft commits $80B → flows "
+            "to NVIDIA → flows to SK Hynix HBM. This is the LEADING signal — capex commitments "
+            "lead memory cycle peaks by 6-12 months:\n"
+            "    8-9: capex commitments (any hyperscaler upping AI capex guidance); multi-billion "
+            "AI infrastructure deals; hyperscaler earnings with explicit memory/HBM commentary "
+            "or chip-supply commentary; AI lab funding rounds at $5B+ scale (drives compute "
+            "demand); OpenAI/Anthropic capacity build-out announcements; in-house ASIC + custom "
+            "silicon production news (TPU v7, Trainium 2, MTIA v3, Maia)\n"
+            "    6-7: hyperscaler earnings without memory or chip-supply specifics; model "
+            "release news; lab partnership announcements without infrastructure detail\n\n"
+            "  TIER D — Ecosystem (ASML, Applied Materials, TSMC, Oracle, Dell, HPE):\n"
+            "    6-7: equipment WFE earnings + memory mix commentary; TSMC CoWoS capacity "
+            "commentary (HBM packaging bottleneck); Dell/HPE channel inventory commentary "
+            "(t3_supplier_inventory_rebuild direct input); ASML lithography backlog with memory "
+            "mix detail\n"
+            "    4-5: general equipment news naming these companies without memory-specific "
+            "implication; Oracle cloud commentary without memory implication\n\n"
+            "  ARCHITECTURAL SHIFTS — regardless of company named:\n"
+            "    8-10: first-of-kind production deployment (first hyperscaler CXL 3.0 "
+            "production; Samsung HBM4 qualification at NVIDIA; NVIDIA Vera Rubin HBM/HBF "
+            "confirmation; MTIA/Trainium memory architecture detail leaks)\n"
+            "    6-7: research papers + framework releases (vLLM/SGLang/TensorRT-LLM adopting "
+            "new efficiency technique); inference efficiency breakthroughs (major quantization/"
+            "MoE/speculative-decoding advance); LPDDR datacenter design wins\n\n"
+            "  ADJACENT / NOT RELEVANT:\n"
+            "    4-5: Korean tech policy not naming memory makers; broader AI capex with no "
+            "memory implication; incremental research papers\n"
+            "    0-3: general tech news, unrelated companies, gaming/auto/automotive-only "
+            "NVIDIA news without AI tie-in, noise\n\n"
             f"Headlines:\n{headlines_block}\n\n"
             "Respond with ONLY a JSON array, one object per headline, in order:\n"
             '[{"score": 8, "reason": "MS downgrades SK Hynix — direct Indicator 3 input"}, ...]'
