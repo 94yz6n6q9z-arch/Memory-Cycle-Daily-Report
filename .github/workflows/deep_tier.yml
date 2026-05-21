@@ -1,39 +1,68 @@
-name: Memory Cycle Brief — Deep Tier (overnight)
+name: Memory Cycle Brief — Fast Tier (daily delivery)
 
 on:
   schedule:
-    # v3.39.3: spread triggers + idempotency. Five attempts in a 60-minute
-    # window at odd minute marks (avoiding :00, :15, :30, :45 which are
-    # GitHub Actions' peak contention). First successful run writes
-    # state/deep_tier_diagnostics.json; later triggers see the file dated
-    # today and exit cleanly in ~10s (idempotency check in deep_tier.py).
-    # Mon-Sat (1-6) — Korean exchange and US markets active Mon-Fri,
-    # Saturday added per user pref for Saturday catch-up briefs.
+    # v3.39.7.4: thinned from 7 crons (14-16 min spacing) to 4 crons
+    # (30-min spacing). Rationale:
+    #   - Each fast-tier run takes ~25 min (Layer 2 sequential Haiku calls
+    #     + Sonnet streaming + email send).
+    #   - With concurrency: cancel-in-progress=false, overlapping crons
+    #     queue rather than parallelize.
+    #   - 14-min spacing means cron N starts BEFORE cron N-1 has pushed
+    #     its commit. cron N's checkout sees stale brief_sent_dates.json,
+    #     fails idempotency, runs the full pipeline → duplicate email.
+    #   - 30-min spacing leaves a 5-min window for the prior run's commit
+    #     to propagate to origin/main before the next checkout, in
+    #     conjunction with v3.39.7.4's _refresh_from_origin_main() in
+    #     fast_tier.py for belt-and-suspenders.
+    # fast_tier.py also has:
+    #   (a) cascade gate — exits cleanly if state/deep_tier_diagnostics.json
+    #       isn't dated today (deep_tier hasn't run yet — try again next
+    #       trigger). FORCE_RUN (manual dispatch) bypasses this gate.
+    #   (b) pre-flight refresh — fetches origin/main and hard-resets the
+    #       checkout BEFORE the idempotency check.
+    #   (c) idempotency — exits cleanly if today's brief already sent
+    #       (state/brief_sent_dates.json). FORCE_RUN bypasses this too.
+    # So most triggers no-op in <30s; only the first one finding both
+    # (deep ran AND brief not sent) actually produces email + commits.
+    # Mon-Sat (1-6) per user pref.
     #
-    # Timing: 10:00 UTC = 12:00 Munich CEST = 19:00 KST — end of Korean
-    # business day. Captures the FULL Korean broker post-close publishing
-    # window (15:30 KST KRX close → 19:00 KST desk close). US transcript
-    # availability ~98% by this time (vs 94% at 08:00 UTC original).
-    - cron: "3 10 * * 1-6"     # 10:03 UTC
-    - cron: "17 10 * * 1-6"    # 10:17 UTC
-    - cron: "33 10 * * 1-6"    # 10:33 UTC
-    - cron: "47 10 * * 1-6"    # 10:47 UTC
-    - cron: "3 11 * * 1-6"     # 11:03 UTC — last safety attempt
+    # Timing target: email lands well before US market open (13:30 UTC).
+    # With deep_tier firing 10:03-11:03 UTC and fast_tier 11:13-12:43 UTC,
+    # email delivery should be 11:30-13:00 UTC most days (13:30-15:00 Munich).
+    - cron: "13 11 * * 1-6"    # 11:13 UTC — primary
+    - cron: "43 11 * * 1-6"    # 11:43 UTC — fallback (no-ops if 11:13 succeeded)
+    - cron: "13 12 * * 1-6"    # 12:13 UTC — safety
+    - cron: "43 12 * * 1-6"    # 12:43 UTC — last attempt (~47 min before US open)
   workflow_dispatch: {}
 
 permissions:
-  contents: write  # commits digests + caches back to repo
+  contents: write  # commits state back to repo
+  issues: write    # v3.38 — needed for "Create issue on critical failure" step below
 
 concurrency:
-  group: memory-cycle-brief-deep
-  cancel-in-progress: false
+  group: memory-cycle-brief-fast
+  cancel-in-progress: false  # let triggered runs queue; idempotency handles dupes
 
 jobs:
-  deep-tier:
+  fast-tier:
     runs-on: ubuntu-latest
-    timeout-minutes: 25  # PDF parsing + digester is slower than fast tier
+    # v3.39.1: bumped 25 → 35. At 48K Sonnet max_tokens (the v3.39.1 lift),
+    # the streaming Sonnet phase can take up to ~18 min at observed
+    # ~45 tok/sec throughput. Combined with Layer 2 (~4 min), Stage 1
+    # Haiku triage (~3 min), fetch (~1.5 min), and email + commit (~1 min),
+    # worst-case run is ~28 min. 35-min timeout gives a 7-min safety margin
+    # for Anthropic 503 retries and other transient delays.
+    # Prior history:
+    #   v3.38.4: 12 → 25 (handle throttled Layer 2 + Sonnet at 24K)
+    timeout-minutes: 35
 
     steps:
+      # v3.39.2: bumped actions to their Node.js 24 versions ahead of the
+      # June 2, 2026 deprecation (the prior versions ran on Node 20). Each
+      # successor release confirmed available: checkout v5.0.0 (Aug 2025),
+      # setup-python v6.0.0 (Sep 2025), github-script v8 (late 2025) — all
+      # are stable major releases, not pre-releases.
       - name: Checkout repo
         uses: actions/checkout@v5
 
@@ -48,59 +77,124 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run deep tier (transcripts + Korean broker PDFs + Layer 1 digester)
+      - name: Run fast tier (RSS + APIs + Naver + Layer 2 + Layer 3 + email)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # v3.39.3.1: SAMSUNG_GMAIL_USER / SAMSUNG_GMAIL_APP_PW removed —
-          # Samsung Securities Gmail IMAP source deleted (was never configured;
-          # see src/data/korean_brokers.py changelog for rationale).
+          # Email send
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+          # APIs added in v3
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          # Model aliases
           HAIKU_MODEL_OVERRIDE: ${{ secrets.HAIKU_MODEL_OVERRIDE }}
-          # v3.33: Bright Data residential proxy for Yahoo Finance transcript
-          # scraping. Yahoo blocks datacenter IPs (incl. GitHub Actions runners)
-          # with 404. Format: http://USER-country-us:PASS@brd.superproxy.io:33335
-          # The transcript scraper appends a per-request -session-{n} token
-          # for residential-IP rotation. If unset, Yahoo fallback degrades to
-          # "nothing" gracefully; Motley Fool + IR continue to work.
-          RESIDENTIAL_PROXY_URL: ${{ secrets.RESIDENTIAL_PROXY_URL }}
+          SONNET_MODEL_OVERRIDE: ${{ secrets.SONNET_MODEL_OVERRIDE }}
+          # v3.38.6: bypass the brief_sent_dates idempotency check when the
+          # workflow is triggered manually from the Actions UI. Scheduled
+          # cron runs (event_name == 'schedule') leave this empty and the
+          # check fires normally — which is correct, since the three crons
+          # (11:00 / 11:30 / 12:05 UTC) rely on idempotency to avoid sending
+          # duplicate briefs when the primary cron succeeds and the fallback
+          # still fires. Manual dispatch always means "I want this to run
+          # right now" — testing fixes, validating a release, recovering
+          # from a botched run — so auto-bypass is the right default.
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: |
-          python -m src.deep_tier
+          python -m src.fast_tier
 
-      - name: Commit digests + caches
+      - name: Commit state (idempotency record + prior-state for tomorrow's diff)
+        if: success()
         run: |
+          set -euo pipefail
           git config --global user.name "memory-cycle-brief-bot"
           git config --global user.email "bot@memory-cycle-brief"
-          git add -A state/digests/ state/cache/
-          # v3.38.5: these two files are written by deep_tier.py since v3.38
-          # (DiagnosticsCollector persistence + transcript_status), but they
-          # live in state/ directly — not under state/digests/ or state/cache/
-          # — so the prior `git add` line missed them. They were generated on
-          # the runner each day and destroyed at runner shutdown. The fast
-          # tier (separate run, fresh checkout) reported FAIL "deep tier hasn't
-          # run since v3.38 deploy" — misleading; deep tier DID run, but its
-          # diagnostics were never committed. File-existence guards so the
-          # workflow doesn't break on the rare run where deep_tier.py errored
-          # before writing one of the files.
-          [ -f state/deep_tier_diagnostics.json ] && git add state/deep_tier_diagnostics.json
-          [ -f state/transcript_status.json ] && git add state/transcript_status.json
-          # v3.4.0: extraction_log_*.jsonl. The digester writes one file per
-          # day containing architecture signals extracted from each digested
-          # transcript (cxl_production_deployment, lpddr_datacenter_design_win,
-          # custom_silicon_memory_arch, etc.). Pre-v3.4.0 this file was
-          # generated by the digester but never committed — every deep-tier
-          # run produced a fresh file on the runner that was destroyed at
-          # shutdown. The DHCR indicator (added v3.4.0) needs this signal
-          # stream to accumulate across runs for the substitution-risk
-          # narrative; without persistence the data never builds up.
-          git add -A state/extraction_log_*.jsonl 2>/dev/null || true
+          # v3.39.7: data/ CSVs added to commit set so the cycle matrix
+          # accumulates spot/contract/signal history across GHA runs. Without
+          # this, the runner's writes to data/dram_*_history.csv would be
+          # destroyed at runner shutdown and the matrix would only ever see
+          # the seeded data. Per-file staging avoids accidentally committing
+          # other untracked junk.
+          # v3.39.7.3: state/indicator_evidence.json added so the persistent
+          # evidence store (Layer 2's institutional memory of WHY each indicator
+          # is fired, with reversal_conditions per evidence entry) accumulates
+          # across runs. Without this, every run reads the bootstrap-only state
+          # and any Layer 2 status transitions from prior runs are lost.
+          # v3.39.7.5: state/trigger_events_24h.json added — the 24h ephemeral
+          # trigger event log. Without persistence, the morning's events would
+          # be visible only on the run that observed them; subsequent crons
+          # (clean checkout each time) would have an empty log and lose the
+          # callouts even though they fall well within the 24h window.
+          # v3.4.0: state/extraction_log_*.jsonl + state/dhcr_state.json added.
+          # The extraction_log is the architecture-signal stream from the deep
+          # tier digester (cxl_production_deployment, lpddr_datacenter_design_win,
+          # custom_silicon_memory_arch, etc.) and pre-v3.4.0 it was being written
+          # but never committed — every run started fresh and data never
+          # accumulated. The dhcr_state is the per-run DHCR snapshot for QoQ
+          # comparison. Without these two adds, the DHCR direction monitor would
+          # work for the current snapshot but historical context (signal
+          # accumulation, prior-run comparison) would be lost between runs.
+          git add -A state/brief_sent_dates.json state/prior_state.json state/cache/ \
+                  state/indicator_evidence.json \
+                  state/trigger_events_24h.json \
+                  state/extraction_log_*.jsonl \
+                  state/dhcr_state.json \
+                  data/dram_spot_history.csv \
+                  data/dram_contract_actuals.csv \
+                  data/dram_contract_quarterly_forecasts.csv \
+                  data/dram_contract_signals.csv \
+                  2>/dev/null || true
           if git diff --staged --quiet; then
-            echo "No state changes to commit."
-          else
-            git commit -m "Deep tier digests $(date -u +%Y-%m-%d)"
-            # v3.34: rebase onto remote main before pushing — handles the case
-            # where Raul (or another commit) pushed to main while this run was
-            # in flight (3-5 minutes), making our local checkout stale. Without
-            # rebase, push is rejected with "fetch first" and the digests are
-            # lost. Retry once with a fresh pull if the first push still fails.
-            git pull --rebase origin main || true
-            git push || (sleep 5 && git pull --rebase origin main && git push)
+            echo "No state changes."
+            exit 0
           fi
+          git commit -m "Fast tier $(date -u +%Y-%m-%dT%H:%M)"
+          # v3.39.3: rebase onto remote before push to handle the race where
+          # a separate commit (manual edit, deep_tier commit, or another
+          # workflow) lands on main while fast_tier was running its
+          # ~20-minute pipeline. Without rebase, push rejected with
+          # "fetch first" and state/brief_sent_dates.json + prior_state.json
+          # are lost — tomorrow's change-tracking diff would compare against
+          # stale state. Same pattern as deep_tier.yml since v3.34.
+          #
+          # v3.39.7.4: hardened to fail loudly. The prior `git push || (sleep 5
+          # && git pull --rebase && git push)` pattern silently swallowed both-
+          # failed cases — leaving today's brief_sent_dates.json unpushed,
+          # which caused next scheduled cron to see stale state and send a
+          # duplicate brief. Now: explicit retry with proper exit codes, and
+          # the "Create issue on critical failure" step downstream picks it up.
+          if ! git pull --rebase origin main; then
+            echo "::error::git pull --rebase origin main failed before push"
+            exit 1
+          fi
+          if git push; then
+            echo "Push succeeded on first attempt."
+          else
+            echo "First push failed; retrying after 10s..."
+            sleep 10
+            if ! git pull --rebase origin main; then
+              echo "::error::git pull --rebase failed on retry"
+              exit 1
+            fi
+            if ! git push; then
+              echo "::error::git push failed on retry — state NOT persisted to main. Next scheduled run will see stale brief_sent_dates.json and may send a duplicate brief."
+              exit 1
+            fi
+            echo "Push succeeded on retry."
+          fi
+
+      - name: Create issue on critical failure
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const today = new Date().toISOString().slice(0, 10);
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Memory Cycle Brief fast-tier failed ${today}`,
+              body: `Fast tier failed at ${new Date().toISOString()}. Check the workflow run.`,
+              labels: ['pipeline-failure']
+            });
