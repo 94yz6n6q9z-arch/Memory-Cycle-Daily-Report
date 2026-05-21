@@ -21,6 +21,7 @@ CHANGELOG (this file):
 from __future__ import annotations
 
 import html
+import math  # v3.39.7.9 — NaN guard in _build_relative_strength_snippet
 import re
 from datetime import datetime
 from typing import Optional
@@ -50,10 +51,13 @@ TIER_LABELS = {
 }
 
 STATUS_COLORS = {
-    "Fired": "#D85A30",
+    # v3.39.7.9 — three-state collapse per user direction 2026-05-21.
+    # "Reversed" removed (audit trail moved to evidence_for_change_vs_yesterday
+    # and the trigger event banner). Fired color darkened from #D85A30
+    # (red-orange that read as "amber") to #B91C1C (clearer red).
+    "Fired": "#B91C1C",
     "Partially fired": "#FAC775",
     "Not fired": "#C0DD97",
-    "Reversed": "#888780",
     "Unknown (LLM unavailable)": "#CCCCCC",
 }
 
@@ -236,7 +240,13 @@ def build_email_html(
 
     # 5. Tier indicators (section 3 — summary cards table)
     parts.append("<h2 id='section-3'>3. Tier indicators — daily status</h2>")
-    parts.append(_build_indicators_section(analysis.indicator_assessments))
+    # v3.39.7.9 — rel_strength_verdict threaded through so t3_relative_strength
+    # card surfaces the actual 5d-vs-SOX numbers (color-coded by fire band)
+    # at the section 3 summary level, not just in the section 4 deep dive.
+    parts.append(_build_indicators_section(
+        analysis.indicator_assessments,
+        rel_strength_verdict=rel_strength_verdict,
+    ))
 
     # 6. Top 5 deep dives (section 4 — includes cycle matrix card under
     # t1_spot_decline per v3.39.7.5 placement decision)
@@ -465,8 +475,90 @@ def _format_change(value: Optional[float]) -> str:
     return f"<span class='perf-flat'>{value:.2f}%</span>"
 
 
+def _build_relative_strength_snippet(rel_strength_verdict: Optional[dict]) -> str:
+    """v3.39.7.9 — pre-built HTML snippet showing the computed 5d-vs-SOX
+    relative strength numbers, color-coded per the fire thresholds:
+
+      ≤ -10pp  →  red (Fired band)
+      -10 to -5pp →  amber (Partially fired band)
+      > -5pp   →  green (Not fired band)
+
+    Renders for SK Hynix, Micron, and DRAM ETF vs SMH. Used in the
+    section 3 summary card for t3_relative_strength so the user sees
+    the actual numeric value at a glance (not just the status pill).
+
+    Returns "" if rel_strength_verdict is None / empty — section
+    3 row falls back to pure Sonnet prose. Defensive against NaN
+    (math.isnan check) — pre-v3.39.7.9 a NaN propagated as "+nanpp".
+    """
+    if not rel_strength_verdict:
+        return ""
+
+    def _band_color(pp_value: Optional[float]) -> str:
+        """Map a 5d-vs-SOX value (in percentage points) to a status color."""
+        if pp_value is None or (isinstance(pp_value, float) and math.isnan(pp_value)):
+            return "#888888"  # grey — not computed
+        if pp_value <= -10.0:
+            return STATUS_COLORS["Fired"]
+        if pp_value <= -5.0:
+            return STATUS_COLORS["Partially fired"]
+        return STATUS_COLORS["Not fired"]
+
+    def _format_pp(pp_value: Optional[float]) -> str:
+        """Format a percentage-point value with NaN guard."""
+        if pp_value is None or (isinstance(pp_value, float) and math.isnan(pp_value)):
+            return "(not computed)"
+        return f"{pp_value:+.2f}pp"
+
+    skhx_pp = rel_strength_verdict.get("skhx_5d_vs_sox_pp")
+    mu_pp = rel_strength_verdict.get("mu_5d_vs_sox_pp")
+    dram_block = rel_strength_verdict.get("dram_etf_vs_smh") or {}
+    dram_pp = dram_block.get("spread_pp")
+
+    rows = []
+    # SK Hynix
+    skhx_color = _band_color(skhx_pp)
+    rows.append(
+        f"<span style='display:inline-block;background:{skhx_color};"
+        f"color:#1a1a1a;padding:2px 8px;border-radius:3px;font-weight:600;"
+        f"font-size:12px;margin-right:6px;margin-bottom:3px'>"
+        f"SK Hynix 5d vs SOX: {_format_pp(skhx_pp)}</span>"
+    )
+    # Micron
+    mu_color = _band_color(mu_pp)
+    rows.append(
+        f"<span style='display:inline-block;background:{mu_color};"
+        f"color:#1a1a1a;padding:2px 8px;border-radius:3px;font-weight:600;"
+        f"font-size:12px;margin-right:6px;margin-bottom:3px'>"
+        f"Micron 5d vs SOX: {_format_pp(mu_pp)}</span>"
+    )
+    # DRAM ETF vs SMH
+    dram_color = _band_color(dram_pp)
+    rows.append(
+        f"<span style='display:inline-block;background:{dram_color};"
+        f"color:#1a1a1a;padding:2px 8px;border-radius:3px;font-weight:600;"
+        f"font-size:12px;margin-right:6px;margin-bottom:3px'>"
+        f"DRAM ETF 5d vs SMH: {_format_pp(dram_pp)}</span>"
+    )
+
+    # Thresholds line for context
+    thresholds_line = (
+        "<div style='font-size:11px;color:#666;margin-top:4px'>"
+        "Thresholds: red ≤ −10pp (Fired) | yellow ≤ −5pp (Partially fired) | green &gt; −5pp (Not fired)"
+        "</div>"
+    )
+
+    return (
+        "<div style='margin-bottom:8px'>"
+        + "".join(rows)
+        + thresholds_line
+        + "</div>"
+    )
+
+
 def _build_indicators_section(
     assessments: list[IndicatorAssessment],
+    rel_strength_verdict: Optional[dict] = None,
 ) -> str:
     """Build the four-tier indicator status tables.
 
@@ -477,7 +569,20 @@ def _build_indicators_section(
     item per user direction 2026-05-20. This keeps section 3 as a clean
     summary table and concentrates the visual matrix + chart in the
     deep-dive context where they're more useful.
+
+    v3.39.7.9 — rel_strength_verdict param added. For t3_relative_strength
+    specifically, the "Where we stand" cell now leads with the computed
+    5d-vs-SOX values (SK Hynix, Micron, DRAM ETF vs SMH) and the band
+    classification (red/yellow/green based on the -10pp / -5pp thresholds)
+    before the Sonnet-written prose. Per user direction 2026-05-21: "i
+    expect to see a number as a number is what will trigger a warn
+    (partially fired) or fired". Numbers should be visible in section 3
+    summary AND section 4 deep dive — this fixes the section 3 surface.
     """
+    # v3.39.7.9 — pre-build the t3_relative_strength computed snippet once
+    # so the per-row loop can drop it in cheaply.
+    rs_snippet = _build_relative_strength_snippet(rel_strength_verdict)
+
     parts = []
     for tier in (1, 2, 3, 4):
         tier_assessments = [a for a in assessments if a.tier == tier]
@@ -498,9 +603,21 @@ def _build_indicators_section(
 
         for a in tier_assessments:
             status_color = STATUS_COLORS.get(a.current_status, "#CCCCCC")
+            # v3.39.7.9 — change-flag background now matches destination status
+            # color (per user direction 2026-05-21): red when something fires,
+            # green when reverses to Not fired, yellow for partial transitions.
+            # Pre-v3.39.7.9 change-flag was always #FFEBA1 (yellow) regardless
+            # of where the indicator landed — making fire-transitions look the
+            # same as un-fire-transitions visually.
             change_flag = ""
             if a.change_vs_prior:
-                change_flag = f"<span class='change-flag'>CHANGED: {html.escape(a.change_vs_prior[:80])}</span>"
+                # Dark text on yellow/green for readability; white text on red.
+                _flag_text_color = "#FFFFFF" if a.current_status == "Fired" else "#1a1a1a"
+                change_flag = (
+                    f"<span class='change-flag' "
+                    f"style='background:{status_color};color:{_flag_text_color}'>"
+                    f"CHANGED: {html.escape(a.change_vs_prior[:80])}</span>"
+                )
 
             links_html = ""
             if a.relevant_links:
@@ -510,12 +627,22 @@ def _build_indicators_section(
                 ]
                 links_html = f"<div class='links-list' style='margin-top:6px'>{' · '.join(link_strs)}</div>"
 
+            # v3.39.7.9 — for t3_relative_strength, lead the "Where we stand"
+            # cell with the computed 5d-vs-SOX numbers (color-coded by fire
+            # threshold) before the Sonnet-written prose. Per user direction
+            # 2026-05-21: the number is what trips the indicator, so the
+            # number must be visible at the section 3 summary level — not
+            # just in section 4 deep dive.
+            where_we_stand_html = html.escape(a.where_we_stand)
+            if a.indicator_id == "t3_relative_strength" and rs_snippet:
+                where_we_stand_html = rs_snippet + where_we_stand_html
+
             parts.append(
                 "<tr>"
                 f"<td class='indicator-cell'><strong>{html.escape(a.name)}</strong><br/><span style='color:#888;font-size:11px'>{html.escape(a.description[:120])}</span></td>"
                 f"<td class='indicator-cell'>{html.escape(a.what_to_look_for)}</td>"
                 f"<td class='indicator-cell'><span class='status-badge' style='background:{status_color}'>{html.escape(a.current_status)}</span>{change_flag}</td>"
-                f"<td class='indicator-cell'>{html.escape(a.where_we_stand)}</td>"
+                f"<td class='indicator-cell'>{where_we_stand_html}</td>"
                 f"<td class='indicator-cell'>{a.latest_developments}{links_html}</td>"
                 "</tr>"
             )

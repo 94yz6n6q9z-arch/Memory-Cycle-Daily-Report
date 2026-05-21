@@ -532,26 +532,32 @@ def run_fast_tier() -> int:
         logger.warning(f"Relative strength evaluation failed: {e}")
         rel_strength_verdict = {}
 
-    # v3.39.7.4: Compute the aggregate trigger value — mean(capex_ocf_ratio)
-    # across the 4 hyperscalers using EACH COMPANY'S LAST PUBLISHED QUARTER.
-    # Per user 2026-05-20 decision: NOT TTM. Last quarter is more responsive
-    # at the cost of single-quarter noise — acceptable for a Tier 2
-    # confirmatory signal.
-    latest_q_capex_ocf = []
-    for snaps in hyperscaler_capex.values():
-        if snaps and snaps[0].capex_ocf_ratio is not None:
-            latest_q_capex_ocf.append(snaps[0].capex_ocf_ratio)
-    mean_capex_ocf_latest_q = (
-        round(sum(latest_q_capex_ocf) / len(latest_q_capex_ocf), 4)
-        if latest_q_capex_ocf else None
+    # v3.39.7.9: Compute per-company 2-quarter capex/OCF mean, then cross-
+    # company mean. Pre-v3.39.7.9 used snaps[0] (single quarter) — the May
+    # 21 brief showed why: Amazon Q1 2026 OCF dipped to $26.03B (vs $54.46B
+    # Q4 2025) making capex/OCF spike to 169.8% in isolation. 2-quarter mean
+    # smooths that to ~85% while preserving the cycle signal. For companies
+    # with only 1 published quarter (rare), falls back to that quarter.
+    per_company_2q_capex_ocf: dict[str, float] = {}
+    for ticker, snaps in hyperscaler_capex.items():
+        if not snaps:
+            continue
+        valid = [s.capex_ocf_ratio for s in snaps[:2] if s.capex_ocf_ratio is not None]
+        if valid:
+            per_company_2q_capex_ocf[ticker] = round(sum(valid) / len(valid), 4)
+
+    mean_capex_ocf_2q = (
+        round(sum(per_company_2q_capex_ocf.values()) / len(per_company_2q_capex_ocf), 4)
+        if per_company_2q_capex_ocf else None
     )
 
-    # Build computed_metrics block — Layer 2 consumes this
-    # NOTE: the dict key `capex_revenue_ratios` is kept for back-compat with
-    # downstream readers (llm_summarizer.py + signal_reasoner.py). Inside,
-    # each quarter entry now carries BOTH capex_revenue_ratio AND
-    # capex_ocf_ratio. The aggregate `mean_capex_ocf_ratio_latest_q` is the
-    # primary trigger value for the t2_hyperscaler_capex_revenue indicator.
+    # Build computed_metrics block — Layer 2 consumes this.
+    # v3.39.7.9: `capex_revenue_ratios` REMOVED from this block. Pre-v3.39.7.9
+    # we kept it "for back-compat with downstream readers" but signal_reasoner
+    # was using capex/revenue (24-37%) to override the actual capex/OCF rule
+    # (93.2% mean) — Layer 2 returned Reversed against the COMPUTED METRICS.
+    # No downstream code path uses capex/revenue anywhere now; removing it
+    # closes the bug at the source.
     computed_metrics = {
         "forward_pe": {
             t: estimates_map.get(t, {}).get("forward_pe") if hasattr(estimates_map.get(t, {}), "get")
@@ -559,30 +565,32 @@ def run_fast_tier() -> int:
             for t in CORE_TICKERS.values()
             if estimates_map.get(t)
         },
-        "capex_revenue_ratios": {
+        # v3.39.7.9: aggregate trigger value — Layer 2 + Layer 3 fire when:
+        #   mean_capex_ocf_ratio_2q > 0.40 → Partially fired
+        #   mean_capex_ocf_ratio_2q > 0.50 → Fired
+        # The 2q semantics requires the value to persist for TWO consecutive
+        # published quarters before tripping. The dict also carries per-company
+        # 2q ratios so Layer 2 can identify which companies drive the aggregate.
+        "mean_capex_ocf_ratio_2q": mean_capex_ocf_2q,
+        "per_company_capex_ocf_2q": per_company_2q_capex_ocf,
+        "n_companies_with_2q_capex_ocf": len(per_company_2q_capex_ocf),
+        # Raw per-quarter snapshots kept for narrative purposes (Layer 2 can
+        # cite "Amazon Q1 2026 OCF dipped to $26.03B" in the verdict) but
+        # NOT used for trigger decisions.
+        "hyperscaler_quarterly_snapshots": {
             ticker: [
                 {
                     "quarter_iso": s.quarter_iso,
                     "capex_usd_b": s.capex_usd_b,
                     "revenue_usd_b": s.revenue_usd_b,
-                    "ocf_usd_b": s.ocf_usd_b,                          # v3.39.7.4 NEW
-                    "capex_revenue_ratio": s.capex_revenue_ratio,
-                    "capex_ocf_ratio": s.capex_ocf_ratio,              # v3.39.7.4 NEW (primary)
-                    # Legacy field name `ratio` kept for back-compat — still
-                    # capex/revenue (NOT capex/OCF) so existing prompt text
-                    # that references it doesn't silently change meaning.
-                    "ratio": s.capex_revenue_ratio,
+                    "ocf_usd_b": s.ocf_usd_b,
+                    "capex_ocf_ratio": s.capex_ocf_ratio,
                     "fired_threshold": s.fired_threshold,
                 }
                 for s in snaps
             ]
             for ticker, snaps in hyperscaler_capex.items()
         },
-        # v3.39.7.4: aggregate trigger value — Layer 2 + Layer 3 fire when:
-        #   mean_capex_ocf_ratio_latest_q > 0.40 → Partially fired
-        #   mean_capex_ocf_ratio_latest_q > 0.50 → Fired
-        "mean_capex_ocf_ratio_latest_q": mean_capex_ocf_latest_q,
-        "n_companies_with_capex_ocf_latest_q": len(latest_q_capex_ocf),
         "relative_strength_full": rel_strength_verdict,
         "dart_material_disclosures": dart_data or {},
     }

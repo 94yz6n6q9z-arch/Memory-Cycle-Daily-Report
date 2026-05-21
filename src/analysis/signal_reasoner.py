@@ -73,7 +73,7 @@ class SignalReasoning:
     evidence_sources: list[str]
     consensus_direction: str
     convergence: str          # "high" | "medium" | "low" | "conflicting"
-    fired_status: str         # "Fired" | "Not fired" | "Partially fired" | "Reversed"
+    fired_status: str         # "Fired" | "Not fired" | "Partially fired"  (v3.39.7.9: "Reversed" removed — collapsed to "Not fired"; audit trail in evidence_for_change_vs_yesterday)
     fired_status_evidence: list[str]
     evidence_for_change_vs_yesterday: str
     key_quotes_consolidated: list[str]
@@ -178,14 +178,26 @@ def _gather_evidence_for_signal(
         signal_specific["computed_forward_pe"] = computed_metrics.get("forward_pe", {})
 
     if indicator.id == "t2_hyperscaler_capex_revenue":
-        # v3.39.7.4: Layer 2 now sees BOTH the per-company quarterly snapshots
-        # (which include capex/OCF + capex/revenue) AND the cross-company
-        # aggregate mean for the last published quarter. The aggregate is
-        # the primary trigger: >0.40 = Partially fired, >0.50 = Fired.
-        signal_specific["computed_capex_revenue"] = computed_metrics.get("capex_revenue_ratios", {})
-        signal_specific["mean_capex_ocf_ratio_latest_q"] = computed_metrics.get("mean_capex_ocf_ratio_latest_q")
-        signal_specific["n_companies_with_capex_ocf_latest_q"] = computed_metrics.get(
-            "n_companies_with_capex_ocf_latest_q", 0
+        # v3.39.7.9: capex_revenue_ratios REMOVED from signal_specific. The
+        # indicator changed from capex/revenue to capex/OCF in v3.39.7.4 but
+        # we kept passing capex_revenue_ratios "for context" — and Layer 2
+        # latched onto them to reverse the verdict against the actual rule.
+        # Diagnosed May 21 2026 when Layer 2 returned Reversed citing
+        # capex/revenue 24-37% < 40% even though COMPUTED METRICS showed
+        # capex/OCF mean 93.2% (well above 50% threshold). capex/revenue is
+        # no longer authoritative anywhere in the system — don't expose it.
+        #
+        # v3.39.7.9 also: mean_capex_ocf_ratio_latest_q renamed to
+        # mean_capex_ocf_ratio_2q to reflect new 2-quarter semantics per
+        # user direction (single-quarter OCF dip noise — e.g. Amazon Q1
+        # 2026 169.8% vs Q4 2025 ~50% — was triggering false single-quarter
+        # spikes).
+        signal_specific["mean_capex_ocf_ratio_2q"] = computed_metrics.get("mean_capex_ocf_ratio_2q")
+        signal_specific["n_companies_with_2q_capex_ocf"] = computed_metrics.get(
+            "n_companies_with_2q_capex_ocf", 0
+        )
+        signal_specific["per_company_capex_ocf_2q"] = computed_metrics.get(
+            "per_company_capex_ocf_2q", {}
         )
 
     if indicator.id == "t3_relative_strength":
@@ -264,12 +276,13 @@ INVALID DOWNGRADES (these are bugs the v3.39.7.3 fix eliminates):
 - "Today's Layer 2 found zero supplier-side or buyer-side inventory data" does NOT unfire t1_oem_inventory. The September 2025 TrendForce print (supplier 2-3w, buyer 10w) stands until a new print reverses it.
 - "No IDC/Gartner/Counterpoint reports in today's feed" does NOT unfire t1_demand_destruction. The April 2026 IDC PC -2.4% to -11.3% forecast stands until IDC publishes an upgrade.
 - For Forward P/E (live category): if computed values show all three names BELOW their thresholds (SK Hynix <5x, Samsung <6x, Micron <8x), STATUS = Fired regardless of evidence_count=0 in news. The computed verdict IS the evidence.
+- (v3.39.7.9) For t2_hyperscaler_capex_revenue: the rule is capex/OCF >50% (Fired) / >40% (Partially fired). NOT capex/revenue. capex/revenue ratios are no longer passed in signal_specific and any historical reference to capex/revenue in the evidence store reversal_condition is LEGACY — ignore it. Use mean_capex_ocf_ratio_2q (2-quarter mean) as the authoritative metric. Today's Amazon Q1 2026 capex/OCF of 169.8% in isolation is single-quarter OCF noise; the 2-quarter mean smooths it. If mean_capex_ocf_ratio_2q > 0.50, STATUS = Fired. If > 0.40, STATUS = Partially fired. Only if < 0.40 for two consecutive published quarters does the indicator un-fire.
 
 NEW EVIDENCE HANDLING:
 If today's news ADDS corroborating evidence (e.g., another capex announcement, another LTA), the status remains Fired and the new evidence is logged downstream. Mention the new evidence in `evidence_for_change_vs_yesterday`.
 
 If today's news matches a recorded reversal_condition, the status transitions:
-  - From Fired → set to "Reversed" (NOT "Not fired") to preserve the audit trail
+  - From Fired → set to "Not fired" (v3.39.7.9: collapsed from "Reversed". The audit trail lives in evidence_for_change_vs_yesterday and the trigger event banner — the status pill only carries the current state)
   - From Partially fired → set to "Not fired" if reversal is clean, "Partially fired" if mixed
 Explain the reversal in `evidence_for_change_vs_yesterday` with citation of the reversal evidence.
 
@@ -313,7 +326,7 @@ Respond with a JSON object matching this schema:
   "evidence_sources": ["<source 1>", "<source 2>", ...],
   "consensus_direction": "<brief plain-English summary of what the evidence says>",
   "convergence": "high" | "medium" | "low" | "conflicting",
-  "fired_status": "Fired" | "Not fired" | "Partially fired" | "Reversed",
+  "fired_status": "Fired" | "Not fired" | "Partially fired",
   "fired_status_evidence": ["<concrete reason 1>", "<concrete reason 2>"],
   "evidence_for_change_vs_yesterday": "<text or 'none'>",
   "key_quotes_consolidated": ["<quote under 15 words>", ...],

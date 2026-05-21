@@ -390,6 +390,14 @@ def get_relative_strength_vs_sox(
     """Calculate ticker's relative performance vs SOX over `days` trading days.
 
     Returns a percentage. Negative means underperformance.
+
+    v3.39.7.9: NaN guard. Pre-v3.39.7.9 if `history[ticker_name].iloc[-1]`
+    or `iloc[-days-1]` landed on a NaN cell (e.g. MSCI ACWI Semiconductor
+    has gaps when US and global trading calendars don't align), the
+    arithmetic returned NaN — which then formatted as "+nanpp" downstream
+    because `value is not None` doesn't catch NaN (NaN IS a valid float,
+    just not a useful one). Returning None explicitly when NaN is detected
+    lets the format-side `is None` check render "(not computed)" instead.
     """
     sox_col = "MSCI ACWI Semiconductor"  # name we use for SOX in BENCHMARKS
     if sox_col not in history.columns or ticker_name not in history.columns:
@@ -398,8 +406,29 @@ def get_relative_strength_vs_sox(
     if len(history) < days + 1:
         return None
 
-    ticker_return = (history[ticker_name].iloc[-1] / history[ticker_name].iloc[-days - 1] - 1) * 100
-    sox_return = (history[sox_col].iloc[-1] / history[sox_col].iloc[-days - 1] - 1) * 100
+    # Use .iloc to get raw values — these can be NaN if the price cell is missing
+    ticker_end = history[ticker_name].iloc[-1]
+    ticker_start = history[ticker_name].iloc[-days - 1]
+    sox_end = history[sox_col].iloc[-1]
+    sox_start = history[sox_col].iloc[-days - 1]
+
+    # v3.39.7.9 NaN guard — if any of the four price cells is NaN, we can't
+    # compute a meaningful relative-strength number. Return None so the
+    # format-side renders "(not computed)" instead of "+nanpp".
+    if any(pd.isna(v) for v in (ticker_end, ticker_start, sox_end, sox_start)):
+        return None
+    # Guard against zero start prices (no genuine price has these, but
+    # defend against pathological data quality):
+    if ticker_start == 0 or sox_start == 0:
+        return None
+
+    ticker_return = (ticker_end / ticker_start - 1) * 100
+    sox_return = (sox_end / sox_start - 1) * 100
+
+    # Final guard — divisions above can still produce NaN/Inf if anything
+    # slipped through (e.g. via numpy broadcasting quirks); explicit check.
+    if pd.isna(ticker_return) or pd.isna(sox_return):
+        return None
 
     return ticker_return - sox_return
 

@@ -155,56 +155,62 @@ class TestComputedMetricsBlock(unittest.TestCase):
         # We don't make stronger claims here; a regex would be too strict.
 
     def test_capex_revenue_ratios_render_latest_quarter(self):
-        """v3.39.7.4: COMPUTED METRICS block now leads with capex/OCF (primary
-        trigger metric) and shows the cross-company mean for the last
-        published quarter. Test fixture matches production convention:
-        quarters list is newest-first (quarters[0] = latest published).
+        """v3.39.7.9: COMPUTED METRICS block now uses 2-quarter rolling
+        per-company mean keys (mean_capex_ocf_ratio_2q + per_company_capex_ocf_2q
+        + hyperscaler_quarterly_snapshots). capex/revenue is fully removed
+        from the prompt. Test renamed in spirit but kept under the old name
+        to preserve grep-ability of v3.39.7.4 → v3.39.7.9 migration history.
         """
         computed_metrics = {
-            "capex_revenue_ratios": {
+            "hyperscaler_quarterly_snapshots": {
                 "MSFT": [
-                    # Newest first — production convention from estimates.py
-                    # `sorted(..., reverse=True)`
+                    # Newest first
                     {"quarter_iso": "2026-Q1", "capex_usd_b": 28.5, "revenue_usd_b": 70.1,
-                     "ocf_usd_b": 52.0, "capex_revenue_ratio": 0.41,
-                     "capex_ocf_ratio": 0.55, "ratio": 0.41, "fired_threshold": False},
+                     "ocf_usd_b": 52.0, "capex_ocf_ratio": 0.55, "fired_threshold": False},
                     {"quarter_iso": "2025-Q4", "capex_usd_b": 22.6, "revenue_usd_b": 65.6,
-                     "ocf_usd_b": 48.0, "capex_revenue_ratio": 0.34,
-                     "capex_ocf_ratio": 0.47, "ratio": 0.34, "fired_threshold": False},
+                     "ocf_usd_b": 48.0, "capex_ocf_ratio": 0.47, "fired_threshold": False},
                 ],
                 "META": [
                     {"quarter_iso": "2026-Q1", "capex_usd_b": 13.7, "revenue_usd_b": 42.3,
-                     "ocf_usd_b": 25.0, "capex_revenue_ratio": 0.32,
-                     "capex_ocf_ratio": 0.55, "ratio": 0.32, "fired_threshold": False},
+                     "ocf_usd_b": 25.0, "capex_ocf_ratio": 0.55, "fired_threshold": False},
                 ],
             },
-            # Aggregate (mean of MSFT 0.55 + META 0.55 = 0.55 — fires the >0.50 threshold)
-            "mean_capex_ocf_ratio_latest_q": 0.55,
-            "n_companies_with_capex_ocf_latest_q": 2,
+            # v3.39.7.9 keys: per-company 2-quarter mean, then cross-company mean
+            # MSFT 2q mean = (0.55 + 0.47) / 2 = 0.51; META 2q mean = 0.55 (only 1 q)
+            # Cross-company mean = (0.51 + 0.55) / 2 = 0.53 (fires >0.50)
+            "mean_capex_ocf_ratio_2q": 0.53,
+            "per_company_capex_ocf_2q": {"MSFT": 0.51, "META": 0.55},
+            "n_companies_with_2q_capex_ocf": 2,
         }
         prompt = build_sonnet_analysis_prompt(
             triage=self._empty_triage(),
             performance_data=[], estimates_data={}, big_movers=[], prior_state={},
             computed_metrics=computed_metrics,
         )
-        # New header — capex/OCF is the primary metric
+        # Header explicitly states capex/OCF is the only trigger
         self.assertIn("Hyperscaler capex/OCF strain", prompt)
-        # Aggregate is surfaced first with band classification
-        self.assertIn("Aggregate (mean of 2 hyperscalers", prompt)
-        self.assertIn("55.0%", prompt)  # 0.55 formatted as percentage
+        # Aggregate is surfaced with 2-quarter rolling framing
+        self.assertIn("2-quarter rolling", prompt)
+        self.assertIn("53.0%", prompt)  # 0.53 formatted as percentage
         self.assertIn("FIRED", prompt)  # band marker at >50%
         # Historical reference cited
         self.assertIn("2014", prompt)
         self.assertIn("2018", prompt)
         self.assertIn("2022", prompt)
-        # Per-company row shows LAST PUBLISHED QUARTER (newest = first in list = quarters[0])
+        # Per-company 2q mean visible
         self.assertIn("MSFT", prompt)
+        self.assertIn("51.0%", prompt)  # MSFT 2q mean
+        # Per-company quarterly snapshots present (raw data for narrative)
         self.assertIn("2026-Q1", prompt)
         self.assertIn("28.5", prompt)   # capex for MSFT 2026-Q1
         self.assertIn("META", prompt)
-        # Both ratios surfaced per company (capex/OCF primary, capex/rev for context)
-        self.assertIn("capex/OCF", prompt)
-        self.assertIn("capex/rev", prompt)
+        # capex/OCF is the only metric — capex/revenue should NOT appear
+        # in the prompt anymore (v3.39.7.9 removed it)
+        self.assertNotIn("capex/rev", prompt)
+        self.assertNotIn("capex_revenue_ratio", prompt)
+        # Explicit "do not use capex/revenue" instruction present so Layer 2
+        # doesn't latch onto stale evidence
+        self.assertIn("NOT used", prompt)
 
     def test_block_says_legacy_mode_when_no_computed_metrics(self):
         prompt = build_sonnet_analysis_prompt(

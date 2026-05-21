@@ -444,17 +444,37 @@ def fetch_all_hyperscaler_capex(
             snaps = _fetch_hyperscaler_capex_one(ticker_symbol, name)
             out[ticker_symbol] = snaps
 
-    # v3.39.7.4: Compute the aggregate trigger value — mean(capex_ocf_ratio)
-    # across hyperscalers using EACH COMPANY'S LAST PUBLISHED QUARTER
-    # (= snapshots[0] since they're sorted newest-first).
-    latest_quarter_ratios = []
-    for snaps in out.values():
-        if snaps and snaps[0].capex_ocf_ratio is not None:
-            latest_quarter_ratios.append(snaps[0].capex_ocf_ratio)
-    mean_capex_ocf_ratio_latest_q: Optional[float] = None
-    if latest_quarter_ratios:
-        mean_capex_ocf_ratio_latest_q = round(
-            sum(latest_quarter_ratios) / len(latest_quarter_ratios), 4
+    # v3.39.7.9 — 2-quarter rolling mean per user direction 2026-05-21.
+    # Pre-v3.39.7.9 (v3.39.7.4) used snaps[0] only — single-quarter capex/OCF.
+    # The May 21 brief surfaced the noise cost: Amazon's Q1 2026 OCF was
+    # $26.03B vs Q4 2025 $54.46B = isolated single-quarter dip, making
+    # AMZN capex/OCF look like 169.8% when the 2-quarter mean is ~85%. This
+    # single-quarter spike contributed to mean of 93.2% across hyperscalers,
+    # which was correct as a snapshot but mislead Layer 2 about persistence.
+    #
+    # Strategy: compute each company's 2-quarter capex/OCF mean (snaps[0:2])
+    # FIRST, then average across companies. Per-company smoothing avoids
+    # the noise; cross-company aggregation preserves the cycle signal. For
+    # companies with only 1 published quarter (rare — recently-listed names),
+    # fall back gracefully to that single quarter.
+    per_company_2q_ratios: dict[str, float] = {}
+    for ticker, snaps in out.items():
+        if not snaps:
+            continue
+        # Take up to first 2 quarters with valid capex_ocf_ratio
+        valid_quarters = [
+            s.capex_ocf_ratio for s in snaps[:2]
+            if s.capex_ocf_ratio is not None
+        ]
+        if valid_quarters:
+            per_company_2q_ratios[ticker] = round(
+                sum(valid_quarters) / len(valid_quarters), 4
+            )
+
+    mean_capex_ocf_ratio_2q: Optional[float] = None
+    if per_company_2q_ratios:
+        mean_capex_ocf_ratio_2q = round(
+            sum(per_company_2q_ratios.values()) / len(per_company_2q_ratios), 4
         )
 
     # Persist to state for Layer 2 consumption
@@ -466,12 +486,13 @@ def fetch_all_hyperscaler_capex(
         baselines_file = state_dir / "hyperscaler_capex_baselines.json"
         baseline_payload = {
             "computed_at_iso": datetime.utcnow().isoformat(),
-            # v3.39.7.4: aggregate trigger value computed across companies'
-            # last published quarter. Layer 2 / Layer 3 fire on:
+            # v3.39.7.9: 2-quarter rolling mean per company, then cross-company
+            # mean. Layer 2 / Layer 3 fire on:
             #   > 0.40 → Partially fired
             #   > 0.50 → Fired
-            "mean_capex_ocf_ratio_latest_q": mean_capex_ocf_ratio_latest_q,
-            "n_companies_with_latest_q_data": len(latest_quarter_ratios),
+            "mean_capex_ocf_ratio_2q": mean_capex_ocf_ratio_2q,
+            "per_company_capex_ocf_2q": per_company_2q_ratios,
+            "n_companies_with_2q_capex_ocf": len(per_company_2q_ratios),
             "data": {
                 ticker: [
                     {
@@ -480,9 +501,9 @@ def fetch_all_hyperscaler_capex(
                         "quarter_iso": s.quarter_iso,
                         "capex_usd_b": s.capex_usd_b,
                         "revenue_usd_b": s.revenue_usd_b,
-                        "ocf_usd_b": s.ocf_usd_b,                          # v3.39.7.4 NEW
-                        "capex_revenue_ratio": s.capex_revenue_ratio,
-                        "capex_ocf_ratio": s.capex_ocf_ratio,              # v3.39.7.4 NEW (primary)
+                        "ocf_usd_b": s.ocf_usd_b,
+                        "capex_revenue_ratio": s.capex_revenue_ratio,  # legacy — no longer authoritative
+                        "capex_ocf_ratio": s.capex_ocf_ratio,           # single-quarter snapshot (per-quarter); aggregation now uses 2q mean
                         "fired_threshold": s.fired_threshold,
                         "fy_capex_run_rate_usd_b": s.fy_capex_run_rate_usd_b,
                     }

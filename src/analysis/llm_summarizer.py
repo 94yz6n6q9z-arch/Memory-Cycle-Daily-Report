@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math  # v3.39.7.9 — defensive NaN guard in COMPUTED METRICS rendering
 from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
@@ -59,7 +60,7 @@ class IndicatorAssessment:
     name: str
     description: str
     what_to_look_for: str
-    current_status: str       # "Fired" | "Partially fired" | "Not fired" | "Reversed"
+    current_status: str       # "Fired" | "Partially fired" | "Not fired"  (v3.39.7.9: "Reversed" removed — audit trail in change_vs_prior)
     where_we_stand: str
     latest_developments: str
     relevant_links: list[dict[str, str]] = field(default_factory=list)
@@ -828,14 +829,21 @@ def build_sonnet_analysis_prompt(
             skhx = rs.get("skhx_5d_vs_sox_pp")
             mu = rs.get("mu_5d_vs_sox_pp")
             dram = rs.get("dram_etf_vs_smh") or {}
-            if skhx is not None:
+            # v3.39.7.9 — defensive NaN guard (belt + braces). Pre-v3.39.7.9
+            # `if x is not None` allowed NaN floats through and produced
+            # "+nanpp" in the brief. get_relative_strength_vs_sox() now
+            # returns None on NaN, but defensive check stays here in case
+            # an upstream path bypasses the guard.
+            def _valid(v):
+                return v is not None and not (isinstance(v, float) and math.isnan(v))
+            if _valid(skhx):
                 computed_text += f"    SK Hynix 5d vs SOX:      {skhx:+.2f}pp\n"
             else:
-                computed_text += "    SK Hynix 5d vs SOX:      (not computed)\n"
-            if mu is not None:
+                computed_text += "    SK Hynix 5d vs SOX:      (not computed — SOX or SK Hynix price cell missing in lookback window)\n"
+            if _valid(mu):
                 computed_text += f"    Micron 5d vs SOX:        {mu:+.2f}pp\n"
             else:
-                computed_text += "    Micron 5d vs SOX:        (not computed)\n"
+                computed_text += "    Micron 5d vs SOX:        (not computed — SOX or Micron price cell missing in lookback window)\n"
             if dram.get("spread_pp") is not None:
                 computed_text += (
                     f"    DRAM ETF 5d vs SMH:      {dram['spread_pp']:+.2f}pp "
@@ -864,17 +872,19 @@ def build_sonnet_analysis_prompt(
                 except (TypeError, ValueError):
                     computed_text += f"    {ticker:<12} {val}\n"
 
-        crr = computed_metrics.get("capex_revenue_ratios") or {}
-        if crr:
-            # v3.39.7.4: lead with capex/OCF (primary trigger metric) and the
-            # 4-hyperscaler mean of last published quarter. capex/revenue
-            # kept for context but is NOT the trigger anymore — empirical
-            # analysis (May 20 session) showed capex/revenue >40% never
-            # fired across the 4 actual hyperscalers historically.
-            mean_co_ratio = computed_metrics.get("mean_capex_ocf_ratio_latest_q")
-            n_co = computed_metrics.get("n_companies_with_capex_ocf_latest_q", 0)
+        quarterly_snapshots = computed_metrics.get("hyperscaler_quarterly_snapshots") or {}
+        if quarterly_snapshots:
+            # v3.39.7.9 — capex/OCF is the ONLY trigger metric. capex/revenue
+            # was removed entirely from the prompt (pre-v3.39.7.9 it was kept
+            # "for context" and Layer 2 reversed verdicts against it). Mean
+            # is now 2-quarter rolling per company per user direction
+            # 2026-05-21 to filter out single-quarter OCF dip noise.
+            mean_co_ratio = computed_metrics.get("mean_capex_ocf_ratio_2q")
+            per_company = computed_metrics.get("per_company_capex_ocf_2q") or {}
+            n_co = computed_metrics.get("n_companies_with_2q_capex_ocf", 0)
             computed_text += (
-                "\n  Hyperscaler capex/OCF strain (PRIMARY trigger for t2_hyperscaler_capex_revenue):\n"
+                "\n  Hyperscaler capex/OCF strain (PRIMARY and ONLY trigger for t2_hyperscaler_capex_revenue;\n"
+                "  the legacy ratio of capex over revenue is NOT used as a trigger — do not cite or reason from it):\n"
             )
             if mean_co_ratio is not None:
                 # Determine band relative to thresholds
@@ -885,30 +895,32 @@ def build_sonnet_analysis_prompt(
                 else:
                     band = "Not fired (<40%)"
                 computed_text += (
-                    f"    Aggregate (mean of {n_co} hyperscalers, last published quarter): "
+                    f"    Aggregate (cross-company mean of 2-quarter rolling per-company means, {n_co} hyperscalers): "
                     f"{mean_co_ratio*100:.1f}%  →  {band}\n"
                     f"    Historical reference: mean >40% in all 3 memory crashes "
                     f"(2014/2018/2022); stays <40% in non-crash years.\n"
                 )
+                if per_company:
+                    computed_text += "    Per-company 2-quarter rolling mean capex/OCF:\n"
+                    for ticker, r in per_company.items():
+                        computed_text += f"      {ticker:<6} {r*100:.1f}%\n"
             else:
                 computed_text += "    Aggregate: insufficient data (no last-quarter ratios available).\n"
-            computed_text += "\n  Per-company last published quarter (capex/OCF primary, capex/rev for context):\n"
-            for ticker, quarters in crr.items():
+            computed_text += "\n  Per-company quarterly snapshots (raw — for narrative context only; trigger uses 2q mean above):\n"
+            for ticker, quarters in quarterly_snapshots.items():
                 if not quarters:
                     continue
-                # Snapshots are sorted newest-first — first entry is last published quarter
-                latest = quarters[0]
-                co_r = latest.get('capex_ocf_ratio')
-                cr_r = latest.get('capex_revenue_ratio')
-                co_s = f"{co_r*100:.1f}%" if co_r is not None else "n/a"
-                cr_s = f"{cr_r*100:.1f}%" if cr_r is not None else "n/a"
-                strain_flag = "  ⚠ severe single-co strain >100%" if latest.get('fired_threshold') else ""
-                computed_text += (
-                    f"    {ticker:<6} {latest.get('quarter_iso', '?')}: "
-                    f"capex ${latest.get('capex_usd_b', '?')}B / "
-                    f"OCF ${latest.get('ocf_usd_b', 'n/a')}B = capex/OCF {co_s}  |  "
-                    f"capex/rev {cr_s}{strain_flag}\n"
-                )
+                # Snapshots sorted newest-first; show up to 2 quarters
+                for i, q in enumerate(quarters[:2]):
+                    co_r = q.get('capex_ocf_ratio')
+                    co_s = f"{co_r*100:.1f}%" if co_r is not None else "n/a"
+                    strain_flag = "  ⚠ severe single-q strain >100%" if q.get('fired_threshold') else ""
+                    label = "latest" if i == 0 else "prior"
+                    computed_text += (
+                        f"    {ticker:<6} {q.get('quarter_iso', '?')} ({label}): "
+                        f"capex ${q.get('capex_usd_b', '?')}B / "
+                        f"OCF ${q.get('ocf_usd_b', 'n/a')}B = capex/OCF {co_s}{strain_flag}\n"
+                    )
 
         dart = computed_metrics.get("dart_material_disclosures") or {}
         if dart:
@@ -1022,6 +1034,33 @@ Operational rules:
 
 This rule does NOT change the relevance filter or which items reach you — it changes how you SYNTHESIZE items that all reach you. Multiple contradicting items in your context window is the normal case for fast-moving stories; you are responsible for resolving them.
 
+VALUE-CHAIN INFERENCE (v3.39.7.9):
+
+When two or more signals in today's feed are causally linked through the memory value chain, draw the chain EXPLICITLY in the executive_brief and per-indicator commentary. Reporting upstream and downstream signals as if they're independent loses the framework's core analytical value. Examples of inference chains you should draw when the evidence is present in today's brief:
+
+  CAPACITY-MIX SHIFTS:
+  - SK Hynix or Samsung announces HBM capacity expansion / wafer reallocation toward HBM → less DDR5 / LPDDR / NAND wafer allocation → spot price tightening short-term + contract price acceleration 1-2 quarters out. Conversely a HBM capacity cut → DDR5 spot loosens. State the chain explicitly: "X capacity shift to Y means Z effect on the W market in T months".
+  - Korean fab outage / labor disruption affecting Samsung or SK Hynix → near-term HBM AND DDR5/LPDDR spot tightening → spread between spot and contract narrows → t2_spot_contract_spread input direction shifts.
+
+  DEMAND CASCADES:
+  - Hyperscaler ups AI capex guidance (Tier C) → NVIDIA / AMD / Broadcom backlog increases (Tier B) → SK Hynix HBM revenue 1-2 quarters out → memory pure-play earnings beat / guidance raise.
+  - AI lab signs multi-billion infrastructure deal (OpenAI / Anthropic) → chip designer capacity commitment (Cerebras / NVIDIA) → memory order book → DRAM/HBM cycle support.
+  - Conversely a hyperscaler capex cut warning → downstream HBM order moderation 6-12 months out → bearish for the cycle peak timing.
+
+  COMPETITIVE / SUBSTITUTION:
+  - CXMT / ChangXin capacity milestone or yield improvement → commodity DDR4/DDR5 oversupply risk → Samsung/SK Hynix spot pricing pressure on those nodes. State the timing: short-term impact (1-3mo) on spot, medium-term (3-9mo) on contract.
+  - Cerebras WSE-3 deployment news or in-house ASIC production milestone (TPU v7, Trainium 2, MTIA v3) → potential HBM substitution at the margin → captive-ratio risk to SK Hynix HBM revenue trajectory.
+
+  PRICE-COMMENTARY LINKS:
+  - TrendForce spot print + earnings commentary on contract / inventory → connect to t1_spot_decline, t2_spot_contract_spread, and t1_oem_inventory together rather than as isolated data points.
+
+Inference style: "X implies Y because Z" rather than "X happened. Y happened." Make the causal mechanism visible — even one sentence is enough. The framework's job is connecting upstream and downstream signals, not just listing them.
+
+LIMITS:
+  - Draw inferences ONLY when both ends of the chain have evidence in today's brief or a recent (≤7d) carried-forward evidence entry from the indicator evidence store. Do not speculate from one end with no anchor at the other.
+  - Inferences that are "common knowledge" without specific evidence in the brief don't belong in the brief — they belong in the framework documentation.
+  - If you draw an inference, cite the evidence anchors for both ends inline.
+
 OUTPUT FORMAT - respond with ONLY a JSON object:
 
 {{
@@ -1045,7 +1084,7 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
       "name": "...",
       "description": "...",
       "what_to_look_for": "...",
-      "current_status": "Fired | Partially fired | Not fired | Reversed",
+      "current_status": "Fired | Partially fired | Not fired",
       "where_we_stand": "1-3 sentences",
       "latest_developments": "Markdown-formatted with embedded links",
       "relevant_links": [{{"title": "...", "url": "..."}}],
@@ -1142,9 +1181,9 @@ If the LLM is tempted to write "no probability distribution changes
 warranted" because no NEW fires happened, this is a BUG — check for UNFIRES.
 A reduction in fired count is equally probability-moving as an increase.
 
-C. WHEN COMPUTED METRICS CONTRADICT LAYER 2 VERDICTS (v3.39.7.3):
+C. WHEN COMPUTED METRICS CONTRADICT LAYER 2 VERDICTS (v3.39.7.3, updated v3.39.7.9):
 For indicators whose status is primarily driven by computed numerical
-data (rel_strength_full, forward_pe, capex_revenue_ratios, eps_revisions
+data (rel_strength_full, forward_pe, mean_capex_ocf_ratio_2q, eps_revisions
 weighted scoring), the COMPUTED VERDICT is authoritative. If Layer 2
 returns "Not fired" with evidence_count=0 BUT the computed data shows
 the threshold is crossed, REJECT Layer 2 and use the computed verdict.
@@ -1224,7 +1263,7 @@ the broker's ANALYTICAL EXCERPT lines to write the why_it_matters field.
 NUMBER-FIRST INDICATOR FORMAT (v3.39.6 — STRICT):
 For every indicator_assessments[] entry, the `where_we_stand` field
 MUST follow this template when the indicator has computed numerical
-evidence (rel-strength spreads, capex/revenue ratios, forward P/E,
+evidence (rel-strength spreads, hyperscaler capex/OCF ratios, forward P/E,
 EPS revisions, single-day moves, etc.):
 
   1. LEAD with the exact numbers. Quote them from COMPUTED METRICS.
