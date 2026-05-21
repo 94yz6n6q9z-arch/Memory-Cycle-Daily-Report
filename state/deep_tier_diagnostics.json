@@ -1,11 +1,12 @@
 {
-  "written_at_iso": "2026-05-20T09:00:41.241743+00:00",
-  "run_date": "2026-05-20",
+  "written_at_iso": "2026-05-21T10:29:42.522731+00:00",
+  "run_date": "2026-05-21",
   "summary_counts": {
     "ok": 3,
     "warn": 2,
     "fail": 0,
     "skipped": 0,
+    "quiet": 0,
     "total": 5
   },
   "statuses": [
@@ -13,13 +14,14 @@
       "source_name": "Motley Fool",
       "source_type": "transcript",
       "reached": true,
-      "items_returned": 0,
+      "items_returned": 3,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-20T09:00:10.750238+00:00",
-      "detail": "13 co. \u00b7 0 full / 0 materials-only / 13 cached / 0 nothing",
+      "timestamp": "2026-05-21T10:28:49.268109+00:00",
+      "detail": "16 co. \u00b7 3 full / 0 materials-only / 12 cached / 1 nothing",
       "skipped": false,
-      "health": "warn"
+      "expected_empty": false,
+      "health": "ok"
     },
     {
       "source_name": "IR scrapers (SK Hynix / Samsung / Micron)",
@@ -28,22 +30,24 @@
       "items_returned": 0,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-20T09:00:10.750266+00:00",
+      "timestamp": "2026-05-21T10:28:49.268137+00:00",
       "detail": "3 co. \u00b7 0 full / 0 materials-only / 2 cached / 1 nothing",
       "skipped": false,
+      "expected_empty": false,
       "health": "warn"
     },
     {
       "source_name": "Yahoo Finance",
       "source_type": "transcript",
       "reached": true,
-      "items_returned": 1,
+      "items_returned": 0,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-20T09:00:10.750281+00:00",
-      "detail": "14 co. \u00b7 1 full / 0 materials-only / 13 cached / 0 nothing",
+      "timestamp": "2026-05-21T10:28:49.268154+00:00",
+      "detail": "13 co. \u00b7 0 full / 0 materials-only / 13 cached / 0 nothing",
       "skipped": false,
-      "health": "ok"
+      "expected_empty": false,
+      "health": "warn"
     },
     {
       "source_name": "Mirae Asset (EN broker PDFs)",
@@ -52,21 +56,23 @@
       "items_returned": 1,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-20T09:00:35.868649+00:00",
+      "timestamp": "2026-05-21T10:29:38.193721+00:00",
       "detail": null,
       "skipped": false,
+      "expected_empty": false,
       "health": "ok"
     },
     {
       "source_name": "Anthropic Haiku (digester)",
       "source_type": "llm",
       "reached": true,
-      "items_returned": 3,
+      "items_returned": 6,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-20T09:00:41.241648+00:00",
-      "detail": "2 transcript + 1 broker note digests",
+      "timestamp": "2026-05-21T10:29:42.522626+00:00",
+      "detail": "5 transcript + 1 broker note digests",
       "skipped": false,
+      "expected_empty": false,
       "health": "ok"
     }
   ]
