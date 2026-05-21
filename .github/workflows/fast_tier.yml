@@ -1,5 +1,21 @@
 name: Memory Cycle Brief — Fast Tier (daily delivery)
 
+# Revision history (most recent at top — inline markers throughout the file
+# detail the specific section a revision touched):
+#   v3.4.0    (2026-05-21) — commit step: added state/extraction_log_*.jsonl
+#                            and state/dhcr_state.json to the `git add` list
+#                            so the architecture-signal stream from the deep
+#                            tier digester and the DHCR snapshot persist
+#                            across runner reboots. See inline comment at the
+#                            commit step for full rationale.
+#   v3.39.7.4 (2026-05-20) — schedule: thinned crons 7 → 4 (14-min → 30-min
+#                            spacing) to avoid overlapping runs producing
+#                            duplicate emails. See inline comment in
+#                            `on: schedule:` block.
+#   v3.39.1   (earlier)    — job-level timeout bumped 25 → 35 min.
+#   v3.38     (earlier)    — issues:write permission added for the
+#                            "Create issue on critical failure" step.
+
 on:
   schedule:
     # v3.39.7.4: thinned from 7 crons (14-16 min spacing) to 4 crons
@@ -127,9 +143,20 @@ jobs:
           # be visible only on the run that observed them; subsequent crons
           # (clean checkout each time) would have an empty log and lose the
           # callouts even though they fall well within the 24h window.
+          # v3.4.0: state/extraction_log_*.jsonl + state/dhcr_state.json added.
+          # The extraction_log is the architecture-signal stream from the deep
+          # tier digester (cxl_production_deployment, lpddr_datacenter_design_win,
+          # custom_silicon_memory_arch, etc.) and pre-v3.4.0 it was being written
+          # but never committed — every run started fresh and data never
+          # accumulated. The dhcr_state is the per-run DHCR snapshot for QoQ
+          # comparison. Without these two adds, the DHCR direction monitor would
+          # work for the current snapshot but historical context (signal
+          # accumulation, prior-run comparison) would be lost between runs.
           git add -A state/brief_sent_dates.json state/prior_state.json state/cache/ \
                   state/indicator_evidence.json \
                   state/trigger_events_24h.json \
+                  state/extraction_log_*.jsonl \
+                  state/dhcr_state.json \
                   data/dram_spot_history.csv \
                   data/dram_contract_actuals.csv \
                   data/dram_contract_quarterly_forecasts.csv \
