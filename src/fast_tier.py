@@ -14,7 +14,7 @@ Pipeline:
      - yfinance prices + estimates + computed metrics
      - DART API (Korean material disclosures)
   2. Load Layer 1 digests from state/digests/ (deep tier output)
-  3. Layer 2: per-signal reasoning over all evidence (22 indicators × 1 Haiku call each)
+  3. Layer 2: per-signal reasoning over all evidence (23 indicators × 1 Haiku call each)
   4. Layer 3: Sonnet final synthesis — exec summary, brief composition
   5. Chart generation + email build + send
   6. Mark idempotency + commit prior state for tomorrow
@@ -595,6 +595,41 @@ def run_fast_tier() -> int:
         "dart_material_disclosures": dart_data or {},
     }
 
+    # v3.4.0 — Compute Decode HBM Captive Ratio (DHCR) snapshot.
+    # New Tier 1 direction monitor. Composite of frontier KV efficiency,
+    # HBM-per-accelerator capacity, and enterprise AI demand growth.
+    # Computed from three YAML reference files (data/inference_arch_reference.yaml,
+    # data/hbm_per_accelerator.yaml, data/enterprise_ai_revenue.yaml).
+    # See src/analysis/dhcr.py for the math and Raul's mental model.
+    try:
+        from src.analysis.dhcr import compute_dhcr_snapshot, compute_dhcr_trajectory
+        from src.state import save_dhcr_state
+        from dataclasses import asdict
+        dhcr_snapshot = compute_dhcr_snapshot()
+        dhcr_dict = asdict(dhcr_snapshot)
+        computed_metrics["dhcr_snapshot"] = dhcr_dict
+        # 11-quarter trajectory for charting
+        dhcr_traj = compute_dhcr_trajectory(quarters_back=11)
+        computed_metrics["dhcr_trajectory"] = dhcr_traj
+        # Persist for next run's QoQ comparison
+        save_dhcr_state(dhcr_dict)
+        logger.info(
+            f"DHCR computed: {dhcr_snapshot.direction.upper()} "
+            f"(KV={dhcr_snapshot.frontier_kv_kb_per_token:.0f}KB, "
+            f"HBM={dhcr_snapshot.frontier_hbm_gb_per_accelerator:.0f}GB, "
+            f"capacity={dhcr_snapshot.implied_context_capacity_per_accelerator_tokens:,}t, "
+            f"ent_yoy={dhcr_snapshot.enterprise_ai_yoy_growth_pct or 0:.0f}%, "
+            f"cap_create_yoy={dhcr_snapshot.capacity_creation_yoy_pct or 0:.0f}%)"
+        )
+    except FileNotFoundError as e:
+        logger.warning(f"DHCR YAML missing — skipping DHCR computation: {e}")
+        computed_metrics["dhcr_snapshot"] = None
+        computed_metrics["dhcr_trajectory"] = []
+    except Exception as e:
+        logger.error(f"DHCR computation failed: {e}", exc_info=True)
+        computed_metrics["dhcr_snapshot"] = None
+        computed_metrics["dhcr_trajectory"] = []
+
     # ----- Step 4: Layer 2 per-signal reasoning -----
     prior_state = load_prior_state()
     prior_status_map = {
@@ -619,7 +654,7 @@ def run_fast_tier() -> int:
             "prior-evidence carry-forward this run. Check state/indicator_evidence.json."
         )
 
-    logger.info("Running Layer 2 per-signal reasoning across all 22 indicators...")
+    logger.info("Running Layer 2 per-signal reasoning across all 23 indicators...")
     signal_reasonings = reason_all_signals(
         digests=digests,
         fast_tier_news=[
@@ -886,6 +921,19 @@ def run_fast_tier() -> int:
         except Exception as e:
             logger.error(f"Cycle chart rendering failed: {e}", exc_info=True)
 
+    # v3.4.0 — Generate DHCR trajectory chart from the snapshot data
+    dhcr_chart_b64 = None
+    dhcr_snapshot_dict = computed_metrics.get("dhcr_snapshot")
+    dhcr_traj_data = computed_metrics.get("dhcr_trajectory") or []
+    if dhcr_snapshot_dict and dhcr_traj_data:
+        try:
+            from src.analysis.chart_generator import generate_dhcr_trajectory_chart
+            dhcr_chart_b64 = generate_dhcr_trajectory_chart(dhcr_traj_data)
+            if dhcr_chart_b64:
+                logger.info(f"DHCR trajectory chart rendered: {len(dhcr_chart_b64)} b64 chars")
+        except Exception as e:
+            logger.warning(f"DHCR chart generation failed: {e}", exc_info=True)
+
     html_body = build_email_html(
         analysis=analysis,
         performance=performance,
@@ -899,6 +947,9 @@ def run_fast_tier() -> int:
         cycle_verdict=cycle_verdict,
         cycle_matrix_chart_b64=cycle_matrix_chart_b64,
         spot_contract_chart_b64=spot_contract_chart_b64,
+        # v3.4.0 DHCR
+        dhcr_snapshot=dhcr_snapshot_dict,
+        dhcr_chart_b64=dhcr_chart_b64,
     )
 
     # Send

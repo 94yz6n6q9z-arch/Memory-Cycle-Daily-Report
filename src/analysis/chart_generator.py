@@ -972,3 +972,191 @@ def render_cycle_charts_from_verdict(
     )
 
     return matrix_b64, spot_contract_b64
+
+
+# ============================================================
+# v3.4.0 — DHCR (Decode HBM Captive Ratio) trajectory chart
+# ============================================================
+
+def generate_dhcr_trajectory_chart(trajectory: list[dict]) -> Optional[str]:
+    """v3.4.0: Render the DHCR trajectory as a dual-axis chart.
+
+    Top panel: capacity-creation rate (left axis, %) vs enterprise AI
+    YoY growth (right axis, %), with the delta shaded.
+
+    Bottom panel: implied context capacity per accelerator over time
+    (log scale, since it expands from ~250K to ~42M tokens).
+
+    Args:
+        trajectory: list of quarterly snapshot dicts (from
+                    compute_dhcr_trajectory). Each entry has fields:
+                    as_of_date, frontier_kv_kb_per_token,
+                    frontier_hbm_gb_per_accelerator,
+                    implied_context_capacity_tokens,
+                    enterprise_ai_yoy_growth_pct,
+                    nvidia_datacenter_yoy_growth_pct,
+                    capacity_creation_yoy_pct,
+                    direction.
+
+    Returns base64-encoded PNG, or None on failure / no data.
+    """
+    if not trajectory or len(trajectory) < 2:
+        logger.info("DHCR trajectory has insufficient data — skipping chart")
+        return None
+
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
+        import numpy as np
+        from datetime import datetime as _dt
+    except ImportError as e:
+        logger.warning(f"matplotlib not available — skipping DHCR chart: {e}")
+        return None
+
+    try:
+        dates = []
+        cap_creation = []
+        ent_yoy = []
+        nv_yoy = []
+        capacity_tokens = []
+        kv_kb = []
+        for t in trajectory:
+            try:
+                d = _dt.fromisoformat(t["as_of_date"]).date()
+            except (ValueError, KeyError):
+                continue
+            dates.append(d)
+            cap_creation.append(t.get("capacity_creation_yoy_pct"))
+            ent_yoy.append(t.get("enterprise_ai_yoy_growth_pct"))
+            nv_yoy.append(t.get("nvidia_datacenter_yoy_growth_pct"))
+            capacity_tokens.append(t.get("implied_context_capacity_tokens", 0))
+            kv_kb.append(t.get("frontier_kv_kb_per_token", 0))
+
+        if not dates:
+            return None
+
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 7), sharex=True,
+                                        gridspec_kw={"height_ratios": [3, 2]})
+        fig.suptitle(
+            "Decode HBM Captive Ratio — supply-side capacity creation vs enterprise demand-pull",
+            fontsize=13, fontweight="bold", y=0.97,
+        )
+
+        # ----- Top panel: capacity creation vs demand growth -----
+        # Demand-pull aggregate (enterprise + NVIDIA datacenter blend, 60/40)
+        demand_blend = []
+        for e, n in zip(ent_yoy, nv_yoy):
+            if e is not None and n is not None:
+                demand_blend.append(0.6 * e + 0.4 * n)
+            elif e is not None:
+                demand_blend.append(e)
+            elif n is not None:
+                demand_blend.append(n)
+            else:
+                demand_blend.append(None)
+
+        # Filter pairs where both are non-None for shading
+        valid_pairs = [(d, c, dem) for d, c, dem in zip(dates, cap_creation, demand_blend)
+                       if c is not None and dem is not None]
+        if valid_pairs:
+            v_dates, v_cap, v_dem = zip(*valid_pairs)
+            ax1.fill_between(
+                v_dates, v_cap, v_dem,
+                where=[d > c for c, d in zip(v_cap, v_dem)],
+                color="#2C7A2C", alpha=0.15,
+                label="Demand outpacing capacity (bullish HBM)",
+            )
+            ax1.fill_between(
+                v_dates, v_cap, v_dem,
+                where=[d <= c for c, d in zip(v_cap, v_dem)],
+                color="#B91C1C", alpha=0.15,
+                label="Capacity outpacing demand (bearish HBM)",
+            )
+
+        # Capacity creation line
+        cap_dates = [d for d, c in zip(dates, cap_creation) if c is not None]
+        cap_vals = [c for c in cap_creation if c is not None]
+        if cap_dates:
+            ax1.plot(cap_dates, cap_vals, marker="o", color="#888888",
+                     linewidth=2, label="Capacity creation YoY (HBM/accel + KV efficiency)")
+
+        # Enterprise YoY line
+        ent_dates = [d for d, e in zip(dates, ent_yoy) if e is not None]
+        ent_vals = [e for e in ent_yoy if e is not None]
+        if ent_dates:
+            ax1.plot(ent_dates, ent_vals, marker="s", color="#0F6E56",
+                     linewidth=2, label="Enterprise AI revenue YoY")
+
+        # NVIDIA datacenter line
+        nv_dates = [d for d, n in zip(dates, nv_yoy) if n is not None]
+        nv_vals = [n for n in nv_yoy if n is not None]
+        if nv_dates:
+            ax1.plot(nv_dates, nv_vals, marker="^", color="#76B900",
+                     linewidth=2, linestyle="--",
+                     label="NVIDIA datacenter YoY")
+
+        ax1.axhline(y=0, color="#333", linewidth=0.5)
+        ax1.set_ylabel("YoY growth rate (%)", fontsize=11)
+        ax1.grid(True, alpha=0.3)
+        ax1.legend(loc="upper right", fontsize=9, framealpha=0.9)
+        ax1.set_title(
+            "Top: supply-side capacity-creation rate vs demand-pull (enterprise revenue growth)",
+            fontsize=10, pad=6,
+        )
+
+        # ----- Bottom panel: implied context capacity (log scale) -----
+        cap_dates_b = [d for d, c in zip(dates, capacity_tokens) if c and c > 0]
+        cap_vals_b = [c for c in capacity_tokens if c and c > 0]
+        if cap_dates_b:
+            ax2.semilogy(cap_dates_b, cap_vals_b, marker="o", color="#2C5AA0",
+                         linewidth=2.5, label="Implied context capacity per accelerator")
+            ax2.fill_between(cap_dates_b, 1, cap_vals_b, alpha=0.12, color="#2C5AA0")
+
+        # Annotate the start and end points
+        if cap_dates_b and cap_vals_b:
+            first_d, first_v = cap_dates_b[0], cap_vals_b[0]
+            last_d, last_v = cap_dates_b[-1], cap_vals_b[-1]
+            ax2.annotate(
+                f"{first_v/1000:.0f}K tokens" if first_v < 1_000_000
+                else f"{first_v/1_000_000:.1f}M tokens",
+                xy=(first_d, first_v), xytext=(8, 8),
+                textcoords="offset points", fontsize=9,
+                bbox=dict(boxstyle="round,pad=0.3", fc="#FFFFE0", ec="#888"),
+            )
+            ax2.annotate(
+                f"{last_v/1_000_000:.1f}M tokens",
+                xy=(last_d, last_v), xytext=(8, -18),
+                textcoords="offset points", fontsize=9, fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.3", fc="#E0F0E0", ec="#2C7A2C"),
+            )
+
+        ax2.set_ylabel("Tokens (log scale)", fontsize=11)
+        ax2.set_xlabel("Date", fontsize=11)
+        ax2.grid(True, alpha=0.3, which="both")
+        ax2.set_title(
+            "Bottom: implied context capacity per accelerator (KV efficiency × HBM-per-chip)",
+            fontsize=10, pad=6,
+        )
+
+        # X-axis formatting
+        ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+        ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+        plt.setp(ax2.xaxis.get_majorticklabels(), rotation=30, ha="right")
+
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.93)
+
+        # Encode to base64
+        import io
+        import base64
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png", dpi=110, bbox_inches="tight")
+        plt.close(fig)
+        buf.seek(0)
+        return base64.b64encode(buf.read()).decode("ascii")
+
+    except Exception as e:
+        logger.exception(f"DHCR trajectory chart rendering failed: {e}")
+        return None

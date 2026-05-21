@@ -927,6 +927,64 @@ def build_sonnet_analysis_prompt(
             n_companies = len(dart)
             total_mat = sum(len(v) if isinstance(v, list) else 0 for v in dart.values())
             computed_text += f"\n  DART material disclosures: {total_mat} across {n_companies} companies\n"
+
+        # v3.4.0: DECODE HBM CAPTIVE RATIO (DHCR) — direction monitor
+        # New Tier 1 indicator. Composite of (a) frontier KV efficiency,
+        # (b) HBM-per-accelerator capacity, (c) enterprise AI demand growth.
+        # The CORE QUESTION: is enterprise demand-pull growing faster than
+        # the supply-side capacity-creation rate? If yes → HBM tight (bullish);
+        # if no → HBM slack (bearish).
+        #
+        # Mental model rejects the naive "efficiency vs context" trade-off.
+        # Efficiency UNLOCKS economic context capacity. Enterprise workloads
+        # expand to consume what's economically possible. The binding question
+        # is whether enterprise demand grows fast enough to fill the unlocked
+        # headroom.
+        dhcr = computed_metrics.get("dhcr_snapshot") or {}
+        if dhcr:
+            computed_text += (
+                "\n  t1_decode_hbm_captive_ratio (direction monitor — NEW v3.4.0):\n"
+            )
+            cap_tokens = dhcr.get("implied_context_capacity_per_accelerator_tokens", 0) or 0
+            if cap_tokens >= 1_000_000:
+                cap_s = f"{cap_tokens/1_000_000:.1f}M"
+            elif cap_tokens >= 1_000:
+                cap_s = f"{cap_tokens/1_000:.0f}K"
+            else:
+                cap_s = str(cap_tokens)
+            computed_text += (
+                f"    Frontier KV efficiency: {dhcr.get('frontier_kv_kb_per_token', 0):.0f} KB/tok "
+                f"({dhcr.get('frontier_model_name', '?')}, {dhcr.get('frontier_model_arch', '?')})\n"
+                f"    Frontier HBM/accelerator: {dhcr.get('frontier_hbm_gb_per_accelerator', 0):.0f} GB "
+                f"({dhcr.get('frontier_accelerator_name', '?')})\n"
+                f"    Implied context capacity: ~{cap_s} tokens per accelerator at frontier efficiency\n"
+                f"    YoY KV change: {dhcr.get('kv_yoy_change_pct', 0) or 0:+.0f}% "
+                f"(negative = efficiency improving)\n"
+                f"    YoY HBM-per-accelerator change: {dhcr.get('hbm_per_accelerator_yoy_change_pct', 0) or 0:+.0f}%\n"
+                f"    Composite capacity-creation rate: {dhcr.get('capacity_creation_yoy_pct', 0) or 0:+.0f}% YoY\n"
+                f"    Enterprise AI run-rate (MSFT+AWS+GCP+Oracle): "
+                f"${dhcr.get('enterprise_ai_aggregate_run_rate_usd_b', 0):.0f}B annualized\n"
+                f"    Enterprise AI YoY: {dhcr.get('enterprise_ai_yoy_growth_pct', 0) or 0:+.0f}%\n"
+                f"    NVIDIA datacenter YoY: {dhcr.get('nvidia_datacenter_yoy_growth_pct', 0) or 0:+.0f}%\n"
+                f"    Hyperscaler capex YoY: {dhcr.get('hyperscaler_capex_yoy_growth_pct', 0) or 0:+.0f}%\n"
+                f"    DIRECTION READ: {dhcr.get('direction', 'unknown').upper()} "
+                f"(confidence: {dhcr.get('confidence', '?')})\n"
+                f"    Dominant force: {dhcr.get('dominant_force', '?')}\n"
+            )
+            subst = dhcr.get("substitution_risk_notes") or []
+            if subst:
+                computed_text += "    Substitution-risk flags (non-HBM AI accelerators):\n"
+                for note in subst[:5]:
+                    computed_text += f"      • {note}\n"
+            computed_text += (
+                "    Interpretation guidance: This is a DIRECTION MONITOR, not a "
+                "fire/not-fire signal. Always render current_status='Not fired' for "
+                "this indicator in v3.4.0. Use 'where_we_stand' field to describe "
+                "the direction read and what's driving it. The mental model is that "
+                "efficiency gains UNLOCK context capacity which enterprise workloads "
+                "then consume — so DECELERATION in enterprise revenue growth is the "
+                "actual bearish signal, not efficiency improvements per se.\n"
+            )
     else:
         computed_text += "  (computed_metrics not threaded — running in legacy mode)\n"
 

@@ -1,21 +1,49 @@
-# v3.4 ROADMAP — Captive-Ratio Indicators (deferred)
+# v3.4 ROADMAP — Captive-Ratio Indicator — ✅ SHIPPED as v3.4.0 (2026-05-21)
 
-**Status**: deferred from the v3.2 + v3.3 build session. Version label is **v3.4** (the Quartr-replacement maintenance build is v3.31, kept deliberately in the .3x range so this keeps the v3.4 label). Target build date: ~4 weeks after v3.3 deploys (Sunday June 14, 2026 calendar reminder).
+**Status**: ✅ SHIPPED in v3.4.0 on 2026-05-21. The original ROADMAP design called for three separate indicators (23/24/25). After the May 21 design session with Raul, those three collapsed into a single composite Tier 1 indicator (`t1_decode_hbm_captive_ratio`, DHCR) per the mental model reframe described below. See CHANGES.md v3.4.0 entry for the full release notes.
 
-**Why deferred**: v3.4 introduces three new indicators that *fire alerts*. Calibrating their thresholds requires real extraction data to look at. v3.3's `state/extraction_log_*.jsonl` accumulates this data starting day one of deployment. After 3 weeks (~15 days of data on a weekday cadence), we'll have enough to set thresholds intelligently instead of guessing.
+**The mental-model reframe** (Raul's locked direction May 21, 2026):
 
-**Note on versioning**: A maintenance build **v3.31** shipped before this — replacing the gated Quartr API with free transcript sources (IR-site scrapers + Motley Fool). It was numbered v3.31 (a .3x maintenance fix, not a feature increment) specifically so these deferred captive-ratio indicators keep their original **v3.4** label. If you're reading old notes that called the Quartr work "v3.4" — that was a transient mislabel, corrected to v3.31.
+> "I don't think there is a version where we take efficiencies and we keep constrained to small context. Think we push context as much as we can as long as economically possible."
 
-**Anti-forgetting mechanisms**:
-1. This file exists in the repo root.
-2. A calendar reminder is set for the build date.
-3. v3.3's extraction log is the data source — it accumulates passively, and the first time someone opens it after 3 weeks they'll see what v3.4 should consume.
+The original ROADMAP framed the three indicators as independent measurements of HBM-erosion forces (efficiency shocks, CXL adoption, LPDDR ramp). Raul rejected that framing. The correct mechanism: efficiency gains don't displace HBM — they UNLOCK economic context capacity. Enterprise workloads then expand to consume what's economically possible. The binding question is whether enterprise demand-pull grows fast enough to fill the unlocked headroom.
+
+So the three indicators are really three INPUTS to one underlying question, and the answer is a direction signal, not a fire/not-fire trigger. DHCR is that single composite direction monitor.
+
+**v3.4.0 shipped what:**
+- ONE new Tier 1 indicator (`t1_decode_hbm_captive_ratio`) — direction monitor only, no trigger gate
+- THREE YAML reference files providing the data substrate (architecture, HBM-per-accelerator, enterprise revenue)
+- 11 quarters of bootstrapped trajectory data (Q4 2023 → Q2 2026) so the trend chart works from day one
+- Phase 2 fix: extraction_log_*.jsonl now persists across runner reboots (was the silent gap that made the ROADMAP's data-accumulation premise empirically false)
+- Today's read: STRONGLY_BULLISH_HBM, +46pp delta, 42M token implied capacity per accelerator
+
+**Why no trigger gate:**
+Per Raul's direction, v3.4.0 ships as direction monitor only. After 4-6 quarters of shadow data (~Q4 2026 / Q1 2027), the band boundaries get validated against real direction transitions and we activate triggers in v3.4.1.
 
 ---
 
-## The three v3.4 indicators
+## What v3.4.1+ will do
 
-### Indicator 23 — Inference Efficiency Shock (T1, leading)
+**v3.4.1** target ~Q1 2027 after 4-6 quarters of accumulated direction data:
+- Activate trigger gates based on sustained direction transitions:
+  - Partial fire: direction → mildly_bearish_hbm for 2 consecutive quarters
+  - Full fire: direction → strongly_bearish_hbm for 2 consecutive quarters
+  - Reversal: → mildly_bullish_hbm or stronger for 2 quarters reverses prior fire
+- Boundary tuning based on observed signal density (may shift the ±10/40pp band edges)
+
+**v3.4.2+ candidates:**
+- Auto-extracted closed-model KV via cost-per-token gradient analysis at long context (currently hand-curated with confidence bands — GPT-5/Claude 4/Gemini 2.5 each carry explicit kv_kb_per_token_range)
+- LPDDR-specific TrendForce contract scrape (the open gap from the original ROADMAP — pipeline currently tracks DRAM + HBM but not LPDDR pricing separately)
+- Artificial Analysis tokens-$ trend integration as a derived efficiency metric feeding the YAML
+- HotChips / MICRO / ISCA proceedings scrape for architecture-leak signals
+
+---
+
+## Original ROADMAP design (preserved for historical reference)
+
+Below is the original three-indicator design from before the May 21 reframe. Kept here for context on how the design evolved. **None of this is current** — the actual v3.4.0 build is the single composite DHCR described above and in CHANGES.md.
+
+### Indicator 23 — Inference Efficiency Shock (T1, leading) — SUPERSEDED
 
 **Hypothesis**: when ≥3 major inference efficiency advances ship in a 30-day window, the captive-ratio compression timeline accelerates.
 

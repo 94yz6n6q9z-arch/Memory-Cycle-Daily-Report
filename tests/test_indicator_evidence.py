@@ -47,10 +47,12 @@ class TestBootstrapFile(unittest.TestCase):
             f"Bootstrap file missing at {self.bootstrap_path}",
         )
 
-    def test_all_22_indicators_present(self):
+    def test_all_23_indicators_present(self):
+        # v3.4.0 added t1_decode_hbm_captive_ratio (DHCR) — direction monitor
+        # collapsing original ROADMAP indicators 23/24/25 into one composite.
         self.assertEqual(
-            len(self.store), 22,
-            f"Expected 22 indicators in bootstrap, got {len(self.store)}",
+            len(self.store), 23,
+            f"Expected 23 indicators in bootstrap, got {len(self.store)}",
         )
 
     def test_indicator_ids_match_config(self):

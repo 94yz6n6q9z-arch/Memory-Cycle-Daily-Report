@@ -6,6 +6,128 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.4.0 — Decode HBM Captive Ratio (DHCR) indicator
+
+The feature release the .3x maintenance window was protecting the version label for. Ships a single new Tier 1 indicator that collapses what the ROADMAP originally specified as three separate indicators (23 — Inference Efficiency Shock, 24 — CXL Production Deployment, 25 — LPDDR Datacenter Ramp) into one composite direction monitor.
+
+**Indicator count: 22 → 23.**
+
+### The framing
+
+Raul's mental model, locked in the May 21 2026 design session, rejects the naive "efficiency vs context length" trade-off framing. The actual mechanism:
+
+> Efficiency gains don't displace HBM. They UNLOCK economic context capacity. Enterprise workloads expand to consume whatever is economically possible at the current efficiency × cost. There is no scenario where we improve efficiency and stay constrained to small context.
+
+So the binding question is not whether efficiency is winning. It's whether **enterprise demand-pull is growing fast enough to fill the capacity that efficiency creates**:
+
+- Enterprise demand growth > capacity-creation rate → HBM stays tight (bullish SK Hynix)
+- Enterprise demand growth = capacity-creation rate → balanced
+- Capacity-creation rate > enterprise demand growth → HBM gets slack (bearish)
+
+The DHCR is structured around this comparison. It does NOT measure context length directly (which is unknowable at aggregate level and a lagging artifact of what's economically possible). It measures the **demand-pull side via enterprise AI revenue growth** as the leading proxy for how aggressively the market is consuming the unlocked headroom.
+
+### What DHCR computes
+
+Three inputs, all from hand-curated YAML reference files:
+
+**Supply-side capacity creation:**
+- **`data/inference_arch_reference.yaml`** — frontier KV efficiency reference. 13 open-architecture models from Llama 2 70B (Q3 2023, 320 KB/tok) through DeepSeek V4 (Q2 2026, ~14 KB/tok). Closed models (GPT-5, Claude 4, Gemini 2.5) tracked separately with explicit confidence bands but EXCLUDED from the frontier computation (open-architecture floor is what's verifiable).
+- **`data/hbm_per_accelerator.yaml`** — HBM-per-chip across NVIDIA (9 generations, H100 80GB → GB300 576GB), AMD (4 generations, MI300X 192GB → MI355X 288GB), custom hyperscaler silicon (Google TPU, AWS Trainium, MSFT Maia, Meta MTIA — tracked but excluded from merchant frontier), and non-HBM substitution risk (Cerebras WSE, Groq, Etched — flagged in narrative).
+
+**Demand-pull:**
+- **`data/enterprise_ai_revenue.yaml`** — quarterly disclosures from Microsoft Azure AI ($48B annualized Q1 2026, +152% YoY), AWS Bedrock+ML ($28B, +165%), Google Cloud Vertex AI ($24B, +220%), Oracle AI Infra ($21B, +425%), NVIDIA datacenter ($66B Q1 2026, +69% — the slowing-but-still-strong total accelerator demand proxy), plus hyperscaler aggregate AI capex.
+
+**Derived composite:**
+
+```
+capacity_creation_yoy_pct = HBM_yoy - KV_yoy   (HBM packing growth + efficiency tailwind)
+demand_pull_yoy_pct = 0.6×enterprise_yoy + 0.4×nvidia_dc_yoy   (weighted demand proxy)
+delta_pp = demand_pull_yoy_pct - capacity_creation_yoy_pct
+
+direction:
+  delta > +40pp  → strongly_bullish_hbm
+  +10pp to +40pp → mildly_bullish_hbm
+  -10pp to +10pp → balanced
+  -40pp to -10pp → mildly_bearish_hbm
+  delta < -40pp  → strongly_bearish_hbm
+```
+
+**Today's read (May 21 2026):**
+- Frontier KV: 14 KB/tok (DeepSeek V4, MLA architecture)
+- Frontier HBM-per-accelerator: 576 GB (NVIDIA GB300 superchip)
+- **Implied context capacity per accelerator: ~42 million tokens** — the economic frontier of context that ONE accelerator can serve at frontier efficiency. The bull thesis quantified.
+- Capacity-creation YoY: +111% (HBM packing +50%, KV efficiency -61%)
+- Enterprise AI YoY: +216% weighted; NVIDIA datacenter YoY: +69%
+- **DIRECTION: STRONGLY_BULLISH_HBM (+46pp delta)** — demand-pull running well ahead of capacity creation
+
+### What ships in v3.4.0
+
+This is a direction monitor — **no trigger gate in v3.4.0**. The indicator publishes its 5-level direction signal each run; status pill always renders "Not fired." Trigger logic deferred to v3.4.1+ after 4-6 quarters of shadow data validates the band boundaries. Per Raul's direction: front-load the iterations on sources/presentation now, enable firing once we've shaken out the data pipeline.
+
+| File | Purpose |
+|---|---|
+| `data/inference_arch_reference.yaml` | 13 open + 3 closed model entries, KV math reference, workload context estimates |
+| `data/hbm_per_accelerator.yaml` | NVIDIA/AMD/custom-silicon/non-HBM accelerator generations |
+| `data/enterprise_ai_revenue.yaml` | MSFT/AWS/GCP/Oracle/NVIDIA quarterly revenue + hyperscaler capex |
+| `src/analysis/dhcr.py` (NEW) | Compute module — frontier KV, HBM, demand aggregation, direction signal, trajectory |
+| `src/config.py` | DHCR registered as `t1_decode_hbm_captive_ratio` (Tier 1) |
+| `state/indicator_evidence.json` | DHCR bootstrap entry |
+| `src/state.py` | `save_dhcr_state` / `load_dhcr_prior_state` with 12-snapshot history cap |
+| `src/email_module/template.py` | Section 3 inline snippet (direction badge + driver numbers + implied capacity) AND section 4 deep-dive card (supply/demand 2-column layout + chart embed + Sonnet narrative + substitution-risk flags + mental-model footer) |
+| `src/analysis/chart_generator.py` | `generate_dhcr_trajectory_chart` — dual-panel: capacity-vs-demand growth rates (top) + implied capacity log-scale (bottom) |
+| `src/analysis/llm_summarizer.py` | DHCR block in Sonnet COMPUTED METRICS prompt; explainer of mental model so Sonnet doesn't fire-classify the direction-monitor indicator |
+| `src/fast_tier.py` | DHCR snapshot computed mid-pipeline, persisted to `state/dhcr_state.json`, threaded into `build_email_html` |
+| `src/analysis/digester.py` | **Phase 2:** 5 new extraction fields for enterprise context mentions (`enterprise_ai_workload_context_tokens`, `enterprise_ai_customer_name`, `enterprise_ai_use_case`, `enterprise_ai_revenue_growth_qoq_pct`, `agent_product_usage_disclosure`) |
+| `.github/workflows/fast_tier.yml` | **Phase 2:** commits `state/extraction_log_*.jsonl` and `state/dhcr_state.json` |
+| `.github/workflows/deep_tier.yml` | **Phase 2:** commits `state/extraction_log_*.jsonl` (digester writes from deep tier) |
+| `tests/test_v3_4_0_dhcr.py` (NEW) | 55 tests across 17 test classes |
+
+### Phase 2 — the extraction_log persistence fix
+
+The ROADMAP's premise of "3 weeks of accumulated extraction_log data ready to calibrate thresholds" was empirically false. The May 21 2026 audit showed `state/extraction_log_*.jsonl` was never present in the committed state directory. Two root causes:
+
+1. **Workflow gap:** the deep tier digester wrote `state/extraction_log_{date}.jsonl` per the v3.3 spec but neither `fast_tier.yml` nor `deep_tier.yml` git-add'd this file in the commit step. Every runner started with a fresh checkout, the file was generated locally, then destroyed at shutdown.
+2. **Sparse triggers:** the digester only writes when at least one architecture signal field is non-null (CXL deployment, LPDDR datacenter design win, custom silicon arch, etc.) — so empty-architecture quarters wouldn't have produced a file even if persistence worked.
+
+v3.4.0 fixes (1) by adding `git add -A state/extraction_log_*.jsonl` to both workflow commit steps. From the first deploy forward, every deep-tier run that detects architecture signals adds a daily JSONL line to the repo, accumulating across runs and persisting across runner reboots. Issue (2) is the natural rarity of these signals — accepted as is.
+
+### What v3.4.0 does NOT change
+
+- All other 22 indicators (Tier 1/2/3/4 framework unchanged)
+- Cycle matrix (v3.39.7)
+- 4-tier value-chain TRACKED_COMPANIES (v3.39.7.8)
+- v3.39.7.9 fixes (capex/OCF authority, 2q rolling mean, color scheme, NaN guard, section 3 relative strength)
+- v3.39.7.10 hotfix (AttributeError fix)
+
+### Test state
+
+380 tests pass:
+```bash
+PYTHONPATH=. python3 -m pytest tests/ -q
+# 380 passed, 87 warnings, 3 subtests passed in 4.98s
+```
+
+325 from v3.39.7.10 baseline + 55 new in `tests/test_v3_4_0_dhcr.py`.
+
+### Watch items (post-deploy)
+
+- **First fast-tier run after upload:** DHCR snapshot should compute cleanly and `state/dhcr_state.json` should appear in the repo after the commit step. If absent, the workflow `git add` didn't take.
+- **First deep-tier run after upload:** if any digested transcript mentions CXL/LPDDR/custom silicon/MoE/INT4 quant, `state/extraction_log_2026-MM-DD.jsonl` should appear in the repo. If transcripts are all silent on architecture, no file is created — that's expected behavior.
+- **First brief:** section 3 should show the DHCR row with direction badge ("STRONGLY BULLISH HBM" today) and driver numbers. Section 4 should show the full deep-dive card with the dual-panel trajectory chart embedded.
+- **Sonnet's narrative:** the brief's exec_summary should include the DHCR direction read. If Sonnet describes DHCR with fire-language ("fired", "partially fired"), the prompt mental-model explainer needs strengthening — open an issue.
+- **Trajectory chart:** the bottom panel (implied capacity, log scale) should show ~165× expansion from Q4 2023 (256K tokens) to Q2 2026 (42M tokens) — this is the visual heart of the bull case.
+
+### Roadmap forward — v3.4.1+
+
+- **v3.4.1 target:** ~4-6 quarters of accumulated extraction_log + shadow direction data (Q4 2026 / Q1 2027). Activate trigger gates based on direction transitions sustained for 2 consecutive quarters. Boundaries to validate:
+  - Partial fire: mainstream direction → mildly_bearish_hbm for 2 quarters
+  - Full fire: mainstream direction → strongly_bearish_hbm for 2 quarters
+  - Reversal: → mildly_bullish_hbm or stronger for 2 quarters reverses prior fire
+
+- **v3.4.2+ candidates:** auto-extracted KV estimates for closed models via cost-per-token gradient analysis (currently hand-curated with confidence bands); LPDDR-specific pricing scrape (the open gap from the original ROADMAP); Artificial Analysis tokens-$ trend integration as a derived efficiency metric.
+
+---
+
 ## v3.39.7.10 — Hotfix: AttributeError crash in section 3 t3_relative_strength rendering
 
 **The crash.** The v3.39.7.9 deploy at 15:13 UTC 2026-05-21 ran the full fast-tier pipeline cleanly through deep tier ingestion, news filter, Layer 2 across all 22 indicators, cycle matrix, Layer 3 Sonnet synthesis, trigger event log, and supercycle chart — then crashed in the email HTML rendering with:

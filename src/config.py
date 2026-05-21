@@ -909,6 +909,76 @@ INDICATORS: list[Indicator] = [
         cadence="Event-driven",
         stitching="News + press release. Single source sufficient.",
     ),
+
+    # ============================================================
+    # v3.4.0 — Decode HBM Captive Ratio (DHCR)
+    # ============================================================
+    # Direction monitor (no trigger gate in v3.4.0).
+    #
+    # Replaces the original ROADMAP indicators 23 (Inference Efficiency Shock),
+    # 24 (CXL Production Deployment) and 25 (LPDDR Datacenter Ramp) which were
+    # collapsed into this single composite per Raul's direction 2026-05-21.
+    #
+    # The CORE QUESTION (Raul's mental model):
+    #   Is enterprise demand-pull growing faster than the supply-side capacity-
+    #   creation rate (efficiency × HBM-per-accelerator)?
+    #
+    # The mental model rejects the naive "efficiency vs context" trade-off.
+    # Efficiency UNLOCKS economic context capacity. Enterprise workloads
+    # expand to consume what's economically possible. The binding question
+    # is whether enterprise demand grows fast enough to fill the unlocked
+    # headroom. If yes → HBM stays tight (bullish SK Hynix); if no → slack
+    # (bearish).
+    #
+    # Computed in src/analysis/dhcr.py from three YAML reference files:
+    #   data/inference_arch_reference.yaml — frontier KV efficiency
+    #   data/hbm_per_accelerator.yaml — HBM capacity per accelerator
+    #   data/enterprise_ai_revenue.yaml — demand-pull metrics
+    #
+    # v3.4.0 ships as direction-only (5 levels: strongly_bullish_hbm,
+    # mildly_bullish_hbm, balanced, mildly_bearish_hbm, strongly_bearish_hbm).
+    # Trigger logic deferred to v3.4.1+ after 4-6 quarters of shadow data
+    # validates zone-transition thresholds.
+    Indicator(
+        id="t1_decode_hbm_captive_ratio",
+        tier=1,
+        name="Decode HBM captive ratio (efficiency × demand)",
+        short_label="HBM captive ratio",
+        description=(
+            "Direction monitor on whether enterprise AI demand growth is "
+            "keeping pace with the supply-side capacity-creation rate "
+            "(KV efficiency improvements × HBM-per-accelerator growth). "
+            "Bullish HBM when demand-pull outruns capacity creation; "
+            "bearish when efficiency / HBM packing outruns demand."
+        ),
+        what_to_look_for=(
+            "Composite direction signal from three drivers: (1) frontier KV "
+            "efficiency YoY change (open-architecture models); (2) HBM-per-"
+            "accelerator YoY change (NVIDIA/AMD merchant chips); "
+            "(3) enterprise AI revenue YoY weighted blend across Microsoft "
+            "Azure AI, AWS, Google Cloud, Oracle, NVIDIA datacenter. "
+            "Watch for direction to flip from bullish to balanced or worse — "
+            "would signal demand growth decelerating below efficiency gains."
+        ),
+        sources=[
+            "Open-model architecture disclosures (Meta, DeepSeek, Mistral, Alibaba)",
+            "NVIDIA / AMD product specs (HBM per chip)",
+            "Hyperscaler earnings (segment AI revenue disclosures)",
+            "NVIDIA datacenter segment revenue (proxy for total AI demand)",
+            "Hyperscaler capex disclosures",
+        ],
+        # v3.4.0: no trigger patterns — direction monitor only. The news
+        # pipeline doesn't drive this indicator; computed YAML data does.
+        trigger_patterns=[],
+        trigger_numeric=None,
+        cadence="Monthly (architecture YAML), quarterly (revenue YAML)",
+        stitching=(
+            "Computed from data/inference_arch_reference.yaml + "
+            "data/hbm_per_accelerator.yaml + data/enterprise_ai_revenue.yaml "
+            "via src/analysis/dhcr.py:compute_dhcr_snapshot(). Does not "
+            "consume news items directly."
+        ),
+    ),
 ]
 
 

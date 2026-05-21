@@ -819,3 +819,62 @@ def update_evidence_after_layer2(
                 ),
             ))
     return store
+
+
+# ============================================================
+# v3.4.0 — DHCR (Decode HBM Captive Ratio) state persistence
+# ============================================================
+# DHCR is a direction monitor. Each run we compute a snapshot from
+# the YAML reference files and persist it to state/dhcr_state.json
+# so the next run can compare current vs prior (QoQ direction
+# transitions). The full historical trajectory is recomputed from
+# YAML each run — it doesn't need persistence.
+
+DHCR_STATE_FILE = Path("state/dhcr_state.json")
+
+
+def load_dhcr_prior_state() -> Optional[dict]:
+    """Load the most recent persisted DHCR snapshot for QoQ comparison.
+
+    Returns None if no prior state exists (first run, or fresh deploy).
+    The structure mirrors the DHCRSnapshot dataclass from dhcr.py.
+    """
+    if not DHCR_STATE_FILE.exists():
+        return None
+    try:
+        with open(DHCR_STATE_FILE) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning(f"Could not load DHCR prior state: {e}")
+        return None
+
+
+def save_dhcr_state(snapshot_dict: dict) -> None:
+    """Persist the current DHCR snapshot for next-run comparison.
+
+    Accepts a dict (typically asdict(DHCRSnapshot)) so this module
+    doesn't depend on importing dhcr.py (avoids circular import risk).
+    Adds a history entry to dhcr_state.json's `recent_snapshots` list
+    (capped at 12 entries for QoQ trend windowing).
+    """
+    DHCR_STATE_FILE.parent.mkdir(exist_ok=True)
+    payload = {
+        "current": snapshot_dict,
+        "saved_at_iso": datetime.utcnow().isoformat(),
+    }
+
+    # Append to recent_snapshots history (cap at 12 entries)
+    prior = load_dhcr_prior_state()
+    if prior and isinstance(prior, dict):
+        history = prior.get("recent_snapshots", [])
+        if isinstance(history, list):
+            history.append(snapshot_dict)
+            payload["recent_snapshots"] = history[-12:]
+        else:
+            payload["recent_snapshots"] = [snapshot_dict]
+    else:
+        payload["recent_snapshots"] = [snapshot_dict]
+
+    with open(DHCR_STATE_FILE, "w") as f:
+        json.dump(payload, f, indent=2, default=str)
+    logger.info(f"DHCR snapshot persisted to {DHCR_STATE_FILE}")

@@ -84,6 +84,14 @@ def build_email_html(
     cycle_verdict: Optional[object] = None,
     cycle_matrix_chart_b64: Optional[str] = None,
     spot_contract_chart_b64: Optional[str] = None,
+    # v3.4.0: DHCR direction-monitor data. snapshot is a dict (from
+    # asdict(DHCRSnapshot)) carrying all computed fields. chart_b64 is the
+    # trajectory chart rendered by chart_generator. When both are None
+    # (DHCR YAML missing or computation failed), the indicator simply
+    # renders Sonnet's fallback prose like any other indicator — the
+    # framework degrades gracefully.
+    dhcr_snapshot: Optional[dict] = None,
+    dhcr_chart_b64: Optional[str] = None,
 ) -> str:
     """Assemble the full HTML email."""
 
@@ -246,6 +254,7 @@ def build_email_html(
     parts.append(_build_indicators_section(
         analysis.indicator_assessments,
         rel_strength_verdict=rel_strength_verdict,
+        dhcr_snapshot=dhcr_snapshot,
     ))
 
     # 6. Top 5 deep dives (section 4 — includes cycle matrix card under
@@ -257,6 +266,14 @@ def build_email_html(
         cycle_matrix_chart_b64=cycle_matrix_chart_b64,
         spot_contract_chart_b64=spot_contract_chart_b64,
     ))
+
+    # v3.4.0 — DHCR section 4 deep-dive card. Rendered as its own card
+    # block (not in top_5_deep_dives because DHCR isn't a per-indicator
+    # status — it's a direction monitor with computed numbers + chart).
+    # Always renders when dhcr_snapshot is provided, regardless of whether
+    # it's in top_5_deep_dives.
+    if dhcr_snapshot:
+        parts.append(_build_dhcr_section4_card(dhcr_snapshot, chart_b64=dhcr_chart_b64))
 
     # 7. Latest news
     parts.append("<h2 id='section-5'>5. Latest news from the memory & semi market</h2>")
@@ -475,6 +492,263 @@ def _format_change(value: Optional[float]) -> str:
     return f"<span class='perf-flat'>{value:.2f}%</span>"
 
 
+def _build_dhcr_section3_snippet(dhcr: Optional[dict]) -> str:
+    """v3.4.0 — section 3 summary card for t1_decode_hbm_captive_ratio.
+
+    Compact direction-monitor representation: shows the composite direction
+    (5-level scale), the key driver numbers (KV efficiency YoY, HBM-per-
+    accelerator YoY, enterprise revenue YoY), and the implied context
+    capacity per accelerator. Color-coded by direction.
+
+    Returns "" if dhcr is None (DHCR computation failed or YAML missing) —
+    section 3 row falls back to pure Sonnet prose.
+    """
+    if not dhcr:
+        return ""
+
+    direction = dhcr.get("direction", "balanced")
+    direction_colors = {
+        "strongly_bullish_hbm": "#2C7A2C",  # deep green
+        "mildly_bullish_hbm": "#C0DD97",
+        "balanced": "#CCCCCC",
+        "mildly_bearish_hbm": "#FAC775",
+        "strongly_bearish_hbm": "#B91C1C",
+    }
+    direction_labels = {
+        "strongly_bullish_hbm": "STRONGLY BULLISH HBM",
+        "mildly_bullish_hbm": "Mildly bullish HBM",
+        "balanced": "Balanced",
+        "mildly_bearish_hbm": "Mildly bearish HBM",
+        "strongly_bearish_hbm": "STRONGLY BEARISH HBM",
+    }
+    direction_arrows = {
+        "strongly_bullish_hbm": "↑↑",
+        "mildly_bullish_hbm": "↑",
+        "balanced": "→",
+        "mildly_bearish_hbm": "↓",
+        "strongly_bearish_hbm": "↓↓",
+    }
+
+    color = direction_colors.get(direction, "#CCCCCC")
+    label = direction_labels.get(direction, direction)
+    arrow = direction_arrows.get(direction, "→")
+
+    # Direction badge (top of cell)
+    text_color = "#FFFFFF" if direction == "strongly_bearish_hbm" else "#1a1a1a"
+    direction_badge = (
+        f"<div style='margin-bottom:6px'>"
+        f"<span style='display:inline-block;background:{color};color:{text_color};"
+        f"padding:3px 10px;border-radius:3px;font-weight:700;font-size:12px'>"
+        f"{arrow} {label}</span>"
+        f"</div>"
+    )
+
+    # Key driver lines
+    kv = dhcr.get("frontier_kv_kb_per_token", 0)
+    kv_yoy = dhcr.get("kv_yoy_change_pct")
+    hbm = dhcr.get("frontier_hbm_gb_per_accelerator", 0)
+    hbm_yoy = dhcr.get("hbm_per_accelerator_yoy_change_pct")
+    cap_yoy = dhcr.get("capacity_creation_yoy_pct")
+    ent_yoy = dhcr.get("enterprise_ai_yoy_growth_pct")
+    nv_yoy = dhcr.get("nvidia_datacenter_yoy_growth_pct")
+    cap_tokens = dhcr.get("implied_context_capacity_per_accelerator_tokens", 0) or 0
+
+    if cap_tokens >= 1_000_000:
+        cap_s = f"{cap_tokens / 1_000_000:.1f}M"
+    elif cap_tokens >= 1_000:
+        cap_s = f"{cap_tokens / 1_000:.0f}K"
+    else:
+        cap_s = str(cap_tokens)
+
+    def _fmt_pct(v):
+        if v is None:
+            return "n/a"
+        return f"{v:+.0f}%"
+
+    drivers_html = (
+        "<div style='font-size:11px;color:#444;line-height:1.4'>"
+        f"<div><strong>Frontier KV:</strong> {kv:.0f} KB/tok "
+        f"(YoY {_fmt_pct(kv_yoy)}) · "
+        f"<strong>HBM/accel:</strong> {hbm:.0f} GB (YoY {_fmt_pct(hbm_yoy)})</div>"
+        f"<div><strong>Implied capacity:</strong> ~{cap_s} tokens per accelerator</div>"
+        f"<div><strong>Capacity-creation YoY:</strong> {_fmt_pct(cap_yoy)} · "
+        f"<strong>Enterprise AI YoY:</strong> {_fmt_pct(ent_yoy)} · "
+        f"<strong>NVIDIA DC YoY:</strong> {_fmt_pct(nv_yoy)}</div>"
+        "</div>"
+    )
+
+    return f"<div style='margin-bottom:8px'>{direction_badge}{drivers_html}</div>"
+
+
+def _build_dhcr_section4_card(dhcr: Optional[dict], chart_b64: Optional[str] = None) -> str:
+    """v3.4.0 — section 4 deep-dive card for DHCR.
+
+    Renders the full DHCR snapshot including: composite direction reading,
+    the matrix-based visualization (efficiency × HBM-capacity), the YoY
+    trend numbers for all three drivers, and the substitution-risk flags.
+    Pulls Sonnet's narrative paragraph from dhcr.narrative_summary.
+    """
+    if not dhcr:
+        return ""
+
+    direction = dhcr.get("direction", "balanced")
+    direction_colors = {
+        "strongly_bullish_hbm": "#2C7A2C",
+        "mildly_bullish_hbm": "#C0DD97",
+        "balanced": "#CCCCCC",
+        "mildly_bearish_hbm": "#FAC775",
+        "strongly_bearish_hbm": "#B91C1C",
+    }
+    color = direction_colors.get(direction, "#CCCCCC")
+    text_color = "#FFFFFF" if direction == "strongly_bearish_hbm" else "#1a1a1a"
+
+    kv = dhcr.get("frontier_kv_kb_per_token", 0)
+    model = dhcr.get("frontier_model_name", "?")
+    arch = dhcr.get("frontier_model_arch", "?")
+    hbm = dhcr.get("frontier_hbm_gb_per_accelerator", 0)
+    accel = dhcr.get("frontier_accelerator_name", "?")
+    cap_tokens = dhcr.get("implied_context_capacity_per_accelerator_tokens", 0) or 0
+    kv_yoy = dhcr.get("kv_yoy_change_pct") or 0
+    hbm_yoy = dhcr.get("hbm_per_accelerator_yoy_change_pct") or 0
+    cap_yoy = dhcr.get("capacity_creation_yoy_pct") or 0
+    ent_yoy = dhcr.get("enterprise_ai_yoy_growth_pct") or 0
+    nv_yoy = dhcr.get("nvidia_datacenter_yoy_growth_pct") or 0
+    capex_yoy = dhcr.get("hyperscaler_capex_yoy_growth_pct") or 0
+    ent_rr = dhcr.get("enterprise_ai_aggregate_run_rate_usd_b", 0)
+    narrative = dhcr.get("narrative_summary", "")
+    dominant = dhcr.get("dominant_force", "")
+    confidence = dhcr.get("confidence", "?")
+    subst = dhcr.get("substitution_risk_notes") or []
+
+    if cap_tokens >= 1_000_000:
+        cap_s = f"{cap_tokens / 1_000_000:.1f}M"
+    elif cap_tokens >= 1_000:
+        cap_s = f"{cap_tokens / 1_000:.0f}K"
+    else:
+        cap_s = str(cap_tokens)
+
+    direction_label = direction.replace("_", " ").upper()
+
+    parts = []
+    parts.append(
+        "<div style='margin:24px 0;border:2px solid #555;background:#FAFAFA;"
+        "padding:18px;border-radius:5px'>"
+    )
+    parts.append(
+        f"<h3 style='margin:0 0 12px 0;color:#1a1a1a'>"
+        f"Decode HBM Captive Ratio — direction monitor "
+        f"<span style='font-size:12px;color:#888;font-weight:normal'>(new v3.4.0)</span>"
+        f"</h3>"
+    )
+    parts.append(
+        f"<div style='margin-bottom:12px'>"
+        f"<span style='background:{color};color:{text_color};padding:6px 14px;"
+        f"border-radius:4px;font-weight:700;font-size:14px'>"
+        f"{direction_label}</span>"
+        f"<span style='margin-left:12px;color:#666;font-size:12px'>"
+        f"confidence: {confidence} · {dominant}</span>"
+        f"</div>"
+    )
+
+    # Two-column layout: supply (left), demand (right)
+    parts.append("<table style='width:100%;border-collapse:collapse;margin-bottom:14px'><tr>")
+
+    # Supply side
+    parts.append(
+        "<td style='width:50%;vertical-align:top;padding-right:14px;"
+        "border-right:1px solid #DDD'>"
+        "<div style='font-weight:600;color:#1a1a1a;margin-bottom:6px;font-size:13px'>"
+        "SUPPLY-SIDE: capacity creation rate</div>"
+        f"<div style='font-size:12px;color:#333;line-height:1.55'>"
+        f"<strong>Frontier KV efficiency:</strong> {kv:.0f} KB/tok<br/>"
+        f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
+        f"{html.escape(model)} ({arch})</span><br/>"
+        f"&nbsp;&nbsp;YoY: {kv_yoy:+.0f}% (negative = efficiency improving)<br/><br/>"
+        f"<strong>Frontier HBM-per-accelerator:</strong> {hbm:.0f} GB<br/>"
+        f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
+        f"{html.escape(accel)}</span><br/>"
+        f"&nbsp;&nbsp;YoY: {hbm_yoy:+.0f}%<br/><br/>"
+        f"<strong>Composite capacity-creation rate:</strong> "
+        f"<span style='font-size:14px;font-weight:600'>{cap_yoy:+.0f}% YoY</span><br/><br/>"
+        f"<strong>Implied context-capacity frontier:</strong><br/>"
+        f"&nbsp;&nbsp;~<span style='font-size:18px;font-weight:700;color:#0F6E56'>"
+        f"{cap_s}</span> tokens per accelerator<br/>"
+        f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
+        f"(at frontier KV × frontier HBM-per-accel)</span>"
+        f"</div>"
+        "</td>"
+    )
+
+    # Demand side
+    parts.append(
+        "<td style='width:50%;vertical-align:top;padding-left:14px'>"
+        "<div style='font-weight:600;color:#1a1a1a;margin-bottom:6px;font-size:13px'>"
+        "DEMAND-PULL: enterprise AI revenue</div>"
+        f"<div style='font-size:12px;color:#333;line-height:1.55'>"
+        f"<strong>Aggregate run-rate:</strong> "
+        f"${ent_rr:.0f}B annualized<br/>"
+        f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
+        f"MSFT Azure AI + AWS + GCP + Oracle AI infra</span><br/><br/>"
+        f"<strong>Weighted enterprise YoY:</strong> "
+        f"<span style='font-size:14px;font-weight:600'>{ent_yoy:+.0f}%</span><br/><br/>"
+        f"<strong>NVIDIA datacenter YoY:</strong> {nv_yoy:+.0f}%<br/>"
+        f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
+        f"(proxy for total AI accelerator demand)</span><br/><br/>"
+        f"<strong>Hyperscaler capex YoY:</strong> {capex_yoy:+.0f}%<br/>"
+        f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
+        f"(MSFT + GOOGL + AMZN + META)</span>"
+        f"</div>"
+        "</td>"
+    )
+
+    parts.append("</tr></table>")
+
+    # Chart if available
+    if chart_b64:
+        parts.append(
+            f"<img src='data:image/png;base64,{chart_b64}' "
+            f"style='width:100%;max-width:720px;margin:8px 0' "
+            f"alt='DHCR trajectory chart — capacity creation vs enterprise demand growth' />"
+        )
+
+    # Narrative
+    if narrative:
+        parts.append(
+            f"<div style='background:#FFFFFF;padding:10px 12px;border-left:3px solid {color};"
+            f"margin:10px 0;font-size:12px;color:#333;line-height:1.5'>"
+            f"<strong style='color:#1a1a1a'>Read:</strong> "
+            f"{html.escape(narrative)}"
+            f"</div>"
+        )
+
+    # Substitution risk
+    if subst:
+        parts.append(
+            "<div style='margin-top:10px;font-size:11px;color:#666'>"
+            "<strong style='color:#1a1a1a'>HBM-substitution risk flags "
+            "(non-HBM accelerators):</strong><ul style='margin:4px 0 0 0;padding-left:20px'>"
+        )
+        for note in subst[:5]:
+            parts.append(f"<li>{html.escape(note)}</li>")
+        parts.append("</ul></div>")
+
+    # Mental model footer
+    parts.append(
+        "<div style='margin-top:14px;padding-top:10px;border-top:1px solid #DDD;"
+        "font-size:11px;color:#888;line-height:1.4'>"
+        "<strong>Mental model:</strong> Efficiency gains don't displace HBM — they "
+        "UNLOCK economic context capacity. Enterprise workloads then expand to "
+        "consume what's economically possible. The binding question is whether "
+        "enterprise demand grows fast enough to fill the unlocked headroom. "
+        "Today's read: demand-pull running ahead of capacity creation by "
+        f"~{ent_yoy - cap_yoy:.0f}pp YoY — HBM stays tight (bullish SK Hynix). "
+        "Watch for enterprise YoY decelerating below capacity-creation rate.</div>"
+    )
+
+    parts.append("</div>")
+    return "\n".join(parts)
+
+
 def _build_relative_strength_snippet(rel_strength_verdict: Optional[dict]) -> str:
     """v3.39.7.9 — pre-built HTML snippet showing the computed 5d-vs-SOX
     relative strength numbers, color-coded per the fire thresholds:
@@ -559,6 +833,7 @@ def _build_relative_strength_snippet(rel_strength_verdict: Optional[dict]) -> st
 def _build_indicators_section(
     assessments: list[IndicatorAssessment],
     rel_strength_verdict: Optional[dict] = None,
+    dhcr_snapshot: Optional[dict] = None,
 ) -> str:
     """Build the four-tier indicator status tables.
 
@@ -566,22 +841,21 @@ def _build_indicators_section(
     section (was injected under t1_spot_decline at the bottom of section
     3 since v3.39.7). It now renders inside section 4 (Top 5 indicators
     — deep dive), at the bottom of the DRAM Price Evolution deep-dive
-    item per user direction 2026-05-20. This keeps section 3 as a clean
-    summary table and concentrates the visual matrix + chart in the
-    deep-dive context where they're more useful.
+    item per user direction 2026-05-20.
 
-    v3.39.7.9 — rel_strength_verdict param added. For t3_relative_strength
-    specifically, the "Where we stand" cell now leads with the computed
-    5d-vs-SOX values (SK Hynix, Micron, DRAM ETF vs SMH) and the band
-    classification (red/yellow/green based on the -10pp / -5pp thresholds)
-    before the Sonnet-written prose. Per user direction 2026-05-21: "i
-    expect to see a number as a number is what will trigger a warn
-    (partially fired) or fired". Numbers should be visible in section 3
-    summary AND section 4 deep dive — this fixes the section 3 surface.
+    v3.39.7.9 — rel_strength_verdict param added.
+
+    v3.4.0 — dhcr_snapshot param added. For t1_decode_hbm_captive_ratio,
+    the "Where we stand" cell renders the direction-monitor snippet
+    (composite direction + YoY drivers + implied capacity) instead of
+    Sonnet's prose. This is the only direction-monitor indicator in the
+    framework — its read is the computed numbers, not narrative.
     """
     # v3.39.7.9 — pre-build the t3_relative_strength computed snippet once
     # so the per-row loop can drop it in cheaply.
     rs_snippet = _build_relative_strength_snippet(rel_strength_verdict)
+    # v3.4.0 — same pattern for DHCR
+    dhcr_snippet = _build_dhcr_section3_snippet(dhcr_snapshot)
 
     parts = []
     for tier in (1, 2, 3, 4):
@@ -647,6 +921,13 @@ def _build_indicators_section(
             where_we_stand_html = html.escape(a.where_we_stand)
             if a.id == "t3_relative_strength" and rs_snippet:
                 where_we_stand_html = rs_snippet + where_we_stand_html
+            elif a.id == "t1_decode_hbm_captive_ratio" and dhcr_snippet:
+                # v3.4.0 — DHCR direction monitor. Snippet shows the
+                # composite direction + key driver YoY rates + implied
+                # context capacity. Replaces (not prepends to) Sonnet's
+                # prose because the direction monitor IS the read — Sonnet's
+                # text would be redundant with the computed numbers shown.
+                where_we_stand_html = dhcr_snippet
 
             parts.append(
                 "<tr>"

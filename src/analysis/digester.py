@@ -162,6 +162,17 @@ do not infer or speculate. Use null for unknown.
     "lpddr_datacenter_design_win": null or "<vendor name>",
     "hbf_mention": null or true | false,                // High Bandwidth Flash
 
+    // v3.4.0 — Enterprise agent workload context (feeds DHCR demand-pull narrative)
+    // These fields are extracted when mgmt explicitly discusses enterprise AI
+    // adoption, agent workload deployment, or context length growth at a customer.
+    // The DHCR direction monitor uses these as evidence that demand-pull is
+    // expanding into the efficiency-unlocked headroom.
+    "enterprise_ai_workload_context_tokens": null or number,  // e.g. "customer X processes 500K-token workflows" → 500000
+    "enterprise_ai_customer_name": null or "<customer name if disclosed>",
+    "enterprise_ai_use_case": null or "<one-liner: legal review / underwriting / coding agent / etc>",
+    "enterprise_ai_revenue_growth_qoq_pct": null or number,  // QoQ enterprise AI segment growth if disclosed
+    "agent_product_usage_disclosure": null or "<one-liner: 'Copilot has X paying users at Y context'>",
+
     // Free-text catch for anything material that doesn't fit above
     "architecture_freetext": null or "<one-sentence summary of the material architectural point>"
   }}

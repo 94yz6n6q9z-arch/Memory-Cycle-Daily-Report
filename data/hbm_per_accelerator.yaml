@@ -1,0 +1,219 @@
+# HBM-per-accelerator reference for the Decode HBM Captive Ratio
+# (DHCR) indicator (v3.4.0).
+#
+# Tracks HBM capacity per AI accelerator across generations. The DHCR
+# module computes "frontier HBM per accelerator" as the maximum HBM GB
+# shipped by any single accelerator generation in the trailing 90-day
+# window of each historical timestamp.
+#
+# Why this matters for the captive ratio:
+#   The supply-side capacity equation is HBM_per_accelerator × units_shipped.
+#   If accelerators keep packing MORE HBM per chip (B200 192GB → Rubin
+#   384GB), and shipments grow, total HBM demand stays strong even if
+#   per-token KV efficiency improves — because the larger HBM pool gets
+#   filled by longer context per workload (Raul's economic frontier
+#   model: market consumes context up to capacity).
+#
+# Non-HBM AI accelerators (Cerebras WSE SRAM, Groq SRAM, etc.) are tracked
+# separately under `non_hbm_accelerators` because they represent the
+# substitution risk — workloads running on those are not consuming HBM
+# at all.
+#
+# Update cadence: per launch (~3-6 months between flagship generations).
+# Sources: vendor product pages, datasheets, earnings call disclosures.
+
+schema_version: 1
+
+# ============================================================
+# NVIDIA AI accelerators (dominant share)
+# ============================================================
+
+nvidia:
+  - generation: "H100"
+    release_date: "2023-03-21"
+    hbm_gb_per_chip: 80
+    hbm_type: "HBM3"
+    chip_form: "single die"
+    notes: "Launch generation for the AI cycle."
+    source_url: "https://www.nvidia.com/en-us/data-center/h100/"
+
+  - generation: "H200"
+    release_date: "2024-03-18"
+    hbm_gb_per_chip: 141
+    hbm_type: "HBM3e"
+    chip_form: "single die"
+    notes: "First HBM3e production deployment. SK Hynix dominant supplier."
+    source_url: "https://www.nvidia.com/en-us/data-center/h200/"
+
+  - generation: "B100"
+    release_date: "2024-10-15"
+    hbm_gb_per_chip: 192
+    hbm_type: "HBM3e"
+    chip_form: "single die"
+    notes: "Blackwell architecture, single-die variant."
+
+  - generation: "B200"
+    release_date: "2024-11-20"
+    hbm_gb_per_chip: 192
+    hbm_type: "HBM3e"
+    chip_form: "single die (dual reticle)"
+    notes: "Dual-reticle Blackwell. 192GB HBM3e in 8 stacks."
+
+  - generation: "GB200"
+    release_date: "2025-02-15"
+    hbm_gb_per_chip: 384      # superchip = 2 B200 dies + Grace CPU
+    hbm_type: "HBM3e"
+    chip_form: "superchip (2 GPU dies + 1 CPU)"
+    notes: "Blackwell superchip. Effective HBM per accelerator unit doubles."
+
+  - generation: "B300"
+    release_date: "2025-09-30"
+    hbm_gb_per_chip: 288
+    hbm_type: "HBM3e"
+    chip_form: "single die"
+    notes: "Blackwell-Ultra. 288GB per GPU via 12-Hi stacks."
+
+  - generation: "GB300"
+    release_date: "2025-11-15"
+    hbm_gb_per_chip: 576      # superchip = 2 B300 dies
+    hbm_type: "HBM3e"
+    chip_form: "superchip"
+
+  - generation: "Rubin (projected)"
+    release_date: "2026-Q4"   # projected
+    hbm_gb_per_chip: 288
+    hbm_type: "HBM4"
+    chip_form: "single die"
+    notes: "First HBM4 production. Bandwidth ~2x HBM3e at similar capacity. Capacity scales come with Rubin Ultra."
+    confidence: "projected"
+
+  - generation: "Rubin Ultra (projected)"
+    release_date: "2027-H2"
+    hbm_gb_per_chip: 1024     # projected based on NVIDIA hints — 16-Hi HBM4 stacks
+    hbm_type: "HBM4"
+    chip_form: "superchip"
+    confidence: "projected"
+    notes: "Speculative based on NVIDIA roadmap. Will represent ~5x HBM3e baseline if delivered."
+
+# ============================================================
+# AMD AI accelerators
+# ============================================================
+
+amd:
+  - generation: "MI300X"
+    release_date: "2023-12-06"
+    hbm_gb_per_chip: 192
+    hbm_type: "HBM3"
+    notes: "First competitive HBM-per-chip leader (192GB vs H100's 80GB)."
+
+  - generation: "MI325X"
+    release_date: "2024-10-10"
+    hbm_gb_per_chip: 256
+    hbm_type: "HBM3e"
+    notes: "AMD maintained capacity lead briefly."
+
+  - generation: "MI355X"
+    release_date: "2025-06-25"
+    hbm_gb_per_chip: 288
+    hbm_type: "HBM3e"
+    notes: "CDNA4 architecture."
+
+  - generation: "MI400 (projected)"
+    release_date: "2026-Q3"
+    hbm_gb_per_chip: 432
+    hbm_type: "HBM4"
+    confidence: "projected"
+
+# ============================================================
+# Custom hyperscaler silicon (HBM-based)
+# ============================================================
+
+custom_silicon:
+  - vendor: "Google"
+    generation: "TPU v5p"
+    release_date: "2023-12-06"
+    hbm_gb_per_chip: 95
+    hbm_type: "HBM3"
+
+  - vendor: "Google"
+    generation: "TPU v6e (Trillium)"
+    release_date: "2024-12-10"
+    hbm_gb_per_chip: 128
+    hbm_type: "HBM3e"
+
+  - vendor: "Google"
+    generation: "TPU v7 (Ironwood)"
+    release_date: "2026-03-15"
+    hbm_gb_per_chip: 192
+    hbm_type: "HBM3e"
+
+  - vendor: "AWS"
+    generation: "Trainium 2"
+    release_date: "2025-04-15"
+    hbm_gb_per_chip: 96
+    hbm_type: "HBM3"
+
+  - vendor: "Meta"
+    generation: "MTIA v2"
+    release_date: "2025-08-22"
+    hbm_gb_per_chip: 128
+    hbm_type: "HBM3e"
+    notes: "Inference-focused. Lower HBM/chip vs training silicon."
+
+  - vendor: "Microsoft"
+    generation: "Maia 200"
+    release_date: "2025-09-30"
+    hbm_gb_per_chip: 160
+    hbm_type: "HBM3e"
+
+# ============================================================
+# Non-HBM AI accelerators (HBM-substitution risk)
+# ============================================================
+
+non_hbm_accelerators:
+  # Workloads running on these consume ZERO HBM. They are the structural
+  # substitution risk for SK Hynix's HBM moat. Track market share —
+  # if these capture material AI compute share, that's bearish HBM
+  # regardless of efficiency math.
+  - vendor: "Cerebras"
+    generation: "WSE-3"
+    release_date: "2024-03-13"
+    memory_type: "On-die SRAM"
+    on_die_memory_gb: 44
+    external_memory: "None (pure SRAM)"
+    ai_compute_share_estimate: "<1%"
+    notes: "Single-wafer chip with 44GB SRAM. Pure substitution case but limited share."
+    listed_ipo_date: "2026-05-14"
+
+  - vendor: "Groq"
+    generation: "LPU v2"
+    release_date: "2025-02-20"
+    memory_type: "On-die SRAM + external DDR"
+    on_die_memory_gb: 230   # cumulative across rack-scale deployment
+    external_memory: "DDR5"
+    ai_compute_share_estimate: "<1%"
+    notes: "Inference-only. Uses commodity DDR for capacity tier."
+
+  - vendor: "Etched"
+    generation: "Sohu"
+    release_date: "2025-08-01"
+    memory_type: "Transformer-specific ASIC with on-die SRAM"
+    on_die_memory_gb: 144
+    external_memory: "limited"
+    ai_compute_share_estimate: "<0.5%"
+    notes: "Speculative new entrant. Watch but not material yet."
+
+# ============================================================
+# Derived: frontier HBM-per-accelerator timeline
+# ============================================================
+# Computed by dhcr.py from the entries above. For each quarter,
+# takes the max hbm_gb_per_chip from nvidia + amd shipping in
+# that quarter or earlier. Custom silicon excluded from frontier
+# because it's not openly purchasable.
+
+derived_frontier_timeline_notes: |
+  The DHCR uses frontier_hbm_per_accelerator = max(nvidia, amd) shipping
+  at each point in time. Custom hyperscaler silicon excluded because
+  it's captive (not part of merchant market). Non-HBM accelerators
+  excluded because they don't consume HBM at all (they're the
+  substitution risk, tracked separately).

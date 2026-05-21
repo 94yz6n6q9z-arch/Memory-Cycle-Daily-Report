@@ -1,0 +1,273 @@
+# Enterprise AI revenue reference for the Decode HBM Captive Ratio
+# (DHCR) indicator (v3.4.0).
+#
+# The CENTRAL question of the DHCR (per Raul's mental model):
+#   Is enterprise demand-pull growing faster than the supply-side capacity
+#   creation rate (efficiency × HBM-per-accelerator)?
+#
+# If YES → context expands to fill capacity → HBM stays tight → bullish SK Hynix
+# If NO  → capacity creation outruns demand → HBM gets slack → bearish SK Hynix
+#
+# This file tracks the demand-pull metrics: enterprise AI revenue growth
+# across the major spend categories. The DHCR computes:
+#   - YoY enterprise AI revenue growth (aggregate)
+#   - Compares to YoY supply-capacity growth rate
+#   - Direction signal from the difference
+#
+# Sources: quarterly earnings calls, segment disclosures, hyperscaler
+# 10-Qs. All figures are best-public-estimates — providers often combine
+# AI revenue with other cloud services or only mention "X% of growth"
+# rather than absolute dollars. Where exact disclosure isn't available,
+# the value is tagged with confidence.
+#
+# Cadence: updated quarterly as new earnings prints publish. Bootstrap
+# back to Q1 2024 for trajectory.
+
+schema_version: 1
+
+# ============================================================
+# Microsoft Azure AI services
+# ============================================================
+# Microsoft discloses Azure growth and the AI contribution to that
+# growth in points. We back-solve from those disclosures.
+
+microsoft_azure_ai:
+  - quarter: "2024-Q1"
+    revenue_usd_b_annualized: 5.0
+    yoy_growth_pct: null            # not enough prior data
+    confidence: "medium"
+    source: "MSFT FY24 Q3 earnings call commentary"
+    notes: "First quarter MSFT explicitly broke out Azure AI revenue contribution."
+
+  - quarter: "2024-Q2"
+    revenue_usd_b_annualized: 8.0
+    yoy_growth_pct: null
+    confidence: "medium"
+
+  - quarter: "2024-Q3"
+    revenue_usd_b_annualized: 10.0
+    yoy_growth_pct: null
+    confidence: "medium"
+    notes: "Satya: 'Azure AI exited the quarter at $10B annualized run-rate.'"
+
+  - quarter: "2024-Q4"
+    revenue_usd_b_annualized: 13.0
+    yoy_growth_pct: null
+    confidence: "high"
+    source: "MSFT FY25 Q1 earnings"
+
+  - quarter: "2025-Q1"
+    revenue_usd_b_annualized: 19.0
+    yoy_growth_pct: 280.0
+    confidence: "high"
+
+  - quarter: "2025-Q2"
+    revenue_usd_b_annualized: 26.0
+    yoy_growth_pct: 225.0
+    confidence: "high"
+
+  - quarter: "2025-Q3"
+    revenue_usd_b_annualized: 34.0
+    yoy_growth_pct: 240.0
+    confidence: "high"
+
+  - quarter: "2025-Q4"
+    revenue_usd_b_annualized: 42.0
+    yoy_growth_pct: 223.0
+    confidence: "high"
+
+  - quarter: "2026-Q1"
+    revenue_usd_b_annualized: 48.0
+    yoy_growth_pct: 152.0
+    confidence: "high"
+    notes: "Growth rate moderating — first sequential deceleration since 2024."
+
+# ============================================================
+# AWS Bedrock + ML services
+# ============================================================
+# AWS does not break out AI separately. Estimates from "$X billion ARR"
+# mentions in earnings + Adam Selipsky commentary.
+
+aws_ai_services:
+  - quarter: "2024-Q1"
+    revenue_usd_b_annualized: 4.0
+    yoy_growth_pct: null
+    confidence: "low"
+    notes: "AWS does not disclose AI revenue separately. Estimate based on multi-billion comments."
+
+  - quarter: "2024-Q4"
+    revenue_usd_b_annualized: 8.0
+    yoy_growth_pct: null
+    confidence: "low"
+
+  - quarter: "2025-Q4"
+    revenue_usd_b_annualized: 22.0
+    yoy_growth_pct: 175.0
+    confidence: "low"
+
+  - quarter: "2026-Q1"
+    revenue_usd_b_annualized: 28.0
+    yoy_growth_pct: 165.0
+    confidence: "medium"
+    notes: "AWS has stepped up AI disclosure. Bedrock + Trainium + Q now broken out."
+
+# ============================================================
+# Google Cloud Vertex AI / Gen AI
+# ============================================================
+
+google_cloud_ai:
+  - quarter: "2024-Q1"
+    revenue_usd_b_annualized: 2.5
+    yoy_growth_pct: null
+    confidence: "low"
+
+  - quarter: "2024-Q4"
+    revenue_usd_b_annualized: 6.0
+    yoy_growth_pct: null
+    confidence: "low"
+
+  - quarter: "2025-Q4"
+    revenue_usd_b_annualized: 18.0
+    yoy_growth_pct: 200.0
+    confidence: "medium"
+
+  - quarter: "2026-Q1"
+    revenue_usd_b_annualized: 24.0
+    yoy_growth_pct: 220.0
+    confidence: "medium"
+
+# ============================================================
+# Oracle AI infrastructure
+# ============================================================
+# Oracle started breaking out AI infra revenue in 2024.
+
+oracle_ai_infra:
+  - quarter: "2024-Q3"
+    revenue_usd_b_annualized: 2.0
+    yoy_growth_pct: null
+    confidence: "medium"
+
+  - quarter: "2025-Q3"
+    revenue_usd_b_annualized: 12.0
+    yoy_growth_pct: 500.0
+    confidence: "high"
+    notes: "Oracle: 'AI infra contracts at $30B+ RPO with OpenAI alone.'"
+
+  - quarter: "2026-Q1"
+    revenue_usd_b_annualized: 21.0
+    yoy_growth_pct: 425.0
+    confidence: "high"
+
+# ============================================================
+# NVIDIA Datacenter segment
+# (proxy for total AI accelerator demand globally — strongest signal)
+# ============================================================
+# This is the cleanest single proxy for total AI compute demand.
+# NVIDIA's datacenter segment captures hyperscaler + enterprise +
+# sovereign AI buildouts.
+
+nvidia_datacenter:
+  - quarter: "2024-Q1"
+    revenue_usd_b: 22.5
+    yoy_growth_pct: 427.0
+    confidence: "high"
+    source: "NVIDIA FY25 Q1 earnings"
+
+  - quarter: "2024-Q2"
+    revenue_usd_b: 26.3
+    yoy_growth_pct: 154.0
+    confidence: "high"
+
+  - quarter: "2024-Q3"
+    revenue_usd_b: 30.8
+    yoy_growth_pct: 112.0
+    confidence: "high"
+
+  - quarter: "2024-Q4"
+    revenue_usd_b: 35.6
+    yoy_growth_pct: 93.0
+    confidence: "high"
+
+  - quarter: "2025-Q1"
+    revenue_usd_b: 39.1
+    yoy_growth_pct: 73.0
+    confidence: "high"
+
+  - quarter: "2025-Q2"
+    revenue_usd_b: 41.1
+    yoy_growth_pct: 56.0
+    confidence: "high"
+
+  - quarter: "2025-Q3"
+    revenue_usd_b: 51.0
+    yoy_growth_pct: 66.0
+    confidence: "high"
+
+  - quarter: "2025-Q4"
+    revenue_usd_b: 59.0
+    yoy_growth_pct: 66.0
+    confidence: "high"
+
+  - quarter: "2026-Q1"
+    revenue_usd_b: 66.0
+    yoy_growth_pct: 69.0
+    confidence: "high"
+    notes: "Re-acceleration off Blackwell/GB300 ramp."
+
+# ============================================================
+# Aggregate hyperscaler AI capex (the upstream constraint)
+# ============================================================
+# How much are the four hyperscalers spending on AI infrastructure?
+# This bounds the demand-pull. If capex stalls, enterprise revenue
+# can't grow forever.
+
+hyperscaler_ai_capex_aggregate:
+  - quarter: "2024-Q1"
+    msft_googl_amzn_meta_capex_usd_b: 50.8
+    yoy_growth_pct: 32.0
+    ai_share_estimate_pct: 55.0
+    confidence: "medium"
+
+  - quarter: "2024-Q4"
+    msft_googl_amzn_meta_capex_usd_b: 76.5
+    yoy_growth_pct: 60.0
+    ai_share_estimate_pct: 70.0
+    confidence: "medium"
+
+  - quarter: "2025-Q4"
+    msft_googl_amzn_meta_capex_usd_b: 142.0
+    yoy_growth_pct: 86.0
+    ai_share_estimate_pct: 78.0
+    confidence: "high"
+    notes: "Cumulative 2025 hyperscaler AI capex ~$500B."
+
+  - quarter: "2026-Q1"
+    msft_googl_amzn_meta_capex_usd_b: 168.0
+    yoy_growth_pct: 96.0
+    ai_share_estimate_pct: 82.0
+    confidence: "high"
+    notes: "2026 trajectory points to $725B+ aggregate."
+
+# ============================================================
+# Composite indicators (consumed by dhcr.py)
+# ============================================================
+
+composite_signals_q2_2026_estimate:
+  total_enterprise_ai_run_rate_usd_b: 121.0   # MSFT + AWS + GCP + Oracle
+  yoy_growth_pct: 175.0                       # weighted average
+  nvidia_datacenter_yoy_pct: 69.0             # decelerating from 400%+ peaks
+  hyperscaler_capex_yoy_pct: 96.0
+  confidence: "high for aggregate growth direction, medium for absolute level"
+
+  # Direction interpretation per Raul's mental model:
+  # - Enterprise AI revenue still growing 150%+ YoY = demand pull strong
+  # - NVIDIA datacenter growth decelerating but still 60-70% YoY
+  # - Hyperscaler capex still accelerating
+  # Net: demand-pull is keeping pace with or exceeding capacity creation
+  # → bullish for HBM captive ratio
+
+  driver_notes:
+    - "Enterprise vertical agents (Harvey, Hebbia, Sierra, Adept) still in adoption ramp"
+    - "OpenAI's $10B Cerebras contract is non-HBM but is a single-vendor outlier"
+    - "Oracle/OpenAI $30B+ RPO indicates multi-year commitment to HBM-based infrastructure"
+    - "MSFT Azure AI deceleration to 152% YoY is first slowdown signal — watch Q2"
