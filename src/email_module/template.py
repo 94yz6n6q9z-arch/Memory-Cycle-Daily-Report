@@ -633,8 +633,19 @@ def _build_indicators_section(
             # 2026-05-21: the number is what trips the indicator, so the
             # number must be visible at the section 3 summary level — not
             # just in section 4 deep dive.
+            #
+            # v3.39.7.10 — fixed AttributeError crash in production. The
+            # attribute is `id` on IndicatorAssessment, not `indicator_id`
+            # (the latter doesn't exist). v3.39.7.9 unit tests covered the
+            # _build_relative_strength_snippet helper in isolation but never
+            # exercised this branch in _build_indicators_section against a
+            # real IndicatorAssessment object, so the typo escaped tests
+            # and only surfaced when the 15:13 UTC fast-tier run hit this
+            # line. v3.39.7.10 adds an integration test that constructs
+            # an IndicatorAssessment(id="t3_relative_strength", ...) and
+            # verifies the rendered HTML contains the snippet badges.
             where_we_stand_html = html.escape(a.where_we_stand)
-            if a.indicator_id == "t3_relative_strength" and rs_snippet:
+            if a.id == "t3_relative_strength" and rs_snippet:
                 where_we_stand_html = rs_snippet + where_we_stand_html
 
             parts.append(

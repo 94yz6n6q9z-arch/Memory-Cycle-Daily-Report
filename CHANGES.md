@@ -6,6 +6,52 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.39.7.10 — Hotfix: AttributeError crash in section 3 t3_relative_strength rendering
+
+**The crash.** The v3.39.7.9 deploy at 15:13 UTC 2026-05-21 ran the full fast-tier pipeline cleanly through deep tier ingestion, news filter, Layer 2 across all 22 indicators, cycle matrix, Layer 3 Sonnet synthesis, trigger event log, and supercycle chart — then crashed in the email HTML rendering with:
+
+```
+File "src/email_module/template.py", line 637, in _build_indicators_section
+    if a.indicator_id == "t3_relative_strength" and rs_snippet:
+AttributeError: 'IndicatorAssessment' object has no attribute 'indicator_id'
+```
+
+`IndicatorAssessment` has field `id` (defined at `src/analysis/llm_summarizer.py:58`). v3.39.7.9 Fix #7b assumed `indicator_id` without checking the dataclass.
+
+**Why the v3.39.7.9 test suite didn't catch it.** The 9 tests in `TestSection3RelativeStrengthSnippet` covered `_build_relative_strength_snippet()` in isolation. The integration into `_build_indicators_section` against a real `IndicatorAssessment` object was never exercised. The branch with the typo was unreachable from any test path.
+
+**The fix.** One line in `src/email_module/template.py`: `a.indicator_id` → `a.id`. Plus 13 new regression tests in `tests/test_v3_39_7_10_section3_attribute_crash.py`:
+
+1. **Structural pinning** (3 tests in `TestIndicatorAssessmentFields`): pins `id` as the canonical attribute via `dataclasses.fields()` enumeration; explicitly asserts `indicator_id` is NOT a field; pins the full field set so any future addition is intentional.
+2. **Crash-reproduction integration** (4 tests in `TestBuildIndicatorsSectionRunsWithoutError`): calls `_build_indicators_section` with real `IndicatorAssessment` objects for t3 + non-t3 indicators + None verdict + mixed-tier mix. Each test would fail with the v3.39.7.9 typo.
+3. **Snippet correctness** (4 tests in `TestSnippetActuallyInjects`): verifies the snippet text actually appears in rendered HTML for t3 rows, doesn't appear for non-t3 rows, renders correct numeric values, and uses the right band color for the Fired threshold.
+4. **Edge cases** (2 tests in `TestEmptyAssessmentList`): empty list with and without verdict.
+
+Verified the regression tests catch the v3.39.7.9 bug — temporarily reintroduced the typo and 8 of 13 tests failed with the production AttributeError; reverting the fix made them all pass.
+
+### Files changed
+
+| Path | Change |
+|---|---|
+| `src/email_module/template.py` | Line 637: `a.indicator_id` → `a.id` (1-line fix). Added comment explaining v3.39.7.10 regression context |
+| `tests/test_v3_39_7_10_section3_attribute_crash.py` | NEW — 13 regression tests across 4 classes |
+
+No other files touched. All v3.39.7.9 behavior is preserved.
+
+### Test state
+
+325 tests pass (312 from v3.39.7.9 baseline + 13 new in `test_v3_39_7_10_section3_attribute_crash.py`):
+```bash
+PYTHONPATH=. python3 -m pytest tests/ -q
+# 325 passed, 14 warnings, 3 subtests passed in 1.90s
+```
+
+### Lesson for future Claude
+
+When adding a render-path gate on a dataclass field (e.g. `if a.indicator_id == "..."`), VERIFY the attribute name against `dataclasses.fields()` before writing the assertion in tests. Unit tests on helpers in isolation are necessary but not sufficient — there must be at least one integration test exercising the helper INSIDE its caller against the real input shape it'll see in production. This is a recurring failure mode and the structural test in `TestIndicatorAssessmentFields` is the cheap mitigation.
+
+---
+
 ## v3.39.7.9 — Six-fix release: capex/OCF authority, 2-quarter rolling mean, three-state status collapse, color scheme, NaN-guarded relative strength, section 3 numeric surfacing, value-chain inference
 
 Diagnosed from the May 21 2026 brief. Six distinct issues surfaced from a single brief; bundled here as one release since the changes are small and logically coherent (each fix touches at most 1-2 files; together they tighten the indicator → display → narrative pipeline).

@@ -345,6 +345,26 @@ architecturally central than a bolt-on.
 
 ---
 
+## v3.39.7.10 — ✅ SHIPPED 2026-05-21
+
+Hotfix for v3.39.7.9 production crash. The 15:13 UTC fast-tier deploy completed the full pipeline (deep tier ingestion through Layer 3 Sonnet synthesis through supercycle chart rendering) then crashed in the email HTML rendering step with `AttributeError: 'IndicatorAssessment' object has no attribute 'indicator_id'`.
+
+**Cause**: v3.39.7.9 Fix #7b gated snippet injection on `a.indicator_id == "t3_relative_strength"` but the canonical field name is `a.id` (per `IndicatorAssessment` dataclass at `src/analysis/llm_summarizer.py:58`). The typo escaped the v3.39.7.9 test suite because the 9 tests in `TestSection3RelativeStrengthSnippet` covered the helper `_build_relative_strength_snippet` in isolation but never exercised the integration in `_build_indicators_section` against a real `IndicatorAssessment` object.
+
+**Fix**: one-line change `a.indicator_id` → `a.id` plus 13 regression tests in `tests/test_v3_39_7_10_section3_attribute_crash.py` across 4 classes:
+- `TestIndicatorAssessmentFields` (3 tests) — structural pinning via `dataclasses.fields()` enumeration: explicitly asserts `id` IS a field AND `indicator_id` is NOT a field AND the full field set matches expectations
+- `TestBuildIndicatorsSectionRunsWithoutError` (4 tests) — exercises `_build_indicators_section` against real `IndicatorAssessment` objects for t3, non-t3, None verdict, mixed-tier
+- `TestSnippetActuallyInjects` (4 tests) — verifies snippet text appears in HTML for t3 rows, doesn't appear for non-t3, renders correct numeric values, uses Fired color for ≤ -10pp
+- `TestEmptyAssessmentList` (2 tests) — edge case coverage
+
+Bug-catching validation: temporarily re-introduced the v3.39.7.9 typo and confirmed 8 of 13 v3.39.7.10 tests failed with the production AttributeError. Reverting the fix made them all pass — proving the regression coverage actually catches the bug.
+
+325 tests pass (312 from v3.39.7.9 + 13 new).
+
+Files: `src/email_module/template.py` (1-line fix + explanatory comment), `tests/test_v3_39_7_10_section3_attribute_crash.py` (NEW), `CHANGES.md`, `CLAUDE.md`, `ROADMAP.md`, `UPLOAD_GUIDE.md` (release notes). xlsx renamed `_v3_39_7_10.xlsx` (no content change).
+
+---
+
 ## v3.39.7.9 — ✅ SHIPPED 2026-05-21
 
 Six-fix release diagnosed from the May 21 brief:
