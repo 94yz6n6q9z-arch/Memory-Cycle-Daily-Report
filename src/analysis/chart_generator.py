@@ -1160,3 +1160,181 @@ def generate_dhcr_trajectory_chart(trajectory: list[dict]) -> Optional[str]:
     except Exception as e:
         logger.exception(f"DHCR trajectory chart rendering failed: {e}")
         return None
+
+
+# ============================================================
+# v3.4.2 — DHCR matrix chart (5x5 memory-zone visualization)
+# ============================================================
+
+def generate_dhcr_matrix_chart(snapshot: dict, trajectory: Optional[list[dict]] = None) -> Optional[str]:
+    """v3.4.2: Render the DHCR 5x5 matrix with memory-zone coloring.
+
+    Visualization:
+      - 5x5 grid colored by memory zone (DDR green, LPDDR yellow,
+        HBM_HYBRID amber, HBM red-orange)
+      - Today's workload-implied cell: black outlined circle
+      - Today's market-deployed cell: filled colored circle with white border
+      - Connecting line between the two cells = the anticipation gap
+      - Optional trajectory arrow from 90-day-prior market-deployed cell
+        to today's market-deployed cell
+      - Axis labels: rows = KV efficiency bands; cols = context length bands
+      - Cell labels (compact) inside each cell
+      - Title + score badge + status badge
+
+    Args:
+        snapshot: DHCRSnapshot dict (from asdict(snapshot))
+        trajectory: optional list of prior DHCR snapshots for trajectory arrow
+
+    Returns base64-encoded PNG, or None on failure.
+    """
+    if not snapshot:
+        return None
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from matplotlib.patches import FancyArrowPatch, Circle
+    except ImportError as e:
+        logger.warning(f"matplotlib not available for DHCR matrix: {e}")
+        return None
+
+    # Zone label per cell — must match dhcr.py MEMORY_ZONES exactly
+    MEMORY_ZONES = [
+        ["DDR",     "DDR/LPDDR", "LPDDR",    "LPDDR/HBM",  "LPDDR/HBM"],
+        ["DDR/CXL", "DDR/LPDDR", "LPDDR",    "LPDDR/HBM",  "HBM/hetero"],
+        ["LPDDR",   "LPDDR/HBM", "HBM/GDDR", "HBM/hetero", "HBM"],
+        ["HBM/GDDR","HBM/GDDR",  "HBM",      "HBM",        "HBM"],
+        ["HBM",     "HBM",       "HBM",      "HBM",        "HBM"],
+    ]
+    # Color per zone category (intuition: green=commodity-safe, red=HBM-dominant)
+    ZONE_COLORS = {
+        "DDR":         "#A6D89B",  # green — commodity safe zone
+        "DDR_CXL":     "#C9E5BC",  # lighter green
+        "LPDDR":       "#FCE38A",  # yellow — heterogeneous transition
+        "HBM_HYBRID":  "#F8A55C",  # amber — HBM-leaning hybrid
+        "HBM":         "#E0775F",  # red-orange — HBM-dominant
+    }
+    def _zone_cat(label: str) -> str:
+        z = label.upper()
+        if z == "HBM": return "HBM"
+        if "HBM" in z: return "HBM_HYBRID"
+        if "LPDDR" in z: return "LPDDR"
+        if "CXL" in z or "DDR/" in z: return "DDR_CXL"
+        return "DDR"
+
+    fig, ax = plt.subplots(figsize=(11, 9))
+
+    # Y-axis labels (rows): R1 (most efficient) at TOP visually
+    # Note: matplotlib origin is bottom-left, so we flip row order for display
+    y_labels = ["R1 <1 GB/1M tok", "R2 1-4 GB/1M", "R3 4-16 GB/1M",
+                "R4 16-32 GB/1M", "R5 >32 GB/1M tok"]
+    x_labels = ["C1 <32K", "C2 32-200K", "C3 200K-1M", "C4 1M-10M", "C5 >10M"]
+
+    # Draw grid cells. Display: row 0 (R1) at top
+    for r in range(5):
+        for c in range(5):
+            # Display row position: r=0 → top row (y=4); r=4 → bottom (y=0)
+            display_y = 4 - r
+            zone_label = MEMORY_ZONES[r][c]
+            zone_cat = _zone_cat(zone_label)
+            color = ZONE_COLORS[zone_cat]
+            rect = plt.Rectangle((c, display_y), 1, 1, facecolor=color,
+                                 edgecolor="#333", linewidth=0.8)
+            ax.add_patch(rect)
+            # Cell label centered
+            ax.text(c + 0.5, display_y + 0.6, zone_label,
+                    ha="center", va="center", fontsize=9,
+                    color="#222", fontweight="bold")
+
+    # Today's cells
+    workload_row, workload_col = snapshot.get("workload_implied_cell", (0, 0))
+    market_row, market_col = snapshot.get("market_deployed_cell", (0, 0))
+    workload_display_y = 4 - workload_row
+    market_display_y = 4 - market_row
+
+    # Workload-implied: black outlined circle (no fill)
+    wl_circle = Circle((workload_col + 0.25, workload_display_y + 0.25),
+                       radius=0.16, fill=False, edgecolor="#1a1a1a", linewidth=2.5)
+    ax.add_patch(wl_circle)
+    ax.text(workload_col + 0.25, workload_display_y + 0.08, "workload",
+            ha="center", va="top", fontsize=7, color="#1a1a1a", fontweight="bold")
+
+    # Market-deployed: filled red circle with white outline
+    md_circle = Circle((market_col + 0.75, market_display_y + 0.25),
+                       radius=0.16, facecolor="#B91C1C", edgecolor="#FFFFFF", linewidth=2.5)
+    ax.add_patch(md_circle)
+    ax.text(market_col + 0.75, market_display_y + 0.08, "market-deployed",
+            ha="center", va="top", fontsize=7, color="#1a1a1a", fontweight="bold")
+
+    # Anticipation gap line between workload and market-deployed
+    if (workload_row, workload_col) != (market_row, market_col):
+        ax.annotate(
+            "", xy=(market_col + 0.75, market_display_y + 0.25),
+            xytext=(workload_col + 0.25, workload_display_y + 0.25),
+            arrowprops=dict(arrowstyle="->", color="#666", lw=1.5, linestyle="dashed"),
+        )
+
+    # Trajectory arrow from 90d-ago market-deployed to today's
+    if trajectory and len(trajectory) >= 2:
+        prior = trajectory[0]  # oldest = ~90d ago
+        prior_md = prior.get("market_deployed_cell")
+        if prior_md and tuple(prior_md) != (market_row, market_col):
+            prior_y = 4 - prior_md[0]
+            prior_x = prior_md[1]
+            arrow = FancyArrowPatch(
+                (prior_x + 0.75, prior_y + 0.75),
+                (market_col + 0.75, market_display_y + 0.75),
+                arrowstyle="-|>", mutation_scale=20,
+                color="#2C5AA0", linewidth=2.0, linestyle="solid",
+                alpha=0.85,
+            )
+            ax.add_patch(arrow)
+            ax.text(prior_x + 0.75, prior_y + 0.92, "90d ago",
+                    ha="center", va="bottom", fontsize=7,
+                    color="#2C5AA0", fontweight="bold",
+                    bbox=dict(boxstyle="round,pad=0.2", fc="#FFFFFF", ec="#2C5AA0"))
+
+    # Axis setup
+    ax.set_xlim(0, 5)
+    ax.set_ylim(0, 5)
+    ax.set_xticks([i + 0.5 for i in range(5)])
+    ax.set_xticklabels(x_labels, fontsize=9)
+    ax.set_yticks([i + 0.5 for i in range(5)])
+    ax.set_yticklabels(reversed(y_labels), fontsize=9)
+    ax.set_xlabel("Operative context length (volume-weighted) →  longer context",
+                  fontsize=11, fontweight="bold")
+    ax.set_ylabel("KV efficiency  ←  less efficient (more HBM-intensive)",
+                  fontsize=11, fontweight="bold")
+    ax.set_aspect("equal")
+
+    # Title with score
+    score = snapshot.get("position_score", 0)
+    status = snapshot.get("status", "?")
+    op_ctx = snapshot.get("operative_context_tokens", 0)
+    op_ctx_s = f"{op_ctx/1000:.0f}K" if op_ctx < 1_000_000 else f"{op_ctx/1_000_000:.2f}M"
+    kv_gb = snapshot.get("frontier_kv_gb_per_1m_tokens", 0)
+    title = (
+        f"DHCR Matrix — score {score}/100, status: {status}\n"
+        f"Today: KV {kv_gb:.1f} GB/1M tok × {op_ctx_s} operative context"
+    )
+    ax.set_title(title, fontsize=12, fontweight="bold", pad=14)
+
+    # Color legend at top
+    legend_zones = [("HBM dominance", "#E0775F"), ("HBM hybrid", "#F8A55C"),
+                    ("LPDDR / hetero", "#FCE38A"), ("DDR/CXL warm", "#C9E5BC"),
+                    ("DDR commodity", "#A6D89B")]
+    legend_handles = [plt.Rectangle((0, 0), 1, 1, facecolor=c, edgecolor="#333")
+                      for _, c in legend_zones]
+    legend_labels = [n for n, _ in legend_zones]
+    ax.legend(legend_handles, legend_labels, loc="upper center",
+              bbox_to_anchor=(0.5, -0.10), ncol=5, fontsize=9,
+              frameon=False)
+
+    plt.tight_layout()
+
+    import io, base64
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=110, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode("ascii")

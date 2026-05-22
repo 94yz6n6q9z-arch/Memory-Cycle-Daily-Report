@@ -188,7 +188,7 @@ class TestComputedMetricsBlock(unittest.TestCase):
             computed_metrics=computed_metrics,
         )
         # Header explicitly states capex/OCF is the only trigger
-        self.assertIn("Hyperscaler capex/OCF strain", prompt)
+        self.assertIn("Hyperscaler CapEx/OCF strain", prompt)
         # Aggregate is surfaced with 2-quarter rolling framing
         self.assertIn("2-quarter rolling", prompt)
         self.assertIn("53.0%", prompt)  # 0.53 formatted as percentage

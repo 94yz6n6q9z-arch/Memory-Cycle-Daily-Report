@@ -1,49 +1,65 @@
-"""Decode HBM Captive Ratio (DHCR) — v3.4.0.
+"""Decode HBM Captive Ratio (DHCR) — v3.4.2.
 
-Computes the Decode HBM Captive Ratio indicator from three reference
-YAML files:
-  - data/inference_arch_reference.yaml   (KV efficiency frontier)
-  - data/hbm_per_accelerator.yaml        (HBM capacity per accelerator)
-  - data/enterprise_ai_revenue.yaml      (demand-pull metrics)
+REDESIGN from v3.4.0/v3.4.1 per the May 22 2026 design session with Raul.
 
-The CORE QUESTION (Raul's mental model, locked in May 21, 2026
-conversation):
+# THE FRAMEWORK (locked May 22, 2026)
 
-    Is enterprise demand-pull growing faster than the supply-side
-    capacity-creation rate (efficiency × HBM-per-accelerator)?
+The DHCR maps today's inference market onto a 5×5 matrix:
 
-The mental model rejects the naive "efficiency vs context length"
-trade-off. Instead:
-  - Efficiency gains UNLOCK economic context capacity. The market
-    consumes context up to whatever is economically possible at the
-    current efficiency × cost.
-  - Enterprise workloads expand into the unlocked capacity (the
-    100M-token full-enterprise-agent workload that doesn't exist
-    today because it's not economic, but will exist tomorrow when
-    efficiency makes it economic).
-  - Therefore the binding question is whether enterprise demand
-    growth keeps pace with capacity creation. If enterprise grows
-    faster, HBM stays tight (bullish SK Hynix). If capacity creation
-    outruns demand, HBM gets slack (bearish).
+  Y-axis: KV efficiency (GB per 1M live tokens at frontier architecture)
+  X-axis: Operative context length (volume-weighted average across categories)
 
-This module is a DIRECTION MONITOR. It does NOT produce fire/not-fired
-trigger states (v3.4.0 ships with no trigger logic). Future v3.4.1+
-may attach triggers to zone transitions after 4-6 quarters of shadow
-data validates the band boundaries.
+Each cell maps to a dominant memory architecture per the shared memo:
+  - HBM-heavy decode (>32 GB/1M tok and/or 1M+ context)
+  - HBM/GDDR hybrid (mid-band)
+  - LPDDR / heterogeneous (efficient KV + medium context)
+  - DDR commodity (efficient KV + short context)
 
-v3.4.0 ships with bootstrapped historical data (Q4 2023 → Q2 2026),
-giving the trajectory chart 11 quarters of data from day one.
+The cell is translated into a linear score 0-100 (HBM-favorable ↔ commodity)
+and combined with a volume index to produce a composite HBM bit demand signal.
 
-Update cadence:
-  - inference_arch_reference.yaml: monthly (per major model release)
-  - hbm_per_accelerator.yaml: per accelerator launch (~3-6 mo)
-  - enterprise_ai_revenue.yaml: quarterly (per earnings cycle)
+# THE DUAL-INPUT X-AXIS (Raul's volume insight, May 22)
+
+Per-category context length AND per-category volume share are BOTH refreshed
+monthly. Operative context = Σ(category_context × category_volume_share/100).
+
+Rationale: even if enterprise vertical context stays at 1M tokens, if its
+volume share grows from 5% → 30% the operative context shifts dramatically
+right. Volume of sessions matters as much as per-session context.
+
+# THE ANTICIPATION PREMIUM (Raul's market-reality insight, May 22)
+
+The market is provisioning HBM-heavy infra ahead of where today's literal
+workload mix sits, because hyperscalers anticipate context to follow
+capacity. To respect this observed reality, the DHCR computes TWO cells:
+
+  1. Workload-implied cell: literal (frontier_KV_band, operative_context_band)
+  2. Market-deployed cell: workload-implied + 1 Y-band (less efficient)
+
+The score uses the market-deployed cell. The gap between them is itself a
+signal — anticipation gap closing = market catching up to actual demand
+= pre-rollover signal.
+
+# THE SANITY CHECK (Raul's reality-check insight)
+
+Validate against three substitution evidence signals. If ≥2 of 3
+contradict the score's HBM-favorable read → CALIBRATION FLAG.
+
+# THE VOLUME LAYER
+
+Matrix cell tells you what memory architecture is demanded. Volume tells
+you how much. HBM bit demand = score × (volume_index / 100).
+
+# STATUS MAPPING
+
+  score ≥ 65 OR (score 40-65 AND volume trajectory bullish) → "Not fired"
+  score 30-65 AND volume flat                               → "Partially fired"
+  score < 30 OR rapid score decline                         → "Fired"
 """
 
 from __future__ import annotations
 
 import logging
-import math
 from dataclasses import dataclass, field, asdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -57,176 +73,168 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-# ============================================================
-# Dataclasses for DHCR outputs
-# ============================================================
+# Y-axis (KV efficiency) bands — focus on lower spectrum per Raul May 22
+KV_BANDS = [
+    {"name": "R1", "label": "<1 GB/1M tok",   "min_gb": 0.0,  "max_gb": 1.0,    "intensity": 0.10},
+    {"name": "R2", "label": "1-4 GB/1M tok",  "min_gb": 1.0,  "max_gb": 4.0,    "intensity": 0.30},
+    {"name": "R3", "label": "4-16 GB/1M tok", "min_gb": 4.0,  "max_gb": 16.0,   "intensity": 0.50},
+    {"name": "R4", "label": "16-32 GB/1M tok","min_gb": 16.0, "max_gb": 32.0,   "intensity": 0.75},
+    {"name": "R5", "label": ">32 GB/1M tok",  "min_gb": 32.0, "max_gb": 9999.0, "intensity": 0.95},
+]
+
+CONTEXT_BANDS = [
+    {"name": "C1", "label": "<32K",     "min_tok": 0,       "max_tok": 32000,    "intensity": 0.10},
+    {"name": "C2", "label": "32-200K",  "min_tok": 32000,   "max_tok": 200000,   "intensity": 0.30},
+    {"name": "C3", "label": "200K-1M",  "min_tok": 200000,  "max_tok": 1000000,  "intensity": 0.55},
+    {"name": "C4", "label": "1M-10M",   "min_tok": 1000000, "max_tok": 10000000, "intensity": 0.80},
+    {"name": "C5", "label": ">10M",     "min_tok": 10000000,"max_tok": 999999999,"intensity": 0.95},
+]
+
+# 5x5 cell → memory zone label (per memo Table 1 + Table 3 zone mapping)
+# Rows: R1 (most efficient) at top, R5 (least efficient = max HBM) at bottom
+# Cols: C1 (shortest context) at left, C5 (longest = max HBM) at right
+MEMORY_ZONES = [
+    # R1 (<1 GB/1M tok — most efficient frontier)
+    ["DDR",     "DDR/LPDDR", "LPDDR",    "LPDDR/HBM",  "LPDDR/HBM"],
+    # R2 (1-4 GB/1M tok)
+    ["DDR/CXL", "DDR/LPDDR", "LPDDR",    "LPDDR/HBM",  "HBM/hetero"],
+    # R3 (4-16 GB/1M tok — today's frontier ~14 GB)
+    ["LPDDR",   "LPDDR/HBM", "HBM/GDDR", "HBM/hetero", "HBM"],
+    # R4 (16-32 GB/1M tok)
+    ["HBM/GDDR","HBM/GDDR",  "HBM",      "HBM",        "HBM"],
+    # R5 (>32 GB/1M tok — least efficient, max HBM)
+    ["HBM",     "HBM",       "HBM",      "HBM",        "HBM"],
+]
+
+
+def zone_category(zone_label: str) -> str:
+    """Reduce specific zone labels to broad category for chart coloring."""
+    z = zone_label.upper()
+    if z == "HBM":
+        return "HBM"
+    if "HBM" in z:
+        return "HBM_HYBRID"
+    if "LPDDR" in z:
+        return "LPDDR"
+    if "CXL" in z or "DDR/" in z:
+        return "DDR_CXL"
+    return "DDR"
+
+
+# Anticipation premium: market provisions HBM ahead of workload by 1 Y-band
+ANTICIPATION_Y_OFFSET = 1
+
+# Score weighting (50/50 with anticipation premium per Raul May 22)
+KV_WEIGHT = 0.50
+CTX_WEIGHT = 0.50
+
+# Status mapping thresholds
+SCORE_NOT_FIRED_THRESHOLD = 65
+SCORE_FIRED_THRESHOLD = 30
+
 
 @dataclass
 class DHCRSnapshot:
-    """A single point-in-time DHCR computation.
-
-    Three components:
-      1. supply_side — KV efficiency × HBM per accelerator (capacity-creation rate)
-      2. demand_side — enterprise AI revenue growth (demand-pull rate)
-      3. direction   — composite read derived from the relative rates
-
-    Trajectory analysis compares snapshots over time. The current snapshot
-    is committed to state/dhcr_state.json each run for QoQ tracking.
-    """
-    # When this snapshot was computed
+    """Full DHCR snapshot — single point in time."""
     computed_at_iso: str
-
-    # Supply-side: capacity creation
+    # Y-axis (supply-side)
     frontier_kv_kb_per_token: float
+    frontier_kv_gb_per_1m_tokens: float
     frontier_model_name: str
-    frontier_model_arch: str  # "MLA" | "GQA" | etc.
-    frontier_hbm_gb_per_accelerator: float
-    frontier_accelerator_name: str
-
-    # Derived: how much context capacity does a single accelerator HOLD?
-    implied_context_capacity_per_accelerator_tokens: int
-
-    # YoY change rates (supply-side drivers)
-    kv_yoy_change_pct: Optional[float]                    # negative = efficiency improving
-    hbm_per_accelerator_yoy_change_pct: Optional[float]   # positive = supply capacity growing
-    capacity_creation_yoy_pct: Optional[float]            # composite of KV efficiency + HBM packing
-
-    # Demand-pull: enterprise AI revenue trajectory
-    enterprise_ai_aggregate_run_rate_usd_b: float
-    enterprise_ai_yoy_growth_pct: Optional[float]
-    nvidia_datacenter_yoy_growth_pct: Optional[float]
-    hyperscaler_capex_yoy_growth_pct: Optional[float]
-
-    # Composite direction signal
-    # Levels: strongly_bullish_hbm, mildly_bullish_hbm, balanced,
-    #         mildly_bearish_hbm, strongly_bearish_hbm
-    direction: str
-    direction_score: float  # numerical score [-1.0, +1.0]; see _compute_direction
-
-    # Which side is dominating ("demand-pull leads", "supply-creation leads", "in balance")
-    dominant_force: str
-
-    # Confidence: how strong is this read?
-    confidence: str  # "high" | "medium" | "low"
-
-    # Sonnet-friendly summary for narrative integration
-    narrative_summary: str
-
-    # Optional: non-HBM substitution risk flag (e.g. Cerebras taking share)
+    frontier_model_arch: str
+    kv_band_index: int
+    kv_band_name: str
+    kv_band_label: str
+    kv_intensity: float
+    kv_yoy_change_pct: Optional[float]
+    # X-axis (demand-side from dual-input)
+    operative_context_tokens: int
+    operative_context_kb: float
+    context_band_index: int
+    context_band_name: str
+    context_band_label: str
+    context_intensity: float
+    context_categories: list[dict] = field(default_factory=list)
+    # Anticipation premium
+    workload_implied_cell: tuple = (0, 0)
+    workload_implied_zone: str = ""
+    workload_implied_zone_category: str = ""
+    market_deployed_cell: tuple = (0, 0)
+    market_deployed_zone: str = ""
+    market_deployed_zone_category: str = ""
+    anticipation_gap_bands: int = 0
+    # Score (uses market-deployed cell)
+    position_score: int = 0
+    # Volume layer
+    enterprise_ai_run_rate_usd_b: float = 0.0
+    enterprise_ai_yoy_growth_pct: Optional[float] = None
+    nvidia_datacenter_yoy_growth_pct: Optional[float] = None
+    volume_index: float = 100.0
+    volume_trajectory: str = "flat"
+    # Composite HBM bit demand
+    hbm_bit_demand_index: float = 0.0
+    # Sanity check
+    sanity_signal_substitution_news_count: int = 0
+    sanity_signal_substitution_threshold: int = 5
+    sanity_signal_hyperscaler_decode_mentions: int = 0
+    sanity_signal_hbm_price_trend: str = "rising"
+    sanity_check_confirms: int = 0
+    sanity_check_contradicts: int = 0
+    calibration_flag: bool = False
+    # Status
+    status: str = "Not fired"
+    status_color: str = "#C0DD97"
+    status_reasoning: str = ""
+    # Narrative
+    narrative_summary: str = ""
+    bull_case_summary: str = ""
+    bear_case_summary: str = ""
+    # Carry-over from v3.4.0
     substitution_risk_notes: list[str] = field(default_factory=list)
 
 
-# ============================================================
-# YAML loading
-# ============================================================
-
-# Default search path for data files. dhcr.py lives in src/analysis/,
-# so data/ is two levels up.
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 
 
 def load_dhcr_data(data_dir: Optional[Path] = None) -> dict:
-    """Load the three DHCR YAML reference files.
-
-    Returns:
-        dict with keys 'arch', 'hbm', 'rev' mapping to parsed YAML.
-
-    Raises:
-        FileNotFoundError if any required file is missing.
-        ValueError if pyyaml is not installed.
-    """
+    """Load all four DHCR YAML reference files."""
     if yaml is None:
-        raise ValueError(
-            "PyYAML is required for DHCR computation. "
-            "Install via: pip install pyyaml"
-        )
-
+        raise ValueError("PyYAML is required for DHCR computation.")
     if data_dir is None:
         data_dir = DEFAULT_DATA_DIR
-
-    arch_path = data_dir / "inference_arch_reference.yaml"
-    hbm_path = data_dir / "hbm_per_accelerator.yaml"
-    rev_path = data_dir / "enterprise_ai_revenue.yaml"
-
-    for p in (arch_path, hbm_path, rev_path):
+    paths = {
+        "arch":    data_dir / "inference_arch_reference.yaml",
+        "hbm":     data_dir / "hbm_per_accelerator.yaml",
+        "rev":     data_dir / "enterprise_ai_revenue.yaml",
+        "context": data_dir / "context_length_signals.yaml",
+    }
+    for name, p in paths.items():
         if not p.exists():
             raise FileNotFoundError(f"DHCR data file missing: {p}")
+    return {name: yaml.safe_load(p.read_text()) for name, p in paths.items()}
 
-    return {
-        "arch": yaml.safe_load(arch_path.read_text()),
-        "hbm": yaml.safe_load(hbm_path.read_text()),
-        "rev": yaml.safe_load(rev_path.read_text()),
-    }
-
-
-# ============================================================
-# Frontier KV efficiency
-# ============================================================
 
 def compute_kv_per_token(model_entry: dict) -> float:
-    """Compute KV cache bytes per token for a single open-architecture model.
-
-    Returns KV size in KB/token.
-
-    Supports two architecture families:
-      - GQA (and MHA as special case where num_kv_heads == num_attention_heads):
-          kv_bytes = 2 × layers × num_kv_heads × head_dim × bytes_per_element
-                     / compression_factor
-      - MLA: uses kv_lora_rank (latent dim) + qk_rope_head_dim × num_heads_for_rope
-          kv_bytes ≈ layers × (kv_lora_rank + qk_rope_head_dim) × bytes_per_element
-                     / compression_factor
-          (No 2x for K+V — MLA stores a single shared latent.)
-
-    For entries that have a pre-computed kv_kb_per_token field, return it
-    directly (treats the YAML as authoritative). The from-parameters
-    computation is the verification path and useful for tests.
-    """
-    # If the YAML pre-computed the answer, trust it (it's been verified)
     if "kv_kb_per_token" in model_entry:
         return float(model_entry["kv_kb_per_token"])
-
     arch = model_entry.get("architecture_family", "GQA")
     bytes_per_element = float(model_entry["bytes_per_element"])
     compression = float(model_entry.get("compression_factor", 1.0))
     num_layers = int(model_entry["num_layers"])
-
     if arch.startswith("MLA"):
-        # MLA: single latent cache, not K+V double-stored
         latent = int(model_entry["mla_kv_lora_rank"])
         rope_dim = int(model_entry.get("mla_qk_rope_head_dim", 0))
-        # The RoPE component is per-token, not per-head per-token in standard MLA
-        # The 2× would only apply if we were storing K and V separately, which MLA doesn't.
         kv_bytes = num_layers * (latent + rope_dim) * bytes_per_element / compression
     else:
-        # GQA / MHA: standard K+V double-store
         num_kv_heads = int(model_entry["num_kv_heads"])
         head_dim = int(model_entry["head_dim"])
-        kv_bytes = (
-            2 * num_layers * num_kv_heads * head_dim * bytes_per_element / compression
-        )
-
-    kv_kb = kv_bytes / 1024.0
-    return kv_kb
+        kv_bytes = 2 * num_layers * num_kv_heads * head_dim * bytes_per_element / compression
+    return kv_bytes / 1024.0
 
 
 def compute_frontier_kv(arch_yaml: dict, as_of_date: Optional[date] = None) -> dict:
-    """Find the frontier (most efficient) open-architecture model as of a given date.
-
-    The frontier KV is the MINIMUM KV/token across open-architecture models
-    released on or before as_of_date. We use min rather than e.g. recent-90-day
-    minimum because frontier efficiency monotonically ratchets down (once a more
-    efficient architecture exists, it remains the frontier for the comparison).
-
-    Args:
-        arch_yaml: parsed inference_arch_reference.yaml
-        as_of_date: snapshot date; defaults to today
-
-    Returns:
-        dict with keys: kv_kb_per_token, model_name, arch_family, release_date
-    """
     if as_of_date is None:
         as_of_date = date.today()
-
     eligible = []
     for m in arch_yaml.get("open_models", []):
         try:
@@ -237,15 +245,10 @@ def compute_frontier_kv(arch_yaml: dict, as_of_date: Optional[date] = None) -> d
             continue
         kv = compute_kv_per_token(m)
         eligible.append((kv, m, rd))
-
     if not eligible:
-        raise ValueError(
-            f"No open-architecture models available for frontier as of {as_of_date}"
-        )
-
-    eligible.sort(key=lambda t: t[0])  # ascending KV → smallest is frontier
+        raise ValueError(f"No open-architecture models available as of {as_of_date}")
+    eligible.sort(key=lambda t: t[0])
     kv, model, rd = eligible[0]
-
     return {
         "kv_kb_per_token": kv,
         "model_name": model["name"],
@@ -255,192 +258,93 @@ def compute_frontier_kv(arch_yaml: dict, as_of_date: Optional[date] = None) -> d
 
 
 def compute_kv_yoy_change(arch_yaml: dict, as_of_date: Optional[date] = None) -> Optional[float]:
-    """YoY change in frontier KV. Negative = efficiency improving."""
     if as_of_date is None:
         as_of_date = date.today()
     year_ago = as_of_date - timedelta(days=365)
-
     try:
         now = compute_frontier_kv(arch_yaml, as_of_date)
         prior = compute_frontier_kv(arch_yaml, year_ago)
     except ValueError:
         return None
-
     if prior["kv_kb_per_token"] == 0:
         return None
-    delta = (now["kv_kb_per_token"] / prior["kv_kb_per_token"]) - 1.0
-    return round(delta * 100, 2)
+    return round(((now["kv_kb_per_token"] / prior["kv_kb_per_token"]) - 1.0) * 100, 2)
 
 
-# ============================================================
-# HBM per accelerator (supply-side capacity)
-# ============================================================
+def kv_kb_to_gb_per_1m(kv_kb: float) -> float:
+    """KV/token KB → GB per 1M tokens (memo's standard unit)."""
+    return kv_kb * 1_000_000 / 1024.0 / 1024.0
 
-def compute_frontier_hbm_per_accelerator(
-    hbm_yaml: dict,
-    as_of_date: Optional[date] = None,
-    include_projected: bool = False,
-) -> dict:
-    """Find the maximum HBM-per-accelerator across NVIDIA + AMD merchant chips
-    shipping on or before as_of_date.
 
-    Custom hyperscaler silicon (Google TPU, AWS Trainium, etc.) is EXCLUDED
-    from the frontier because it's captive — not part of the merchant market
-    that SK Hynix's HBM revenue depends on.
+def classify_kv_band(kv_gb_per_1m: float) -> dict:
+    for idx, band in enumerate(KV_BANDS):
+        if band["min_gb"] <= kv_gb_per_1m < band["max_gb"]:
+            return {**band, "index": idx}
+    return {**KV_BANDS[-1], "index": len(KV_BANDS) - 1}
 
-    Non-HBM accelerators (Cerebras WSE, Groq) are EXCLUDED from frontier
-    HBM but are tracked separately for substitution-risk flags.
 
-    Args:
-        hbm_yaml: parsed hbm_per_accelerator.yaml
-        as_of_date: snapshot date
-        include_projected: if True, include entries marked confidence="projected"
-
-    Returns:
-        dict: hbm_gb_per_chip, accelerator_name, vendor, release_date
-    """
-    if as_of_date is None:
-        as_of_date = date.today()
-
-    candidates = []
-    for vendor, key in (("NVIDIA", "nvidia"), ("AMD", "amd")):
-        for gen in hbm_yaml.get(key, []):
-            if not include_projected and gen.get("confidence") == "projected":
-                continue
-            try:
-                # Some YAML entries use "2026-Q4" instead of ISO date
-                rd_str = gen["release_date"]
-                if "Q" in rd_str:
-                    # e.g. "2026-Q4" → use end-of-quarter approximation
-                    yr, q = rd_str.split("-Q")
-                    rd = date(int(yr), int(q) * 3, 28)
-                elif "-H" in rd_str:
-                    # e.g. "2027-H2" → mid-half-year approximation
-                    yr, h = rd_str.split("-H")
-                    rd = date(int(yr), 6 if h == "1" else 11, 1)
-                else:
-                    rd = datetime.fromisoformat(rd_str).date()
-            except (ValueError, KeyError):
-                continue
-            if rd > as_of_date:
-                continue
-            candidates.append((gen["hbm_gb_per_chip"], gen, vendor, rd))
-
-    if not candidates:
-        raise ValueError(
-            f"No HBM accelerators available for frontier as of {as_of_date}"
+def compute_operative_context(context_yaml: dict) -> dict:
+    """Volume-weighted operative context (v3.4.2 NEW)."""
+    categories = context_yaml.get("categories", {})
+    operative_tokens = 0.0
+    sum_share = 0.0
+    breakdown = []
+    for key, cat in categories.items():
+        ctx = float(cat.get("typical_context_tokens", 0))
+        share = float(cat.get("volume_share_pct", 0))
+        contribution = ctx * share / 100.0
+        operative_tokens += contribution
+        sum_share += share
+        breakdown.append({
+            "key": key,
+            "label": cat.get("label", key),
+            "context_tokens": int(ctx),
+            "volume_share_pct": share,
+            "contribution_tokens": int(contribution),
+            "confidence": cat.get("confidence", "medium"),
+        })
+    if abs(sum_share - 100.0) > 0.5:
+        logger.warning(
+            f"context_length_signals.yaml volume shares sum to {sum_share:.1f}%, "
+            f"not 100%. Please rebalance the YAML."
         )
-
-    candidates.sort(key=lambda t: t[0], reverse=True)  # descending → largest is frontier
-    hbm, gen, vendor, rd = candidates[0]
-
     return {
-        "hbm_gb_per_chip": float(hbm),
-        "accelerator_name": f"{vendor} {gen['generation']}",
-        "vendor": vendor,
-        "release_date": rd.isoformat(),
+        "operative_context_tokens": int(operative_tokens),
+        "categories": breakdown,
+        "sum_check_pct": int(sum_share),
     }
 
 
-def compute_hbm_yoy_change(
-    hbm_yaml: dict,
-    as_of_date: Optional[date] = None,
-) -> Optional[float]:
-    """YoY change in frontier HBM-per-accelerator. Positive = packing more HBM."""
-    if as_of_date is None:
-        as_of_date = date.today()
-    year_ago = as_of_date - timedelta(days=365)
-
-    try:
-        now = compute_frontier_hbm_per_accelerator(hbm_yaml, as_of_date)
-        prior = compute_frontier_hbm_per_accelerator(hbm_yaml, year_ago)
-    except ValueError:
-        return None
-
-    if prior["hbm_gb_per_chip"] == 0:
-        return None
-    delta = (now["hbm_gb_per_chip"] / prior["hbm_gb_per_chip"]) - 1.0
-    return round(delta * 100, 2)
+def classify_context_band(operative_tokens: int) -> dict:
+    for idx, band in enumerate(CONTEXT_BANDS):
+        if band["min_tok"] <= operative_tokens < band["max_tok"]:
+            return {**band, "index": idx}
+    return {**CONTEXT_BANDS[-1], "index": len(CONTEXT_BANDS) - 1}
 
 
-# ============================================================
-# Derived: implied context capacity per accelerator
-# ============================================================
-
-def compute_implied_context_capacity(
-    frontier_kv_kb: float,
-    frontier_hbm_gb: float,
-) -> int:
-    """How many tokens of context can fit in one accelerator's HBM at today's
-    frontier efficiency?
-
-    implied_context = HBM (GB) / KV-per-token (KB) × 1024² / 1024
-                    = HBM (GB) × 1024² / (KV_KB × 1024)
-                    = HBM_GB × 1024 / KV_KB
-
-    Example: H200 (141GB HBM) × Llama 3 70B (320 KB/tok) →
-             141 × 1024 / 320 ≈ 451K tokens
-
-    Example: GB300 (576GB) × DeepSeek V4 (14 KB/tok) →
-             576 × 1024 / 14 ≈ 42M tokens
-
-    This is the ECONOMIC FRONTIER OF CONTEXT — the upper bound of what
-    can run on a single accelerator. Per Raul's mental model, enterprise
-    workloads will expand to consume this capacity.
-    """
-    if frontier_kv_kb <= 0:
-        return 0
-    tokens = (frontier_hbm_gb * 1024.0) / frontier_kv_kb
-    return int(tokens * 1000)  # convert back from KB scale: GB×1024/KB×1024 → tokens
+def compute_market_deployed_cell(workload_row: int, workload_col: int) -> tuple:
+    """Apply anticipation premium: +1 Y-band offset."""
+    market_row = min(workload_row + ANTICIPATION_Y_OFFSET, len(KV_BANDS) - 1)
+    return (market_row, workload_col)
 
 
-# ============================================================
-# Capacity creation rate (composite supply-side)
-# ============================================================
-
-def compute_capacity_creation_yoy(
-    kv_yoy_pct: Optional[float],
-    hbm_yoy_pct: Optional[float],
-) -> Optional[float]:
-    """Composite supply-side capacity creation rate.
-
-    capacity_creation_yoy = HBM_yoy - KV_yoy (since KV_yoy is negative when
-    improving, subtracting it ADDS the efficiency tailwind to capacity)
-
-    Example:
-        HBM_yoy = +50% (more HBM per chip)
-        KV_yoy  = -40% (40% more efficient per token)
-        capacity_creation = 50 - (-40) = +90% — capacity for context expanded
-        90% YoY through combined supply + efficiency gains.
-
-    Returns None if either input is missing.
-    """
-    if kv_yoy_pct is None or hbm_yoy_pct is None:
-        return None
-    return round(hbm_yoy_pct - kv_yoy_pct, 2)
+def lookup_zone(row_idx: int, col_idx: int) -> str:
+    return MEMORY_ZONES[row_idx][col_idx]
 
 
-# ============================================================
-# Demand-pull (from enterprise_ai_revenue.yaml)
-# ============================================================
+def compute_position_score(row_idx: int, col_idx: int) -> int:
+    """Score = (kv_weight × kv_intensity + ctx_weight × ctx_intensity) × 100."""
+    kv_intensity = KV_BANDS[row_idx]["intensity"]
+    ctx_intensity = CONTEXT_BANDS[col_idx]["intensity"]
+    score = (KV_WEIGHT * kv_intensity + CTX_WEIGHT * ctx_intensity) * 100
+    return round(score)
 
-def compute_enterprise_demand(
-    rev_yaml: dict,
-    as_of_date: Optional[date] = None,
-) -> dict:
-    """Aggregate enterprise AI demand metrics for the most recent quarter
-    on or before as_of_date.
 
-    Returns aggregate run-rate, weighted YoY growth, NVIDIA datacenter growth,
-    hyperscaler capex growth.
-    """
+def compute_enterprise_demand(rev_yaml: dict, as_of_date: Optional[date] = None) -> dict:
     if as_of_date is None:
         as_of_date = date.today()
 
     def _latest_quarter(entries: list[dict]) -> Optional[dict]:
-        """Find the most recent quarterly entry on or before as_of_date.
-        Quarters are encoded as 'YYYY-QN'; treat them as end-of-quarter.
-        """
         latest = None
         latest_date = None
         for e in entries:
@@ -449,17 +353,8 @@ def compute_enterprise_demand(
                 continue
             try:
                 yr, qn = q.split("-Q")
-                # End of quarter ≈ months 3, 6, 9, 12
                 month = int(qn) * 3
-                # Use last day of quarter as a rough proxy
-                if month == 3:
-                    d = date(int(yr), 3, 31)
-                elif month == 6:
-                    d = date(int(yr), 6, 30)
-                elif month == 9:
-                    d = date(int(yr), 9, 30)
-                else:
-                    d = date(int(yr), 12, 31)
+                d = date(int(yr), month, {3: 31, 6: 30, 9: 30, 12: 31}[month])
             except (ValueError, KeyError):
                 continue
             if d > as_of_date:
@@ -474,355 +369,353 @@ def compute_enterprise_demand(
     gcp = _latest_quarter(rev_yaml.get("google_cloud_ai", []))
     oracle = _latest_quarter(rev_yaml.get("oracle_ai_infra", []))
     nv = _latest_quarter(rev_yaml.get("nvidia_datacenter", []))
-    capex = _latest_quarter(rev_yaml.get("hyperscaler_ai_capex_aggregate", []))
 
-    # Aggregate enterprise AI run-rate (annualized)
-    run_rate_components = []
-    for src in (msft, aws, gcp, oracle):
-        if src and src.get("revenue_usd_b_annualized") is not None:
-            run_rate_components.append(src["revenue_usd_b_annualized"])
-    aggregate_run_rate = sum(run_rate_components) if run_rate_components else 0.0
+    run_rate = sum(
+        s["revenue_usd_b_annualized"]
+        for s in (msft, aws, gcp, oracle)
+        if s and s.get("revenue_usd_b_annualized") is not None
+    )
 
-    # YoY growth: weighted average of the four (weighted by absolute size)
-    yoy_pairs = []
-    for src in (msft, aws, gcp, oracle):
-        if src and src.get("yoy_growth_pct") is not None and src.get("revenue_usd_b_annualized"):
-            yoy_pairs.append((src["yoy_growth_pct"], src["revenue_usd_b_annualized"]))
-
+    yoy_pairs = [
+        (s["yoy_growth_pct"], s["revenue_usd_b_annualized"])
+        for s in (msft, aws, gcp, oracle)
+        if s and s.get("yoy_growth_pct") is not None and s.get("revenue_usd_b_annualized")
+    ]
     if yoy_pairs:
-        total_weight = sum(w for _, w in yoy_pairs)
-        weighted_yoy = sum(g * w for g, w in yoy_pairs) / total_weight if total_weight else None
-        weighted_yoy = round(weighted_yoy, 2) if weighted_yoy is not None else None
+        total_w = sum(w for _, w in yoy_pairs)
+        weighted_yoy = round(sum(g * w for g, w in yoy_pairs) / total_w, 2)
     else:
         weighted_yoy = None
 
     return {
-        "aggregate_run_rate_usd_b": round(aggregate_run_rate, 2),
+        "aggregate_run_rate_usd_b": round(run_rate, 2),
         "weighted_yoy_growth_pct": weighted_yoy,
         "nvidia_datacenter_yoy_pct": nv["yoy_growth_pct"] if nv else None,
-        "nvidia_datacenter_rev_usd_b": nv["revenue_usd_b"] if nv else None,
-        "hyperscaler_capex_yoy_pct": capex["yoy_growth_pct"] if capex else None,
-        "as_of_quarter": (msft or nv or {}).get("quarter", "unknown"),
     }
 
 
-# ============================================================
-# Composite direction signal
-# ============================================================
+# Baseline anchor: May 2026 = 100
+VOLUME_INDEX_BASELINE_RUN_RATE_USD_B = 121.0
 
-def compute_direction(
-    capacity_creation_yoy: Optional[float],
-    enterprise_yoy: Optional[float],
-    nvidia_dc_yoy: Optional[float],
+
+def compute_volume_index(demand: dict) -> float:
+    current_run_rate = demand.get("aggregate_run_rate_usd_b", 0.0) or 0.0
+    if VOLUME_INDEX_BASELINE_RUN_RATE_USD_B <= 0:
+        return 100.0
+    return round(100.0 * current_run_rate / VOLUME_INDEX_BASELINE_RUN_RATE_USD_B, 1)
+
+
+def classify_volume_trajectory(yoy_growth_pct: Optional[float]) -> str:
+    if yoy_growth_pct is None:
+        return "flat"
+    if yoy_growth_pct > 50:
+        return "bullish"
+    if yoy_growth_pct < 10:
+        return "bearish"
+    return "flat"
+
+
+def compute_sanity_check(
+    score: int,
+    hbm_yaml: dict,
+    extraction_log_signals: Optional[list[dict]] = None,
+    hbm_price_trend: str = "rising",
 ) -> dict:
-    """Compute the composite DHCR direction signal.
+    score_is_bullish_hbm = score >= 65
+    score_is_bearish_hbm = score < 30
 
-    The core comparison (Raul's mental model):
-      capacity_creation_yoy  vs  demand_pull_yoy
+    substitution_news_count = 0
+    if extraction_log_signals:
+        for sig in extraction_log_signals:
+            if any(sig.get(k) for k in (
+                "cerebras_contract_win", "groq_scale_deployment",
+                "etched_deployment", "lpddr_decode_platform",
+                "cxl_decode_replacement",
+            )):
+                substitution_news_count += 1
+    subst_threshold = 5
 
-    Where demand_pull is approximated as the weighted blend of:
-      - enterprise AI revenue YoY (60% weight — direct enterprise pull)
-      - NVIDIA datacenter YoY (40% weight — total accelerator demand)
+    decode_off_hbm_mentions = 0
+    if hbm_yaml.get("non_hbm_accelerators"):
+        for accel in hbm_yaml["non_hbm_accelerators"]:
+            share = (accel.get("ai_compute_share_estimate") or "").strip()
+            if share and not share.startswith("<"):
+                decode_off_hbm_mentions += 1
 
-    Result:
-      delta = demand_pull_yoy - capacity_creation_yoy
+    sig1_confirms_hbm = substitution_news_count < subst_threshold
+    sig2_confirms_hbm = decode_off_hbm_mentions == 0
+    sig3_confirms_hbm = hbm_price_trend == "rising"
 
-      delta > +40%  → strongly_bullish_hbm (demand outrunning capacity by wide margin)
-      delta in +10 to +40% → mildly_bullish_hbm (demand slightly ahead)
-      delta in -10 to +10% → balanced
-      delta in -40 to -10% → mildly_bearish_hbm (capacity outrunning demand)
-      delta < -40% → strongly_bearish_hbm (efficiency outpacing demand significantly)
+    confirms = sum([sig1_confirms_hbm, sig2_confirms_hbm, sig3_confirms_hbm])
+    contradicts = 3 - confirms
 
-    Returns dict with direction string, numerical score [-1.0, +1.0],
-    dominant_force description, and confidence assessment.
-    """
-    if capacity_creation_yoy is None or (enterprise_yoy is None and nvidia_dc_yoy is None):
-        return {
-            "direction": "balanced",
-            "direction_score": 0.0,
-            "dominant_force": "insufficient data",
-            "confidence": "low",
-            "delta_pp": None,
-        }
-
-    # Weighted demand-pull signal
-    components = []
-    if enterprise_yoy is not None:
-        components.append((enterprise_yoy, 0.60))
-    if nvidia_dc_yoy is not None:
-        components.append((nvidia_dc_yoy, 0.40))
-
-    if not components:
-        demand_pull = None
+    if score_is_bullish_hbm:
+        flag = contradicts >= 2
+    elif score_is_bearish_hbm:
+        flag = confirms >= 2
     else:
-        total_w = sum(w for _, w in components)
-        demand_pull = sum(g * w for g, w in components) / total_w
-
-    if demand_pull is None:
-        return {
-            "direction": "balanced",
-            "direction_score": 0.0,
-            "dominant_force": "insufficient data",
-            "confidence": "low",
-            "delta_pp": None,
-        }
-
-    delta_pp = demand_pull - capacity_creation_yoy
-
-    # Classification
-    if delta_pp > 40:
-        direction = "strongly_bullish_hbm"
-        score = min(1.0, delta_pp / 100.0)
-        dominant = "demand-pull substantially outrunning capacity creation"
-    elif delta_pp > 10:
-        direction = "mildly_bullish_hbm"
-        score = delta_pp / 100.0
-        dominant = "demand-pull modestly ahead of capacity creation"
-    elif delta_pp > -10:
-        direction = "balanced"
-        score = delta_pp / 100.0
-        dominant = "demand and capacity creation roughly matched"
-    elif delta_pp > -40:
-        direction = "mildly_bearish_hbm"
-        score = delta_pp / 100.0
-        dominant = "capacity creation outpacing demand-pull"
-    else:
-        direction = "strongly_bearish_hbm"
-        score = max(-1.0, delta_pp / 100.0)
-        dominant = "efficiency / supply substantially outpacing demand"
-
-    # Confidence assessment
-    if enterprise_yoy is not None and nvidia_dc_yoy is not None and capacity_creation_yoy is not None:
-        confidence = "high"
-    elif (enterprise_yoy is not None or nvidia_dc_yoy is not None) and capacity_creation_yoy is not None:
-        confidence = "medium"
-    else:
-        confidence = "low"
+        flag = contradicts >= 3
 
     return {
-        "direction": direction,
-        "direction_score": round(score, 3),
-        "dominant_force": dominant,
-        "confidence": confidence,
-        "delta_pp": round(delta_pp, 2),
+        "substitution_news_count": substitution_news_count,
+        "substitution_threshold": subst_threshold,
+        "hyperscaler_decode_mentions": decode_off_hbm_mentions,
+        "hbm_price_trend": hbm_price_trend,
+        "confirms": confirms,
+        "contradicts": contradicts,
+        "calibration_flag": flag,
     }
 
 
-# ============================================================
-# Substitution-risk flags (non-HBM accelerator share)
-# ============================================================
-
-def assess_substitution_risk(hbm_yaml: dict) -> list[str]:
-    """Flag substitution risks from non-HBM AI accelerators.
-
-    For v3.4.0 this is qualitative — we don't have hard non-HBM share data.
-    The flags are pulled from yaml notes and ai_compute_share_estimate fields.
-    Future versions may compute quantitative non-HBM share from earnings data.
-    """
-    flags = []
-    for non_hbm in hbm_yaml.get("non_hbm_accelerators", []):
-        vendor = non_hbm.get("vendor", "?")
-        gen = non_hbm.get("generation", "?")
-        share = non_hbm.get("ai_compute_share_estimate", "?")
-        flags.append(
-            f"{vendor} {gen}: estimated {share} AI compute share "
-            f"({non_hbm.get('notes', '')[:80]})"
-        )
-    return flags
+STATUS_COLORS = {
+    "Fired":           "#B91C1C",
+    "Partially fired": "#FAC775",
+    "Not fired":       "#C0DD97",
+}
 
 
-# ============================================================
-# Narrative summary (for Sonnet integration)
-# ============================================================
+def map_status(score: int, volume_trajectory: str) -> dict:
+    if score >= SCORE_NOT_FIRED_THRESHOLD:
+        return {
+            "status": "Not fired",
+            "color": STATUS_COLORS["Not fired"],
+            "reasoning": f"Position score {score} ≥ 65 (HBM zone) — HBM moat strong.",
+        }
+    if score < SCORE_FIRED_THRESHOLD:
+        return {
+            "status": "Fired",
+            "color": STATUS_COLORS["Fired"],
+            "reasoning": f"Position score {score} < 30 (commodity zone) — HBM moat materially weakened.",
+        }
+    if volume_trajectory == "bullish":
+        return {
+            "status": "Not fired",
+            "color": STATUS_COLORS["Not fired"],
+            "reasoning": (
+                f"Position score {score} in transition zone (30-65) but volume trajectory "
+                f"bullish — enterprise demand pulling toward HBM. Hold positive read."
+            ),
+        }
+    if volume_trajectory == "bearish":
+        return {
+            "status": "Fired",
+            "color": STATUS_COLORS["Fired"],
+            "reasoning": (
+                f"Position score {score} in transition zone (30-65) and volume trajectory "
+                f"bearish — demand cooling while position weak. Fire risk active."
+            ),
+        }
+    return {
+        "status": "Partially fired",
+        "color": STATUS_COLORS["Partially fired"],
+        "reasoning": (
+            f"Position score {score} in transition zone (30-65) and volume trajectory "
+            f"flat — watch for divergence."
+        ),
+    }
 
-def build_narrative_summary(snapshot: dict) -> str:
-    """Build a one-paragraph human-readable summary of the DHCR state.
 
-    Used by Sonnet as input to the section 4 deep-dive paragraph and
-    the exec brief macro-context line.
-    """
-    direction = snapshot["direction"]
-    delta_pp = snapshot["direction_score"]
-
-    parts = []
-
-    # Capacity creation side
-    parts.append(
-        f"Supply-side capacity creation YoY: KV efficiency "
-        f"{'compressed' if (snapshot['kv_yoy_change_pct'] or 0) < 0 else 'flat'} "
-        f"{abs(snapshot['kv_yoy_change_pct'] or 0):.0f}% "
-        f"(frontier: {snapshot['frontier_model_name']} at "
-        f"{snapshot['frontier_kv_kb_per_token']:.0f} KB/tok); "
-        f"HBM-per-accelerator "
-        f"{'+' if (snapshot['hbm_per_accelerator_yoy_change_pct'] or 0) > 0 else ''}"
-        f"{snapshot['hbm_per_accelerator_yoy_change_pct'] or 0:.0f}% "
-        f"(frontier: {snapshot['frontier_accelerator_name']} at "
-        f"{snapshot['frontier_hbm_gb_per_accelerator']:.0f} GB)."
+def build_narrative_summary(snap: dict) -> str:
+    kv = snap["frontier_kv_kb_per_token"]
+    kv_gb = snap["frontier_kv_gb_per_1m_tokens"]
+    model = snap["frontier_model_name"]
+    op_ctx = snap["operative_context_tokens"]
+    op_ctx_s = f"{op_ctx/1000:.0f}K" if op_ctx < 1_000_000 else f"{op_ctx/1_000_000:.2f}M"
+    workload_zone = snap["workload_implied_zone"]
+    market_zone = snap["market_deployed_zone"]
+    score = snap["position_score"]
+    vol_idx = snap["volume_index"]
+    hbm_demand = snap["hbm_bit_demand_index"]
+    status = snap["status"]
+    gap = snap["anticipation_gap_bands"]
+    return (
+        f"Frontier KV: {kv:.1f} KB/tok ({kv_gb:.1f} GB per 1M tokens) on {model}. "
+        f"Operative context (volume-weighted across 5 categories): ~{op_ctx_s} tokens. "
+        f"Workload-implied cell sits in {workload_zone} zone; market-deployed cell "
+        f"(+{gap} Y-band anticipation premium) sits in {market_zone} zone. "
+        f"Position score: {score}/100. Volume index: {vol_idx:.0f} (May 2026 = 100). "
+        f"Composite HBM bit demand: {hbm_demand:.0f}. Status: {status}."
     )
 
-    # Implied context capacity
-    cap_tokens = snapshot["implied_context_capacity_per_accelerator_tokens"]
-    if cap_tokens >= 1_000_000:
-        cap_str = f"{cap_tokens/1_000_000:.1f}M"
-    elif cap_tokens >= 1_000:
-        cap_str = f"{cap_tokens/1_000:.0f}K"
-    else:
-        cap_str = str(cap_tokens)
-    parts.append(
-        f"Implied economic context frontier per accelerator: ~{cap_str} tokens. "
+
+def build_bull_case(snap: dict) -> str:
+    enterprise_cat = next(
+        (c for c in snap.get("context_categories", []) if "enterprise" in c["key"]),
+        None,
+    )
+    enterprise_share = enterprise_cat["volume_share_pct"] if enterprise_cat else 5
+    enterprise_ctx = enterprise_cat["context_tokens"] if enterprise_cat else 800000
+    enterprise_ctx_s = (
+        f"{enterprise_ctx/1000:.0f}K" if enterprise_ctx < 1_000_000
+        else f"{enterprise_ctx/1_000_000:.1f}M"
+    )
+    return (
+        f"BULL CASE: enterprise agentic adoption ignites. Today enterprise vertical "
+        f"category is {enterprise_share:.0f}% volume share at {enterprise_ctx_s} "
+        f"context. If enterprise share grows to 25-30% (driven by Microsoft Copilot "
+        f"Enterprise, Hebbia, Harvey, Anthropic Claude Enterprise, custom F500 "
+        f"deployments) AND context per session grows to 3-5M as efficiency unlocks "
+        f"the economic frontier, operative context shifts right from C2 to C4. "
+        f"Combined with the +1 anticipation premium, that places market-deployed cell "
+        f"deep in HBM territory (score 70-85). Volume index simultaneously growing "
+        f"5-10x on the enterprise expansion → composite HBM bit demand 10-15x today's "
+        f"baseline. This is the SK Hynix bull case quantified: efficiency × HBM "
+        f"unlocks 42M-token capacity per accelerator, enterprise fills it."
     )
 
-    # Demand-pull side
-    parts.append(
-        f"Demand-pull: aggregate enterprise AI run-rate "
-        f"~${snapshot['enterprise_ai_aggregate_run_rate_usd_b']:.0f}B "
-        f"growing {snapshot['enterprise_ai_yoy_growth_pct'] or 0:.0f}% YoY; "
-        f"NVIDIA datacenter "
-        f"{snapshot['nvidia_datacenter_yoy_growth_pct'] or 0:.0f}% YoY."
+
+def build_bear_case(snap: dict) -> str:
+    return (
+        f"BEAR CASE: enterprise agentic stalls. KV efficiency improves on schedule "
+        f"(MLA + INT4 + sliding window getting frontier to ~3 KB/tok), but enterprise "
+        f"vertical share never breaks 10% and context plateaus around 1M. Operative "
+        f"context stays in C3 region while KV efficiency pulls Y-axis down to R1. "
+        f"Workload-implied cell lands at R1C3 (score 33, LPDDR/heterogeneous zone). "
+        f"Even with anticipation premium, market-deployed cell sits at R2C3 — score "
+        f"drops below 50, status flips to Partially fired. The market broadens to "
+        f"LPDDR/CXL warm tier and SSD/NAND cold tier; Samsung, Micron and Chinese "
+        f"suppliers gain at SK Hynix's expense. Watch for: substitution news from "
+        f"Cerebras / Groq / Etched winning major contracts, hyperscaler earnings "
+        f"explicitly mentioning decode moving off HBM, or HBM contract prices "
+        f"rolling over. Today's sanity check shows zero substitution evidence — the "
+        f"bear case is NOT materializing as of {snap.get('computed_at_iso', '?')[:10]}."
     )
 
-    # Direction read
-    dir_label = direction.replace("_", " ")
-    delta = snapshot.get("direction_delta_pp")
-    if delta is not None:
-        parts.append(
-            f"Composite read: {dir_label.upper()} "
-            f"(delta {delta:+.0f}pp — "
-            f"{snapshot['dominant_force']})."
-        )
-    else:
-        parts.append(
-            f"Composite read: {dir_label.upper()} "
-            f"(insufficient data for delta — {snapshot['dominant_force']})."
-        )
-
-    return " ".join(parts)
-
-
-# ============================================================
-# Top-level: compute full DHCR snapshot
-# ============================================================
 
 def compute_dhcr_snapshot(
     data_dir: Optional[Path] = None,
     as_of_date: Optional[date] = None,
+    extraction_log_signals: Optional[list[dict]] = None,
+    hbm_price_trend: str = "rising",
 ) -> DHCRSnapshot:
-    """Compute the full DHCR snapshot from the three YAML files.
-
-    This is the main entry point called by fast_tier.py.
-
-    Args:
-        data_dir: optional override for data file location
-        as_of_date: optional override for snapshot date (default: today)
-
-    Returns:
-        DHCRSnapshot dataclass with all computed fields.
-
-    Raises:
-        FileNotFoundError if YAML files are missing.
-        ValueError if data is too sparse to compute.
-    """
+    """Compute the full DHCR snapshot. Main entry point."""
     if as_of_date is None:
         as_of_date = date.today()
-
     data = load_dhcr_data(data_dir=data_dir)
 
-    # 1. Frontier KV efficiency
+    # Y-axis
     frontier_kv = compute_frontier_kv(data["arch"], as_of_date=as_of_date)
+    kv_kb = frontier_kv["kv_kb_per_token"]
+    kv_gb_per_1m = kv_kb_to_gb_per_1m(kv_kb)
+    kv_band = classify_kv_band(kv_gb_per_1m)
     kv_yoy = compute_kv_yoy_change(data["arch"], as_of_date=as_of_date)
 
-    # 2. Frontier HBM per accelerator
-    frontier_hbm = compute_frontier_hbm_per_accelerator(data["hbm"], as_of_date=as_of_date)
-    hbm_yoy = compute_hbm_yoy_change(data["hbm"], as_of_date=as_of_date)
+    # X-axis (NEW v3.4.2 — dual-input triangulation)
+    op_ctx_result = compute_operative_context(data["context"])
+    operative_tokens = op_ctx_result["operative_context_tokens"]
+    ctx_band = classify_context_band(operative_tokens)
 
-    # 3. Implied context capacity
-    implied_capacity = compute_implied_context_capacity(
-        frontier_kv["kv_kb_per_token"],
-        frontier_hbm["hbm_gb_per_chip"],
-    )
+    # Cells
+    workload_row, workload_col = kv_band["index"], ctx_band["index"]
+    market_row, market_col = compute_market_deployed_cell(workload_row, workload_col)
+    workload_zone = lookup_zone(workload_row, workload_col)
+    market_zone = lookup_zone(market_row, market_col)
+    anticipation_gap = market_row - workload_row
 
-    # 4. Capacity creation rate
-    capacity_creation_yoy = compute_capacity_creation_yoy(kv_yoy, hbm_yoy)
+    # Score (uses market-deployed cell)
+    score = compute_position_score(market_row, market_col)
 
-    # 5. Enterprise demand
+    # Volume layer
     demand = compute_enterprise_demand(data["rev"], as_of_date=as_of_date)
+    volume_index = compute_volume_index(demand)
+    volume_trajectory = classify_volume_trajectory(demand["weighted_yoy_growth_pct"])
+    hbm_demand_index = round(score * volume_index / 100.0, 1)
 
-    # 6. Composite direction
-    direction = compute_direction(
-        capacity_creation_yoy=capacity_creation_yoy,
-        enterprise_yoy=demand["weighted_yoy_growth_pct"],
-        nvidia_dc_yoy=demand["nvidia_datacenter_yoy_pct"],
+    # Sanity check
+    sanity = compute_sanity_check(
+        score=score, hbm_yaml=data["hbm"],
+        extraction_log_signals=extraction_log_signals,
+        hbm_price_trend=hbm_price_trend,
     )
 
-    # 7. Substitution risk
-    subst_risks = assess_substitution_risk(data["hbm"])
+    # Status
+    status_info = map_status(score, volume_trajectory)
 
-    # Build snapshot
+    # Substitution-risk flags
+    subst_risks = []
+    for non_hbm in data["hbm"].get("non_hbm_accelerators", []):
+        vendor = non_hbm.get("vendor", "?")
+        gen = non_hbm.get("generation", "?")
+        share = non_hbm.get("ai_compute_share_estimate", "?")
+        subst_risks.append(
+            f"{vendor} {gen}: estimated {share} AI compute share "
+            f"({(non_hbm.get('notes', '') or '')[:80]})"
+        )
+
     snap_dict = {
         "computed_at_iso": datetime.utcnow().isoformat(),
-        "frontier_kv_kb_per_token": frontier_kv["kv_kb_per_token"],
+        "frontier_kv_kb_per_token": kv_kb,
+        "frontier_kv_gb_per_1m_tokens": round(kv_gb_per_1m, 2),
         "frontier_model_name": frontier_kv["model_name"],
         "frontier_model_arch": frontier_kv["arch_family"],
-        "frontier_hbm_gb_per_accelerator": frontier_hbm["hbm_gb_per_chip"],
-        "frontier_accelerator_name": frontier_hbm["accelerator_name"],
-        "implied_context_capacity_per_accelerator_tokens": implied_capacity,
+        "kv_band_index": kv_band["index"],
+        "kv_band_name": kv_band["name"],
+        "kv_band_label": kv_band["label"],
+        "kv_intensity": kv_band["intensity"],
         "kv_yoy_change_pct": kv_yoy,
-        "hbm_per_accelerator_yoy_change_pct": hbm_yoy,
-        "capacity_creation_yoy_pct": capacity_creation_yoy,
-        "enterprise_ai_aggregate_run_rate_usd_b": demand["aggregate_run_rate_usd_b"],
+        "operative_context_tokens": operative_tokens,
+        "operative_context_kb": round(operative_tokens * kv_kb / 1024.0, 2),
+        "context_band_index": ctx_band["index"],
+        "context_band_name": ctx_band["name"],
+        "context_band_label": ctx_band["label"],
+        "context_intensity": ctx_band["intensity"],
+        "context_categories": op_ctx_result["categories"],
+        "workload_implied_cell": (workload_row, workload_col),
+        "workload_implied_zone": workload_zone,
+        "workload_implied_zone_category": zone_category(workload_zone),
+        "market_deployed_cell": (market_row, market_col),
+        "market_deployed_zone": market_zone,
+        "market_deployed_zone_category": zone_category(market_zone),
+        "anticipation_gap_bands": anticipation_gap,
+        "position_score": score,
+        "enterprise_ai_run_rate_usd_b": demand["aggregate_run_rate_usd_b"],
         "enterprise_ai_yoy_growth_pct": demand["weighted_yoy_growth_pct"],
         "nvidia_datacenter_yoy_growth_pct": demand["nvidia_datacenter_yoy_pct"],
-        "hyperscaler_capex_yoy_growth_pct": demand["hyperscaler_capex_yoy_pct"],
-        "direction": direction["direction"],
-        "direction_score": direction["direction_score"],
-        "dominant_force": direction["dominant_force"],
-        "confidence": direction["confidence"],
+        "volume_index": volume_index,
+        "volume_trajectory": volume_trajectory,
+        "hbm_bit_demand_index": hbm_demand_index,
+        "sanity_signal_substitution_news_count": sanity["substitution_news_count"],
+        "sanity_signal_substitution_threshold": sanity["substitution_threshold"],
+        "sanity_signal_hyperscaler_decode_mentions": sanity["hyperscaler_decode_mentions"],
+        "sanity_signal_hbm_price_trend": sanity["hbm_price_trend"],
+        "sanity_check_confirms": sanity["confirms"],
+        "sanity_check_contradicts": sanity["contradicts"],
+        "calibration_flag": sanity["calibration_flag"],
+        "status": status_info["status"],
+        "status_color": status_info["color"],
+        "status_reasoning": status_info["reasoning"],
         "substitution_risk_notes": subst_risks,
     }
 
-    # Add direction_delta_pp for narrative (separate from dataclass field)
-    snap_dict_with_delta = {**snap_dict, "direction_delta_pp": direction.get("delta_pp")}
-    snap_dict["narrative_summary"] = build_narrative_summary(snap_dict_with_delta)
+    snap_dict["narrative_summary"] = build_narrative_summary(snap_dict)
+    snap_dict["bull_case_summary"] = build_bull_case(snap_dict)
+    snap_dict["bear_case_summary"] = build_bear_case(snap_dict)
 
     return DHCRSnapshot(**snap_dict)
 
 
-# ============================================================
-# Trajectory: compute historical snapshots for the trend chart
-# ============================================================
-
 def compute_dhcr_trajectory(
     data_dir: Optional[Path] = None,
-    quarters_back: int = 11,
+    quarters_back: int = 4,
 ) -> list[dict]:
-    """Compute historical DHCR snapshots for trajectory plotting.
-
-    Returns a list of snapshots, one per quarter, going back `quarters_back`
-    quarters. Used by the chart generator to plot the trend over time.
-    """
+    """Historical snapshots for trajectory arrow on matrix chart."""
     today = date.today()
     snapshots = []
-
     for q in range(quarters_back):
-        # Walk backwards by approximately quarters
         as_of = today - timedelta(days=90 * q)
         try:
             snap = compute_dhcr_snapshot(data_dir=data_dir, as_of_date=as_of)
             snapshots.append({
                 "as_of_date": as_of.isoformat(),
-                "frontier_kv_kb_per_token": snap.frontier_kv_kb_per_token,
-                "frontier_hbm_gb_per_accelerator": snap.frontier_hbm_gb_per_accelerator,
-                "implied_context_capacity_tokens": snap.implied_context_capacity_per_accelerator_tokens,
-                "enterprise_ai_yoy_growth_pct": snap.enterprise_ai_yoy_growth_pct,
-                "nvidia_datacenter_yoy_growth_pct": snap.nvidia_datacenter_yoy_growth_pct,
-                "capacity_creation_yoy_pct": snap.capacity_creation_yoy_pct,
-                "direction": snap.direction,
-                "direction_score": snap.direction_score,
+                "kv_band_index": snap.kv_band_index,
+                "context_band_index": snap.context_band_index,
+                "workload_implied_cell": list(snap.workload_implied_cell),
+                "market_deployed_cell": list(snap.market_deployed_cell),
+                "position_score": snap.position_score,
+                "operative_context_tokens": snap.operative_context_tokens,
+                "frontier_kv_gb_per_1m_tokens": snap.frontier_kv_gb_per_1m_tokens,
             })
         except (FileNotFoundError, ValueError):
-            # Sparse historical data — skip the quarter
             continue
-
-    # Reverse so oldest is first (chronological)
     snapshots.reverse()
     return snapshots

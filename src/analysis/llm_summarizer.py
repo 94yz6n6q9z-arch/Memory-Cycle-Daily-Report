@@ -440,7 +440,7 @@ INDICATORS THE ANALYST CARES ABOUT (be specific about which apply):
 {indicator_summary}
 
 YOUR TASKS:
-1. Filter: Identify the news items relevant to memory/semiconductor cycle (SK Hynix, Micron, Samsung, ASML, AMAT, NVIDIA, Broadcom, TSMC, hyperscaler capex, DRAM/NAND/HBM prices, AI inference efficiency). Discard everything else.
+1. Filter: Identify the news items relevant to memory/semiconductor cycle (SK Hynix, Micron, Samsung, ASML, AMAT, NVIDIA, Broadcom, TSMC, hyperscaler CapEx, DRAM/NAND/HBM prices, AI inference efficiency). Discard everything else.
 2. Broker actions: Extract any analyst broker actions (upgrades, downgrades, target price changes, estimate revisions). Action types: "upgrade", "downgrade", "target_raised", "target_cut", "estimate_raised", "estimate_cut".
 3. TrendForce / price commentary: Extract any DRAM, NAND, HBM, or memory pricing commentary. Pull out specific price levels, percentage moves, and demand language ("buyers cautious", "price cuts not stimulating demand", etc).
 4. Indicator mapping: For each remaining relevant news item, list which indicator IDs it informs.
@@ -589,7 +589,7 @@ def build_sonnet_analysis_prompt(
 
     v3.39.6: New `signal_reasonings` and `computed_metrics` parameters.
     Threads Layer 2 per-signal Haiku verdicts AND the numerical computed
-    metrics (relative strength 5-day spreads, hyperscaler capex ratios,
+    metrics (relative strength 5-day spreads, hyperscaler CapEx ratios,
     forward P/E, DART materials) into Sonnet's prompt. Closes the void
     where Sonnet was speculating about signals it had no numbers for —
     e.g., May 18 brief's t3_relative_strength prose hallucinated "almost
@@ -782,16 +782,16 @@ def build_sonnet_analysis_prompt(
                 if km.get("contract_price_qoq_pct") is not None:
                     metric_lines.append(f"contract QoQ: {km['contract_price_qoq_pct']:+.1f}%")
                 if km.get("capex_2027_guidance_usd_b") is not None:
-                    metric_lines.append(f"2027 capex guidance: ${km['capex_2027_guidance_usd_b']}B")
+                    metric_lines.append(f"2027 CapEx guidance: ${km['capex_2027_guidance_usd_b']}B")
                 if metric_lines:
                     digest_text += "  METRICS: " + " | ".join(metric_lines) + "\n"
                 # Architecture signals (v3.3 captive-ratio feedstock — surface salient ones)
                 arch = km.get("architecture_signals") or {}
                 arch_lines = []
                 if arch.get("hbm_capex_pct") is not None:
-                    arch_lines.append(f"HBM/capex: {arch['hbm_capex_pct']}%")
+                    arch_lines.append(f"HBM/CapEx: {arch['hbm_capex_pct']}%")
                 if arch.get("memory_pct_of_capex") is not None:
-                    arch_lines.append(f"memory/capex: {arch['memory_pct_of_capex']}%")
+                    arch_lines.append(f"memory/CapEx: {arch['memory_pct_of_capex']}%")
                 if arch.get("wafer_allocation_language"):
                     arch_lines.append(f"wafer: {arch['wafer_allocation_language']}")
                 if arch.get("architecture_freetext"):
@@ -814,7 +814,7 @@ def build_sonnet_analysis_prompt(
 
     # v3.39.6: COMPUTED METRICS BLOCK. The numerical verdicts the fast_tier
     # ALREADY computed deterministically (no LLM involved) — relative strength
-    # spreads, hyperscaler capex/revenue ratios, forward P/Es, DART materials.
+    # spreads, hyperscaler CapEx/revenue ratios, forward P/Es, DART materials.
     # Threading these in lets Sonnet QUOTE exact numbers instead of estimating
     # from news headlines. This is the cure for the May 18 brief's
     # t3_relative_strength hallucination: Sonnet wrote "5-day cumulative
@@ -874,7 +874,7 @@ def build_sonnet_analysis_prompt(
 
         quarterly_snapshots = computed_metrics.get("hyperscaler_quarterly_snapshots") or {}
         if quarterly_snapshots:
-            # v3.39.7.9 — capex/OCF is the ONLY trigger metric. capex/revenue
+            # v3.39.7.9 — CapEx/OCF is the ONLY trigger metric. CapEx/revenue
             # was removed entirely from the prompt (pre-v3.39.7.9 it was kept
             # "for context" and Layer 2 reversed verdicts against it). Mean
             # is now 2-quarter rolling per company per user direction
@@ -883,8 +883,8 @@ def build_sonnet_analysis_prompt(
             per_company = computed_metrics.get("per_company_capex_ocf_2q") or {}
             n_co = computed_metrics.get("n_companies_with_2q_capex_ocf", 0)
             computed_text += (
-                "\n  Hyperscaler capex/OCF strain (PRIMARY and ONLY trigger for t2_hyperscaler_capex_revenue;\n"
-                "  the legacy ratio of capex over revenue is NOT used as a trigger — do not cite or reason from it):\n"
+                "\n  Hyperscaler CapEx/OCF strain (PRIMARY and ONLY trigger for t2_hyperscaler_capex_revenue;\n"
+                "  the legacy ratio of CapEx over revenue is NOT used as a trigger — do not cite or reason from it):\n"
             )
             if mean_co_ratio is not None:
                 # Determine band relative to thresholds
@@ -901,7 +901,7 @@ def build_sonnet_analysis_prompt(
                     f"(2014/2018/2022); stays <40% in non-crash years.\n"
                 )
                 if per_company:
-                    computed_text += "    Per-company 2-quarter rolling mean capex/OCF:\n"
+                    computed_text += "    Per-company 2-quarter rolling mean CapEx/OCF:\n"
                     for ticker, r in per_company.items():
                         computed_text += f"      {ticker:<6} {r*100:.1f}%\n"
             else:
@@ -918,8 +918,8 @@ def build_sonnet_analysis_prompt(
                     label = "latest" if i == 0 else "prior"
                     computed_text += (
                         f"    {ticker:<6} {q.get('quarter_iso', '?')} ({label}): "
-                        f"capex ${q.get('capex_usd_b', '?')}B / "
-                        f"OCF ${q.get('ocf_usd_b', 'n/a')}B = capex/OCF {co_s}{strain_flag}\n"
+                        f"CapEx ${q.get('capex_usd_b', '?')}B / "
+                        f"OCF ${q.get('ocf_usd_b', 'n/a')}B = CapEx/OCF {co_s}{strain_flag}\n"
                     )
 
         dart = computed_metrics.get("dart_material_disclosures") or {}
@@ -966,7 +966,7 @@ def build_sonnet_analysis_prompt(
                 f"${dhcr.get('enterprise_ai_aggregate_run_rate_usd_b', 0):.0f}B annualized\n"
                 f"    Enterprise AI YoY: {dhcr.get('enterprise_ai_yoy_growth_pct', 0) or 0:+.0f}%\n"
                 f"    NVIDIA datacenter YoY: {dhcr.get('nvidia_datacenter_yoy_growth_pct', 0) or 0:+.0f}%\n"
-                f"    Hyperscaler capex YoY: {dhcr.get('hyperscaler_capex_yoy_growth_pct', 0) or 0:+.0f}%\n"
+                f"    Hyperscaler CapEx YoY: {dhcr.get('hyperscaler_capex_yoy_growth_pct', 0) or 0:+.0f}%\n"
                 f"    DIRECTION READ: {dhcr.get('direction', 'unknown').upper()} "
                 f"(confidence: {dhcr.get('confidence', '?')})\n"
                 f"    Dominant force: {dhcr.get('dominant_force', '?')}\n"
@@ -1065,7 +1065,7 @@ Content — cover all four themes in this order, but blend them into prose (NOT 
   (i)  Signal fires/unfires today + what drove them (cite the specific indicator and the trigger value / news that caused the change)
   (ii) Big news from today's feed. PRIORITIZE items that align with a framework signal even when they don't formally fire it. Example: a single-firm "Sell SK Hynix" rating doesn't fire t2_insider_sales (which requires actual insider transactions), but in a market of 26-up / 0-down EPS revisions it IS the first sell-side dissent — a psychological inflection the framework cares about deeply. Surface these as "directional confirmation of [signal name]" or "first dissent from the [signal name] consensus".
   (iii) Big movers today — name 2-4 specific tickers with their 1D % moves. Focus on those that diverge from the broader semi tape (especially the memory pure-plays).
-  (iv) Macro / AI / semiconductor backdrop news that impacts the trade (Fed decisions, China export controls, NVIDIA orders, AI capex announcements, etc).
+  (iv) Macro / AI / semiconductor backdrop news that impacts the trade (Fed decisions, China export controls, NVIDIA orders, AI CapEx announcements, etc).
 
 FORBIDDEN VOCABULARY (v3.4.1):
 The word "Reversed" is BANNED in all output fields — `executive_brief`, `new_triggers_today`, `change_vs_prior`, `where_we_stand`, `latest_developments`. Use "Not fired" for reversals. If an indicator transitioned from "Fired" to "Not fired", phrase it as: "t2_X reverted to 'Not fired' after [reason]" — NEVER "Status changed from 'Fired' to 'Reversed'". This is a hard rule — any output containing "Reversed" will be post-processed to "Not fired" at render time, but writing it correctly the first time avoids ambiguity.
@@ -1106,9 +1106,9 @@ When two or more signals in today's feed are causally linked through the memory 
   - Korean fab outage / labor disruption affecting Samsung or SK Hynix → near-term HBM AND DDR5/LPDDR spot tightening → spread between spot and contract narrows → t2_spot_contract_spread input direction shifts.
 
   DEMAND CASCADES:
-  - Hyperscaler ups AI capex guidance (Tier C) → NVIDIA / AMD / Broadcom backlog increases (Tier B) → SK Hynix HBM revenue 1-2 quarters out → memory pure-play earnings beat / guidance raise.
+  - Hyperscaler ups AI CapEx guidance (Tier C) → NVIDIA / AMD / Broadcom backlog increases (Tier B) → SK Hynix HBM revenue 1-2 quarters out → memory pure-play earnings beat / guidance raise.
   - AI lab signs multi-billion infrastructure deal (OpenAI / Anthropic) → chip designer capacity commitment (Cerebras / NVIDIA) → memory order book → DRAM/HBM cycle support.
-  - Conversely a hyperscaler capex cut warning → downstream HBM order moderation 6-12 months out → bearish for the cycle peak timing.
+  - Conversely a hyperscaler CapEx cut warning → downstream HBM order moderation 6-12 months out → bearish for the cycle peak timing.
 
   COMPETITIVE / SUBSTITUTION:
   - CXMT / ChangXin capacity milestone or yield improvement → commodity DDR4/DDR5 oversupply risk → Samsung/SK Hynix spot pricing pressure on those nodes. State the timing: short-term impact (1-3mo) on spot, medium-term (3-9mo) on contract.
@@ -1207,7 +1207,7 @@ A. WHEN AN INDICATOR FIRES TODAY (Not fired → Partially fired, or → Fired):
   Bull case shrinks meaningfully (-3-5pp).
 - New Tier 4 trigger: same magnitude as Tier 3 but with bear return_to_peak_pct
   going negative (e.g., -5 to -15pp) — confirms peak is in.
-- Bull confirms (e.g., hyperscaler 2027 capex >2026): bull probability +3-5pp,
+- Bull confirms (e.g., hyperscaler 2027 CapEx >2026): bull probability +3-5pp,
   bear -2-4pp, base nudges peak_months_away by ~+1mo.
 
 B. WHEN AN INDICATOR UNFIRES TODAY (v3.39.7.3 — SYMMETRIC MIRROR OF RULE A):
@@ -1326,7 +1326,7 @@ the broker's ANALYTICAL EXCERPT lines to write the why_it_matters field.
 NUMBER-FIRST INDICATOR FORMAT (v3.39.6 — STRICT, length cap v3.4.1):
 For every indicator_assessments[] entry, the `where_we_stand` field
 MUST follow this template when the indicator has computed numerical
-evidence (rel-strength spreads, hyperscaler capex/OCF ratios, forward P/E,
+evidence (rel-strength spreads, hyperscaler CapEx/OCF ratios, forward P/E,
 EPS revisions, single-day moves, etc.):
 
   1. LEAD with the exact numbers. Quote them from COMPUTED METRICS.
@@ -1362,10 +1362,10 @@ LAYER 2 PER-SIGNAL VERDICTS or the evidence_store entries for that
 indicator and write a 1-2 sentence summary of "where we currently
 stand based on accumulated evidence" — what's fired, since when, and
 the dollar amounts/dates that drove it. Example for t2_capex_parabolic
-when today has no new capex print: "Fired since Mar 2025: $725B aggregate
-2026 hyperscaler capex (MSFT+GOOGL+AMZN+META) confirmed via Q4 2025
+when today has no new CapEx print: "Fired since Mar 2025: $725B aggregate
+2026 hyperscaler CapEx (MSFT+GOOGL+AMZN+META) confirmed via Q4 2025
 earnings cycle, latest NVIDIA Q1 FY27 $81.6B revenue with $1T cumulative
-hyperscaler capex by 2027 (Tom's Hardware [→§5]) reinforces the trend."
+hyperscaler CapEx by 2027 (Tom's Hardware [→§5]) reinforces the trend."
 NEVER emit empty or sub-30-character where_we_stand — that's a bug.
 
 `latest_developments` should be similarly tight: 2-4 sentences max
@@ -1460,33 +1460,107 @@ def sonnet_analyze(
     # We accumulate chunks into a final message via stream.get_final_message().
     # The SDK exposes .content[0].text on that object identical to the
     # non-streaming path, so downstream parsing is unchanged.
-    response = None
-    try:
+
+    # v3.4.2 Fix A — reliability hardening for 529 Overloaded errors.
+    # The May 22 03:50 run hit Anthropic API overload: Sonnet got 529 on
+    # first attempt, SDK retried 2x with 0.4s/0.8s backoff (~3s total),
+    # all 3 failed, fallback analysis triggered, degraded brief shipped.
+    # The API was overloaded for far longer than 3 seconds; SDK backoff
+    # is insufficient for sustained overload windows.
+    #
+    # Three-tier strategy:
+    #   1. SDK built-in retry (handled by anthropic client) for transient
+    #      single-call failures
+    #   2. App-level retry: 3 attempts at 30s / 90s / 240s = up to ~6min
+    #      additional backoff budget for sustained 529 overload
+    #   3. Final fallback: switch to Haiku 4.5 for synthesis if all
+    #      Sonnet attempts fail. Lower narrative quality but produces a
+    #      populated brief with all sections including DHCR card
+    SONNET_RETRY_BACKOFFS = [30, 90, 240]  # seconds; total ~6min worst case
+    HAIKU_FALLBACK_MODEL = "claude-haiku-4-5-20251001"
+
+    def _call_sonnet_with_streaming(model_to_use: str):
+        """Wrap the streaming call so we can retry with backoff."""
         if collector is not None:
             with collector.track(
-                f"Anthropic API / {SONNET_MODEL} (stage 2 analysis, streaming)",
+                f"Anthropic API / {model_to_use} (stage 2 analysis, streaming)",
                 "llm",
             ) as t:
                 with client.messages.stream(
-                    model=SONNET_MODEL,
+                    model=model_to_use,
                     max_tokens=SONNET_MAX_TOKENS,
                     temperature=LLM_TEMPERATURE,
                     messages=[{"role": "user", "content": prompt}],
                 ) as stream:
-                    response = stream.get_final_message()
+                    resp = stream.get_final_message()
                 t.items_returned = 1
-                t.detail = f"prompt: {len(prompt)} chars, max_tokens={SONNET_MAX_TOKENS}"
+                t.detail = f"prompt: {len(prompt)} chars, max_tokens={SONNET_MAX_TOKENS}, model={model_to_use}"
+                return resp
         else:
             with client.messages.stream(
-                model=SONNET_MODEL,
+                model=model_to_use,
                 max_tokens=SONNET_MAX_TOKENS,
                 temperature=LLM_TEMPERATURE,
                 messages=[{"role": "user", "content": prompt}],
             ) as stream:
-                response = stream.get_final_message()
+                return stream.get_final_message()
+
+    response = None
+    last_error = None
+
+    # Attempt 1: Sonnet, normal SDK retry only
+    try:
+        response = _call_sonnet_with_streaming(SONNET_MODEL)
     except Exception as e:
-        logger.error(f"Sonnet analysis streaming call failed: {e}")
-        return None
+        last_error = e
+        err_str = str(e).lower()
+        is_overloaded = "529" in err_str or "overloaded" in err_str
+        if is_overloaded:
+            logger.warning(
+                f"Sonnet streaming attempt 1 failed (overloaded): {e}. "
+                f"Entering app-level retry-with-backoff."
+            )
+            import time as _time
+            for attempt_idx, backoff_seconds in enumerate(SONNET_RETRY_BACKOFFS, start=2):
+                logger.info(
+                    f"Sonnet retry attempt {attempt_idx}/{len(SONNET_RETRY_BACKOFFS)+1}: "
+                    f"sleeping {backoff_seconds}s before next try"
+                )
+                _time.sleep(backoff_seconds)
+                try:
+                    response = _call_sonnet_with_streaming(SONNET_MODEL)
+                    logger.info(f"Sonnet attempt {attempt_idx} succeeded after backoff")
+                    break
+                except Exception as retry_e:
+                    last_error = retry_e
+                    err_str = str(retry_e).lower()
+                    if "529" not in err_str and "overloaded" not in err_str:
+                        logger.error(f"Sonnet attempt {attempt_idx} failed with non-overload error: {retry_e}")
+                        break
+                    logger.warning(f"Sonnet attempt {attempt_idx} still overloaded: {retry_e}")
+        else:
+            logger.error(f"Sonnet streaming failed with non-overload error: {e}")
+
+    # Final fallback: Haiku 4.5 if all Sonnet attempts failed
+    if response is None:
+        logger.warning(
+            f"All Sonnet attempts failed. Falling back to {HAIKU_FALLBACK_MODEL} "
+            f"for synthesis. Brief will ship with lower narrative quality but "
+            f"all sections (including DHCR matrix) populated. Last error: {last_error}"
+        )
+        try:
+            import time as _time
+            _time.sleep(30)  # give the API a moment to recover before fallback
+            response = _call_sonnet_with_streaming(HAIKU_FALLBACK_MODEL)
+            logger.info(
+                f"Haiku fallback succeeded — degraded but populated brief will ship"
+            )
+        except Exception as fallback_e:
+            logger.error(
+                f"Haiku fallback also failed: {fallback_e}. Returning None — "
+                f"fast_tier will trigger the analysis fallback path."
+            )
+            return None
 
     # v3.39.1: surface Sonnet token usage in the run log. The 20:30 May 17
     # run truncated silently — without this log we had to infer cap-hit
@@ -1663,7 +1737,7 @@ def analyze_with_llm(
     earnings transcripts).
     v3.39.6: New `signal_reasonings` (Layer 2 Haiku verdicts on each of the
     22 indicators) and `computed_metrics` (numerical verdicts: 5-day
-    relative strength, hyperscaler capex ratios, forward P/E, DART
+    relative strength, hyperscaler CapEx ratios, forward P/E, DART
     materials). Threaded through so Sonnet quotes the exact numbers
     and defers to Layer 2 on per-signal status — fixing the May 18
     brief's t3_relative_strength prose that speculated "almost certainly

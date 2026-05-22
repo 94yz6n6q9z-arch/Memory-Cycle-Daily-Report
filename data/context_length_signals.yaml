@@ -1,0 +1,163 @@
+# Context length triangulation signals for the Decode HBM Captive Ratio
+# (DHCR) X-axis computation, v3.4.2.
+#
+# DUAL-INPUT FRAMEWORK (locked May 22 2026):
+#   Each category carries TWO independently-refreshed inputs:
+#     (a) typical_context_tokens — average context length per session
+#                                  for that category
+#     (b) volume_share_pct       — % of total tokens served in that category
+#
+#   Operative context = Σ (typical_context_tokens × volume_share_pct / 100)
+#                       across all categories
+#
+# Both inputs move INDEPENDENTLY each month:
+#   - Category context grows when products extend default windows (e.g.
+#     Cursor 200K → 500K)
+#   - Category volume share shifts as adoption mix changes (e.g.
+#     enterprise share growing 5% → 8% → 15% → ...)
+#
+# This captures the dynamic Raul explicitly wanted: even if enterprise
+# context stays flat at 1M, if enterprise volume share goes 5% → 30%,
+# operative context shifts dramatically right. AND if enterprise context
+# also grows (which it will as efficiency unlocks scale), the effect
+# compounds.
+#
+# WHY THIS MATTERS (per the May 22 design session):
+#   The framework's central hypothesis is that the make-or-break is
+#   enterprise agentic adoption. If enterprise volume share + context
+#   both grow, HBM demand explodes via the operative context shifting
+#   from C2 → C3 → C4. If enterprise stalls, we land in LPDDR/hetero
+#   regardless of how much efficiency improves.
+#
+# REFRESH CADENCE: monthly.
+#
+# REFRESH PROCESS:
+#   1. Review product documentation for each category's flagship products
+#      (consumer chat: ChatGPT/Claude/Gemini defaults; coding: Cursor/
+#      Devin/Claude Code; enterprise: Hebbia/Harvey/MS Copilot Enterprise
+#      case studies; etc.)
+#   2. Review hyperscaler earnings transcripts (already digested) for
+#      volume share signals
+#   3. Update typical_context_tokens and volume_share_pct
+#   4. Append a refresh_evidence entry with date + notes
+#   5. Sum volume_share_pct should total 100; rebalance if needed
+#
+# CONFIDENCE NOTES:
+#   - Consumer chat: high confidence on context (published) + medium on
+#     share (estimated from MAU disclosures)
+#   - Coding agents: high on context (published) + medium on share
+#   - Enterprise vertical: LOW on both — case studies are anecdotal,
+#     volume share is estimated as residual. This is the deliberately
+#     uncertain category. The refresh process should pay closest attention
+#     here because this is where the framework outcome is most sensitive.
+
+schema_version: 1
+last_refreshed: "2026-05-22"
+next_scheduled_refresh: "2026-06-22"
+
+categories:
+
+  consumer_chat:
+    label: "Consumer chat"
+    description: "ChatGPT, Claude.ai, Gemini consumer — free + paid tiers blended"
+    typical_context_tokens: 30000
+    volume_share_pct: 50
+    confidence: "high"
+    sources:
+      - "ChatGPT free 8K / Plus 32K / Pro 128K (OpenAI docs)"
+      - "Claude.ai 200K default (Anthropic docs)"
+      - "Gemini consumer 32K free / 1M Advanced (Google docs)"
+      - "User-share weighted blend: ChatGPT ~60%, Claude ~20%, Gemini ~15%, others ~5%"
+    refresh_evidence:
+      - date: "2026-05-22"
+        context: 30000
+        volume_share: 50
+        notes: "Baseline for v3.4.2 launch. ChatGPT Plus default at 32K, weighted blend lands ~30K. Volume share dominant but trending down as enterprise/coding grow."
+
+  coding_agents:
+    label: "Coding agents"
+    description: "Cursor, Devin, Claude Code, Copilot Workspace, Replit Agent"
+    typical_context_tokens: 280000
+    volume_share_pct: 15
+    confidence: "high"
+    sources:
+      - "Cursor 200K default working context"
+      - "Claude Code 500K typical agentic session"
+      - "Devin/Cognition 500K-1M repo context"
+      - "GitHub Copilot Workspace 200K"
+    refresh_evidence:
+      - date: "2026-05-22"
+        context: 280000
+        volume_share: 15
+        notes: "Coding agents are leading edge of context expansion. Cursor + Claude Code + Devin disclosed ARR sums to ~$1B+ — material share of API revenue. Volume share growing fast."
+
+  enterprise_vertical_agents:
+    label: "Enterprise vertical agents"
+    description: "Hebbia, Harvey, Sierra, Microsoft Copilot Enterprise, Anthropic Claude for Enterprise, custom F500 deployments"
+    typical_context_tokens: 800000   # raised from 350K per Raul's pushback May 22
+    volume_share_pct: 5
+    confidence: "low"
+    sources:
+      - "Microsoft Copilot Enterprise scaling toward 1M (Satya commentary Q1 2026)"
+      - "Hebbia case studies disclosing 1M-2M token legal review workflows"
+      - "Harvey AI: 500K typical, technical pilots at 1M+"
+      - "Anthropic Claude Enterprise: 500K-1M typical, pilots at 5M"
+      - "Cognition enterprise: full-repo context routinely 1M+"
+      - "OpenAI Operator + enterprise tier: 200K-1M depending on workflow"
+    refresh_evidence:
+      - date: "2026-05-22"
+        context: 800000
+        volume_share: 5
+        notes: "REVISED UP from prior 350K estimate. Case study evidence supports 500K-1.5M range; central estimate 800K. Low volume share today (5%) is THE key variable to watch — Raul's thesis is this share will explode 5% → 30%+ over next 24 months as efficiency unlocks economic scale. Currently the framework's most uncertain input but also most consequential."
+
+  developer_raw_api:
+    label: "Developer raw API"
+    description: "Direct API calls without agent wrapper — scripts, integrations, custom tooling"
+    typical_context_tokens: 50000
+    volume_share_pct: 20
+    confidence: "medium"
+    sources:
+      - "API typical default per provider (8K-32K)"
+      - "Custom integration estimates"
+    refresh_evidence:
+      - date: "2026-05-22"
+        context: 50000
+        volume_share: 20
+        notes: "Stable middle category. Developer API users mostly stay near defaults; volume share roughly flat."
+
+  other_creative_rag:
+    label: "Other (RAG / creative / specialized)"
+    description: "Perplexity, image-language, creative writing, embedded chat features"
+    typical_context_tokens: 70000
+    volume_share_pct: 10
+    confidence: "medium"
+    sources:
+      - "Perplexity: ~50K typical"
+      - "Embedded chat / RAG wrappers: ~30K-100K"
+    refresh_evidence:
+      - date: "2026-05-22"
+        context: 70000
+        volume_share: 10
+        notes: "Mixed bucket, modest growth trajectory."
+
+# ============================================================
+# Operative context computation (for reference / debugging)
+# ============================================================
+# Current operative context (May 2026 baseline):
+#   = 50% × 30K + 15% × 280K + 5% × 800K + 20% × 50K + 10% × 70K
+#   = 15K + 42K + 40K + 10K + 7K
+#   = 114K tokens
+# → Lands in C2 band (32K-200K)
+#
+# Watch for: enterprise category context × share product (today 40K) —
+# if this grows to 200K+, operative context shifts to C3.
+# If enterprise context grows to 5M AND share to 30% (Raul's bull case),
+# enterprise contribution alone = 1.5M = operative context lands in C4.
+
+bands:
+  x_axis_context_bands:
+    - {name: "C1", range: "<32K", min: 0, max: 32000, intensity: 0.10}
+    - {name: "C2", range: "32-200K", min: 32000, max: 200000, intensity: 0.30}
+    - {name: "C3", range: "200K-1M", min: 200000, max: 1000000, intensity: 0.55}
+    - {name: "C4", range: "1M-10M", min: 1000000, max: 10000000, intensity: 0.80}
+    - {name: "C5", range: ">10M", min: 10000000, max: 999999999, intensity: 0.95}

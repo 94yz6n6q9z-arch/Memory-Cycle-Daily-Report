@@ -6,6 +6,147 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.4.2 — DHCR matrix redesign + reliability + CapEx capitalization
+
+Three substantial workstreams in this release, all triggered by the May 22 2026 production failure and design conversation.
+
+### Fix A — Sonnet reliability (529 Overloaded resilience)
+
+**Root cause:** May 22 03:50 UTC fast-tier run hit Anthropic API overload. Sonnet streaming call got HTTP 529, SDK retried 2x with 0.4s/0.8s backoff (~3s total), all failed, fallback analysis triggered, degraded brief shipped without DHCR section. Layer 2 also: 13 of 23 indicators failed with 529 (only 10 succeeded).
+
+**Diagnosis:** SDK backoff was insufficient for sustained overload windows. The API was overloaded for minutes, not seconds; we needed minutes of backoff, not seconds.
+
+**Solution:** application-level retry-with-exponential-backoff wrapping the critical LLM calls, with model fallback for Sonnet.
+
+For the **Sonnet synthesis call** (`src/analysis/llm_summarizer.py`):
+- 3 attempts with backoffs `[30s, 90s, 240s]` = up to ~6min budget
+- 529-specific (uses error string check for "529" or "overloaded")
+- If all 3 fail → fallback to `claude-haiku-4-5-20251001` after 30s recovery wait
+- Haiku fallback produces lower narrative quality but populated brief with all sections including DHCR matrix card
+- Total worst-case runtime impact: +6min within the 35min job timeout
+
+For the **Layer 2 Haiku per-signal calls** (`src/analysis/signal_reasoner.py`):
+- 3 attempts with backoffs `[10s, 30s, 90s]` = up to ~2min budget per signal
+- Per-signal isolation: one signal's 529 doesn't affect others' retries
+- Typical case unchanged (clean runs hit no retry path)
+- Worst-case Layer 2 runtime if every signal triple-529s: ~48min — but unrealistic; typical overload is 30-60s affecting a subset
+
+DHCR is also explicitly skipped from Layer 2 (its verdict is deterministically computed from YAMLs, not Haiku-reasoned) — saves ~10s per run + reduces 529 surface area by 1 call.
+
+### Fix B — DHCR redesigned around the 2-axis matrix framework
+
+**Root cause:** the v3.4.0 DHCR shipped as a single delta-number direction enum (5-level: strongly_bullish_hbm → strongly_bearish_hbm). Per the May 22 design session with Raul, this collapsed the two-axis matrix into one number, threw away the architectural memory-zone mapping from the design memo, and provided no clear bull/bear case context in the brief itself.
+
+**The new framework (locked May 22, 2026):**
+
+The DHCR maps today's inference market onto a **5×5 matrix**:
+- **Y-axis: KV efficiency** (GB per 1M live tokens at frontier architecture). Bands: <1, 1-4, 4-16 (today), 16-32, >32 GB/1M tok. Focus on lower spectrum per design direction — that's where the market is heading.
+- **X-axis: Operative context length** (volume-weighted average across categories). Bands: <32K, 32-200K (today), 200K-1M, 1M-10M, >10M.
+
+**Each cell maps to a memory architecture** per the memo's Table 1 + Table 3 zone mapping (commodity DDR ↔ LPDDR/heterogeneous ↔ HBM/GDDR hybrid ↔ pure HBM dominance). The matrix is color-coded on the chart by memory zone.
+
+**Cell position translates to a linear score 0-100** (HBM-favorable ↔ commodity):
+- 0-30 = commodity DDR zone (Samsung/Micron + Chinese suppliers benefit; SK Hynix moat weak)
+- 30-65 = LPDDR / heterogeneous zone (Samsung/Micron improve relative; SK still relevant but less differentiated)
+- 65-100 = HBM zone (SK Hynix's moat strongest)
+
+**The dual-input X-axis (Raul's volume insight):** operative context is NOT just an average context length number — it's `Σ (category_context × category_volume_share / 100)` across 5 categories. Both inputs refresh monthly: consumer chat 30K/50%, coding agents 280K/15%, enterprise vertical agents 800K/5%, dev API 50K/20%, other 70K/10%. The dual-input captures the volume side: even if enterprise context stays flat at 1M, if its share goes 5% → 30%, operative context shifts dramatically right. Enterprise share growth is THE central lever — the bull case enumerated below quantifies this.
+
+**The anticipation premium (Raul's market-reality insight):** hyperscalers provision HBM-heavy infrastructure ahead of where today's literal workload mix sits, because they expect context to follow capacity. To respect this observed reality, the DHCR computes TWO cells:
+1. **Workload-implied cell**: literal (frontier KV band, operative context band)
+2. **Market-deployed cell**: workload-implied + 1 Y-band (one less efficient = more HBM-favorable)
+
+The score uses the market-deployed cell. The matrix chart shows both cells with a dashed line between them. The gap is itself a signal — anticipation gap closing = market catching up to actual demand = pre-rollover signal.
+
+**Today's read (May 22 2026):**
+- Frontier KV: 14 KB/tok (DeepSeek V4 MLA) = 13.4 GB per 1M tokens → R3 band
+- Operative context: 114K tokens (volume-weighted across 5 categories) → C2 band
+- Workload cell: R3C2 (LPDDR/HBM)
+- Market-deployed cell: R4C2 (HBM/GDDR) — anticipation premium applied
+- Position score: **52/100** (LPDDR/HBM transition zone, leaning HBM via anticipation)
+- Volume trajectory: bullish (enterprise revenue +175% YoY weighted)
+- Composite HBM bit demand: 52 (score × volume_index/100)
+- Status: **Not fired** — score 52 + bullish trajectory keeps the read positive
+- Sanity check: 3/3 confirm (no substitution news, no hyperscaler decode-off-HBM mentions, HBM prices rising) → no calibration flag
+
+**Sanity check signals:** before publishing the score, validate against three substitution-evidence signals. If ≥2 of 3 contradict the matrix output → CALIBRATION FLAG badge.
+1. HBM-substitution news count (last 90d) — non-HBM accelerator wins from extraction_log signals
+2. Hyperscaler decode-architecture mentions — non-HBM accelerators with material share
+3. HBM spot/contract price trend (rising/flat/falling)
+
+**Volume layer separate from position:** position score tells you what memory architecture the workload demands; volume tells you how much of it. Volume index = aggregate enterprise AI run-rate (MSFT + AWS + GCP + Oracle) indexed to May 2026 = 100. Composite HBM bit demand = `score × volume_index / 100`. Today: 52 × 100/100 = 52 baseline units.
+
+**Bull/bear case context in the brief (NEW per Raul's ask):**
+- **🐂 BULL CASE**: enterprise agentic adoption ignites. Volume share 5% → 25-30%, context 800K → 3-5M, operative context shifts C2 → C4, market-deployed cell deep in HBM territory (score 70-85), volume index grows 5-10x, composite HBM bit demand 10-15x today's baseline.
+- **🐻 BEAR CASE**: enterprise agentic stalls. KV efficiency improves on schedule (3 KB/tok), but enterprise share never breaks 10%, context plateaus at 1M. Workload cell lands at R1C3 (score 33), even with anticipation premium market cell only reaches R2C3 (score < 50), status flips to Partially fired. Market broadens to LPDDR/CXL; Samsung, Micron and Chinese suppliers gain at SK Hynix's expense.
+
+**Framework primer + "why this matters" footer** at the bottom of the DHCR card explains the framework so the reader can interpret the score, and reinforces the central thesis: enterprise agentic adoption is the make-or-break.
+
+### Fix B (cont.) — Section 4 placement
+
+- Section title renamed "Top 5 indicators — deep dive" → "**Top 6 indicators — deep dive**"
+- DHCR card rendered FIRST inside section 4 (above the 5 Sonnet-picked deep dives)
+- Section 3 (Tier indicators table) UNCHANGED — DHCR continues to render exactly where it did in v3.4.0/v3.4.1, in its tier row
+
+### Fix C — CapEx capitalization
+
+Across user-facing strings (indicator descriptions, Sonnet prompt text, YAML notes, rendered HTML labels), "capex" and "Capex" → "**CapEx**" (Capital Expenditure).
+
+Code identifiers UNCHANGED: `capex_yoy_pct`, `mean_capex_ocf_ratio_2q`, `t2_capex_parabolic`, `hyperscaler_ai_capex_aggregate` stay lowercase per Python convention.
+
+86 replacements total across `src/config.py` (59), `src/analysis/llm_summarizer.py` (23), `data/enterprise_ai_revenue.yaml` (4). Sweep uses negative-lookbehind/lookahead regex to match only standalone words, never identifier substrings.
+
+### Test state
+
+385 tests pass:
+```bash
+PYTHONPATH=. python3 -m pytest tests/ -q
+# 385 passed, 17 warnings, 3 subtests passed in 1.74s
+```
+
+Test count: v3.4.1 baseline (405) − v3.4.0 DHCR tests removed (43, obsolete due to framework redesign) + v3.4.2 new tests (36) − v3.4.1 test recounts (~13) = 385. Two existing tests updated for new CapEx capitalization (`test_v3_39_5_void_closures.py`, `test_v3_39_6_calculation_driven.py`). v3.4.0 DHCR test file deleted entirely; its framework is superseded.
+
+New file `tests/test_v3_4_2_dhcr_matrix.py` covers: dual-input X-axis math (3 tests), matrix fundamentals (KV/context bands, zone grid corners, anticipation offset, score formula — 6 tests), status mapping across score×volume regimes (5 tests), sanity check confirms/contradicts/calibration flag (3 tests), bull/bear narrative builders (2 tests), end-to-end snapshot (2 tests), section 4 placement + Top 6 title + DHCR first + bull/bear boxes (4 tests), Sonnet retry & Haiku fallback (3 tests), Layer 2 retry & DHCR skip (2 tests), CapEx capitalization in user-facing + identifiers preserved (3 tests).
+
+### Files
+
+| File | Change |
+|---|---|
+| `data/context_length_signals.yaml` | NEW — dual-input triangulation YAML with 5 categories × (typical_context_tokens, volume_share_pct), refresh_evidence log, monthly cadence documentation |
+| `src/analysis/dhcr.py` | REWRITTEN — KV bands + context bands + 5×5 MEMORY_ZONES grid, dual-input compute_operative_context, anticipation premium compute_market_deployed_cell, compute_position_score (50/50 weighted), volume index, compute_sanity_check with 3 signals + calibration flag, map_status (score × trajectory), build_bull_case + build_bear_case narrative builders |
+| `src/analysis/chart_generator.py` | Added generate_dhcr_matrix_chart — 5×5 visual color-coded by memory zone, workload-implied + market-deployed cells highlighted, anticipation gap dashed line, 90d trajectory arrow, legend |
+| `src/email_module/template.py` | _build_dhcr_section4_card REWRITTEN for v3.4.2 layout (status pill + score badge + calibration flag + matrix chart + workload-vs-market readout + per-category context contribution table + volume layer + sanity check + Sonnet narrative + 🐂 BULL CASE box + 🐻 BEAR CASE box + substitution risk flags + framework primer + "why this matters" footer). Section 4 title → "Top 6". DHCR card moved to FIRST position in section 4. build_email_html gains `dhcr_matrix_chart_b64` kwarg |
+| `src/fast_tier.py` | Generates both DHCR trajectory + matrix charts, threads both to build_email_html |
+| `src/analysis/llm_summarizer.py` | Fix A — Sonnet streaming call wrapped with _call_sonnet_with_streaming helper, 3-retry app-level backoff (30s/90s/240s) for 529 errors, Haiku 4.5 fallback if all retries fail (30s recovery wait). CapEx capitalization in prompt text |
+| `src/analysis/signal_reasoner.py` | Layer 2 skips DHCR (returns None at function start). Layer 2 Haiku per-signal calls wrapped with 3-retry backoff (10s/30s/90s) for 529 |
+| `src/config.py` | CapEx capitalization across 59 user-facing indicator descriptions, what_to_look_for strings, etc. Code identifiers unchanged |
+| `data/enterprise_ai_revenue.yaml` | CapEx capitalization in 4 user-facing note fields |
+| `tests/test_v3_4_2_dhcr_matrix.py` | NEW — 36 tests across 15 classes |
+| `tests/test_v3_4_0_dhcr.py` | DELETED — superseded by v3.4.2 framework redesign |
+| `tests/test_v3_39_5_void_closures.py` + `tests/test_v3_39_6_calculation_driven.py` | Updated to match new CapEx capitalization in prompt assertions |
+
+xlsx renamed `memory_cycle_data_source_audit_v3_4_2.xlsx`.
+
+### Watch items post-deploy
+
+**First brief after upload:**
+- Section 4 title reads "**Top 6 indicators — deep dive**"
+- DHCR card renders FIRST inside section 4 (before the 5 Sonnet-picked deep dives)
+- DHCR card shows: status pill (Not fired, green) + SCORE 52/100 badge + 5×5 matrix chart with workload cell (black outline circle at R3C2) and market-deployed cell (red filled circle at R4C2) connected by dashed line + per-category context contribution table + volume layer ($121B run-rate, +175% YoY weighted) + sanity check (3/3 confirm, no flag) + Sonnet narrative + 🐂 BULL CASE green box + 🐻 BEAR CASE red box + framework primer footer
+- All "CapEx" appearances in user-facing strings (descriptions, prompts, YAML notes) — never "capex" or "Capex" as standalone words
+- Section 3 (Tier indicators table) UNCHANGED — DHCR row stays where it was
+
+**If Anthropic API has another 529 storm:**
+- Sonnet retries silently up to 6min total; logs show `Sonnet retry attempt N/4: sleeping Xs before next try`
+- If all Sonnet retries fail, log shows `Falling back to claude-haiku-4-5-20251001 for synthesis. Brief will ship with lower narrative quality but all sections (including DHCR matrix) populated`
+- Layer 2 per-signal retries logged with `Layer 2 attempt N overloaded for signal_X`
+- Brief still ships with DHCR + matrix + bull/bear context regardless of Sonnet retry outcome
+
+**Monthly DHCR refresh:**
+- `data/context_length_signals.yaml` needs human-curated update per the documented refresh process (review product docs + hyperscaler earnings transcripts for each category, update typical_context_tokens + volume_share_pct, append refresh_evidence entry). Currently manual; future automation candidate.
+
+---
+
 ## v3.4.1 — UI fixes + Reversed eradication + length caps
 
 Five fixes diagnosed from the May 22 2026 production brief screenshots. All five are presentation/quality refinements on top of v3.4.0's feature work.

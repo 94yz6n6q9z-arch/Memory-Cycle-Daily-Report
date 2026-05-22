@@ -244,7 +244,7 @@ class TestSonnetPromptDigestThreading(unittest.TestCase):
         )
         self.assertIn("DEEP-TIER EARNINGS TRANSCRIPTS (PRIMARY SOURCE)", prompt)
         self.assertIn("supplier inventory: 2.3 weeks", prompt)
-        self.assertIn("HBM/capex: 50%", prompt)
+        self.assertIn("HBM/CapEx: 50%", prompt)
         self.assertIn("wafer: favoring_hbm", prompt)
 
     def test_mixed_digests_sorted_by_source_type(self):

@@ -215,10 +215,10 @@ nvidia_datacenter:
     notes: "Re-acceleration off Blackwell/GB300 ramp."
 
 # ============================================================
-# Aggregate hyperscaler AI capex (the upstream constraint)
+# Aggregate hyperscaler AI CapEx (the upstream constraint)
 # ============================================================
 # How much are the four hyperscalers spending on AI infrastructure?
-# This bounds the demand-pull. If capex stalls, enterprise revenue
+# This bounds the demand-pull. If CapEx stalls, enterprise revenue
 # can't grow forever.
 
 hyperscaler_ai_capex_aggregate:
@@ -239,7 +239,7 @@ hyperscaler_ai_capex_aggregate:
     yoy_growth_pct: 86.0
     ai_share_estimate_pct: 78.0
     confidence: "high"
-    notes: "Cumulative 2025 hyperscaler AI capex ~$500B."
+    notes: "Cumulative 2025 hyperscaler AI CapEx ~$500B."
 
   - quarter: "2026-Q1"
     msft_googl_amzn_meta_capex_usd_b: 168.0
@@ -262,7 +262,7 @@ composite_signals_q2_2026_estimate:
   # Direction interpretation per Raul's mental model:
   # - Enterprise AI revenue still growing 150%+ YoY = demand pull strong
   # - NVIDIA datacenter growth decelerating but still 60-70% YoY
-  # - Hyperscaler capex still accelerating
+  # - Hyperscaler CapEx still accelerating
   # Net: demand-pull is keeping pace with or exceeding capacity creation
   # → bullish for HBM captive ratio
 

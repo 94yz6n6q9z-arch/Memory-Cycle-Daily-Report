@@ -1,159 +1,113 @@
-# v3.4.0 — Decode HBM Captive Ratio (DHCR) indicator
+# v3.4.2 — DHCR matrix redesign + reliability + CapEx capitalization
 
-The feature release. Single new Tier 1 indicator collapsing the ROADMAP's original three captive-ratio indicators into one composite direction monitor.
+Three workstreams from the May 22 2026 production failure + design conversation.
 
 ## ⚠️ One file removal required after upload
 
 ```bash
-git rm memory_cycle_data_source_audit_v3_39_7_10.xlsx
+git rm memory_cycle_data_source_audit_v3_4_1.xlsx
+git rm tests/test_v3_4_0_dhcr.py
 ```
 
-(Plus any older versioned xlsx files still in the repo from prior uploads.)
+(The v3.4.0 DHCR tests are removed because the framework was redesigned in v3.4.2; the v3.4.2 test file covers the new framework comprehensively.)
 
 ---
 
-## What ships
+## What ships in v3.4.2
 
-**New indicator:** `t1_decode_hbm_captive_ratio` (DHCR) — Tier 1, direction monitor (no trigger gate). Indicator count 22 → 23.
+| # | Workstream | Mechanism |
+|---|---|---|
+| A | Sonnet reliability for 529 | 3-retry app-level backoff (30s/90s/240s) + Haiku 4.5 fallback if all retries fail |
+| A | Layer 2 reliability for 529 | 3-retry per-signal backoff (10s/30s/90s); DHCR explicitly skipped (computed deterministically) |
+| B | DHCR full framework redesign | 5×5 matrix with memory-zone color coding, dual-input X-axis, anticipation premium, sanity check, score 0-100, bull/bear context in email |
+| B | Section 4 placement | Renamed "Top 5" → "Top 6 indicators — deep dive". DHCR card rendered FIRST inside section 4. Section 3 unchanged. |
+| C | CapEx capitalization | 86 replacements in user-facing strings; code identifiers preserved |
 
-**The mental model** (Raul, May 21 2026):
+## File delta v3.4.1 → v3.4.2
 
-> Efficiency gains don't displace HBM — they UNLOCK economic context capacity. Enterprise workloads expand to consume what's economically possible. The binding question is whether enterprise demand grows fast enough to fill the unlocked headroom.
+**NEW (3):**
+- `data/context_length_signals.yaml` — dual-input X-axis triangulation YAML
+- `tests/test_v3_4_2_dhcr_matrix.py` — 36 tests across 15 classes
+- `memory_cycle_data_source_audit_v3_4_2.xlsx` — version rename
 
-**Today's read:** STRONGLY_BULLISH_HBM, +46pp delta. Frontier KV 14 KB/tok (DeepSeek V4), frontier HBM 576 GB (NVIDIA GB300), implied context capacity ~**42 million tokens per accelerator** (vs ~256K at Q4 2023 — 165× expansion in 30 months). Enterprise AI growing 216% YoY vs capacity creation 111% YoY.
+**DELETED (1):**
+- `tests/test_v3_4_0_dhcr.py` — obsolete (v3.4.0 framework superseded)
 
----
+**MODIFIED (8):**
+- `src/analysis/dhcr.py` — full rewrite for matrix framework
+- `src/analysis/chart_generator.py` — added `generate_dhcr_matrix_chart`
+- `src/analysis/llm_summarizer.py` — Sonnet retry + Haiku fallback + CapEx
+- `src/analysis/signal_reasoner.py` — Layer 2 retry + DHCR skip
+- `src/email_module/template.py` — section 4 title + DHCR-first + new card layout with bull/bear boxes + framework primer
+- `src/fast_tier.py` — matrix chart generation + threading
+- `src/config.py` — CapEx capitalization (59 user-facing string replacements)
+- `data/enterprise_ai_revenue.yaml` — CapEx in 4 note fields
+- `tests/test_v3_39_5_void_closures.py` + `tests/test_v3_39_6_calculation_driven.py` — updated CapEx assertions
 
-## File delta from v3.39.7.10
-
-**NEW files (6):**
-- `data/inference_arch_reference.yaml` — 13 open-architecture frontier models + 3 closed models + workload context estimates
-- `data/hbm_per_accelerator.yaml` — NVIDIA (9 gens), AMD (4 gens), custom silicon (6 gens), non-HBM substitution risk (3)
-- `data/enterprise_ai_revenue.yaml` — MSFT/AWS/GCP/Oracle/NVIDIA quarterly + hyperscaler capex (bootstrapped Q1 2024 → Q1 2026)
-- `src/analysis/dhcr.py` — compute module (~800 lines)
-- `tests/test_v3_4_0_dhcr.py` — 55 tests across 17 test classes
-- `memory_cycle_data_source_audit_v3_4_0.xlsx` — version rename
-
-**MODIFIED files (10):**
-- `src/config.py` — DHCR registered (Tier 1, no trigger patterns)
-- `state/indicator_evidence.json` — DHCR bootstrap entry
-- `src/state.py` — `save_dhcr_state` + `load_dhcr_prior_state` (12-snapshot history cap)
-- `src/email_module/template.py` — `_build_dhcr_section3_snippet` + `_build_dhcr_section4_card` + `build_email_html` signature +2 kwargs
-- `src/analysis/chart_generator.py` — `generate_dhcr_trajectory_chart` (dual-panel: capacity-vs-demand growth + implied capacity log-scale)
-- `src/analysis/llm_summarizer.py` — DHCR block in COMPUTED METRICS prompt
-- `src/fast_tier.py` — DHCR computed + persisted + threaded into build_email_html
-- `src/analysis/digester.py` — 5 new extraction fields for enterprise context (Phase 2)
-- `.github/workflows/fast_tier.yml` — commits state/extraction_log_*.jsonl + state/dhcr_state.json (Phase 2 persistence fix)
-- `.github/workflows/deep_tier.yml` — commits state/extraction_log_*.jsonl (Phase 2)
-- `tests/test_indicator_evidence.py` — count 22 → 23
-- `CHANGES.md` / `CLAUDE.md` / `ROADMAP.md` / `UPLOAD_GUIDE.md`
-
-**REMOVED:** `memory_cycle_data_source_audit_v3_39_7_10.xlsx` (replaced by v3.4.0 rename)
-
----
-
-## Phase 2 persistence fix
-
-The May 21 audit revealed `state/extraction_log_*.jsonl` was never appearing in the committed state directory — the ROADMAP's premise of "3 weeks of accumulated extraction data ready to calibrate" was empirically false. Two causes:
-
-1. **Workflow gap (now fixed):** the deep tier digester wrote `state/extraction_log_{date}.jsonl` per the v3.3 spec but neither workflow file added it to git. Every runner started with a fresh checkout, file was generated locally, then destroyed at shutdown.
-2. **Sparse triggers (accepted):** the digester only writes when at least one architecture signal field is non-null (CXL deployment, LPDDR datacenter win, custom silicon arch, etc.) — so empty-architecture quarters wouldn't produce a file even if persistence worked. This is correct behavior; accepted as is.
-
-v3.4.0 fixes (1). From the first deploy forward, every deep-tier run that detects architecture signals adds a daily JSONL line to the repo, accumulating across runs.
-
----
+**REMOVED:** `memory_cycle_data_source_audit_v3_4_1.xlsx`
 
 ## Test state
 
 ```bash
 PYTHONPATH=. python3 -m pytest tests/ -q
-# 380 passed, 87 warnings, 3 subtests passed in 4.98s
+# 385 passed, 17 warnings, 3 subtests passed in 1.74s
 ```
-
-325 from v3.39.7.10 baseline + 55 new in `tests/test_v3_4_0_dhcr.py`.
-
-The 55 v3.4.0 tests cover (17 classes):
-- **YAML structural integrity** (6): all three reference files parse + carry required keys
-- **KV/token math** (4): GQA + MLA formulas, FP16/FP8 quantization, YAML pre-computed values trusted
-- **Frontier KV computation** (3): date-aware selection, monotonic ratchet, future models excluded
-- **Frontier HBM** (3): merchant-only (NVIDIA/AMD), projected entries excluded by default, monotonic growth
-- **Implied context capacity** (3): formula verification + edge cases
-- **Capacity creation YoY composite** (2): correct combination, None handling
-- **Enterprise demand aggregation** (2): run-rate sum + weighted YoY
-- **Direction signal** (4): each 5-level band + insufficient-data fallback
-- **Trajectory computation** (3): multi-quarter, chronological, capacity expansion
-- **Full snapshot** (4): integration, all fields present, narrative non-empty, substitution flags
-- **State persistence** (2): round-trip + 12-entry history cap
-- **Rendering** (5): section 3 snippet + section 4 card + None handling + direction colors
-- **Chart generation** (3): full trajectory + empty + single-point edge cases
-- **Config registration** (4): in INDICATORS, Tier 1, count = 23, evidence store entry
-- **Sonnet prompt integration** (2): DHCR block present + mental model explainer
-- **Workflow persistence** (3): extraction_log + dhcr_state in both workflow files
-- **Build email html end-to-end** (2): with/without DHCR snapshot
-
----
 
 ## Upload workflow
 
-**github.dev:**
-1. Extract this ZIP locally
-2. Open `https://github.dev/<your-username>/Memory-Cycle-Daily-Report`
-3. Delete `memory_cycle_data_source_audit_v3_39_7_10.xlsx`
-4. Drag-and-drop the extracted folder
-5. Source Control panel → stage all → commit `v3.4.0 — Decode HBM Captive Ratio (DHCR) indicator + Phase 2 extraction_log persistence fix` → push
-6. Delete `UPLOAD_GUIDE.md` from the repo
-
-**Local git:**
 ```bash
-git rm memory_cycle_data_source_audit_v3_39_7_10.xlsx
-# extract zip into repo (overwrites modified files + adds 6 new files)
-git add . && git commit -m "v3.4.0 — DHCR indicator + Phase 2 extraction_log persistence" && git push
+git rm memory_cycle_data_source_audit_v3_4_1.xlsx tests/test_v3_4_0_dhcr.py
+# extract this zip over the repo
+git add . && git commit -m "v3.4.2 — DHCR matrix redesign (5x5 with memory zones, dual-input X-axis, anticipation premium, sanity check, bull/bear context), Sonnet/Layer 2 reliability (529 retry + Haiku fallback), CapEx capitalization" && git push
 ```
-
----
 
 ## Post-deploy acceptance criteria
 
-**First fast-tier run after upload:**
-- [ ] Pipeline completes without errors (DHCR added; no regression to existing indicators)
-- [ ] Log line `DHCR computed: STRONGLY_BULLISH_HBM (KV=14KB, HBM=576GB, capacity=42,130,285t, ent_yoy=216%, cap_create_yoy=111%)`
-- [ ] `state/dhcr_state.json` appears in the repo after the workflow commit step. **If absent → the `git add state/dhcr_state.json` in fast_tier.yml didn't take. Open issue.**
+**First brief after upload — DHCR card (NEW v3.4.2 layout):**
+- [ ] Section 4 title reads "**Top 6 indicators — deep dive**" (was "Top 5")
+- [ ] DHCR card is the FIRST card in section 4 (above the 5 Sonnet-picked deep dives)
+- [ ] Section 3 (Tier indicators table) UNCHANGED — DHCR row stays where it was
+- [ ] DHCR card shows:
+  - Header: "Decode HBM Captive Ratio (DHCR)" + green "Not fired" pill + blue "SCORE 52/100" badge
+  - 5×5 matrix chart: cells color-coded green (DDR) → yellow (LPDDR) → amber (hybrid) → red-orange (HBM); black outline circle at R3C2 (workload) connected by dashed line to red filled circle at R4C2 (market-deployed); legend at bottom
+  - Two-column workload-vs-market readout with KV details + operative context + anticipation gap
+  - Per-category context contribution table (5 rows: consumer chat / coding agents / enterprise vertical agents / dev raw API / other) with context, share, contribution, confidence
+  - Volume layer block: aggregate run-rate, weighted YoY, NVIDIA DC YoY, volume index, trajectory, HBM bit demand
+  - Sanity check status: "3/3 signals confirm matrix output" (green, no calibration flag today)
+  - Sonnet narrative paragraph
+  - 🐂 **BULL CASE** green box with enterprise-share growth scenario quantified
+  - 🐻 **BEAR CASE** red box with stall-scenario consequences
+  - Framework primer footer + "Why this matters" explainer
+- [ ] All "CapEx" in user-facing text (descriptions, prompts, labels) — search the rendered HTML for "capex" or "Capex" as standalone words; should find ZERO
 
-**First brief after upload:**
-- [ ] Section 3 indicator table includes a row for `t1_decode_hbm_captive_ratio` with the direction badge ("STRONGLY BULLISH HBM" today) and driver numbers ("Frontier KV: 14 KB/tok · HBM/accel: 576 GB · Implied capacity: ~42.1M tokens · Capacity-creation YoY: +111% · Enterprise AI YoY: +216% · NVIDIA DC YoY: +69%")
-- [ ] Section 4 deep-dive card renders with: supply/demand 2-column layout · dual-panel trajectory chart embedded · Sonnet narrative paragraph · substitution-risk flags (Cerebras WSE-3, Groq, Etched) · mental-model footer
-- [ ] Sonnet's exec_summary and indicator_assessments DO NOT describe DHCR with fire-language ("Fired", "Partially fired", "Reversed"). Status pill always shows "Not fired". If Sonnet describes it as fired, the prompt mental-model explainer needs strengthening — open issue.
+**If Anthropic API has another 529 storm:**
+- [ ] Sonnet retries silently up to ~6min; logs show retry attempts with backoff
+- [ ] If all retries fail, Haiku fallback kicks in; brief still ships with DHCR matrix
+- [ ] Layer 2 per-signal retries logged when 529 hit
+- [ ] DHCR card always populated regardless of LLM availability (it's deterministically computed)
 
-**First deep-tier run after upload:**
-- [ ] If any digested transcript mentions CXL/LPDDR/custom silicon/MoE/INT4 quantization/enterprise agent context, `state/extraction_log_2026-MM-DD.jsonl` should appear in the repo
-- [ ] If all transcripts are silent on architecture, no file is created — this is correct (digester only writes when signals non-null)
+## Monthly DHCR refresh process (NEW v3.4.2)
 
-**Visual quality checks:**
-- [ ] Trajectory chart's bottom panel (implied capacity, log scale) shows the ~165× expansion from Q4 2023 (256K tokens) to Q2 2026 (42M tokens) — this is the visual heart of the bull case
-- [ ] Top panel shows enterprise revenue line (green) above capacity-creation line (gray) — the bullish shading visible
+`data/context_length_signals.yaml` needs human-curated update each month:
 
----
+1. **Review product documentation** for each category's flagship products:
+   - Consumer chat: ChatGPT/Claude/Gemini default context windows
+   - Coding agents: Cursor/Devin/Claude Code/Copilot Workspace
+   - Enterprise vertical: Hebbia/Harvey/MS Copilot Enterprise case studies
+   - Dev API: typical default per provider
+   - Other: Perplexity, embedded chat, RAG wrappers
+2. **Review hyperscaler earnings transcripts** (already digested) for volume share signals
+3. **Update** `typical_context_tokens` and `volume_share_pct` per category
+4. **Append** a `refresh_evidence` entry with date + notes
+5. **Verify** `volume_share_pct` sums to 100; rebalance if needed
 
-## What v3.4.0 does NOT do
+The framework is most sensitive to the enterprise vertical category — pay closest attention there. Bootstrap value is 800K context × 5% share; Raul's thesis is this will grow to 25-30% share × 3-5M context over 24 months.
 
-- **No trigger gate.** DHCR ships as direction monitor only. Status pill is always "Not fired." Trigger activation is v3.4.1 work after 4-6 quarters of shadow data validates band boundaries.
-- **No LPDDR-specific pricing.** Still tracking DRAM + HBM. LPDDR contract scrape is an open gap from the original ROADMAP, queued for v3.4.2+.
-- **No closed-model KV auto-extraction.** GPT-5/Claude 4/Gemini 2.5 KV is hand-estimated with explicit confidence bands. Auto-extraction from cost-per-token gradients is v3.4.2+.
-- **No changes to the other 22 indicators.** All v3.39.x fixes preserved as-is.
+## What v3.4.2 does NOT change
 
----
-
-## Roadmap forward
-
-- **v3.4.1** (~Q1 2027): activate trigger gates. Conditions: direction → mildly_bearish_hbm for 2 consecutive quarters (partial fire), → strongly_bearish_hbm for 2 consecutive quarters (full fire), → mildly_bullish_hbm+ for 2 quarters (reversal).
-- **v3.4.2+**: closed-model KV auto-extraction from API cost gradients; LPDDR-specific TrendForce scrape; Artificial Analysis tokens-$ trend integration.
-
-## Key insights from the May 21 design session
-
-Worth preserving so future Claude doesn't re-litigate these:
-
-1. **Efficiency does not displace HBM.** It UNLOCKS context capacity. Market always fills the economic frontier.
-2. **Don't try to measure aggregate context length directly.** It's unknowable and a lagging artifact. Measure enterprise AI revenue growth as the leading proxy for demand-pull into the unlocked headroom.
-3. **DHCR is a direction monitor, not a trigger.** The signal is "is demand growing faster or slower than capacity creation," not "did we cross some threshold."
-4. **The 42M implied context capacity per accelerator** is the bull case in concentrated form. Efficiency × HBM creates the headroom; we watch enterprise adoption fill it.
-5. **The original ROADMAP three-indicator design was wrong.** Indicators 23/24/25 measured three INPUTS to one underlying question. Collapsing to ONE composite direction monitor is correct.
+- Section 3 tier indicators table — DHCR row stays where it is
+- All other 22 indicator definitions
+- Cycle matrix (v3.39.7)
+- v3.4.1 fixes (trigger banner colors, change-flag plain text, Reversed eradication, exec brief 250-word cap, where_we_stand 120-word cap + Layer 2 fallback)
+- 4-tier value-chain TRACKED_COMPANIES
+- v3.4.0 evidence store persistence + extraction_log JSONL

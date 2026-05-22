@@ -92,6 +92,9 @@ def build_email_html(
     # framework degrades gracefully.
     dhcr_snapshot: Optional[dict] = None,
     dhcr_chart_b64: Optional[str] = None,
+    # v3.4.2 — DHCR matrix chart (5x5 with memory-zone color coding).
+    # Rendered inside the section 4 DHCR card alongside the trajectory chart.
+    dhcr_matrix_chart_b64: Optional[str] = None,
     # v3.4.1 Fix 5b: Layer 2 per-signal reasonings indexed by signal_id.
     # Used as defensive fallback in _build_indicators_section when Sonnet's
     # where_we_stand field comes back empty (hit max_tokens mid-output).
@@ -265,23 +268,29 @@ def build_email_html(
         signal_reasonings_by_id=signal_reasonings_by_id,
     ))
 
-    # 6. Top 5 deep dives (section 4 — includes cycle matrix card under
-    # t1_spot_decline per v3.39.7.5 placement decision)
-    parts.append("<h2 id='section-4'>4. Top 5 indicators — deep dive</h2>")
+    # 6. Top 6 deep dives (section 4 — v3.4.2: renamed from Top 5,
+    # DHCR added as FIRST item per Raul May 22)
+    parts.append("<h2 id='section-4'>4. Top 6 indicators — deep dive</h2>")
+
+    # v3.4.2 — DHCR section 4 deep-dive card. Renders FIRST inside section 4.
+    # DHCR is the framework-level direction monitor — sets macro context
+    # (is enterprise demand-pull keeping pace with capacity creation?)
+    # before the brief gets into the 5 specific tier-level indicator stories.
+    # v3.4.2 changes from v3.4.0: matrix chart embedded, dual cells visible
+    # (workload-implied vs market-deployed), bull/bear case context included.
+    if dhcr_snapshot:
+        parts.append(_build_dhcr_section4_card(
+            dhcr_snapshot,
+            matrix_chart_b64=dhcr_matrix_chart_b64,
+            trajectory_chart_b64=dhcr_chart_b64,
+        ))
+
     parts.append(_build_top5_section(
         analysis.top_5_deep_dives,
         cycle_verdict=cycle_verdict,
         cycle_matrix_chart_b64=cycle_matrix_chart_b64,
         spot_contract_chart_b64=spot_contract_chart_b64,
     ))
-
-    # v3.4.0 — DHCR section 4 deep-dive card. Rendered as its own card
-    # block (not in top_5_deep_dives because DHCR isn't a per-indicator
-    # status — it's a direction monitor with computed numbers + chart).
-    # Always renders when dhcr_snapshot is provided, regardless of whether
-    # it's in top_5_deep_dives.
-    if dhcr_snapshot:
-        parts.append(_build_dhcr_section4_card(dhcr_snapshot, chart_b64=dhcr_chart_b64))
 
     # 7. Latest news
     parts.append("<h2 id='section-5'>5. Latest news from the memory & semi market</h2>")
@@ -638,169 +647,288 @@ def _build_dhcr_section3_snippet(dhcr: Optional[dict]) -> str:
     return f"<div style='margin-bottom:8px'>{direction_badge}{drivers_html}</div>"
 
 
-def _build_dhcr_section4_card(dhcr: Optional[dict], chart_b64: Optional[str] = None) -> str:
-    """v3.4.0 — section 4 deep-dive card for DHCR.
+def _build_dhcr_section4_card(
+    dhcr: Optional[dict],
+    matrix_chart_b64: Optional[str] = None,
+    trajectory_chart_b64: Optional[str] = None,
+) -> str:
+    """v3.4.2 — DHCR section 4 deep-dive card with matrix + bull/bear context.
 
-    Renders the full DHCR snapshot including: composite direction reading,
-    the matrix-based visualization (efficiency × HBM-capacity), the YoY
-    trend numbers for all three drivers, and the substitution-risk flags.
-    Pulls Sonnet's narrative paragraph from dhcr.narrative_summary.
+    Renders the full DHCR snapshot per the May 22 framework:
+      - Status pill (Fired / Partially fired / Not fired)
+      - Score badge (0-100 with HBM↔commodity spectrum)
+      - Two-column workload-vs-market cell readout (anticipation gap)
+      - Matrix chart embedded (5x5 with memory-zone color coding)
+      - Per-category context contribution table (the dual-input X-axis)
+      - Volume index + composite HBM bit demand
+      - Sanity check status with calibration flag
+      - Sonnet's narrative paragraph
+      - Bull case + Bear case context boxes (NEW v3.4.2 per Raul's ask)
+      - Mental model footer + framework explanation
     """
     if not dhcr:
         return ""
 
-    direction = dhcr.get("direction", "balanced")
-    direction_colors = {
-        "strongly_bullish_hbm": "#2C7A2C",
-        "mildly_bullish_hbm": "#C0DD97",
-        "balanced": "#CCCCCC",
-        "mildly_bearish_hbm": "#FAC775",
-        "strongly_bearish_hbm": "#B91C1C",
-    }
-    color = direction_colors.get(direction, "#CCCCCC")
-    text_color = "#FFFFFF" if direction == "strongly_bearish_hbm" else "#1a1a1a"
+    status = dhcr.get("status", "Not fired")
+    status_color = dhcr.get("status_color", "#C0DD97")
+    score = dhcr.get("position_score", 0)
+    workload_zone = dhcr.get("workload_implied_zone", "?")
+    market_zone = dhcr.get("market_deployed_zone", "?")
+    workload_cell = dhcr.get("workload_implied_cell", (0, 0))
+    market_cell = dhcr.get("market_deployed_cell", (0, 0))
+    anticipation_gap = dhcr.get("anticipation_gap_bands", 0)
 
-    kv = dhcr.get("frontier_kv_kb_per_token", 0)
+    kv_kb = dhcr.get("frontier_kv_kb_per_token", 0)
+    kv_gb = dhcr.get("frontier_kv_gb_per_1m_tokens", 0)
     model = dhcr.get("frontier_model_name", "?")
     arch = dhcr.get("frontier_model_arch", "?")
-    hbm = dhcr.get("frontier_hbm_gb_per_accelerator", 0)
-    accel = dhcr.get("frontier_accelerator_name", "?")
-    cap_tokens = dhcr.get("implied_context_capacity_per_accelerator_tokens", 0) or 0
+    kv_band = dhcr.get("kv_band_label", "?")
     kv_yoy = dhcr.get("kv_yoy_change_pct") or 0
-    hbm_yoy = dhcr.get("hbm_per_accelerator_yoy_change_pct") or 0
-    cap_yoy = dhcr.get("capacity_creation_yoy_pct") or 0
+
+    op_ctx = dhcr.get("operative_context_tokens", 0)
+    op_ctx_s = f"{op_ctx/1000:.0f}K" if op_ctx < 1_000_000 else f"{op_ctx/1_000_000:.2f}M"
+    ctx_band = dhcr.get("context_band_label", "?")
+    categories = dhcr.get("context_categories", []) or []
+
+    ent_rr = dhcr.get("enterprise_ai_run_rate_usd_b", 0)
     ent_yoy = dhcr.get("enterprise_ai_yoy_growth_pct") or 0
     nv_yoy = dhcr.get("nvidia_datacenter_yoy_growth_pct") or 0
-    capex_yoy = dhcr.get("hyperscaler_capex_yoy_growth_pct") or 0
-    ent_rr = dhcr.get("enterprise_ai_aggregate_run_rate_usd_b", 0)
+    vol_idx = dhcr.get("volume_index", 100)
+    vol_traj = dhcr.get("volume_trajectory", "flat")
+    hbm_demand = dhcr.get("hbm_bit_demand_index", 0)
+
+    sanity_confirms = dhcr.get("sanity_check_confirms", 0)
+    sanity_contradicts = dhcr.get("sanity_check_contradicts", 0)
+    calibration_flag = dhcr.get("calibration_flag", False)
+    subst_count = dhcr.get("sanity_signal_substitution_news_count", 0)
+    decode_off_hbm = dhcr.get("sanity_signal_hyperscaler_decode_mentions", 0)
+    hbm_price = dhcr.get("sanity_signal_hbm_price_trend", "?")
+
     narrative = dhcr.get("narrative_summary", "")
-    dominant = dhcr.get("dominant_force", "")
-    confidence = dhcr.get("confidence", "?")
-    subst = dhcr.get("substitution_risk_notes") or []
+    bull_case = dhcr.get("bull_case_summary", "")
+    bear_case = dhcr.get("bear_case_summary", "")
+    subst = dhcr.get("substitution_risk_notes", []) or []
+    reasoning = dhcr.get("status_reasoning", "")
 
-    if cap_tokens >= 1_000_000:
-        cap_s = f"{cap_tokens / 1_000_000:.1f}M"
-    elif cap_tokens >= 1_000:
-        cap_s = f"{cap_tokens / 1_000:.0f}K"
-    else:
-        cap_s = str(cap_tokens)
-
-    direction_label = direction.replace("_", " ").upper()
+    text_color = "#FFFFFF" if status == "Fired" else "#1a1a1a"
 
     parts = []
     parts.append(
         "<div style='margin:24px 0;border:2px solid #555;background:#FAFAFA;"
         "padding:18px;border-radius:5px'>"
     )
+
+    # Header: title + status pill + score badge
     parts.append(
-        f"<h3 style='margin:0 0 12px 0;color:#1a1a1a'>"
-        f"Decode HBM Captive Ratio — direction monitor "
-        f"<span style='font-size:12px;color:#888;font-weight:normal'>(new v3.4.0)</span>"
-        f"</h3>"
-    )
-    parts.append(
-        f"<div style='margin-bottom:12px'>"
-        f"<span style='background:{color};color:{text_color};padding:6px 14px;"
-        f"border-radius:4px;font-weight:700;font-size:14px'>"
-        f"{direction_label}</span>"
-        f"<span style='margin-left:12px;color:#666;font-size:12px'>"
-        f"confidence: {confidence} · {dominant}</span>"
+        f"<div style='display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap'>"
+        f"<h3 style='margin:0;color:#1a1a1a;display:inline'>Decode HBM Captive Ratio (DHCR)</h3>"
+        f"<span style='background:{status_color};color:{text_color};padding:6px 14px;"
+        f"border-radius:4px;font-weight:700;font-size:13px'>{html.escape(status)}</span>"
+        f"<span style='background:#2C5AA0;color:#fff;padding:6px 14px;border-radius:4px;"
+        f"font-weight:700;font-size:13px'>SCORE {score}/100</span>"
+        f"<span style='font-size:12px;color:#666'>"
+        f"v3.4.2 framework — direction monitor</span>"
         f"</div>"
     )
 
-    # Two-column layout: supply (left), demand (right)
-    parts.append("<table style='width:100%;border-collapse:collapse;margin-bottom:14px'><tr>")
+    if calibration_flag:
+        parts.append(
+            "<div style='background:#FAC775;border:2px solid #B58A1A;color:#5A3F00;"
+            "padding:8px 12px;margin-bottom:12px;border-radius:3px;font-weight:600;font-size:12px'>"
+            "⚠️ CALIBRATION FLAG — ≥2 of 3 sanity signals contradict the matrix output. "
+            "Review substitution evidence before relying on this score."
+            "</div>"
+        )
 
-    # Supply side
+    # Reasoning under status
     parts.append(
-        "<td style='width:50%;vertical-align:top;padding-right:14px;"
-        "border-right:1px solid #DDD'>"
+        f"<div style='font-size:12px;color:#444;margin-bottom:14px;font-style:italic'>"
+        f"{html.escape(reasoning)}</div>"
+    )
+
+    # MATRIX CHART (the centerpiece)
+    if matrix_chart_b64:
+        parts.append(
+            f"<img src='data:image/png;base64,{matrix_chart_b64}' "
+            f"style='width:100%;max-width:760px;margin:8px 0' "
+            f"alt='DHCR 5x5 matrix — KV efficiency vs operative context, color-coded by memory zone' />"
+        )
+
+    # Two-column: workload-implied vs market-deployed
+    parts.append("<table style='width:100%;border-collapse:collapse;margin:14px 0'><tr>")
+    parts.append(
+        "<td style='width:50%;vertical-align:top;padding-right:14px;border-right:1px solid #DDD'>"
         "<div style='font-weight:600;color:#1a1a1a;margin-bottom:6px;font-size:13px'>"
-        "SUPPLY-SIDE: capacity creation rate</div>"
+        "WORKLOAD-IMPLIED CELL</div>"
         f"<div style='font-size:12px;color:#333;line-height:1.55'>"
-        f"<strong>Frontier KV efficiency:</strong> {kv:.0f} KB/tok<br/>"
+        f"<strong>Cell:</strong> R{workload_cell[0]+1}C{workload_cell[1]+1}"
+        f" ({html.escape(workload_zone)})<br/>"
+        f"<strong>Frontier KV:</strong> {kv_kb:.1f} KB/tok = {kv_gb:.1f} GB per 1M tokens<br/>"
         f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
-        f"{html.escape(model)} ({arch})</span><br/>"
-        f"&nbsp;&nbsp;YoY: {kv_yoy:+.0f}% (negative = efficiency improving)<br/><br/>"
-        f"<strong>Frontier HBM-per-accelerator:</strong> {hbm:.0f} GB<br/>"
+        f"{html.escape(model)} ({html.escape(arch)}), band {html.escape(kv_band)}</span><br/>"
+        f"&nbsp;&nbsp;YoY: {kv_yoy:+.0f}% (negative = improving)<br/>"
+        f"<strong>Operative context:</strong> ~{op_ctx_s} tokens (band {html.escape(ctx_band)})<br/>"
         f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
-        f"{html.escape(accel)}</span><br/>"
-        f"&nbsp;&nbsp;YoY: {hbm_yoy:+.0f}%<br/><br/>"
-        f"<strong>Composite capacity-creation rate:</strong> "
-        f"<span style='font-size:14px;font-weight:600'>{cap_yoy:+.0f}% YoY</span><br/><br/>"
-        f"<strong>Implied context-capacity frontier:</strong><br/>"
-        f"&nbsp;&nbsp;~<span style='font-size:18px;font-weight:700;color:#0F6E56'>"
-        f"{cap_s}</span> tokens per accelerator<br/>"
-        f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
-        f"(at frontier KV × frontier HBM-per-accel)</span>"
-        f"</div>"
-        "</td>"
+        f"volume-weighted across {len(categories)} categories</span>"
+        "</div></td>"
     )
-
-    # Demand side
     parts.append(
         "<td style='width:50%;vertical-align:top;padding-left:14px'>"
         "<div style='font-weight:600;color:#1a1a1a;margin-bottom:6px;font-size:13px'>"
-        "DEMAND-PULL: enterprise AI revenue</div>"
+        "MARKET-DEPLOYED CELL <span style='color:#666;font-size:11px;font-weight:400'>"
+        "(workload + anticipation premium)</span></div>"
         f"<div style='font-size:12px;color:#333;line-height:1.55'>"
-        f"<strong>Aggregate run-rate:</strong> "
-        f"${ent_rr:.0f}B annualized<br/>"
+        f"<strong>Cell:</strong> R{market_cell[0]+1}C{market_cell[1]+1}"
+        f" ({html.escape(market_zone)})<br/>"
+        f"<strong>Anticipation gap:</strong> +{anticipation_gap} Y-band(s)<br/>"
         f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
-        f"MSFT Azure AI + AWS + GCP + Oracle AI infra</span><br/><br/>"
-        f"<strong>Weighted enterprise YoY:</strong> "
-        f"<span style='font-size:14px;font-weight:600'>{ent_yoy:+.0f}%</span><br/><br/>"
-        f"<strong>NVIDIA datacenter YoY:</strong> {nv_yoy:+.0f}%<br/>"
+        f"market provisions HBM-heavy infra ahead of literal workload demand</span><br/>"
+        f"<strong>Position score:</strong> "
+        f"<span style='font-size:18px;font-weight:700;color:#0F6E56'>{score}/100</span><br/>"
         f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
-        f"(proxy for total AI accelerator demand)</span><br/><br/>"
-        f"<strong>Hyperscaler capex YoY:</strong> {capex_yoy:+.0f}%<br/>"
-        f"&nbsp;&nbsp;<span style='color:#888;font-size:11px'>"
-        f"(MSFT + GOOGL + AMZN + META)</span>"
-        f"</div>"
-        "</td>"
+        f"50/50 weighted (KV intensity × context intensity)</span>"
+        "</div></td>"
     )
-
     parts.append("</tr></table>")
 
-    # Chart if available
-    if chart_b64:
+    # Per-category context breakdown (the dual-input X-axis)
+    if categories:
         parts.append(
-            f"<img src='data:image/png;base64,{chart_b64}' "
-            f"style='width:100%;max-width:720px;margin:8px 0' "
-            f"alt='DHCR trajectory chart — capacity creation vs enterprise demand growth' />"
+            "<div style='margin:14px 0;font-size:12px;color:#333'>"
+            "<strong style='color:#1a1a1a'>X-axis triangulation: per-category contribution "
+            "to operative context</strong><br/>"
+            "<table style='width:100%;border-collapse:collapse;margin-top:6px;font-size:11px'>"
+            "<thead><tr style='background:#EEE'>"
+            "<th style='text-align:left;padding:4px 8px'>Category</th>"
+            "<th style='text-align:right;padding:4px 8px'>Context/session</th>"
+            "<th style='text-align:right;padding:4px 8px'>Volume share</th>"
+            "<th style='text-align:right;padding:4px 8px'>Contribution</th>"
+            "<th style='text-align:center;padding:4px 8px'>Confidence</th>"
+            "</tr></thead><tbody>"
         )
+        for c in categories:
+            ctx = c.get("context_tokens", 0)
+            ctx_s = f"{ctx/1000:.0f}K" if ctx < 1_000_000 else f"{ctx/1_000_000:.1f}M"
+            contrib = c.get("contribution_tokens", 0)
+            contrib_s = f"{contrib/1000:.1f}K"
+            conf = c.get("confidence", "?")
+            conf_color = {"high": "#1D6F3D", "medium": "#888", "low": "#A32D2D"}.get(conf, "#888")
+            parts.append(
+                f"<tr style='border-bottom:1px solid #EEE'>"
+                f"<td style='padding:4px 8px'>{html.escape(c.get('label', '?'))}</td>"
+                f"<td style='text-align:right;padding:4px 8px;font-variant-numeric:tabular-nums'>{ctx_s}</td>"
+                f"<td style='text-align:right;padding:4px 8px;font-variant-numeric:tabular-nums'>{c.get('volume_share_pct', 0):.0f}%</td>"
+                f"<td style='text-align:right;padding:4px 8px;font-variant-numeric:tabular-nums'><strong>{contrib_s}</strong></td>"
+                f"<td style='text-align:center;padding:4px 8px;color:{conf_color};font-weight:600'>{html.escape(conf)}</td>"
+                f"</tr>"
+            )
+        parts.append(
+            f"<tr style='background:#F0F0F0;font-weight:700'>"
+            f"<td colspan='3' style='padding:6px 8px;text-align:right'>Operative context (sum):</td>"
+            f"<td style='text-align:right;padding:6px 8px;font-variant-numeric:tabular-nums'>{op_ctx_s}</td>"
+            f"<td></td>"
+            f"</tr>"
+        )
+        parts.append("</tbody></table></div>")
 
-    # Narrative
+    # Volume layer
+    parts.append(
+        "<div style='margin:14px 0;padding:12px;background:#FFFFFF;border-left:3px solid #2C5AA0;"
+        "font-size:12px;color:#333;line-height:1.55'>"
+        "<strong style='color:#1a1a1a'>VOLUME LAYER (multiplier on the position score)</strong><br/>"
+        f"Aggregate enterprise AI run-rate: <strong>${ent_rr:.0f}B</strong> annualized "
+        f"(MSFT Azure AI + AWS + GCP + Oracle AI infra)<br/>"
+        f"Weighted enterprise YoY: <strong>{ent_yoy:+.0f}%</strong> &nbsp;·&nbsp; "
+        f"NVIDIA datacenter YoY: <strong>{nv_yoy:+.0f}%</strong><br/>"
+        f"<strong>Volume index:</strong> {vol_idx:.0f} "
+        f"<span style='color:#888;font-size:11px'>(May 2026 baseline = 100)</span> "
+        f"&nbsp;·&nbsp; <strong>Trajectory:</strong> {html.escape(vol_traj)}<br/>"
+        f"<strong style='font-size:14px'>Composite HBM bit demand index: "
+        f"<span style='color:#0F6E56'>{hbm_demand:.0f}</span></strong> "
+        f"<span style='color:#888;font-size:11px'>(= position score × volume index / 100)</span>"
+        "</div>"
+    )
+
+    # Sanity check
+    sanity_bg = "#FAC775" if calibration_flag else "#E8F5E9"
+    sanity_border = "#B58A1A" if calibration_flag else "#4CAF50"
+    parts.append(
+        f"<div style='margin:14px 0;padding:10px 12px;background:{sanity_bg};"
+        f"border-left:3px solid {sanity_border};font-size:12px;color:#333;line-height:1.5'>"
+        f"<strong style='color:#1a1a1a'>SANITY CHECK</strong> — "
+        f"{sanity_confirms}/3 signals confirm matrix output, {sanity_contradicts}/3 contradict<br/>"
+        f"&nbsp;&nbsp;• HBM-substitution news (last 90d): {subst_count} items "
+        f"<span style='color:#888;font-size:11px'>(threshold for concern: 5+)</span><br/>"
+        f"&nbsp;&nbsp;• Hyperscaler decode-off-HBM mentions: {decode_off_hbm}<br/>"
+        f"&nbsp;&nbsp;• HBM spot/contract price trend: <strong>{html.escape(hbm_price)}</strong>"
+        f"</div>"
+    )
+
+    # Sonnet narrative
     if narrative:
         parts.append(
-            f"<div style='background:#FFFFFF;padding:10px 12px;border-left:3px solid {color};"
-            f"margin:10px 0;font-size:12px;color:#333;line-height:1.5'>"
-            f"<strong style='color:#1a1a1a'>Read:</strong> "
-            f"{html.escape(narrative)}"
+            f"<div style='background:#FFFFFF;padding:10px 12px;border-left:3px solid {status_color};"
+            f"margin:14px 0;font-size:12px;color:#333;line-height:1.55'>"
+            f"<strong style='color:#1a1a1a'>READ:</strong> {html.escape(narrative)}"
             f"</div>"
         )
 
-    # Substitution risk
+    # Bull case + Bear case (NEW v3.4.2 per Raul's ask)
+    if bull_case:
+        parts.append(
+            "<div style='margin:14px 0;padding:12px;background:#E8F5E9;border:1px solid #4CAF50;"
+            "border-radius:4px;font-size:12px;color:#1a3300;line-height:1.55'>"
+            f"<strong style='color:#1B5E20'>🐂 {html.escape(bull_case[:24])}</strong>"
+            f"{html.escape(bull_case[24:])}"
+            "</div>"
+        )
+    if bear_case:
+        parts.append(
+            "<div style='margin:14px 0;padding:12px;background:#FFEBEE;border:1px solid #E57373;"
+            "border-radius:4px;font-size:12px;color:#5A1A1A;line-height:1.55'>"
+            f"<strong style='color:#B71C1C'>🐻 {html.escape(bear_case[:24])}</strong>"
+            f"{html.escape(bear_case[24:])}"
+            "</div>"
+        )
+
+    # Substitution risk flags
     if subst:
         parts.append(
             "<div style='margin-top:10px;font-size:11px;color:#666'>"
-            "<strong style='color:#1a1a1a'>HBM-substitution risk flags "
-            "(non-HBM accelerators):</strong><ul style='margin:4px 0 0 0;padding-left:20px'>"
+            "<strong style='color:#1a1a1a'>HBM-substitution risk flags (non-HBM accelerators):</strong>"
+            "<ul style='margin:4px 0 0 0;padding-left:20px'>"
         )
         for note in subst[:5]:
             parts.append(f"<li>{html.escape(note)}</li>")
         parts.append("</ul></div>")
 
-    # Mental model footer
+    # Framework explanation footer
     parts.append(
-        "<div style='margin-top:14px;padding-top:10px;border-top:1px solid #DDD;"
-        "font-size:11px;color:#888;line-height:1.4'>"
-        "<strong>Mental model:</strong> Efficiency gains don't displace HBM — they "
-        "UNLOCK economic context capacity. Enterprise workloads then expand to "
-        "consume what's economically possible. The binding question is whether "
-        "enterprise demand grows fast enough to fill the unlocked headroom. "
-        "Today's read: demand-pull running ahead of capacity creation by "
-        f"~{ent_yoy - cap_yoy:.0f}pp YoY — HBM stays tight (bullish SK Hynix). "
-        "Watch for enterprise YoY decelerating below capacity-creation rate.</div>"
+        "<div style='margin-top:18px;padding-top:12px;border-top:1px solid #DDD;"
+        "font-size:11px;color:#666;line-height:1.5'>"
+        "<strong style='color:#1a1a1a'>FRAMEWORK PRIMER:</strong> "
+        "DHCR maps today's inference market onto a 5×5 matrix — Y-axis is KV "
+        "efficiency (GB per 1M live tokens at frontier architecture), X-axis is "
+        "operative context length (volume-weighted across consumer chat, coding "
+        "agents, enterprise vertical agents, developer API, other). Each cell maps "
+        "to a dominant memory architecture from the May 2026 design memo "
+        "(commodity DDR ↔ LPDDR/heterogeneous ↔ HBM dominance). The score "
+        "translates cell position to a linear 0-100 spectrum (HBM-favorable "
+        "↔ commodity). An anticipation premium (+1 Y-band) accounts for "
+        "the empirical reality that hyperscalers provision HBM ahead of "
+        "where today's workload demand sits, because they expect context to "
+        "follow capacity. Volume layer multiplies position by enterprise AI "
+        "revenue growth (May 2026 = 100). Sanity check validates against "
+        "three substitution evidence signals.<br/><br/>"
+        "<strong style='color:#1a1a1a'>WHY THIS MATTERS:</strong> "
+        "Efficiency gains do NOT displace HBM — they UNLOCK economic context "
+        "capacity. Enterprise workloads expand to consume what's economically "
+        "possible. The make-or-break is enterprise agentic adoption: if it "
+        "ignites (volume share growing 5% → 30% × context growing 800K → 5M), "
+        "HBM bit demand grows 10-15x even WITH dramatic efficiency improvements. "
+        "If enterprise stalls, the market lands in LPDDR/heterogeneous regardless "
+        "of efficiency. Watch the enterprise vertical category row carefully — "
+        "that's where this thesis lives or dies.</div>"
     )
 
     parts.append("</div>")

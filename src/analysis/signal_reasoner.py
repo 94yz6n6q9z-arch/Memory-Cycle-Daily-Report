@@ -356,6 +356,13 @@ def reason_one_signal(
     silence in today's news. When None, falls back to the prior behavior
     (just the prior_status string).
     """
+    # v3.4.2 — skip DHCR (direction monitor computed deterministically from
+    # YAML, not Haiku-reasoned). Saves ~10s + reduces 529 surface area + avoids
+    # Haiku contradicting computed direction.
+    if indicator.id == "t1_decode_hbm_captive_ratio":
+        logger.debug(f"Layer 2 skipped for {indicator.id} — direction monitor")
+        return None
+
     if client is None:
         return None
 
@@ -405,6 +412,15 @@ def reason_one_signal(
         signal_specific_json=json.dumps(ev["signal_specific_data"], default=str, indent=2)[:8000],
     )
 
+    # v3.4.2 Fix A — per-signal retry-with-backoff for 529 Overloaded.
+    # The May 22 03:50 run had 13/23 indicators fail with 529 because the
+    # SDK's quick retry (~3s total) was insufficient for sustained overload.
+    # 3 attempts at 10s / 30s / 90s = up to ~2min per signal. Affects worst-
+    # case Layer 2 runtime but typical case is unchanged.
+    LAYER2_RETRY_BACKOFFS = [10, 30, 90]
+    import time as _time
+    resp = None
+    last_error = None
     try:
         resp = client.messages.create(
             model=HAIKU_MODEL,
@@ -413,6 +429,41 @@ def reason_one_signal(
             system=REASONER_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_msg}],
         )
+    except Exception as e:
+        last_error = e
+        err_str = str(e).lower()
+        if "529" in err_str or "overloaded" in err_str:
+            logger.warning(
+                f"Layer 2 attempt 1 overloaded for {indicator.id}: {e}. "
+                f"Entering retry-with-backoff."
+            )
+            for attempt_idx, backoff_s in enumerate(LAYER2_RETRY_BACKOFFS, start=2):
+                _time.sleep(backoff_s)
+                try:
+                    resp = client.messages.create(
+                        model=HAIKU_MODEL,
+                        max_tokens=1500,
+                        temperature=LLM_TEMPERATURE,
+                        system=REASONER_SYSTEM_PROMPT,
+                        messages=[{"role": "user", "content": user_msg}],
+                    )
+                    logger.info(f"Layer 2 retry attempt {attempt_idx} succeeded for {indicator.id}")
+                    break
+                except Exception as retry_e:
+                    last_error = retry_e
+                    err_str2 = str(retry_e).lower()
+                    if "529" not in err_str2 and "overloaded" not in err_str2:
+                        logger.error(f"Layer 2 retry attempt {attempt_idx} failed (non-overload) for {indicator.id}: {retry_e}")
+                        break
+                    logger.warning(f"Layer 2 retry attempt {attempt_idx} still overloaded for {indicator.id}")
+        else:
+            logger.error(f"Layer 2 LLM call failed for {indicator.id} (non-overload): {e}")
+
+    if resp is None:
+        logger.error(f"Layer 2 exhausted retries for {indicator.id}; final error: {last_error}")
+        return None
+
+    try:
         raw = resp.content[0].text.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
@@ -424,7 +475,7 @@ def reason_one_signal(
         logger.error(f"Layer 2 JSON parse failed for {indicator.id}: {e}")
         return None
     except Exception as e:
-        logger.error(f"Layer 2 LLM call failed for {indicator.id}: {e}")
+        logger.error(f"Layer 2 response parse failed for {indicator.id}: {e}")
         return None
 
     return SignalReasoning(

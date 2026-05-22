@@ -68,9 +68,9 @@ BENCHMARKS = {
     "VanEck Semi ETF (SMH)": "SMH",  # broader semi for cross-check vs SOX
 }
 
-# Hyperscaler watch list for capex monitoring
+# Hyperscaler watch list for CapEx monitoring
 # v3.39.7.4 — Oracle dropped. Empirical analysis (May 20 session) showed
-# ORCL's capex/revenue (57%) was the only one ever to cross the 40% trigger
+# ORCL's CapEx/revenue (57%) was the only one ever to cross the 40% trigger
 # threshold across the 4-hyperscaler cohort, but ORCL is structurally
 # different — its revenue base ($15B/Q vs MSFT's $70B/Q) and recent OCI
 # catch-up push distort the ratio. Including it produced false signals
@@ -122,7 +122,7 @@ class Indicator:
     # not `name` — names like "DDR5 spot first MoM decline" are too long
     # for the panel layout. Hand-curated to mirror the user-facing labels
     # in the original supercycle chart screenshot (e.g. "Spot first decline",
-    # "Capex parabolic"). Falls back to `name` if unset.
+    # "CapEx parabolic"). Falls back to `name` if unset.
     short_label: Optional[str] = None
 
 
@@ -466,25 +466,25 @@ INDICATORS: list[Indicator] = [
     Indicator(
         id="t2_capex_parabolic",
         tier=2,
-        name="Capex announcements parabolic",
-        short_label="Capex parabolic",
+        name="CapEx announcements parabolic",
+        short_label="CapEx parabolic",
         description=(
-            "Memory makers' and hyperscalers' capex growing parabolic — building 2027-28 "
+            "Memory makers' and hyperscalers' CapEx growing parabolic — building 2027-28 "
             "supply glut. ALREADY FIRED on aggregate; watch for 2027 guidance direction at Jul prints."
         ),
         what_to_look_for=(
-            "Big Three combined capex >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B "
-            "(fired). NEW threshold: any of MSFT/GOOG/META/AMZN/ORCL guides 2027 capex "
+            "Big Three combined CapEx >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B "
+            "(fired). NEW threshold: any of MSFT/GOOG/META/AMZN/ORCL guides 2027 CapEx "
             "ABOVE 2026 at Q2 2026 earnings prints. Bull confirm if above; bear catalyst if flat/down."
         ),
         sources=[
             "Hyperscaler IR pages (microsoft.com/investor, abc.xyz/investor, ir.meta.com, ir.aboutamazon.com, investor.oracle.com)",
-            "Yahoo Finance earnings transcripts (full Q&A on capex)",
+            "Yahoo Finance earnings transcripts (full Q&A on CapEx)",
             "Memory maker earnings (Korean press + press releases)",
         ],
         trigger_patterns=[
-            "2027 capex", "2027 capital expenditure", "FY27 capex",
-            "capex guidance raised", "capex guidance lowered",
+            "2027 CapEx", "2027 capital expenditure", "FY27 CapEx",
+            "CapEx guidance raised", "CapEx guidance lowered",
             "infrastructure investment plan", "AI infrastructure spending",
             "data center buildout", "fab capacity expansion",
         ],
@@ -497,7 +497,7 @@ INDICATORS: list[Indicator] = [
         },
         cadence="Quarterly earnings (Q2 2026 prints MSFT Jul 22, GOOG Jul 22, META Jul 23, AMZN Jul 24)",
         stitching=(
-            "Hyperscaler IR press release primary. Yahoo Finance Q&A transcript adds depth on capex intent. "
+            "Hyperscaler IR press release primary. Yahoo Finance Q&A transcript adds depth on CapEx intent. "
             "Trigger on EACH hyperscaler independently — one blink is enough for bear catalyst."
         ),
     ),
@@ -604,33 +604,33 @@ INDICATORS: list[Indicator] = [
     Indicator(
         id="t2_hyperscaler_capex_revenue",
         tier=2,
-        # v3.39.7.4 — display name changed from "Hyperscaler capex/revenue >40%"
-        # to "Hyperscaler capex/OCF strain >50%". ID kept stable for prior_state
+        # v3.39.7.4 — display name changed from "Hyperscaler CapEx/revenue >40%"
+        # to "Hyperscaler CapEx/OCF strain >50%". ID kept stable for prior_state
         # back-compat. Empirical analysis (May 20 session) showed the prior
-        # capex/revenue >40% trigger NEVER fired across the 3 historical memory
-        # crashes (2014/2018/2022) — the 4 hyperscalers' max capex/revenue
-        # historically peaked at ~27% (META 2022). Capex/OCF is dramatically
+        # CapEx/revenue >40% trigger NEVER fired across the 3 historical memory
+        # crashes (2014/2018/2022) — the 4 hyperscalers' max CapEx/revenue
+        # historically peaked at ~27% (META 2022). CapEx/OCF is dramatically
         # better: mean across 4 hyperscalers crossed 40% in all 3 crash years
         # and is at 62% TTM today. ORCL dropped (structural noise).
-        name="Hyperscaler capex/OCF strain >50%",
-        short_label="Capex/OCF strain",
+        name="Hyperscaler CapEx/OCF strain >50%",
+        short_label="CapEx/OCF strain",
         description=(
-            "Capex relative to operating cash flow signals financing strain. "
+            "CapEx relative to operating cash flow signals financing strain. "
             "Historic non-crash years: mean <40% across MSFT/GOOGL/AMZN/META. "
             "Memory cycle crash years (2014/2018/2022): mean >40%. "
-            "Capex/OCF >100% for any single co. = company must tap debt/equity "
-            "to fund capex (the 'they can't rely on operations' regime)."
+            "CapEx/OCF >100% for any single co. = company must tap debt/equity "
+            "to fund CapEx (the 'they can't rely on operations' regime)."
         ),
         what_to_look_for=(
-            "Last-published quarter capex/OCF ratio per company. "
+            "Last-published quarter CapEx/OCF ratio per company. "
             "Partial fire: mean across MSFT/GOOGL/AMZN/META >40%. "
             "Full fire: mean across MSFT/GOOGL/AMZN/META >50%. "
-            "Single-company strain overlay: any company >100% capex/OCF "
+            "Single-company strain overlay: any company >100% CapEx/OCF "
             "(Amazon 2021-22 reached 120-125% during cycle peak)."
         ),
-        sources=["yfinance quarterly cashflow (capex + OCF)", "SEC EDGAR 10-Q filings"],
+        sources=["yfinance quarterly cashflow (CapEx + OCF)", "SEC EDGAR 10-Q filings"],
         trigger_patterns=[],  # pure numeric
-        # v3.39.7.4 — trigger keyed on capex/OCF ratio per company. The aggregate
+        # v3.39.7.4 — trigger keyed on CapEx/OCF ratio per company. The aggregate
         # mean rule is applied in Layer 2 / Layer 3 (which see all 4 ratios),
         # not via single-company threshold (which would be too sensitive at AMZN's
         # structurally-elevated baseline of 50-70%). Individual >100% still flags
@@ -879,13 +879,13 @@ INDICATORS: list[Indicator] = [
     Indicator(
         id="t4_capex_slashed",
         tier=4,
-        name="Capex slashed",
-        short_label="Capex slashed",
-        description="Memory makers announce major capex cuts.",
-        what_to_look_for="Any Big Three announces capex reduction of >20% or fab idling.",
+        name="CapEx slashed",
+        short_label="CapEx slashed",
+        description="Memory makers announce major CapEx cuts.",
+        what_to_look_for="Any Big Three announces CapEx reduction of >20% or fab idling.",
         sources=["Press releases", "Yahoo Finance earnings", "Korean press / DART filings"],
         trigger_patterns=[
-            "capex reduction", "capex cut", "capital spending reduced",
+            "CapEx reduction", "CapEx cut", "capital spending reduced",
             "fab idling", "production cut", "capacity reduction",
         ],
         trigger_numeric={"capex_reduction_pct": {"trigger_above": 20.0}},
@@ -965,7 +965,7 @@ INDICATORS: list[Indicator] = [
             "NVIDIA / AMD product specs (HBM per chip)",
             "Hyperscaler earnings (segment AI revenue disclosures)",
             "NVIDIA datacenter segment revenue (proxy for total AI demand)",
-            "Hyperscaler capex disclosures",
+            "Hyperscaler CapEx disclosures",
         ],
         # v3.4.0: no trigger patterns — direction monitor only. The news
         # pipeline doesn't drive this indicator; computed YAML data does.
@@ -1049,7 +1049,7 @@ COMPANY_SPECIFIC_INDICATORS = {
 
 TOP_5_INDICATORS = [
     "t1_spot_decline",
-    "t2_capex_parabolic",   # Hyperscaler capex specifically
+    "t2_capex_parabolic",   # Hyperscaler CapEx specifically
     "t2_eps_revisions",
     "t3_supplier_inventory_rebuild",
     "t3_relative_strength",
@@ -1118,9 +1118,9 @@ INVENTORY_TRIGGER_THRESHOLD_WEEKS = 4.0  # crossing this = t3_supplier_inventory
 
 
 # ============================================================
-# Indicator 2 — Hyperscaler capex baselines (self-updating)
+# Indicator 2 — Hyperscaler CapEx baselines (self-updating)
 # ============================================================
-# These seed values are the consensus 2026 capex estimates. Layer 1
+# These seed values are the consensus 2026 CapEx estimates. Layer 1
 # digester of each hyperscaler earnings call writes updated values to
 # state/hyperscaler_capex_baselines.json. Layer 2 reads from state
 # file first, falls back to these seeds if state file absent.
@@ -1418,7 +1418,7 @@ IR_SOURCES = {
         # (e.g. q1-2026-business-results/ for the Apr 23, 2026 release).
         # The RSS path in _scrape_ir_site picks the newest earnings post and
         # extracts the full release text (revenue, op profit, op margin,
-        # forward commentary, capex). Capped at materials_only by
+        # forward commentary, CapEx). Capped at materials_only by
         # transcript_capable=False; Yahoo HY9H.MU is the transcript source.
     },
     "Samsung Electronics": {
@@ -1466,7 +1466,7 @@ YAHOO_TRANSCRIPT_TICKERS = {
     "SK Hynix":             "HY9H.MU",   # Munich listing — empirically confirmed has transcript link 2026-05-16
     "Samsung Electronics":  "SSU.F",     # Frankfurt listing — likely same pattern; will confirm with v3.34 diag logs
     "Micron":               "MU",
-    # Wider basket — transcript-fed indicators (HBM4 / capex / WFE / OEM inventory)
+    # Wider basket — transcript-fed indicators (HBM4 / CapEx / WFE / OEM inventory)
     "Nvidia":               "NVDA",
     "Broadcom":             "AVGO",
     "TSMC":                 "TSM",
@@ -1502,11 +1502,11 @@ MOTLEY_FOOL_TICKERS = {
     "Broadcom":          {"exchange": "nasdaq", "ticker": "AVGO"},    # custom silicon / networking
     "TSMC":              {"exchange": "nyse",   "ticker": "TSM"},     # CoWoS packaging bottleneck (NYSE-listed ADR)
     "Applied Materials": {"exchange": "nasdaq", "ticker": "AMAT"},    # equipment — Tier 3 confirm
-    "Microsoft":         {"exchange": "nasdaq", "ticker": "MSFT"},    # hyperscaler capex
-    "Alphabet":          {"exchange": "nasdaq", "ticker": "GOOGL"},   # hyperscaler capex + TPU
-    "Meta":              {"exchange": "nasdaq", "ticker": "META"},    # hyperscaler capex + MTIA
-    "Amazon":            {"exchange": "nasdaq", "ticker": "AMZN"},    # hyperscaler capex + Trainium
-    "Oracle":            {"exchange": "nyse",   "ticker": "ORCL"},    # hyperscaler capex
+    "Microsoft":         {"exchange": "nasdaq", "ticker": "MSFT"},    # hyperscaler CapEx
+    "Alphabet":          {"exchange": "nasdaq", "ticker": "GOOGL"},   # hyperscaler CapEx + TPU
+    "Meta":              {"exchange": "nasdaq", "ticker": "META"},    # hyperscaler CapEx + MTIA
+    "Amazon":            {"exchange": "nasdaq", "ticker": "AMZN"},    # hyperscaler CapEx + Trainium
+    "Oracle":            {"exchange": "nyse",   "ticker": "ORCL"},    # hyperscaler CapEx
     "Dell":              {"exchange": "nyse",   "ticker": "DELL"},    # OEM inventory (buyer-side)
     "HPE":               {"exchange": "nyse",   "ticker": "HPE"},     # OEM inventory (buyer-side)
     "ASML":              {"exchange": "nasdaq", "ticker": "ASML"},    # equipment — coverage less consistent; flag will tell us
@@ -1569,11 +1569,11 @@ EDGAR_FEEDS = {
 GOOGLE_NEWS_QUERIES = [
     "SK Hynix earnings",
     "SK Hynix target price",
-    "Micron memory capex",
+    "Micron memory CapEx",
     "Samsung memory HBM",
     "DDR5 spot price",
     "TrendForce DRAM contract",
-    "hyperscaler 2027 capex",
+    "hyperscaler 2027 CapEx",
     "HBM4 yield",
     "memory cycle peak",
     # ADR / SPO event tracking (Indicator 7)
@@ -1596,7 +1596,7 @@ GOOGLE_NEWS_QUERIES = [
     # missed the Samsung-strike-resolution story (Korea Herald) which
     # is a major SK Hynix-positive catalyst (their primary competitor
     # avoiding production disruption). These targeted queries catch
-    # labor / capex commitment / Korean macro stories that the
+    # labor / CapEx commitment / Korean macro stories that the
     # framework-keyword queries above miss because they don't mention
     # memory products or pricing directly.
     "Samsung union strike",
@@ -1650,7 +1650,7 @@ GOOGLE_NEWS_QUERIES = [
     "MICRO ISCA semiconductor memory",
     # Wafer allocation language (memory vendor strategy signal)
     "wafer allocation HBM DDR5",
-    "memory capex mix HBM",
+    "memory CapEx mix HBM",
     # AI lab public-listing watch (v3.31 — activate IR scrapers when these fire)
     "OpenAI IPO filing",
     "OpenAI public listing",
@@ -1709,7 +1709,7 @@ WATCH_GOOGLE_QUERIES = {
     "HotChips memory architecture",
     "MICRO ISCA semiconductor memory",
     "wafer allocation HBM DDR5",
-    "memory capex mix HBM",
+    "memory CapEx mix HBM",
     # AI lab listing watchers
     "OpenAI IPO filing",
     "OpenAI public listing",
@@ -1851,14 +1851,14 @@ TRACKED_CHIP_DESIGNERS = [
 
 # Tier C — Hyperscalers + AI labs / second-layer bill-payers. They buy
 # finished GPUs / AI accelerator systems FROM the chip designers (Tier
-# B). Their capex commitments flow downhill through the value chain:
+# B). Their CapEx commitments flow downhill through the value chain:
 # Microsoft commits $80B to Azure → flows to NVIDIA → flows to SK
 # Hynix HBM. OpenAI / Anthropic are private — no earnings call to
-# capture, but their capex commitments, model deployments, and
+# capture, but their CapEx commitments, model deployments, and
 # infrastructure partnership announcements directly inform memory demand.
 #
-# Tier C is the LEADING capex commitment signal (6-12 months ahead of
-# memory cycle peak). Haiku rubric: 8-9 for capex commitments / multi-
+# Tier C is the LEADING CapEx commitment signal (6-12 months ahead of
+# memory cycle peak). Haiku rubric: 8-9 for CapEx commitments / multi-
 # billion infrastructure deals / hyperscaler earnings with explicit
 # memory or chip-supply commentary / AI lab funding rounds at $5B+;
 # 6-7 for model releases / general earnings without infra detail.
@@ -1978,7 +1978,7 @@ CALENDAR_OF_EVENTS = [
      "Single largest catalyst for t3_eps_miss_guidance. Watch beat magnitude (prior 41.86%); first sub-10% beat is signal.",
      "t3_eps_miss_guidance"),
     ("2026-07-29", "Earnings", "SK Hynix Q2 2026 earnings",
-     "THE BIG ONE. HBM4 yields, Samsung dynamics, capex guidance, FY27 outlook. First sub-10% beat after Q1 48.8% = peak signal.",
+     "THE BIG ONE. HBM4 yields, Samsung dynamics, CapEx guidance, FY27 outlook. First sub-10% beat after Q1 48.8% = peak signal.",
      "t3_eps_miss_guidance"),
     ("2026-07-31", "Earnings", "Samsung Q2 2026 earnings (full results)",
      "Memory segment commentary; HBM4 progress vs SK Hynix.",
@@ -1986,16 +1986,16 @@ CALENDAR_OF_EVENTS = [
 
     # ----- Hyperscaler earnings (Tier 2 catalysts) -----
     ("2026-07-22", "Earnings", "Microsoft Q4 FY26 earnings",
-     "2027 capex guidance — bull confirm if above 2026 ($190B); bear catalyst if flat/down.",
+     "2027 CapEx guidance — bull confirm if above 2026 ($190B); bear catalyst if flat/down.",
      "t2_capex_parabolic"),
     ("2026-07-22", "Earnings", "Alphabet Q2 2026 earnings",
-     "2027 capex guidance vs 2026 baseline ($185B).",
+     "2027 CapEx guidance vs 2026 baseline ($185B).",
      "t2_capex_parabolic"),
     ("2026-07-23", "Earnings", "Meta Q2 2026 earnings",
-     "2027 capex guidance. Meta has worst FCF math — most likely first to blink.",
+     "2027 CapEx guidance. Meta has worst FCF math — most likely first to blink.",
      "t2_capex_parabolic"),
     ("2026-07-24", "Earnings", "Amazon Q2 2026 earnings",
-     "2027 capex guidance; AWS infrastructure spend.",
+     "2027 CapEx guidance; AWS infrastructure spend.",
      "t2_capex_parabolic"),
 
     # ----- Equipment makers (Tier 3 confirm) -----

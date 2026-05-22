@@ -922,15 +922,26 @@ def run_fast_tier() -> int:
             logger.error(f"Cycle chart rendering failed: {e}", exc_info=True)
 
     # v3.4.0 — Generate DHCR trajectory chart from the snapshot data
+    # v3.4.2 — Also generate DHCR matrix chart (5x5 memory-zone visualization)
     dhcr_chart_b64 = None
+    dhcr_matrix_chart_b64 = None
     dhcr_snapshot_dict = computed_metrics.get("dhcr_snapshot")
     dhcr_traj_data = computed_metrics.get("dhcr_trajectory") or []
-    if dhcr_snapshot_dict and dhcr_traj_data:
+    if dhcr_snapshot_dict:
         try:
-            from src.analysis.chart_generator import generate_dhcr_trajectory_chart
-            dhcr_chart_b64 = generate_dhcr_trajectory_chart(dhcr_traj_data)
-            if dhcr_chart_b64:
-                logger.info(f"DHCR trajectory chart rendered: {len(dhcr_chart_b64)} b64 chars")
+            from src.analysis.chart_generator import (
+                generate_dhcr_trajectory_chart,
+                generate_dhcr_matrix_chart,
+            )
+            if dhcr_traj_data:
+                dhcr_chart_b64 = generate_dhcr_trajectory_chart(dhcr_traj_data)
+                if dhcr_chart_b64:
+                    logger.info(f"DHCR trajectory chart rendered: {len(dhcr_chart_b64)} b64 chars")
+            dhcr_matrix_chart_b64 = generate_dhcr_matrix_chart(
+                dhcr_snapshot_dict, trajectory=dhcr_traj_data
+            )
+            if dhcr_matrix_chart_b64:
+                logger.info(f"DHCR matrix chart rendered: {len(dhcr_matrix_chart_b64)} b64 chars")
         except Exception as e:
             logger.warning(f"DHCR chart generation failed: {e}", exc_info=True)
 
@@ -960,6 +971,8 @@ def run_fast_tier() -> int:
         # v3.4.0 DHCR
         dhcr_snapshot=dhcr_snapshot_dict,
         dhcr_chart_b64=dhcr_chart_b64,
+        # v3.4.2 — matrix chart (5x5 memory-zone visualization)
+        dhcr_matrix_chart_b64=dhcr_matrix_chart_b64,
         # v3.4.1 Fix 5b — Layer 2 fallback for empty where_we_stand
         signal_reasonings_by_id=signal_reasonings_by_id,
     )
