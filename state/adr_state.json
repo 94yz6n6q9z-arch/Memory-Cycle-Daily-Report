@@ -1,0 +1,72 @@
+{
+  "_metadata": {
+    "schema_version": "2.0",
+    "bootstrap_date": "2026-05-22",
+    "bootstrap_source": "v3.4.4 framework session (pre-F-1; no SEC EDGAR filing yet detected)",
+    "last_aggregator_run": "2026-05-22T12:00:00Z",
+    "description": "Live state for Indicator 8 ADR event tracking. Auto-updated by src/analysis/adr_aggregator.py:aggregate_adr_extractions() — F-1 detection from SEC EDGAR atom feed, roadshow demand from news coverage, pricing-day from 424B filings, insider sales from Form 4 + DART."
+  },
+  "lifecycle_phase": "pre_event",
+  "composite_status": "Not fired",
+  "composite_status_reason": "Pre-F-1 filing. ADR expected June-July 2026 per Korean press. No market-visible event yet. All 4 sub-indicators in pre-event waiting state.",
+  "peak_coincidence_active": false,
+  "expected_f1_window": "2026-06-01 to 2026-07-31",
+  "expected_trading_start_window": "2026-07-01 to 2026-08-15",
+  "sub_8a_f1_filing": {
+    "current_status": "Pre-event",
+    "status_pill_label": "Awaiting F-1 — expected June-July 2026",
+    "status_evaluated_at": "2026-05-22",
+    "status_evaluator": "bootstrap",
+    "current_state": {
+      "f1_filed": false,
+      "f1_filing_date": null,
+      "f1_canceled": false,
+      "underwriter_syndicate": [],
+      "underwriter_lead_tier": null
+    },
+    "evidence_log": [
+      {
+        "date": "2026-05-22",
+        "type": "bootstrap",
+        "source": "SEC EDGAR daily check (no F-1 detected)",
+        "summary": "Pre-F-1 state. SEC EDGAR atom feed wired into WATCH_GOOGLE_QUERIES; daily check active. Expected June-July 2026 per Korean press."
+      }
+    ]
+  },
+  "sub_8b_roadshow_demand": {
+    "current_status": "Pre-event",
+    "status_pill_label": "Awaiting roadshow window",
+    "status_evaluated_at": "2026-05-22",
+    "status_evaluator": "bootstrap",
+    "current_state": {
+      "roadshow_active": false,
+      "demand_classification": null,
+      "coverage_mention_count": 0
+    },
+    "evidence_log": []
+  },
+  "sub_8c_pricing_day": {
+    "current_status": "Pre-event",
+    "status_pill_label": "Awaiting 424B pricing",
+    "status_evaluated_at": "2026-05-22",
+    "status_evaluator": "bootstrap",
+    "current_state": {
+      "pricing_day": null,
+      "pricing_discount_pct": null,
+      "final_size_usd_b": null,
+      "final_size_pct_of_indicated_max": null
+    },
+    "evidence_log": []
+  },
+  "sub_8d_insider_sales_in_window": {
+    "current_status": "Pre-event",
+    "status_pill_label": "Monitoring SEC Form 4 + Korean DART",
+    "status_evaluated_at": "2026-05-22",
+    "status_evaluator": "bootstrap",
+    "current_state": {
+      "insider_sales_in_window": [],
+      "insider_sales_total_usd_m_in_window": 0
+    },
+    "evidence_log": []
+  }
+}

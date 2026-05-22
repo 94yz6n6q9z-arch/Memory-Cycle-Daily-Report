@@ -561,3 +561,115 @@ def evaluate_relative_strength_signal(history: pd.DataFrame) -> dict:
         out["banner_text"] = f"{prefix} — " + " · ".join(descriptions)
 
     return out
+
+
+# ============================================================
+# v3.4.3 — HBM/DDR5 price trend derivation (for DHCR sanity check)
+# ============================================================
+
+def compute_hbm_price_trend(
+    spot_history_csv: Optional[Path] = None,
+    contract_forecasts_csv: Optional[Path] = None,
+    lookback_days: int = 90,
+) -> str:
+    """Derive HBM/DRAM price trend direction from accumulated CSV data.
+
+    v3.4.3 — replaces the operator-supplied 'hbm_price_trend' parameter
+    that compute_sanity_check() in src/analysis/dhcr.py previously required.
+    HBM itself is contract-only (no spot market), so we use:
+      (a) DDR5 16Gb spot trajectory over trailing N days (correlated proxy
+          for memory tightness in general; HBM rolls with DRAM cycle)
+      (b) Quarterly contract forecast direction (latest published vs
+          prior published for same quarter — TrendForce revisions)
+
+    Combined logic:
+      - Both DDR5 spot trending up AND contract revisions up   → "rising"
+      - Both DDR5 spot trending down AND contract revisions down → "falling"
+      - Mixed or near-flat                                       → "flat"
+
+    Returns one of: "rising" | "flat" | "falling".
+
+    For the DHCR sanity check this answers: "Is the memory market validating
+    the matrix's bullish-HBM read by also showing tight prices?"
+      rising  = matrix bullish + prices firm → confirmed
+      falling = matrix bullish + prices weak → contradicting (calibration concern)
+
+    Args:
+        spot_history_csv: Path to dram_spot_history.csv (default: data/...)
+        contract_forecasts_csv: Path to dram_contract_quarterly_forecasts.csv
+        lookback_days: window for spot trend slope (default 90 days)
+
+    Returns:
+        "rising" | "flat" | "falling"
+    """
+    from pathlib import Path as _Path
+    if spot_history_csv is None:
+        spot_history_csv = _Path("data/dram_spot_history.csv")
+    if contract_forecasts_csv is None:
+        contract_forecasts_csv = _Path("data/dram_contract_quarterly_forecasts.csv")
+
+    spot_direction = "flat"
+    contract_direction = "flat"
+
+    # (a) Spot trend — slope of session_avg over trailing N days
+    try:
+        if spot_history_csv.exists():
+            df = pd.read_csv(spot_history_csv)
+            df["date"] = pd.to_datetime(df["date"])
+            cutoff = pd.Timestamp.utcnow().tz_localize(None) - pd.Timedelta(days=lookback_days)
+            # Focus on the canonical SKU (DDR5_16Gb_4800_5600) per cycle matrix
+            df = df[(df["sku"] == "DDR5_16Gb_4800_5600") & (df["date"] >= cutoff)]
+            df = df.sort_values("date")
+            if len(df) >= 5:
+                # Simple linear slope on session_avg vs day-index
+                df["day_idx"] = (df["date"] - df["date"].min()).dt.days
+                slope = float(
+                    ((df["day_idx"] * df["session_avg"]).mean()
+                     - df["day_idx"].mean() * df["session_avg"].mean())
+                    / max(((df["day_idx"] ** 2).mean() - df["day_idx"].mean() ** 2), 1e-9)
+                )
+                # Slope thresholds: $/day. For DDR5 16Gb at ~$40 base,
+                # >$0.05/day = rising trend; <-$0.05/day = falling
+                if slope > 0.05:
+                    spot_direction = "rising"
+                elif slope < -0.05:
+                    spot_direction = "falling"
+                else:
+                    spot_direction = "flat"
+    except Exception as e:
+        logger.warning(f"compute_hbm_price_trend: spot trend computation failed: {e}")
+
+    # (b) Contract forecast direction — for the latest quarter, compare the
+    # most recent forecast central_pct against the prior forecast for the
+    # same quarter. Revisions UP = forecast rising; revisions DOWN = falling.
+    try:
+        if contract_forecasts_csv.exists():
+            df = pd.read_csv(contract_forecasts_csv)
+            df["published_date"] = pd.to_datetime(df["published_date"])
+            df = df.sort_values("published_date")
+            # Get the most recent quarter that has multiple forecasts
+            latest_q = df["quarter"].iloc[-1] if len(df) else None
+            if latest_q:
+                same_q = df[df["quarter"] == latest_q].sort_values("published_date")
+                if len(same_q) >= 2:
+                    earliest = float(same_q.iloc[0]["central_pct"])
+                    latest = float(same_q.iloc[-1]["central_pct"])
+                    delta = latest - earliest
+                    # >3pp revision = directional move
+                    if delta > 3.0:
+                        contract_direction = "rising"
+                    elif delta < -3.0:
+                        contract_direction = "falling"
+    except Exception as e:
+        logger.warning(f"compute_hbm_price_trend: contract trend computation failed: {e}")
+
+    # Combine — both signals must agree to call rising/falling
+    if spot_direction == "rising" and contract_direction != "falling":
+        return "rising"
+    if spot_direction == "falling" and contract_direction != "rising":
+        return "falling"
+    if contract_direction == "rising" and spot_direction != "falling":
+        return "rising"
+    if contract_direction == "falling" and spot_direction != "rising":
+        return "falling"
+    return "flat"

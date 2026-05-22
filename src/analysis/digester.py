@@ -173,9 +173,108 @@ do not infer or speculate. Use null for unknown.
     "enterprise_ai_revenue_growth_qoq_pct": null or number,  // QoQ enterprise AI segment growth if disclosed
     "agent_product_usage_disclosure": null or "<one-liner: 'Copilot has X paying users at Y context'>",
 
+    // v3.4.5 — DHCR catalog auto-update fields. Three lightweight sub-objects
+    // that the dhcr_arch_aggregator, dhcr_accelerator_aggregator, and
+    // dhcr_revenue_aggregator consume to keep the three reference catalogs
+    // fresh without manual edits. All fields null unless explicitly disclosed.
+    "new_frontier_model_release": null or {{
+      "name": "<model name>",
+      "release_date": "YYYY-MM-DD",
+      "architecture_family": "GQA" | "GQA-MoE" | "MLA" | "MLA-MoE" | "MHA",
+      "num_layers": number,
+      "num_kv_heads": number,         // or mla_kv_lora_rank for MLA-class
+      "head_dim": number,
+      "bytes_per_element": 2 | 1 | 0.5 | 0.25,
+      "compression_factor": number,
+      "kv_kb_per_token": number,      // optional if direct cite available
+      "source_url": "<url>",
+      "is_open": true | false
+    }},
+
+    "new_accelerator_announcement": null or {{
+      "vendor": "nvidia" | "amd" | "google" | "aws" | "meta" | "microsoft" | "tesla" | "<other>",
+      "name": "<accelerator name>",   // e.g. "Rubin Ultra", "MI400", "TPU v8"
+      "hbm_gb": number,
+      "release_date": "YYYY-MM-DD",   // announced ship date or stated shipping target
+      "generation": "<generation label>",  // e.g. "Vera Rubin Ultra", "Hopper Next"
+      "category": "nvidia" | "amd" | "custom_silicon" | "non_hbm_accelerators",
+      "notes": "<any spec disclosures>"
+    }},
+
+    "enterprise_ai_quarterly_revenue": null or {{
+      "category": "microsoft_azure_ai" | "aws_ai_services" | "google_cloud_ai" | "oracle_ai_infra" | "nvidia_datacenter",
+      "quarter": "<YYYY-Q[1-4]>",
+      "revenue_usd_b": number,
+      "qoq_growth_pct": number,
+      "yoy_growth_pct": number,
+      "source_quote": "<earnings quote>"
+    }},
+
     // Free-text catch for anything material that doesn't fit above
     "architecture_freetext": null or "<one-sentence summary of the material architectural point>"
+  }},
+
+  // v3.4.4.1 — Indicator 7 (Competitor dynamics) extraction fields
+  // The Layer 1 digester surfaces these signals so the competitor_aggregator
+  // can update state/competitor_state.json. Each field is null unless the
+  // document EXPLICITLY discloses the value. Do not infer from general
+  // commentary.
+  "competitor_signals": {{
+    // 7A — CXMT
+    "cxmt_oem_mainstream_win": null or "<Tier-1 OEM name>",   // Dell/HPE/Lenovo/ASUS/Acer in MAINSTREAM CXMT DDR5 product line
+    "cxmt_oem_lowend_win": null or "<Tier-1 OEM name>",       // Same OEMs in low-end CXMT product line only
+    "cxmt_ddr5_share_pct": null or number,                    // CXMT DDR5 share % if disclosed
+    "cxmt_ddr5_pricing_pressure_flagged": null or true,        // TrendForce/DigiTimes flag CXMT-driven DDR5 contract pricing pressure
+    "us_export_controls_easing_event": null or true,           // BIS easing announcement re CXMT-relevant equipment
+
+    // 7B — Samsung HBM4/HBM4E
+    "samsung_hbm4_nvidia_share_pct": null or number,           // Samsung Nvidia HBM4 share % (Vera Rubin allocation)
+    "sk_hynix_hbm4_nvidia_share_pct": null or number,          // SK Hynix Nvidia HBM4 share %
+    "samsung_hbm4_yield_pct": null or number,                  // Samsung HBM4 production yield %
+    "hbm_gross_margin_pct_sk_hynix": null or number,           // SK Hynix HBM gross margin %
+    "hbm_gross_margin_pct_samsung": null or number,            // Samsung HBM gross margin %
+    "hbm4e_qualification_lead": null or "sk_hynix_ahead" | "tied" | "samsung_ahead",
+    "samsung_hbm4e_announcement": null or true,                // Samsung announced HBM4E (GTC/Hot Chips/etc.)
+    "amd_samsung_hbm4_supply_mou": null or true,               // AMD-Samsung HBM4 supply MOU signed/expanded
+
+    // 7C — Micron HBM
+    "micron_vera_rubin_design_win": null or "primary_sku" | "secondary_sku" | "excluded",
+    "micron_total_hbm_share_pct": null or number,
+    "micron_hbm_share_growth_source": null or "samsung" | "sk_hynix" | "both",
+
+    // 7D — HBF
+    "hbf_hyperscaler_design_win": null or "<hyperscaler+accelerator+tier (hot|warm|cold)>",
+    "hbf_hot_tier_displacement": null or true,                 // hot-tier HBM displaced specifically (not cold-tier addition)
+    "jedec_hbf_spec_ratified": null or true,
+    "sk_hynix_on_jedec_hbf_working_group": null or true | false,
+    "sk_hynix_hbf_roadmap_mention": null or true,              // SK Hynix mentioned HBF in earnings/IR/tech day
+    "sk_hynix_solidigm_hbf_integration": null or true,         // Solidigm + HBM packaging integration announcement
+    "sandisk_kioxia_hbf_milestone": null or "<milestone description>",
+    "hbf_commercial_stage": null or "pre_commercial" | "sampling" | "first_production" | "volume"
+  }},
+
+  // v3.4.4.1 — Indicator 8 (US ADR / SPO event) extraction fields
+  // Only populated when the document explicitly references SK Hynix ADR
+  // / SPO event progression. SEC EDGAR atom feed already detects F-1
+  // filings directly (no LLM extraction needed for that); Layer 1
+  // covers news coverage during roadshow/pricing/insider-sales windows.
+  "adr_signals": {{
+    "f1_filed": null or true,                                  // SEC EDGAR F-1 detected (or news confirms filing)
+    "f1_canceled": null or true,                               // F-1 filed then offering pulled (= Fired)
+    "underwriter_syndicate": null or ["Goldman Sachs", "Morgan Stanley", ...],
+    "roadshow_active": null or true,                           // US roadshow has started
+    "demand_classification": null or "strong" | "normal" | "weak",  // from coverage language
+    "pricing_day": null or "YYYY-MM-DD",                       // 424B pricing date
+    "pricing_discount_pct": null or number,                    // discount to prior close at pricing
+    "final_size_usd_b": null or number,                        // final issuance size
+    "insider_sale_event": null or {{
+      "insider": "<name>",
+      "role": "<CEO|CFO|director|etc>",
+      "usd_m": number,
+      "date": "YYYY-MM-DD"
+    }}
   }}
+}}
 
 CRITICAL: These fields are for direct quotes/disclosures only. If mgmt did not state it, use null.
 Do NOT extract from general AI/tech commentary — only from explicit memory/architecture statements.
@@ -278,6 +377,20 @@ def digest_document(
         text=truncated,
     )
 
+    # v3.4.3 — Layer 1 digester retry-with-backoff for 529 Overloaded.
+    # Same audit conclusion as v3.4.2 for Sonnet and Layer 2: SDK's built-in
+    # retry (~3s total budget) is insufficient for sustained API overload
+    # windows that can run minutes. If digester fails silently during the
+    # 08:00 UTC deep-tier window, transcript digests don't reach Layer 2 /
+    # Sonnet and the morning briefs run with stale context.
+    #
+    # 3 attempts with [10s, 30s, 90s] backoffs = up to ~2min per document.
+    # Per-document isolation — one transcript's 529 doesn't affect others.
+    # Typical case unchanged (clean runs hit no retry path).
+    LAYER1_RETRY_BACKOFFS = [10, 30, 90]
+    import time as _time
+    resp = None
+    last_error = None
     try:
         resp = client.messages.create(
             model=HAIKU_MODEL,
@@ -286,6 +399,41 @@ def digest_document(
             system=DIGEST_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_msg}],
         )
+    except Exception as e:
+        last_error = e
+        err_str = str(e).lower()
+        if "529" in err_str or "overloaded" in err_str:
+            logger.warning(
+                f"Layer 1 attempt 1 overloaded for {source_id}: {e}. "
+                f"Entering retry-with-backoff."
+            )
+            for attempt_idx, backoff_s in enumerate(LAYER1_RETRY_BACKOFFS, start=2):
+                _time.sleep(backoff_s)
+                try:
+                    resp = client.messages.create(
+                        model=HAIKU_MODEL,
+                        max_tokens=2000,
+                        temperature=LLM_TEMPERATURE,
+                        system=DIGEST_SYSTEM_PROMPT,
+                        messages=[{"role": "user", "content": user_msg}],
+                    )
+                    logger.info(f"Layer 1 retry attempt {attempt_idx} succeeded for {source_id}")
+                    break
+                except Exception as retry_e:
+                    last_error = retry_e
+                    err_str2 = str(retry_e).lower()
+                    if "529" not in err_str2 and "overloaded" not in err_str2:
+                        logger.error(f"Layer 1 retry attempt {attempt_idx} failed (non-overload) for {source_id}: {retry_e}")
+                        break
+                    logger.warning(f"Layer 1 retry attempt {attempt_idx} still overloaded for {source_id}")
+        else:
+            logger.error(f"Digest LLM call failed for {source_id} (non-overload): {e}")
+
+    if resp is None:
+        logger.error(f"Layer 1 exhausted retries for {source_id}; final error: {last_error}")
+        return None
+
+    try:
         raw = resp.content[0].text.strip()
         # Strip ```json fences if model added them
         if raw.startswith("```"):
@@ -298,7 +446,7 @@ def digest_document(
         logger.error(f"Digest JSON parse failed for {source_id}: {e}; raw={raw[:300]!r}")
         return None
     except Exception as e:
-        logger.error(f"Digest LLM call failed for {source_id}: {e}")
+        logger.error(f"Digest response parse failed for {source_id}: {e}")
         return None
 
     digest = Digest(
@@ -331,7 +479,156 @@ def digest_document(
     except Exception as e:
         logger.warning(f"Architecture-signal shadow log failed for {source_id}: {e}")
 
+    # v3.4.4.1 — Indicator 7 + 8 shadow loggers. Same pattern: persist extracted
+    # signals to state/extraction_log_{today}.jsonl so the competitor + ADR
+    # aggregators can read them on the next fast-tier run. Failure non-fatal.
+    try:
+        comp_signals = (parsed.get("key_metrics") or {}).get("competitor_signals")
+        if comp_signals and isinstance(comp_signals, dict):
+            _log_indicator_signals(
+                source_id=source_id,
+                source_type=source_type,
+                published_date_iso=published_date_iso,
+                signals=comp_signals,
+                signal_key="competitor_signals",
+            )
+    except Exception as e:
+        logger.warning(f"Competitor-signal shadow log failed for {source_id}: {e}")
+
+    try:
+        adr_signals = (parsed.get("key_metrics") or {}).get("adr_signals")
+        if adr_signals and isinstance(adr_signals, dict):
+            _log_indicator_signals(
+                source_id=source_id,
+                source_type=source_type,
+                published_date_iso=published_date_iso,
+                signals=adr_signals,
+                signal_key="adr_signals",
+            )
+    except Exception as e:
+        logger.warning(f"ADR-signal shadow log failed for {source_id}: {e}")
+
     return digest
+
+
+def _log_indicator_signals(
+    source_id: str,
+    source_type: str,
+    published_date_iso: str,
+    signals: dict,
+    signal_key: str,
+) -> None:
+    """v3.4.4.1 shadow logger: append extracted signals to a daily JSONL file
+    under the named key ('competitor_signals' or 'adr_signals'). Consumed by
+    src/analysis/competitor_aggregator.py and src/analysis/adr_aggregator.py
+    on subsequent fast-tier runs.
+
+    Append-only, isolated: any failure is caught by the caller. File path
+    matches the architecture_signals shadow logger so all Layer 1 extraction
+    flows through a single daily log.
+    """
+    from datetime import datetime, timezone
+    from pathlib import Path
+    import json
+
+    # Strip null-valued fields so the log stays compact.
+    filtered = {k: v for k, v in signals.items() if v is not None and v is not False}
+    if not filtered:
+        return
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    log_path = Path("state") / f"extraction_log_{today}.jsonl"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    record = {
+        "source_id": source_id,
+        "source_type": source_type,
+        "published_date_iso": published_date_iso,
+        "extracted_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source": _classify_source_for_tier(source_type, source_id),
+        signal_key: filtered,
+    }
+    with open(log_path, "a") as f:
+        f.write(json.dumps(record) + "\n")
+
+
+def _classify_source_for_tier(source_type: str, source_id: str) -> str:
+    """Map source identifiers to the strings the aggregators key off for
+    tier-weighted conflict resolution. Returns the tier-aware source label
+    (e.g. 'mirae_asset', 'sk_hynix_earnings'); falls back to source_type.
+
+    v3.4.6 adds frontier-lab + arxiv + HF Papers source labels so the
+    dhcr_arch_aggregator's Tier-A source set reaches the right places.
+    """
+    sid = (source_id or "").lower()
+    stype = (source_type or "").lower()
+    # v3.4.6 — frontier model sources (Tier A for DHCR arch aggregator)
+    if "arxiv" in sid:
+        return "arxiv"
+    if "huggingface" in sid and "papers" in sid:
+        return "huggingface_papers"
+    if "huggingface" in sid:
+        return "huggingface"
+    if "ai.meta.com" in sid or "meta_ai_blog" in sid or "meta ai" in sid:
+        return "ai.meta.com"
+    if "deepseek" in sid:
+        return "deepseek.com"
+    if "mistral" in sid:
+        return "mistral.ai"
+    if "qwen" in sid or "qwenlm" in sid:
+        return "qwenlm.github.io"
+    if "anthropic" in sid:
+        return "anthropic.com"
+    if "deepmind" in sid:
+        return "deepmind.google"
+    # Hyperscaler / GPU vendor tech days (Tier A for DHCR accelerator aggregator)
+    if "gtc" in sid or "nvidia" in sid and ("keynote" in stype or "keynote" in sid):
+        return "nvidia_gtc"
+    if "amd_ai_day" in sid or ("amd" in sid and ("ai_day" in sid or "ai day" in sid)):
+        return "amd_ai_day"
+    # Existing competitor/ADR mappings below — unchanged
+    if "mirae" in sid:
+        return "mirae_asset"
+    if "kb_securities" in sid or "kb-securities" in sid:
+        return "kb_securities"
+    if "sk hynix" in sid or "skhynix" in sid or "sk_hynix" in sid:
+        if "earnings" in stype or "transcript" in stype:
+            return "sk_hynix_earnings"
+        return "sk_hynix"
+    if "samsung" in sid and ("earnings" in stype or "transcript" in stype):
+        return "samsung_earnings"
+    if "nvidia" in sid and ("earnings" in stype or "transcript" in stype):
+        return "nvidia_earnings"
+    if "micron" in sid and ("earnings" in stype or "transcript" in stype):
+        return "micron_earnings"
+    if "msft" in sid or "microsoft" in sid:
+        if "earnings" in stype or "transcript" in stype:
+            return "msft_earnings"
+    if "amzn" in sid or "amazon" in sid:
+        if "earnings" in stype or "transcript" in stype:
+            return "amzn_earnings"
+    if "googl" in sid or "google" in sid:
+        if "earnings" in stype or "transcript" in stype:
+            return "googl_earnings"
+    if "orcl" in sid or "oracle" in sid:
+        if "earnings" in stype or "transcript" in stype:
+            return "orcl_earnings"
+    if "counterpoint" in sid:
+        return "counterpoint"
+    if "trendforce" in sid:
+        return "trendforce"
+    if "semianalysis" in sid:
+        return "semianalysis"
+    if "digitimes" in sid:
+        return "digitimes"
+    if "chosun" in sid:
+        return "chosunbiz"
+    if "korea_times" in sid or "koreatimes" in sid:
+        return "korea_times"
+    if "sec" in sid or "edgar" in sid:
+        return "sec_edgar"
+    return stype or "unknown"
 
 
 def _log_architecture_signals(

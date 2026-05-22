@@ -194,24 +194,58 @@ class DHCRSnapshot:
 
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+DEFAULT_STATE_DIR = Path(__file__).resolve().parent.parent.parent / "state"
 
 
-def load_dhcr_data(data_dir: Optional[Path] = None) -> dict:
-    """Load all four DHCR YAML reference files."""
+def load_dhcr_data(data_dir: Optional[Path] = None, state_dir: Optional[Path] = None) -> dict:
+    """Load DHCR reference data.
+
+    v3.4.5 architecture: each of the three legacy YAMLs is split into a
+    schema-only YAML (data/) + a live state JSON (state/). This function
+    merges them at load time so downstream `compute_*()` functions see the
+    same dict shape they always have.
+
+    Legacy data/context_length_signals.yaml is unchanged for now (5 reference
+    workload categories — manageable scope, no auto-update wiring yet).
+    """
     if yaml is None:
         raise ValueError("PyYAML is required for DHCR computation.")
     if data_dir is None:
         data_dir = DEFAULT_DATA_DIR
-    paths = {
+    if state_dir is None:
+        state_dir = DEFAULT_STATE_DIR
+
+    schema_paths = {
         "arch":    data_dir / "inference_arch_reference.yaml",
         "hbm":     data_dir / "hbm_per_accelerator.yaml",
         "rev":     data_dir / "enterprise_ai_revenue.yaml",
         "context": data_dir / "context_length_signals.yaml",
     }
-    for name, p in paths.items():
+    state_paths = {
+        "arch": state_dir / "inference_arch_state.json",
+        "hbm":  state_dir / "hbm_per_accelerator_state.json",
+        "rev":  state_dir / "enterprise_ai_revenue_state.json",
+    }
+    for name, p in schema_paths.items():
         if not p.exists():
-            raise FileNotFoundError(f"DHCR data file missing: {p}")
-    return {name: yaml.safe_load(p.read_text()) for name, p in paths.items()}
+            raise FileNotFoundError(f"DHCR schema file missing: {p}")
+    for name, p in state_paths.items():
+        if not p.exists():
+            raise FileNotFoundError(f"DHCR state file missing: {p}")
+
+    out = {}
+    # Schema YAMLs
+    for name, p in schema_paths.items():
+        out[name] = yaml.safe_load(p.read_text())
+    # Merge state JSONs onto schema dicts so downstream compute functions
+    # see arch["open_models"], hbm["nvidia"], rev["microsoft_azure_ai"], etc.
+    import json as _json
+    for name, p in state_paths.items():
+        state = _json.loads(p.read_text())
+        # Strip _metadata before merge; downstream compute functions don't read it
+        state.pop("_metadata", None)
+        out[name].update(state)
+    return out
 
 
 def compute_kv_per_token(model_entry: dict) -> float:

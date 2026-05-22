@@ -2,7 +2,7 @@
   "_metadata": {
     "schema_version": "1.0",
     "bootstrap_source": "memory_supercycle_analysis.docx, May 9, 2026 \u2014 Part 5 firing table (lines 285-326 in extracted text)",
-    "last_full_update": "2026-05-20",
+    "last_full_update": "2026-05-22",
     "description": "Persistent evidence store. Per-indicator: current_status, fired_since, evidence_log of WHAT data fired it and reversal_condition. Layer 2 reads this on each run, preserves prior fired state unless today's evidence matches the reversal_condition. Live-persistence indicators (forward_pe, rel_strength, cycle matrix) are recomputed each run regardless. See src/state.py for the API and docstrings."
   },
   "indicators": {
@@ -405,6 +405,42 @@
       "last_status": "Not fired",
       "last_layer_2_run_iso": null,
       "last_layer_3_run_iso": null
+    },
+    "t1_competitor_dynamics": {
+      "current_status": "Partially fired",
+      "fired_since": "2026-05-22",
+      "last_updated": "2026-05-22",
+      "evidence_log": [
+        {
+          "date": "2026-05-22",
+          "type": "computed",
+          "value": "v3.4.4 framework bootstrap. Composite over 4 sub-indicators (7A CXMT, 7B Samsung HBM4/4E, 7C Micron, 7D HBF) calibrated to estimated SK Hynix EPS impact. Today: 7B Partially fired (~10% EPS, Samsung ~28-30% Nvidia HBM4 + HBM4E qualification tied); 7A/7C/7D Not fired. Cumulative ~11.5% EPS impact \u2192 Partially fired single-front.",
+          "source": "data/competitor_thresholds.yaml + src/analysis/competitor_scoring.py",
+          "persistence": "live",
+          "reversal_condition": "Indicator-level Fired requires: 2+ subs Fired (dual-threat amplifier per Part 14), OR 1 sub Fired + 2+ subs Partially fired, OR cumulative EPS impact \u226520%. De-fire to Not fired requires all 4 subs Not fired AND cumulative EPS impact <5%."
+        }
+      ],
+      "next_check_due": "2026-06-22",
+      "display_name": "Competitor dynamics (CXMT, Samsung HBM4, Micron, HBF)",
+      "notes": "v3.4.4 NEW. Section 4 deep-dive only (filtered out of section 3 tier table like DHCR). Sub-indicator EPS-impact thresholds in data/competitor_thresholds.yaml. User-facing label 'Indicator 7'; legacy internal sub-IDs (i6a/i6b/i6c/i7d) preserved in COMPANY_SPECIFIC_INDICATORS for Layer 1/2 back-compat."
+    },
+    "t1_us_adr_event": {
+      "current_status": "Not fired",
+      "fired_since": null,
+      "last_updated": "2026-05-22",
+      "evidence_log": [
+        {
+          "date": "2026-05-22",
+          "type": "computed",
+          "value": "v3.4.4 framework bootstrap. Pre-F-1 state. ADR expected June-July 2026 via new share issuance (treasury path closed Feb 9 2026). ~17.4M new shares, ~$10B central case raise. All 4 sub-indicators (8A F-1 watch, 8B roadshow demand, 8C pricing day, 8D insider sales) in Pre-event waiting state. SEC EDGAR F-1 feed wired in WATCH_GOOGLE_QUERIES; daily check active.",
+          "source": "data/adr_event_tracking.yaml + src/analysis/adr_event_tracking.py",
+          "persistence": "event_window",
+          "reversal_condition": "Pre-event \u2192 Partially fired on F-1 filing + any of (3-5% pricing discount, normal-weak demand language, second-tier underwriter lead). Pre-event \u2192 Fired on canceled F-1 (per Raul 2026-05-22), OR >5% pricing discount, OR undersubscribed roadshow, OR insider sales >$10M in window, OR peak-coincidence (completion + late Phase 4 cycle state). Fired persists through Phase 4 \u2014 no 90-day reversion per the May 22 framework decision."
+        }
+      ],
+      "next_check_due": "2026-05-23",
+      "display_name": "US ADR / SPO event tracking",
+      "notes": "v3.4.4 NEW. Section 4 deep-dive only. Per-sub status mapped to event lifecycle phase (pre_event \u2192 f1_filed \u2192 roadshow \u2192 pricing \u2192 trading \u2192 completed | canceled). Authoritative state: data/adr_event_tracking.yaml. User-facing label 'Indicator 8'; legacy internal sub-ID i7_adr_launch preserved in COMPANY_SPECIFIC_INDICATORS."
     }
   }
 }

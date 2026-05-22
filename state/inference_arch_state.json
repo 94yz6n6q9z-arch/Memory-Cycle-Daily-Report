@@ -1,0 +1,225 @@
+{
+  "_metadata": {
+    "schema_version": "2.0",
+    "bootstrap_date": "2026-05-22",
+    "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
+    "last_aggregator_run": "2026-05-22T12:45:41Z",
+    "description": "Frontier inference model registry. open_models feeds frontier_kv computation. closed_models excluded from frontier calc (architecture unknown) but Sonnet may reference them in narrative. Auto-updated by src/analysis/dhcr_arch_aggregator.py."
+  },
+  "open_models": [
+    {
+      "name": "Llama 2 70B",
+      "release_date": "2023-07-18",
+      "architecture_family": "GQA",
+      "num_layers": 80,
+      "num_kv_heads": 8,
+      "head_dim": 128,
+      "bytes_per_element": 2,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 320,
+      "source_url": "https://arxiv.org/abs/2307.09288",
+      "notes": "Frontier open model at end-2023. GQA was already mainstream in Llama 2 70B."
+    },
+    {
+      "name": "Mistral 8x22B (Mixtral Large)",
+      "release_date": "2024-04-17",
+      "architecture_family": "GQA-MoE",
+      "num_layers": 56,
+      "num_kv_heads": 8,
+      "head_dim": 128,
+      "bytes_per_element": 2,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 224,
+      "source_url": "https://mistral.ai/news/mixtral-8x22b/",
+      "notes": "MoE doesn't multiply KV cache (shared across experts at inference)."
+    },
+    {
+      "name": "Llama 3 70B",
+      "release_date": "2024-04-18",
+      "architecture_family": "GQA",
+      "num_layers": 80,
+      "num_kv_heads": 8,
+      "head_dim": 128,
+      "bytes_per_element": 2,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 320,
+      "source_url": "https://ai.meta.com/blog/meta-llama-3/",
+      "notes": "Same arch as Llama 2 70B. Improvements were in training data + recipe."
+    },
+    {
+      "name": "Llama 3.1 70B (FP8)",
+      "release_date": "2024-07-23",
+      "architecture_family": "GQA",
+      "num_layers": 80,
+      "num_kv_heads": 8,
+      "head_dim": 128,
+      "bytes_per_element": 1,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 160,
+      "source_url": "https://ai.meta.com/blog/meta-llama-3-1/",
+      "notes": "FP8 inference cuts KV cache by 2x with minimal quality loss."
+    },
+    {
+      "name": "Llama 3.1 405B (FP8)",
+      "release_date": "2024-07-23",
+      "architecture_family": "GQA",
+      "num_layers": 126,
+      "num_kv_heads": 8,
+      "head_dim": 128,
+      "bytes_per_element": 1,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 252,
+      "source_url": "https://ai.meta.com/blog/meta-llama-3-1/",
+      "notes": "Frontier scale but more layers \u2192 larger KV than 70B variants."
+    },
+    {
+      "name": "DeepSeek V2",
+      "release_date": "2024-05-06",
+      "architecture_family": "MLA",
+      "num_layers": 60,
+      "mla_kv_lora_rank": 512,
+      "mla_qk_rope_head_dim": 64,
+      "mla_num_heads": 128,
+      "bytes_per_element": 2,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 71,
+      "source_url": "https://arxiv.org/abs/2405.04434",
+      "notes": "First production MLA. ~93% KV reduction vs MHA-equivalent at same dim."
+    },
+    {
+      "name": "DeepSeek V3",
+      "release_date": "2024-12-26",
+      "architecture_family": "MLA",
+      "num_layers": 61,
+      "mla_kv_lora_rank": 512,
+      "mla_qk_rope_head_dim": 64,
+      "mla_num_heads": 128,
+      "bytes_per_element": 1,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 36,
+      "source_url": "https://arxiv.org/abs/2412.19437",
+      "notes": "MLA + FP8. The frontier-efficient baseline at start of 2025."
+    },
+    {
+      "name": "Qwen 2.5 72B",
+      "release_date": "2024-09-19",
+      "architecture_family": "GQA",
+      "num_layers": 80,
+      "num_kv_heads": 8,
+      "head_dim": 128,
+      "bytes_per_element": 1,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 160,
+      "source_url": "https://qwen.readthedocs.io/en/latest/",
+      "notes": "GQA + FP8 baseline. Not a frontier-efficiency move."
+    },
+    {
+      "name": "Mistral Large 2 (FP8)",
+      "release_date": "2024-07-24",
+      "architecture_family": "GQA",
+      "num_layers": 88,
+      "num_kv_heads": 8,
+      "head_dim": 128,
+      "bytes_per_element": 1,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 176,
+      "source_url": "https://mistral.ai/news/mistral-large-2407/"
+    },
+    {
+      "name": "Llama 4 Maverick",
+      "release_date": "2025-08-04",
+      "architecture_family": "GQA",
+      "num_layers": 80,
+      "num_kv_heads": 8,
+      "head_dim": 128,
+      "bytes_per_element": 1,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 160,
+      "source_url": "https://ai.meta.com/blog/llama-4/",
+      "notes": "Stuck with GQA. Did NOT adopt MLA \u2014 Meta opted for proven arch + bigger context window."
+    },
+    {
+      "name": "DeepSeek V3.5",
+      "release_date": "2025-09-15",
+      "architecture_family": "MLA",
+      "num_layers": 61,
+      "mla_kv_lora_rank": 512,
+      "mla_qk_rope_head_dim": 64,
+      "mla_num_heads": 128,
+      "bytes_per_element": 1,
+      "compression_factor": 1.5,
+      "kv_kb_per_token": 24,
+      "source_url": "https://arxiv.org/abs/2509.XXXXX",
+      "notes": "MLA + FP8 + sliding-window context compression. Frontier efficiency."
+    },
+    {
+      "name": "Qwen 3 235B (MLA + FP8)",
+      "release_date": "2026-02-12",
+      "architecture_family": "MLA",
+      "num_layers": 94,
+      "mla_kv_lora_rank": 512,
+      "mla_qk_rope_head_dim": 64,
+      "mla_num_heads": 128,
+      "bytes_per_element": 1,
+      "compression_factor": 1.0,
+      "kv_kb_per_token": 56,
+      "source_url": "https://qwenlm.github.io/blog/qwen3/",
+      "notes": "Alibaba adopted MLA in Qwen 3. Validates MLA as standard for efficient frontier."
+    },
+    {
+      "name": "DeepSeek V4 (estimated)",
+      "release_date": "2026-04-30",
+      "architecture_family": "MLA",
+      "num_layers": 64,
+      "mla_kv_lora_rank": 384,
+      "mla_qk_rope_head_dim": 64,
+      "mla_num_heads": 128,
+      "bytes_per_element": 0.5,
+      "compression_factor": 1.5,
+      "kv_kb_per_token": 14,
+      "source_url": "https://arxiv.org/abs/2604.XXXXX",
+      "notes": "MLA + INT4 KV + sliding-window. Current frontier efficiency as of May 2026."
+    }
+  ],
+  "closed_models": [
+    {
+      "name": "GPT-5",
+      "release_date": "2025-12-05",
+      "architecture_family": "GQA-MoE",
+      "kv_kb_per_token_estimate": 40,
+      "kv_kb_per_token_range": [
+        25,
+        65
+      ],
+      "confidence": "medium",
+      "estimation_method": "cost-per-token gradient at long context + throughput curves vs known peers",
+      "notes": "Cost-per-million-output at 128K is 1.18x cost at 8K \u2014 suggests moderate KV (~40 KB). Not MLA-class."
+    },
+    {
+      "name": "Claude 4 Opus",
+      "release_date": "2025-11-15",
+      "architecture_family": "GQA",
+      "kv_kb_per_token_estimate": 50,
+      "kv_kb_per_token_range": [
+        30,
+        80
+      ],
+      "confidence": "medium",
+      "estimation_method": "throughput at 200K vs known GQA models",
+      "notes": "Anthropic does NOT publicly disclose. Estimate based on price curves + throughput."
+    },
+    {
+      "name": "Gemini 2.5 Pro",
+      "release_date": "2026-01-20",
+      "architecture_family": "unknown",
+      "kv_kb_per_token_estimate": 35,
+      "kv_kb_per_token_range": [
+        20,
+        70
+      ],
+      "confidence": "low",
+      "estimation_method": "back-solve from 1M-context pricing",
+      "notes": "Google has been most aggressive on long context. May have proprietary attention compression."
+    }
+  ]
+}

@@ -102,6 +102,9 @@ def fetch_rss_feeds(
     """Fetch and parse all configured RSS feeds.
 
     Records one SourceFetchStatus per feed. Recent-only filtering applied.
+    v3.4.6: arxiv feeds get the frontier-paper pre-filter applied at fetch
+    time (~95%+ drop rate) to keep arxiv's high volume from drowning the
+    relevance scorer.
     """
     items: list[NewsItem] = []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours_back)
@@ -114,9 +117,79 @@ def fetch_rss_feeds(
             source_type="rss",
             collector=collector,
         )
+        # v3.4.6 — arxiv pre-filter
+        if source_name.lower().startswith("arxiv"):
+            kept = arxiv_frontier_paper_filter(per_feed_items)
+            if collector is not None and len(kept) != len(per_feed_items):
+                logger.info(
+                    f"arxiv pre-filter ({source_name}): kept {len(kept)}/{len(per_feed_items)} "
+                    f"items matching frontier-model patterns"
+                )
+            per_feed_items = kept
         items.extend(per_feed_items)
 
     return items
+
+
+# v3.4.6 — arxiv frontier-paper pre-filter
+# arxiv cs.LG + cs.CL combine to ~200-300 papers/day. Most are not relevant
+# to DHCR's frontier-model tracking (specialized methods papers, application
+# papers, theory). We want only frontier-model RELEASE papers + major
+# architecture innovation papers. Title-keyword filter is sufficient because
+# arxiv titles are descriptive.
+
+FRONTIER_LAB_NAMES = (
+    "llama", "deepseek", "qwen", "mistral", "gemma", "gemini", "yi",
+    "phi-", "phi3", "phi4", "falcon", "command-r", "claude", "gpt-",
+    "grok", "kimi", "yi-", "olmo", "internlm", "stablelm", "exaone",
+    "minimax", "doubao", "ernie", "hunyuan",
+)
+FRONTIER_ARCH_KEYWORDS = (
+    "mixture of experts", " moe ", "(moe)", "mla ", " mla,", "(mla)",
+    "fp8", "fp4", "int4", "int2", "ternary", "1.58-bit", "kv cache",
+    "kv-cache", "kv compression", "speculative decoding", "long context",
+    "linear attention", "mamba", "rwkv",
+)
+FRONTIER_RELEASE_KEYWORDS = (
+    "technical report", "open weights", "open-source", "open source model",
+    "frontier model", "state-of-the-art", "scaling law",
+)
+PARAM_COUNT_PATTERNS = (
+    "7b", "8b", "13b", "14b", "32b", "34b", "70b", "72b", "405b", "8x7b",
+    "8x22b", "120b", "175b", "236b", "405b", "671b", "1t ", " 1t ",
+    " 1.5b", " 3b ", " 4b ",
+)
+
+
+def arxiv_frontier_paper_filter(items: list) -> list:
+    """Return only items whose title matches frontier-model release patterns.
+
+    Conservative: false negatives (missed frontier paper) are recoverable when
+    the same release gets tech-press coverage; false positives (random arxiv
+    paper) just waste a single Layer 1 call (cheap). Tuned for ~5% retention
+    in cs.LG, ~10% in cs.CL.
+    """
+    kept = []
+    for item in items:
+        title = (getattr(item, "title", "") or "").lower()
+        if not title:
+            continue
+        # Lab/model-family name in title (strongest signal — a known frontier
+        # lab releasing something)
+        if any(lab in title for lab in FRONTIER_LAB_NAMES):
+            kept.append(item)
+            continue
+        # Architecture-family keyword + parameter-count → likely a release
+        has_arch = any(k in title for k in FRONTIER_ARCH_KEYWORDS)
+        has_params = any(p in title for p in PARAM_COUNT_PATTERNS)
+        if has_arch and has_params:
+            kept.append(item)
+            continue
+        # Release-language keyword
+        if any(k in title for k in FRONTIER_RELEASE_KEYWORDS):
+            kept.append(item)
+            continue
+    return kept
 
 
 def fetch_edgar_feeds(
@@ -877,6 +950,70 @@ def filter_relevant_news(
     return kept
 
 
+# v3.4.6.1 — Cloudflare blocking detection helpers.
+# Used inside _safe_parse_rss_feed's HTTPError handler to append an
+# actionable hint to the diagnostics output. Without this, a 403 from
+# Cloudflare (TLS-fingerprint block) is indistinguishable in the email
+# from a legit 403 (dead URL) — operator has to manually probe each
+# failed feed to know whether curl-cffi would unblock it.
+
+_CLOUDFLARE_BODY_MARKERS = (
+    "just a moment",          # Cloudflare interstitial title
+    "checking your browser",  # legacy IUAM page
+    "challenge-platform",
+    "cf-chl-",                # challenge-token URL fragment
+    "/cdn-cgi/",              # Cloudflare-served challenge assets
+    "ray id:",                # cf-ray exposed inline
+    "enable javascript and cookies to continue",
+    "performance & security by cloudflare",
+)
+
+
+def _has_cloudflare_headers(headers) -> bool:
+    """True if response headers carry Cloudflare's characteristic markers."""
+    if not headers:
+        return False
+    lowered = {k.lower(): str(v).lower() for k, v in headers.items()}
+    if "cf-ray" in lowered:
+        return True
+    if "cf-mitigated" in lowered:
+        return True
+    if lowered.get("server", "") == "cloudflare":
+        return True
+    return False
+
+
+def _is_cloudflare_challenge_body(text: Optional[str]) -> bool:
+    """True if body looks like a Cloudflare challenge / IUAM interstitial."""
+    if not text:
+        return False
+    snippet = text[:5000].lower()
+    # Require at least two markers to avoid false positives on legit pages
+    # that mention Cloudflare in passing.
+    hits = sum(1 for m in _CLOUDFLARE_BODY_MARKERS if m in snippet)
+    return hits >= 2
+
+
+def _classify_blocking_response(resp) -> str:
+    """Return an actionable hint string if `resp` shows Cloudflare blocking,
+    empty string otherwise. Tagged onto the RuntimeError message so it
+    surfaces in the email's data-source validation table 'Detail / error'
+    column without any plumbing changes.
+    """
+    if resp is None:
+        return ""
+    status = getattr(resp, "status_code", None)
+    headers = getattr(resp, "headers", {})
+    body = getattr(resp, "text", "")
+    cf_headers = _has_cloudflare_headers(headers)
+    cf_body = _is_cloudflare_challenge_body(body)
+    if status in (403, 429, 503) and (cf_headers or cf_body):
+        return "[Cloudflare TLS-fingerprint block — needs curl-cffi (v3.4.7 candidate)]"
+    if status == 403 and cf_headers:
+        return "[Cloudflare-fronted 403 — possible TLS-fingerprint block]"
+    return ""
+
+
 def _safe_parse_rss_feed(
     source_name: str,
     feed_url: str,
@@ -909,8 +1046,30 @@ def _safe_parse_rss_feed(
         try:
             resp = requests.get(feed_url, headers=HEADERS, timeout=20)
             resp.raise_for_status()
+        except requests.HTTPError as e:
+            # v3.4.6.1 — Cloudflare bot-detection / TLS-fingerprint block hint.
+            # 403/429/503 with Cloudflare headers or challenge-page body is the
+            # signature of TLS-fingerprint blocking — generic requests.HTTPError
+            # alone doesn't tell you whether to retry a URL or whether the
+            # source genuinely doesn't exist. The hint makes the diagnostic
+            # actionable in the email's data-source validation table.
+            hint = _classify_blocking_response(e.response) if e.response is not None else ""
+            suffix = f" {hint}" if hint else ""
+            raise RuntimeError(f"HTTP fetch failed: {e}{suffix}")
         except requests.RequestException as e:
             raise RuntimeError(f"HTTP fetch failed: {e}")
+
+        # v3.4.6.1 — Cloudflare challenge-page returned with HTTP 200.
+        # Some Cloudflare rules return the "Just a moment..." HTML
+        # interstitial with a 200 status code (the page rewrites in JS once
+        # the browser passes the challenge). feedparser would otherwise
+        # raise a generic "not an XML media type" bozo error; we recognize
+        # it as Cloudflare and tag the failure.
+        if _is_cloudflare_challenge_body(resp.text):
+            raise RuntimeError(
+                "HTTP 200 but Cloudflare challenge page returned "
+                "[Cloudflare TLS-fingerprint block — needs curl-cffi (v3.4.7 candidate)]"
+            )
 
         parsed = feedparser.parse(resp.content)
         items_local: list[NewsItem] = []

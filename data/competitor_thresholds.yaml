@@ -1,0 +1,210 @@
+# Indicator 7 (Competitor dynamics) — THRESHOLDS + METADATA ONLY
+#
+# v3.4.4.1 architecture (2026-05-22):
+#   This file: STABLE framework specification — thresholds, sub-indicator
+#   metadata, extraction schema, sources. Never auto-modified.
+#   state/competitor_state.json: LIVE measured values, auto-updated by
+#   the Layer 1 extraction → aggregator pipeline before each fast-tier run.
+#
+# Authoritative spec: memory_supercycle_analysis.docx Part 14 + the 2026-05-22
+# framework session. See CLAUDE.md locked decision #6.
+
+schema_version: "2.0"
+framework_session_date: "2026-05-22"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Status bands (uniform across all 4 subs)
+# ─────────────────────────────────────────────────────────────────────────────
+status_bands_eps_impact_pct:
+  not_fired: { max: 5.0,  label: "Not fired" }
+  partially_fired: { min: 5.0, max: 20.0, label: "Partially fired" }
+  fired: { min: 20.0, label: "Fired" }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7A — CXMT
+# ─────────────────────────────────────────────────────────────────────────────
+sub_7a_cxmt:
+  display_name: "CXMT (Chinese commodity DRAM)"
+  description: |
+    DDR4 share gains IRRELEVANT (SK Hynix EOL'ing DDR4 to ~20% of 2025
+    levels). Only DDR5 and LPDDR5X share gains matter. Binary trigger on
+    Tier-1 OEM mainstream DDR5 adoption.
+  tier1_oems_to_watch: ["Dell", "HPE", "Lenovo", "ASUS", "Acer"]
+  trigger_thresholds:
+    not_fired:
+      - "no tier-1 OEM mainstream CXMT DDR5 win"
+      - "cxmt_ddr5_share_pct < 8 (if extracted)"
+    partially_fired:
+      - "tier-1 OEM low-end CXMT DDR5 win (no mainstream)"
+      - "OR cxmt_ddr5_share_pct in [8, 15]"
+      - "OR TrendForce reports CXMT-driven DDR5 pricing pressure"
+    fired:
+      - "tier-1 OEM mainstream CXMT DDR5 win (Dell/HPE/Lenovo/ASUS/Acer)"
+      - "OR cxmt_ddr5_share_pct > 15"
+  extraction_fields:
+    cxmt_oem_mainstream_win: "string_or_null  # if win detected, OEM name"
+    cxmt_oem_lowend_win: "string_or_null  # low-end product line CXMT win"
+    cxmt_ddr5_share_pct: "numeric_or_null  # estimated DDR5 share %"
+    cxmt_ddr5_pricing_pressure_flagged: "boolean  # TrendForce/DigiTimes flag"
+    us_export_controls_easing_event: "boolean  # BIS easing announcement"
+  sources:
+    - "Counterpoint quarterly DRAM share reports"
+    - "TrendForce contract reports"
+    - "DigiTimes Asia (OEM win leaks)"
+    - "ChosunBiz / Korea Times"
+    - "BIS press releases (export control changes)"
+    - "Tier-1 PC OEM press releases"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7B — Samsung HBM4/HBM4E at Nvidia
+# ─────────────────────────────────────────────────────────────────────────────
+sub_7b_samsung_hbm4:
+  display_name: "Samsung HBM4/HBM4E at Nvidia"
+  description: |
+    Highest-impact sub. HBM is ~60% of SK Hynix revenue at ~80% margin.
+    10pp HBM share loss at unchanged Nvidia volume → ~6% revenue / 10-15%
+    EPS hit. HBM gross margin convergence is the corroborating signal —
+    directly observable from earnings.
+  trigger_thresholds:
+    not_fired:
+      - "sk_hynix_hbm4_nvidia_share_pct >= 50"
+      - "AND hbm_gross_margin_pct_sk_hynix >= 70"
+      - "AND hbm4e_qualification_lead in [sk_hynix_ahead, tied]"
+    partially_fired:
+      - "sk_hynix_hbm4_nvidia_share_pct in [30, 50)"
+      - "OR samsung_hbm4_yield_pct >= 65"
+      - "OR hbm4e_qualification_lead == samsung_ahead"
+      - "OR hbm_gross_margin_pct_sk_hynix in [60, 70)"
+    fired:
+      - "sk_hynix_hbm4_nvidia_share_pct < 30 (Samsung > 70%)"
+      - "OR samsung_hbm4e_majority_allocation"
+      - "OR hbm_gross_margin_pct_sk_hynix < 60"
+  extraction_fields:
+    samsung_hbm4_nvidia_share_pct: "numeric_or_null"
+    sk_hynix_hbm4_nvidia_share_pct: "numeric_or_null"
+    samsung_hbm4_yield_pct: "numeric_or_null"
+    hbm_gross_margin_pct_sk_hynix: "numeric_or_null"
+    hbm_gross_margin_pct_samsung: "numeric_or_null"
+    hbm4e_qualification_lead: "enum_or_null  # sk_hynix_ahead|tied|samsung_ahead"
+    samsung_hbm4e_announcement: "boolean"
+    amd_samsung_hbm4_supply_mou: "boolean"
+  source_authority_tier:
+    tier_a: ["SK Hynix earnings", "Samsung earnings", "Mirae Asset", "KB Securities"]
+    tier_b: ["Counterpoint", "TrendForce", "SemiAnalysis"]
+    tier_c: ["DigiTimes", "ChosunBiz", "Korea Times"]
+  conflict_resolution: |
+    Most recent value weighted by tier. Tier A overrides B overrides C.
+    Same-tier conflicts → most recent timestamp wins.
+  sources:
+    - "Nvidia earnings transcripts"
+    - "SK Hynix earnings transcripts"
+    - "Samsung earnings transcripts"
+    - "Mirae Asset, KB Securities (Korean broker PDFs)"
+    - "SemiAnalysis Free RSS"
+    - "AMD HBM supply MOU announcements"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7C — Micron HBM
+# ─────────────────────────────────────────────────────────────────────────────
+sub_7c_micron:
+  display_name: "Micron HBM"
+  description: |
+    Smaller threat than Samsung. Critical nuance: Micron's HBM share gains
+    mostly come from Samsung's portion, not SK Hynix's. Only fires if Micron
+    eats specifically SK Hynix share.
+  trigger_thresholds:
+    not_fired:
+      - "micron_vera_rubin_design_win == excluded"
+      - "AND micron_hbm_share_growth_source != sk_hynix"
+    partially_fired:
+      - "micron_vera_rubin_design_win == secondary_sku"
+      - "OR micron_hbm_share_growth_source == sk_hynix"
+      - "OR micron_total_hbm_share_pct >= 22"
+    fired:
+      - "micron_vera_rubin_design_win == primary_sku at SK Hynix's expense"
+      - "OR micron_total_hbm_share_pct >= 30"
+  extraction_fields:
+    micron_vera_rubin_design_win: "enum_or_null  # primary_sku|secondary_sku|excluded"
+    micron_total_hbm_share_pct: "numeric_or_null"
+    micron_hbm_share_growth_source: "enum_or_null  # samsung|sk_hynix|both"
+  sources:
+    - "Micron quarterly earnings"
+    - "Counterpoint HBM share reports"
+    - "Nvidia / AMD design-win commentary (GTC, AMD AI events)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7D — HBF (two-sided)
+# ─────────────────────────────────────────────────────────────────────────────
+sub_7d_hbf:
+  display_name: "HBF (High Bandwidth Flash)"
+  description: |
+    Two-sided. BEAR: HBF (SanDisk + Kioxia leading) substitutes for hot-tier
+    HBM; SK Hynix displaced. BULL: SK Hynix Solidigm assets (former Intel
+    NAND) position them to lead HBF — moat extension. Fire condition requires
+    hot-tier HBM displacement specifically; cold-tier additions don't fire
+    (demand-unlocking per DHCR mental model).
+  trigger_thresholds:
+    not_fired:
+      - "hbf_commercial_stage in [pre_commercial, sampling]"
+      - "OR sk_hynix_hbf_public_roadmap == true (moat-extension active)"
+      - "AND no hbf_hot_tier_hbm_displacement events"
+    partially_fired:
+      - "first hbf_hot_tier_displacement event AND sk_hynix_hbf_public_roadmap == false"
+      - "OR jedec_hbf_spec_ratified AND sk_hynix not on WG"
+    fired:
+      - "2+ hbf_hot_tier_displacement events"
+      - "AND sk_hynix_position_vs_sandisk_kioxia == behind"
+      - "AND hbf_share_of_accelerator_memory_pct >= 10"
+  extraction_fields:
+    hbf_hyperscaler_design_win: "string_or_null  # hyperscaler + accelerator + tier (hot/warm/cold)"
+    hbf_hot_tier_displacement: "boolean  # displaces hot-tier HBM (vs cold-tier addition)"
+    jedec_hbf_spec_ratified: "boolean"
+    sk_hynix_on_jedec_hbf_working_group: "boolean_or_null"
+    sk_hynix_hbf_roadmap_mention: "boolean  # SK Hynix mentioned HBF in earnings/IR/tech day"
+    sk_hynix_solidigm_hbf_integration: "boolean  # Solidigm + HBM packaging integration announcement"
+    sandisk_kioxia_hbf_milestone: "string_or_null  # SanDisk/Kioxia HBF milestone"
+  moat_extension_milestones:
+    - "SK Hynix public HBF roadmap disclosure"
+    - "Solidigm + SK Hynix HBM-packaging integration announcement"
+    - "First SK Hynix HBF design win at a hyperscaler accelerator"
+    - "SK Hynix earnings call mentions HBF as a strategic product line"
+  substitution_risk_milestones:
+    - "JEDEC HBF spec ratified without SK Hynix on the working group"
+    - "2+ hyperscaler HBF design wins where SK Hynix is not the supplier"
+    - "Public evidence SK Hynix is behind SanDisk-Kioxia on HBF roadmap timing"
+  sources:
+    - "JEDEC press releases (jedec.org/news)"
+    - "EE Times, SemiAccurate, Tom's Hardware (HBF tech coverage)"
+    - "SemiAnalysis Free RSS"
+    - "SanDisk + Kioxia IR materials"
+    - "SK Hynix earnings calls + IR press releases (Solidigm integration)"
+    - "Hyperscaler tech days (GTC, Google Cloud Next, AWS re:Invent, MS Ignite)"
+  pipeline_status:
+    google_watch_query_active: true   # "HBF High Bandwidth Flash SanDisk" in WATCH_GOOGLE_QUERIES
+    tomshardware_rss_active: true
+    semianalysis_rss_active: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Dual-threat scenario (Part 14)
+# ─────────────────────────────────────────────────────────────────────────────
+dual_threat_scenario:
+  trigger: "2+ subs Fired"
+  stock_impact_combined_pct: "-30 to -45"
+  stock_impact_with_cycle_peak_overlay_pct: "-60 to -75"
+  reference: "memory_supercycle_analysis.docx Part 14"
+  narrative: |
+    If CXMT crosses the DDR5 mainstream OEM threshold AND Samsung wins
+    majority HBM4E allocation in the same window, combined stock impact is
+    approximately -30 to -45%. If both coincide with Phase 4 cycle peak
+    (Q3 2026 - Q1 2027 expected window), the drawdown extends to 60-75%
+    per historical Korean memory peaks (1995, 2018, 2022). Not the base
+    case but is the tail risk that justifies tracking Indicator 7 as a
+    deep-dive in section 4.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Aggregator config
+# ─────────────────────────────────────────────────────────────────────────────
+aggregator_config:
+  extraction_log_lookback_days: 30
+  state_file_path: "state/competitor_state.json"
+  recompute_on_state_change: true

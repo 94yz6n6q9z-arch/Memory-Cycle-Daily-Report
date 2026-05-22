@@ -1,303 +1,50 @@
-# Frontier KV-cache efficiency reference for the Decode HBM Captive Ratio
-# (DHCR) indicator (v3.4.0).
-#
-# Each entry represents a frontier-of-art inference model at the time of
-# its release. The DHCR module computes frontier KV efficiency as the
-# minimum disclosed KV/token across entries with release_date in the
-# trailing 90-day window of each historical timestamp.
-#
-# KV/token formula:
-#   kv_bytes_per_token = 2 × num_layers × num_kv_heads × head_dim ×
-#                        bytes_per_element / compression_factor
-#
-# For MLA-class architectures, num_kv_heads is replaced by the latent
-# dimension and compression_factor captures the additional savings.
-# See dhcr.py:compute_kv_per_token for the exact formula handling each
-# architecture family.
-#
-# Quantization (bytes_per_element):
-#   FP16/BF16 = 2 bytes/element
-#   FP8       = 1 byte/element
-#   INT4      = 0.5 bytes/element
-#   INT2      = 0.25 bytes/element
-#
-# Closed-model entries (OpenAI/Anthropic/Google frontier) are excluded
-# from the frontier KV computation because their architecture isn't
-# publicly disclosed. They're listed below the divider for completeness
-# but never feed the frontier_kv computation — only open-architecture
-# models do, which gives us a verifiable lower-bound on frontier
-# efficiency. Sonnet's narrative may comment on closed-model uncertainty
-# when relevant.
-#
-# Update cadence: monthly. New frontier model releases add entries.
-# Each entry is verified against the model card / arxiv paper / blog
-# post cited in `source_url`. If a paper is later corrected or a
-# disclosed parameter revised, the entry is updated in place with a
-# note in `revision_history`.
+# Frontier inference model architecture REFERENCE (v3.4.5 schema-only).
+# Live model entries live in state/inference_arch_state.json
+# (sole writer: src/analysis/dhcr_arch_aggregator.py).
 
-schema_version: 1
-
-# ============================================================
-# Open-architecture frontier models (feed frontier_kv computation)
-# ============================================================
-
-open_models:
-  # ---- Q4 2023: pre-GQA-mainstream baseline ----
-  - name: "Llama 2 70B"
-    release_date: "2023-07-18"
-    architecture_family: "GQA"
-    num_layers: 80
-    num_kv_heads: 8           # GQA from launch
-    head_dim: 128
-    bytes_per_element: 2      # FP16 inference standard at the time
-    compression_factor: 1.0
-    kv_kb_per_token: 320      # 2*80*8*128*2/1024 = 320 KB
-    source_url: "https://arxiv.org/abs/2307.09288"
-    notes: "Frontier open model at end-2023. GQA was already mainstream in Llama 2 70B."
-
-  # ---- Q1-Q2 2024: GQA + early FP8 era ----
-  - name: "Mistral 8x22B (Mixtral Large)"
-    release_date: "2024-04-17"
-    architecture_family: "GQA-MoE"
-    num_layers: 56
-    num_kv_heads: 8           # GQA, KV shared across experts
-    head_dim: 128
-    bytes_per_element: 2      # FP16
-    compression_factor: 1.0
-    kv_kb_per_token: 224      # 2*56*8*128*2/1024 = 224 KB
-    source_url: "https://mistral.ai/news/mixtral-8x22b/"
-    notes: "MoE doesn't multiply KV cache (shared across experts at inference)."
-
-  - name: "Llama 3 70B"
-    release_date: "2024-04-18"
-    architecture_family: "GQA"
-    num_layers: 80
-    num_kv_heads: 8
-    head_dim: 128
-    bytes_per_element: 2      # FP16 at launch
-    compression_factor: 1.0
-    kv_kb_per_token: 320
-    source_url: "https://ai.meta.com/blog/meta-llama-3/"
-    notes: "Same arch as Llama 2 70B. Improvements were in training data + recipe."
-
-  # ---- Q3 2024: FP8 inference becomes mainstream ----
-  - name: "Llama 3.1 70B (FP8)"
-    release_date: "2024-07-23"
-    architecture_family: "GQA"
-    num_layers: 80
-    num_kv_heads: 8
-    head_dim: 128
-    bytes_per_element: 1      # FP8 quantization mainstreamed
-    compression_factor: 1.0
-    kv_kb_per_token: 160      # halved by FP8
-    source_url: "https://ai.meta.com/blog/meta-llama-3-1/"
-    notes: "FP8 inference cuts KV cache by 2x with minimal quality loss."
-
-  - name: "Llama 3.1 405B (FP8)"
-    release_date: "2024-07-23"
-    architecture_family: "GQA"
-    num_layers: 126
-    num_kv_heads: 8
-    head_dim: 128
-    bytes_per_element: 1
-    compression_factor: 1.0
-    kv_kb_per_token: 252      # 2*126*8*128*1/1024 = 252 KB — bigger model, more layers
-    source_url: "https://ai.meta.com/blog/meta-llama-3-1/"
-    notes: "Frontier scale but more layers → larger KV than 70B variants."
-
-  # ---- Q4 2024: MLA pioneered by DeepSeek ----
-  - name: "DeepSeek V2"
-    release_date: "2024-05-06"
-    architecture_family: "MLA"
-    num_layers: 60
-    # MLA: replaces num_kv_heads × head_dim with latent dim
-    mla_kv_lora_rank: 512     # latent dim
-    mla_qk_rope_head_dim: 64  # small per-head RoPE component
-    mla_num_heads: 128
-    bytes_per_element: 2      # FP16 originally; FP8 came later
-    compression_factor: 1.0
-    # MLA KV/tok = layers × (kv_lora_rank + qk_rope_head_dim × num_heads_for_rope) × bytes
-    # Effective: per-token cache is shared latent (kv_lora_rank) + light RoPE component
-    kv_kb_per_token: 71       # see dhcr.py:compute_kv_per_token for MLA formula
-    source_url: "https://arxiv.org/abs/2405.04434"
-    notes: "First production MLA. ~93% KV reduction vs MHA-equivalent at same dim."
-
-  - name: "DeepSeek V3"
-    release_date: "2024-12-26"
-    architecture_family: "MLA"
-    num_layers: 61
-    mla_kv_lora_rank: 512
-    mla_qk_rope_head_dim: 64
-    mla_num_heads: 128
-    bytes_per_element: 1      # FP8 for inference
-    compression_factor: 1.0
-    kv_kb_per_token: 36       # FP8 halves V2 number, slightly more layers
-    source_url: "https://arxiv.org/abs/2412.19437"
-    notes: "MLA + FP8. The frontier-efficient baseline at start of 2025."
-
-  # ---- Q1-Q2 2025 ----
-  - name: "Qwen 2.5 72B"
-    release_date: "2024-09-19"
-    architecture_family: "GQA"
-    num_layers: 80
-    num_kv_heads: 8
-    head_dim: 128
-    bytes_per_element: 1      # FP8
-    compression_factor: 1.0
-    kv_kb_per_token: 160
-    source_url: "https://qwen.readthedocs.io/en/latest/"
-    notes: "GQA + FP8 baseline. Not a frontier-efficiency move."
-
-  - name: "Mistral Large 2 (FP8)"
-    release_date: "2024-07-24"
-    architecture_family: "GQA"
-    num_layers: 88
-    num_kv_heads: 8
-    head_dim: 128
-    bytes_per_element: 1
-    compression_factor: 1.0
-    kv_kb_per_token: 176      # 2*88*8*128*1/1024
-    source_url: "https://mistral.ai/news/mistral-large-2407/"
-
-  # ---- Q3-Q4 2025 ----
-  - name: "Llama 4 Maverick"
-    release_date: "2025-08-04"
-    architecture_family: "GQA"
-    num_layers: 80
-    num_kv_heads: 8
-    head_dim: 128
-    bytes_per_element: 1      # FP8
-    compression_factor: 1.0
-    kv_kb_per_token: 160
-    source_url: "https://ai.meta.com/blog/llama-4/"
-    notes: "Stuck with GQA. Did NOT adopt MLA — Meta opted for proven arch + bigger context window."
-
-  - name: "DeepSeek V3.5"
-    release_date: "2025-09-15"
-    architecture_family: "MLA"
-    num_layers: 61
-    mla_kv_lora_rank: 512
-    mla_qk_rope_head_dim: 64
-    mla_num_heads: 128
-    bytes_per_element: 1
-    compression_factor: 1.5    # sliding-window optimization added on top of MLA
-    kv_kb_per_token: 24
-    source_url: "https://arxiv.org/abs/2509.XXXXX"
-    notes: "MLA + FP8 + sliding-window context compression. Frontier efficiency."
-
-  # ---- Q1-Q2 2026 (current) ----
-  - name: "Qwen 3 235B (MLA + FP8)"
-    release_date: "2026-02-12"
-    architecture_family: "MLA"
-    num_layers: 94
-    mla_kv_lora_rank: 512
-    mla_qk_rope_head_dim: 64
-    mla_num_heads: 128
-    bytes_per_element: 1
-    compression_factor: 1.0
-    kv_kb_per_token: 56       # MLA but more layers than DeepSeek V3
-    source_url: "https://qwenlm.github.io/blog/qwen3/"
-    notes: "Alibaba adopted MLA in Qwen 3. Validates MLA as standard for efficient frontier."
-
-  - name: "DeepSeek V4 (estimated)"
-    release_date: "2026-04-30"
-    architecture_family: "MLA"
-    num_layers: 64
-    mla_kv_lora_rank: 384      # tighter latent
-    mla_qk_rope_head_dim: 64
-    mla_num_heads: 128
-    bytes_per_element: 0.5     # INT4 KV cache (FP8 weights, INT4 KV)
-    compression_factor: 1.5    # sliding-window + sparse attention
-    kv_kb_per_token: 14
-    source_url: "https://arxiv.org/abs/2604.XXXXX"
-    notes: "MLA + INT4 KV + sliding-window. Current frontier efficiency as of May 2026."
-
-# ============================================================
-# Closed-architecture frontier (excluded from frontier_kv;
-# tracked for narrative context only)
-# ============================================================
-
-closed_models:
-  # These entries are best-estimates with explicit confidence bands.
-  # They do NOT feed the frontier_kv computation — the open-architecture
-  # frontier provides a verifiable lower bound on efficiency, which is
-  # what we want for the captive ratio.
-  - name: "GPT-5"
-    release_date: "2025-12-05"
-    architecture_family: "GQA-MoE"  # consistent with GPT-4 family + efficiency hints
-    kv_kb_per_token_estimate: 40
-    kv_kb_per_token_range: [25, 65]
-    confidence: "medium"
-    estimation_method: "cost-per-token gradient at long context + throughput curves vs known peers"
-    notes: "Cost-per-million-output at 128K is 1.18x cost at 8K — suggests moderate KV (~40 KB). Not MLA-class."
-
-  - name: "Claude 4 Opus"
-    release_date: "2025-11-15"
-    architecture_family: "GQA"      # inferred from Anthropic technical blog references
-    kv_kb_per_token_estimate: 50
-    kv_kb_per_token_range: [30, 80]
-    confidence: "medium"
-    estimation_method: "throughput at 200K vs known GQA models"
-    notes: "Anthropic does NOT publicly disclose. Estimate based on price curves + throughput."
-
-  - name: "Gemini 2.5 Pro"
-    release_date: "2026-01-20"
-    architecture_family: "unknown"
-    kv_kb_per_token_estimate: 35
-    kv_kb_per_token_range: [20, 70]
-    confidence: "low"
-    estimation_method: "back-solve from 1M-context pricing"
-    notes: "Google has been most aggressive on long context. May have proprietary attention compression."
-
-# ============================================================
-# Reference workload context windows by category
-# (used by dhcr.py for the implied_context_capacity computation)
-# ============================================================
-
-workload_context_estimates_q2_2026:
-  # These represent the MAXIMUM economically-served context per category
-  # as of Q2 2026. They are the upper bound of what's being economically
-  # consumed today. As efficiency improves, these will expand (per Raul's
-  # mental model: market consumes context up to economic frontier).
-  consumer_chat:
-    typical_context_tokens: 30000
-    max_offered_context_tokens: 1000000
-    economic_max_context_tokens: 50000   # what's actually being served at scale
-    sources:
-      - "ChatGPT Plus default = 32K; Pro = 128K"
-      - "Claude.ai default = 200K"
-      - "Gemini consumer = 1M offered, ~10-30K typical"
-  developer_api:
-    typical_context_tokens: 24000
-    max_offered_context_tokens: 1000000
-    economic_max_context_tokens: 100000
-  coding_agents:
-    typical_context_tokens: 280000
-    max_offered_context_tokens: 1000000
-    economic_max_context_tokens: 500000
-    sources:
-      - "Cursor 200K default"
-      - "Claude Code 500K"
-      - "Devin reportedly 1M for repo context"
-  rag_search:
-    typical_context_tokens: 18000
-    max_offered_context_tokens: 200000
-    economic_max_context_tokens: 50000
-  enterprise_vertical_agents:
-    typical_context_tokens: 350000
-    max_offered_context_tokens: 2000000
-    economic_max_context_tokens: 1000000
-    confidence: "low"
-    sources:
-      - "Harvey AI legal: 500K-typical disclosed in case studies"
-      - "Hebbia financial: 200K-1M depending on workflow"
-      - "Microsoft Copilot Enterprise: scaling toward 1M"
-    notes: |
-      This category is the leading edge. Today bounded by economics at ~1M.
-      As efficiency drops KV by 4-8x in next 2 years, expect this to reach
-      10M+ for full-enterprise-context workflows. Raul's mental model:
-      the market WILL push to whatever is economically possible.
-  creative_other:
-    typical_context_tokens: 25000
-    max_offered_context_tokens: 200000
-    economic_max_context_tokens: 50000
+schema_version: '2.0'
+framework_session_date: '2026-05-22'
+description: Frontier inference model architecture reference. STABLE. Live model entries live in state/inference_arch_state.json.
+kv_per_token_formula:
+  gqa_class: kv_bytes_per_token = 2 * num_layers * num_kv_heads * head_dim * bytes_per_element / compression_factor
+  mla_class: For MLA, num_kv_heads is replaced by mla_kv_lora_rank plus rope_dim.
+bytes_per_element:
+  FP16_BF16: 2
+  FP8: 1
+  INT4: 0.5
+  INT2: 0.25
+architecture_family_enum:
+- GQA
+- GQA-MoE
+- MLA
+- MLA-MoE
+- MHA
+closed_model_handling: Closed-model entries are excluded from frontier_kv. Stored under closed_models
+  with confidence_band.
+extraction_fields:
+  new_frontier_model_release:
+    name: string
+    release_date: iso_date
+    architecture_family: GQA | GQA-MoE | MLA | MLA-MoE | MHA
+    num_layers: int
+    num_kv_heads: int
+    head_dim: int
+    bytes_per_element: 2 | 1 | 0.5 | 0.25
+    compression_factor: numeric default 1.0
+    kv_kb_per_token: numeric optional
+    source_url: string
+aggregator_config:
+  extraction_log_lookback_days: 180
+  state_file_path: state/inference_arch_state.json
+  frontier_window_days: 90
+  open_only_for_frontier: true
+source_authority_tier:
+  tier_a:
+  - arxiv paper
+  - HuggingFace model card
+  - official release blog
+  tier_b:
+  - SemiAnalysis
+  - Papers with Code
+  tier_c:
+  - tech news

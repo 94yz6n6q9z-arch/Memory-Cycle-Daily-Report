@@ -478,6 +478,56 @@ def reason_one_signal(
         logger.error(f"Layer 2 response parse failed for {indicator.id}: {e}")
         return None
 
+    # v3.4.3 — Layer 2 prompt observability. Append a per-call audit record
+    # to state/layer2_audit_*.jsonl so we can later analyze what Haiku saw
+    # vs what it returned. Especially useful after the May 22 529 incidents
+    # — we want to be able to answer "what did Layer 2 see for indicator X
+    # on date Y, and what reasoning did it produce?"
+    #
+    # The file is per-day (layer2_audit_YYYY-MM-DD.jsonl) so committing it
+    # doesn't bloat the repo monotonically. Workflow commits it like the
+    # other state/ files (need to add to the commit set in fast_tier.yml).
+    try:
+        from datetime import datetime as _dt
+        from pathlib import Path as _Path
+        import os as _os
+        audit_dir = _Path("state")
+        audit_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = audit_dir / f"layer2_audit_{_dt.utcnow().strftime('%Y-%m-%d')}.jsonl"
+        audit_record = {
+            "ts": _dt.utcnow().isoformat() + "Z",
+            "signal_id": indicator.id,
+            "signal_name": indicator.name,
+            "tier": indicator.tier,
+            "prior_status": prior_status or "unknown",
+            # Prompt fingerprint — first 400 chars of the user_msg, useful for
+            # diffing "did the prompt structure change between runs"
+            "prompt_head_400": user_msg[:400],
+            "prompt_total_chars": len(user_msg),
+            # Evidence inputs received
+            "n_digests_relevant": len(ev["relevant_digests"]),
+            "n_news_relevant": len(ev["relevant_news"]),
+            "evidence_store_block_chars": len(evidence_store_block),
+            # Haiku verdict
+            "verdict_fired_status": parsed.get("fired_status", "Not fired"),
+            "verdict_evidence_count": parsed.get("evidence_count", 0),
+            "verdict_convergence": parsed.get("convergence", "low"),
+            "verdict_confidence": parsed.get("confidence", "low"),
+            "verdict_consensus_direction": (parsed.get("consensus_direction") or "")[:600],
+            "verdict_evidence_for_change": (parsed.get("evidence_for_change_vs_yesterday") or "")[:400],
+            # Status transition (vs prior_status)
+            "status_transition": (
+                None if not prior_status
+                else "no_change" if prior_status == parsed.get("fired_status", "Not fired")
+                else f"{prior_status}→{parsed.get('fired_status', 'Not fired')}"
+            ),
+        }
+        with open(audit_path, "a") as f:
+            f.write(json.dumps(audit_record, default=str) + "\n")
+    except Exception as _audit_err:
+        # Observability must never break the brief — log + continue
+        logger.warning(f"Layer 2 audit log write failed for {indicator.id}: {_audit_err}")
+
     return SignalReasoning(
         signal_id=indicator.id,
         signal_name=indicator.name,

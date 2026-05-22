@@ -305,25 +305,46 @@ class TestFullDHCRSnapshot(unittest.TestCase):
 
 class TestSection4Placement(unittest.TestCase):
 
-    def test_section_4_title_is_top_6(self):
+    def test_section_4_title_is_top_8(self):
+        """v3.4.4: section 4 title moved Top 6 → Top 8 with Indicator 7
+        (Competitor) + Indicator 8 (ADR) cards added between top-5 and DHCR."""
         src = (REPO_ROOT / "src/email_module/template.py").read_text()
-        self.assertIn("Top 6 indicators", src,
-            "Section 4 title must read 'Top 6 indicators'")
+        self.assertIn("Top 8 indicators", src,
+            "Section 4 title must read 'Top 8 indicators' (v3.4.4)")
+        self.assertNotIn("Top 6 indicators", src,
+            "Old 'Top 6 indicators' title should be removed in v3.4.4")
         self.assertNotIn("Top 5 indicators — deep dive", src,
             "Old 'Top 5 indicators — deep dive' title should be removed")
 
-    def test_dhcr_card_renders_before_top5_section(self):
-        """In the build_email_html flow, DHCR card must be appended BEFORE
-        _build_top5_section, so it renders first inside section 4."""
+    def test_dhcr_card_renders_after_top5_section(self):
+        """v3.4.3.1 — DHCR card must be appended AFTER _build_top5_section in
+        section 4 (renders LAST per Raul May 22 2026). v3.4.4 — Indicator 7
+        (Competitor) and Indicator 8 (ADR) cards are inserted between top-5
+        and DHCR; DHCR remains the last card per locked decision."""
         src = (REPO_ROOT / "src/email_module/template.py").read_text()
         # Find the section-4 header
-        header_idx = src.index("section-4'>4. Top 6")
+        header_idx = src.index("section-4'>4. Top 8")
         # Find DHCR card append and top5 section append AFTER the header
         after_header = src[header_idx:]
         dhcr_call_idx = after_header.index("_build_dhcr_section4_card(")
         top5_call_idx = after_header.index("_build_top5_section(")
-        self.assertLess(dhcr_call_idx, top5_call_idx,
-            "DHCR card must be appended before top5 section in section 4")
+        self.assertGreater(dhcr_call_idx, top5_call_idx,
+            "v3.4.3.1: DHCR card must be appended AFTER top5 section "
+            "in section 4 (DHCR is the last/closing card, not the first)")
+
+    def test_v3_4_4_indicator_7_renders_between_top5_and_dhcr(self):
+        """v3.4.4 — Indicator 7 (Competitor) card must render between top-5
+        and DHCR. Order: top-5 → Indicator 7 → Indicator 8 → DHCR."""
+        src = (REPO_ROOT / "src/email_module/template.py").read_text()
+        header_idx = src.index("section-4'>4. Top 8")
+        after_header = src[header_idx:]
+        top5_idx = after_header.index("_build_top5_section(")
+        ind7_idx = after_header.index("_build_competitor_section4_card(")
+        ind8_idx = after_header.index("_build_adr_section4_card(")
+        dhcr_idx = after_header.index("_build_dhcr_section4_card(")
+        self.assertLess(top5_idx, ind7_idx)
+        self.assertLess(ind7_idx, ind8_idx)
+        self.assertLess(ind8_idx, dhcr_idx)
 
     def test_dhcr_card_renders_with_matrix_chart_kwarg(self):
         """DHCR card now accepts matrix_chart_b64 kwarg (v3.4.2)."""

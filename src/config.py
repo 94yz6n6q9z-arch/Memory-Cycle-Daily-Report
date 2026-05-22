@@ -979,14 +979,143 @@ INDICATORS: list[Indicator] = [
             "consume news items directly."
         ),
     ),
+
+    # v3.4.4 — Indicator 7 (Competitor dynamics). Composite over 4 sub-
+    # indicators (7A CXMT, 7B Samsung HBM4/4E, 7C Micron, 7D HBF) calibrated
+    # to estimated SK Hynix EPS impact. Status mapping per sub: Not fired
+    # <5% EPS impact, Partially fired 5-20%, Fired >20%. Composite logic
+    # applies the Part 14 dual-threat amplifier (2+ subs Fired → Fired
+    # regardless of cumulative; 1 Fired + 2+ Partially fired → Fired).
+    # Same v3.4.3.1 placement pattern as DHCR — filtered out of section 3
+    # tier table; renders as section 4 deep-dive card via dedicated builder.
+    Indicator(
+        id="t1_competitor_dynamics",
+        tier=1,
+        name="Competitor dynamics (CXMT, Samsung HBM4, Micron, HBF)",
+        short_label="Competitor dynamics",
+        description=(
+            "Structural overlay on SK Hynix premium thesis: pressure from "
+            "Chinese commodity DRAM (CXMT), Samsung HBM4/HBM4E share gains "
+            "at Nvidia, Micron HBM catch-up, and HBF (High Bandwidth Flash) "
+            "substitution risk. Status calibrated to estimated EPS impact "
+            "via price × volume mechanics, not raw market share. The Part "
+            "14 dual-threat scenario (CXMT + Samsung simultaneously) is "
+            "the worst-case overlay on cycle peak (-30 to -45% combined; "
+            "-60 to -75% with peak-window coincidence)."
+        ),
+        what_to_look_for=(
+            "Per-sub-indicator EPS-impact thresholds in data/competitor_thresholds.yaml. "
+            "Headline triggers: 7A CXMT DDR5 mainstream Tier-1 OEM win; "
+            "7B SK Hynix Nvidia HBM4 share <50% OR HBM gross margin <60%; "
+            "7C Micron wins primary Vera Rubin SKU at SK Hynix's expense; "
+            "7D 2+ hyperscaler HBF design wins displacing hot-tier HBM AND "
+            "SK Hynix behind on HBF roadmap."
+        ),
+        sources=[
+            "Counterpoint quarterly DRAM/HBM share reports",
+            "TrendForce HBM forecast reports",
+            "Korean broker reports (Mirae, KB Securities)",
+            "Nvidia / AMD earnings transcripts",
+            "SK Hynix / Samsung / Micron earnings",
+            "DigiTimes Asia (OEM win leaks)",
+            "JEDEC press releases (HBF standardization)",
+            "SemiAnalysis Free RSS",
+        ],
+        trigger_patterns=[],  # composite indicator; sub-indicators carry their own patterns
+        trigger_numeric=None,
+        cadence=(
+            "Daily Layer 1 extraction → src/analysis/competitor_aggregator.py "
+            "→ state/competitor_state.json (auto-updated before each fast-tier "
+            "snapshot computation)"
+        ),
+        stitching=(
+            "data/competitor_thresholds.yaml holds the thresholds + extraction "
+            "schema (stable, never auto-modified). state/competitor_state.json "
+            "holds the current measured values (sole source of truth, written "
+            "only by the aggregator). compute_competitor_snapshot() in "
+            "src/analysis/competitor_scoring.py reads both. Sub-indicator "
+            "triggers (i6a_cxmt_commodity, i6b_samsung_hbm4, i6c_micron_hbm4, "
+            "i7d_hbf) in COMPANY_SPECIFIC_INDICATORS below drive the Layer 1 "
+            "news extraction the aggregator consumes."
+        ),
+    ),
+
+    # v3.4.4 — Indicator 8 (US ADR / SPO event tracking). Composite over 4
+    # sub-indicators (8A F-1 filing watch, 8B roadshow demand, 8C pricing-day
+    # execution, 8D insider sales in offering window). Per Raul 2026-05-22:
+    # canceled F-1 = Fired; insider threshold $10M; Fired persists through
+    # Phase 4 (no 90-day reversion). Peak-coincidence escalation rule per
+    # Part 11 (Hynix 1995 listing / 1996 crash pattern). Same v3.4.3.1
+    # placement pattern as DHCR — filtered out of section 3 tier table.
+    Indicator(
+        id="t1_us_adr_event",
+        tier=1,
+        name="US ADR / SPO event tracking",
+        short_label="US ADR / SPO",
+        description=(
+            "Event-driven indicator: SK Hynix US ADR launch via new share "
+            "issuance (treasury share path closed Feb 9 2026). Expected "
+            "June-July 2026; ~17.4M new shares (~2.4% dilution); estimated "
+            "$9.6-14B raise. Two-part read: (1) mechanical drag -4 to -9% "
+            "cumulative for established foreign issuers per academic studies "
+            "(Doidge-Karolyi-Stulz 2004, Sarkissian-Schill 2009); (2) peak-"
+            "coincidence signal per Part 11 — memory makers cross-listing at "
+            "peak is a recurring top-tick pattern."
+        ),
+        what_to_look_for=(
+            "F-1 filing on SEC EDGAR (beats Korean press by 1-3 days); "
+            "underwriter syndicate quality at filing; roadshow demand "
+            "language (oversubscribed Nx vs soft); 424B pricing discount "
+            "(<3% strong / 3-5% normal / >5% weak); insider sales >$10M "
+            "in the offering window; ADR completion concurrent with Tier 3 "
+            "signals firing = peak-coincidence escalation to Fired."
+        ),
+        sources=[
+            "SEC EDGAR F-1 atom feed (already in WATCH_GOOGLE_QUERIES)",
+            "SEC 424B prospectus filings",
+            "SEC Form 4 (insider transactions)",
+            "Korean DART (SK Hynix C-suite KRX-side disclosures)",
+            "Reuters / Bloomberg ADR coverage",
+            "ChosunBiz / Korea Times (Korean syndicate-side leaks)",
+        ],
+        trigger_patterns=[],  # event-driven; sub-trigger patterns in COMPANY_SPECIFIC_INDICATORS
+        trigger_numeric=None,
+        cadence=(
+            "Daily SEC EDGAR atom feed (F-1 detection) + Layer 1 extraction "
+            "→ src/analysis/adr_aggregator.py → state/adr_state.json"
+        ),
+        stitching=(
+            "data/adr_event_tracking.yaml holds the thresholds + lifecycle "
+            "phase enum + calendar template + academic refs (stable). "
+            "state/adr_state.json holds the current lifecycle phase + sub "
+            "statuses (sole source of truth, written only by the aggregator). "
+            "compute_adr_snapshot() in src/analysis/adr_event_tracking.py "
+            "reads both. Pre-F-1 state renders all 4 subs as 'Pre-event' "
+            "with the calendar window prominent."
+        ),
+    ),
 ]
 
 
 # ============================================================
-# Company-specific indicators (Indicators 6 and 7) — SK Hynix
+# Company-specific indicators — SK Hynix (Indicators 7 and 8)
 # ============================================================
-# These are outside the universal tier framework because they're
-# specific to SK Hynix risk dynamics, not generalizable cycle signals.
+# v3.4.4 user-facing renumbering (per Raul 2026-05-22):
+#   Indicator 6 = DHCR (already in INDICATORS list as t1_decode_hbm_captive_ratio)
+#   Indicator 7 = Competitor dynamics (this dict, sub-keys i6a / i6b / i6c + new i7d_hbf)
+#   Indicator 8 = US ADR / SPO event (this dict, sub-key i7_adr_launch)
+#
+# The INTERNAL dict keys (i6a_cxmt_commodity, i6b_samsung_hbm4, i6c_micron_hbm4,
+# i7_adr_launch) are LEGACY naming — preserved here so signal_reasoner.py and
+# digester.py don't need cross-cutting changes. User-facing numbering is what's
+# in the section 4 card titles. Section 4 deep-dive cards for Indicator 7
+# and Indicator 8 read from data/competitor_thresholds.yaml and
+# data/adr_event_tracking.yaml respectively, computed by
+# src/analysis/competitor_scoring.py and src/analysis/adr_event_tracking.py.
+#
+# These are outside the universal tier framework because they're SK Hynix-
+# specific structural overlays, not generalizable cycle-phase signals — same
+# rationale as DHCR (Indicator 6).
 
 COMPANY_SPECIFIC_INDICATORS = {
     # Indicator 6 — Competitor Dynamics (3 sub-threats)
@@ -1028,7 +1157,26 @@ COMPANY_SPECIFIC_INDICATORS = {
         "trigger_numeric": None,
         "stitching": "Micron earnings (Yahoo Finance) + Nvidia/AMD earnings + news scraping.",
     },
-    # Indicator 7 — US ADR / SPO launch tracking
+    # 7D — HBF (High Bandwidth Flash) leadership — NEW v3.4.4
+    # Two-sided indicator (substitution risk + Solidigm moat-extension).
+    # Fire condition specifically requires HOT-tier HBM displacement, not
+    # cold-tier HBF additions (which are likely demand-unlocking per DHCR
+    # mental model). See data/competitor_thresholds.yaml sub_7d_hbf for
+    # the full sub-state definition and trigger thresholds.
+    "i7d_hbf": {
+        "name": "HBF (High Bandwidth Flash) leadership",
+        "trigger_patterns": [
+            "HBF High Bandwidth Flash", "HBF SanDisk", "HBF Kioxia",
+            "HBF JEDEC", "HBF design win", "HBF hyperscaler",
+            "HBF Nvidia", "HBF accelerator", "SK Hynix HBF",
+            "Solidigm HBF", "HBF roadmap",
+        ],
+        "trigger_numeric": None,
+        "stitching": "JEDEC press + SemiAnalysis + Tom's Hardware + SanDisk/Kioxia IR + SK Hynix earnings.",
+    },
+    # Indicator 8 — US ADR / SPO launch tracking
+    # (Internal dict key remains "i7_adr_launch" for back-compat with
+    # signal_reasoner.py + digester.py. User-facing label is "Indicator 8".)
     "i7_adr_launch": {
         "name": "SK Hynix US ADR / SPO launch",
         "trigger_patterns": [
@@ -1348,6 +1496,34 @@ RSS_FEEDS = {
     "Astera Labs Newsroom": "https://www.asteralabs.com/category/news/feed/",
     # SemiAnalysis free posts (the rest is paywalled but headlines + intros are useful)
     "SemiAnalysis Free": "https://semianalysis.com/feed/",
+
+    # v3.4.6 — Frontier-model lab blogs. Feed the DHCR arch aggregator's
+    # Tier-A source set so newly-released frontier inference models get
+    # picked up at the lab announcement (highest authority on architecture
+    # specs). Several of these failed in v3.38.3's prune as 404/DNS; URLs
+    # below are documented current endpoints — production may show some
+    # still 403/404 (Cloudflare TLS fingerprinting on Mistral/DeepSeek a
+    # known risk; if so they fall through and Google News covers the
+    # release indirectly via Tier-B/C).
+    "Meta AI Blog": "https://ai.meta.com/blog/rss/",
+    "DeepSeek API News": "https://api-docs.deepseek.com/news/rss.xml",
+    "Mistral News": "https://mistral.ai/news/feed.xml",
+    "Qwen Blog": "https://qwenlm.github.io/feed.xml",
+    "Anthropic News": "https://www.anthropic.com/news/rss.xml",
+    "Google DeepMind Blog": "https://deepmind.google/discover/blog/rss.xml",
+    # HuggingFace Papers (community-curated daily) — distinct from
+    # "HuggingFace Blog" above which is the official HF announcements feed.
+    # Papers feed surfaces academic releases including major foundation
+    # model papers within 24h of arxiv posting.
+    "HuggingFace Papers": "https://huggingface.co/papers/feed.xml",
+    # arxiv — direct ML/NLP paper RSS. Volume is ~100-200/day in cs.LG
+    # alone, so news.py applies arxiv_frontier_paper_filter() before items
+    # reach the relevance scorer. Filter retains items whose title matches
+    # known frontier-model release patterns (vendor names, parameter-count
+    # patterns, architecture-family keywords); 95%+ of routine papers
+    # dropped at fetch time. See src/data/news.py:arxiv_frontier_paper_filter
+    "arxiv cs.LG (filtered)": "https://rss.arxiv.org/rss/cs.LG",
+    "arxiv cs.CL (filtered)": "https://rss.arxiv.org/rss/cs.CL",
 }
 # TODO v3.39 — feed URL hunt + Cloudflare bypass: find working replacements for
 # sources pruned in v3.38.3 / v3.38.4. Candidates:

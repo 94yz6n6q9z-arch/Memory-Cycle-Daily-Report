@@ -2,6 +2,8 @@
 
 <!--
 CHANGELOG (this file):
+  v3.4.3.1 (2026-05-22) — DHCR PLACEMENT HOTFIX + FIRED PILL READABILITY. Four user-visible issues from v3.4.2 that v3.4.3 shipped without fixing. Raul surfaced these on May 22 2026 production email review ("I had asked you 3 or 4 times that I didnt want the Decode HBM captive ratio to appear on section 3"). Scope deliberately small — placement and rendering only; no framework changes. (FIX 1) DHCR REMOVED FROM SECTION 3 TIER INDICATOR STATUS TABLE. DHCR (`t1_decode_hbm_captive_ratio`) was rendering as a row in the Tier 1 group since v3.4.0. Per DHCR_Framework_Explained.docx Appendix B and the May 22 framework session, DHCR is structurally Tier 1 but renders ONLY as a section 4 deep-dive card — the matrix + score + sanity outputs don't fit the section 3 row format. The v3.4.2 framework redesign was supposed to delete the section 3 row; a handover propagation error preserved a "leave section 3 unchanged" note that contradicted the intended decision. Fix: `_build_indicators_section` per-tier loop now filters out `t1_decode_hbm_captive_ratio` before iteration. The `elif a.id == "t1_decode_hbm_captive_ratio"` snippet-injection branch removed entirely (dead code path after the filter). `dhcr_snippet = _build_dhcr_section3_snippet(dhcr_snapshot)` prep call removed. (FIX 2) `_build_dhcr_section3_snippet` FUNCTION DELETED (86 lines). The function rendered a v3.4.0 5-level direction enum (`strongly_bullish_hbm` / `mildly_bullish_hbm` / `balanced` / `mildly_bearish_hbm` / `strongly_bearish_hbm`) and accessed four dataclass fields that the v3.4.2 matrix redesign eliminated: `direction` (replaced by the 3-bucket Fired/Partially fired/Not fired status mapping in Part X), `frontier_hbm_gb_per_accelerator` (deleted; HBM-per-accelerator is now indirect via the +1 Y-band anticipation premium), `capacity_creation_yoy_pct` (deleted; replaced by per-component YoY tracking on Y and X axes), `implied_context_capacity_per_accelerator_tokens` (deleted; replaced by `operative_context_tokens`). Same staleness pattern v3.4.3 fixed in fast_tier.py's log line. Function replaced with a 6-line tombstone comment at the original location so future readers see why the function was removed. (FIX 3) DHCR SECTION 4 CARD MOVED FROM FIRST TO LAST POSITION. Per May 22 2026 framework decision: DHCR is the macro framing closer of section 4, not the opener. The 5 Sonnet-picked per-indicator deep dives lead; DHCR closes with the framework-level direction monitor. Section 4 order is now: header → top-5 deep dives → DHCR card. Section title remains "Top 6 indicators — deep dive" for v3.4.3.1; v3.4.4 will retitle to "Top 8" when Indicator 6 and Indicator 7 are promoted. `_build_dhcr_section4_card` call moved from before `_build_top5_section` to after. (FIX 4) WHITE TEXT ON FIRED AND PARTIALLY FIRED STATUS PILLS. `status-badge` spans set background color but no foreground color, so the default near-black text rendered on the dark red (Fired) and dark amber (Partially fired) backgrounds — unreadable. White text now applied conditionally on those two statuses; light backgrounds (Not fired green, etc.) keep the near-black default. Applied in two places for consistency: `_build_indicators_section` (section 3 tier row badges) and `_build_top5_section` (section 4 deep-dive card header badges). TESTS: tests/test_v3_4_3_1_dhcr_placement_and_pills.py — 9 new tests across 4 classes (TestDHCRNotInSection3 x2, TestDHCRSection3SnippetFunctionRemoved x2, TestDHCRRendersLastInSection4 x2, TestStatusPillTextColors x3). Plus one flipped test: test_v3_4_2_dhcr_matrix.py::test_dhcr_card_renders_before_top5_section renamed to test_dhcr_card_renders_after_top5_section with comparison flipped. 423 tests pass (414 v3.4.3 baseline + 9 new). LOCKED DECISION #5 added to this file's locked-decisions section. xlsx renamed memory_cycle_data_source_audit_v3_4_3_1.xlsx (no content change). PROCESS LESSON: the v3.4.2 release note ("section 3 unchanged, DHCR FIRST in section 4") captured a misinterpretation of Raul's actual ask. When future sessions hit a contradiction between a handover note and explicit user instruction, the user instruction wins — handover notes are reconstructions and may have propagation errors. This file's locked-decisions section is the authoritative record, NOT the inline historical changelog entries which are preserved verbatim and may contain past errors.
+  v3.4.3 (2026-05-22) — Quick wins from v3.39 follow-up backlog + one bug fix. (3a) LAYER 2 PROMPT OBSERVABILITY (was Part 7c). src/analysis/signal_reasoner.py appends per-call audit record to state/layer2_audit_YYYY-MM-DD.jsonl for every Layer 2 Haiku call: ts, signal_id, signal_name, tier, prior_status, prompt_head_400, prompt_total_chars, n_digests_relevant, n_news_relevant, evidence_store_block_chars, verdict_fired_status, verdict_evidence_count, verdict_convergence, verdict_confidence, verdict_consensus_direction (600 chars), verdict_evidence_for_change (400 chars), status_transition (None/no_change/"Fired→Not fired"). Per-day file rotation. Wrapped in try/except — observability never breaks the brief. state/layer2_audit_*.jsonl added to fast_tier.yml commit set so audit accumulates in git. Companion script scripts/audit_layer2.py — stdlib-only, --days/--indicator/--state-dir args, prints per-indicator calls/convergence%/confidence%/transitions table + status transitions detail with reasons + reliability check (zero-evidence calls %) + prompt size distribution. (3b) HBM SPOT/CONTRACT PRICE TREND AUTOMATION. New compute_hbm_price_trend(spot_history_csv, contract_forecasts_csv, lookback_days=90) in src/data/prices.py — combines (a) DDR5 16Gb spot slope trailing 90 days (threshold ±$0.05/day) + (b) contract forecast revision direction for latest quarter (threshold ±3pp central_pct delta). Both signals must agree to call rising/falling; mixed → flat. src/fast_tier.py now wires this into compute_dhcr_snapshot() call along with extraction_log_signals from computed_metrics["extraction_log_signals_last_90d"]. Removes operator dependency from DHCR sanity check signal #3. (3c) LAYER 1 DIGESTER RETRY. src/analysis/digester.py:digest_document() wrapped with LAYER1_RETRY_BACKOFFS=[10,30,90] for 529/overloaded errors. Per-document isolation. Same pattern as v3.4.2 Sonnet+Layer 2. Closes audit gap — Layer 1 was the only LLM layer without app-level retry. (BUG FIX discovered during 3b wiring) The existing fast_tier.py log line at the DHCR computation site referenced v3.4.0 fields that NO LONGER EXIST after v3.4.2 framework redesign: .direction (replaced by .status), .frontier_hbm_gb_per_accelerator, .implied_context_capacity_per_accelerator_tokens, .capacity_creation_yoy_pct. Would have thrown AttributeError in production every fast-tier run, failing the entire DHCR computation step silently — v3.4.2 release process didn't exercise the full DHCR log path so this regression slipped through. Log rewritten to v3.4.2 fields: status, score, workload_cell, market_cell, KV GB/1M, op_ctx, vol_idx, hbm_demand, sanity confirms ratio, calibration_flag. PROCESS LESSON: when redesigning a dataclass (v3.4.2 rewrite of DHCRSnapshot), grep for ALL references to the OLD field names across the codebase — not just in the file being rewritten. Logger calls + diagnostic output + serialization sites all need the same treatment. 414 tests pass (385 v3.4.2 baseline + 29 new in tests/test_v3_4_3_quick_wins.py across 8 classes). NEXT ON ROADMAP: v3.4.4 — promote Indicator 6 (Competitor dynamics WITH NEW sub-indicator 6D HBF/High Bandwidth Flash per Raul May 22 ask) + Indicator 7 (US ADR new-share-issuance only — treasury path closed Feb 9 2026) to deep-dive cards in section 4, section 4 title rename Top 6 → Top 8 indicators. Full Part 14 specification in ROADMAP.md and HANDOVER_TO_NEW_CHAT.md.
   v3.4.2 (2026-05-22) — Major DHCR redesign + reliability hardening + CapEx capitalization. (A) RELIABILITY: May 22 03:50 UTC fast-tier run hit Anthropic 529 Overloaded — SDK retried 2x with 0.4s/0.8s backoff, all failed, Sonnet returned None, fallback analysis triggered, degraded brief shipped without DHCR section, also 13/23 Layer 2 indicators failed with 529. Diagnosis: SDK backoff insufficient for sustained overload windows (API was overloaded for minutes, not seconds). Fix: src/analysis/llm_summarizer.py wraps Sonnet streaming call with _call_sonnet_with_streaming() helper + 3-retry app-level backoff [30s, 90s, 240s] specifically for 529/overloaded errors. If all 3 fail → fallback to claude-haiku-4-5-20251001 after 30s recovery wait (lower narrative quality but populated brief with all sections including DHCR matrix). src/analysis/signal_reasoner.py wraps Layer 2 Haiku per-signal calls with 3-retry backoff [10s, 30s, 90s]. Per-signal isolation — one signal's 529 doesn't affect others. DHCR also explicitly skipped from Layer 2 (returns None at function start) — its verdict is deterministically computed from YAMLs not Haiku-reasoned, saves ~10s + reduces 529 surface. (B) DHCR FRAMEWORK REDESIGN: v3.4.0 shipped DHCR as a single delta-number direction enum (5-level strongly_bullish_hbm → strongly_bearish_hbm) which collapsed the 2-axis matrix into one number and threw away the architectural memory-zone mapping from Raul's design memo. v3.4.2 implements the full 2-axis matrix framework per May 22 design session: Y-axis is KV efficiency bands (<1, 1-4, 4-16 today, 16-32, >32 GB/1M tok — focus on lower spectrum per Raul's direction since that's where market is heading), X-axis is operative context length bands (<32K, 32-200K today, 200K-1M, 1M-10M, >10M). Each cell on the 5×5 matrix maps to a memory architecture from the memo (commodity DDR ↔ LPDDR/heterogeneous ↔ HBM/GDDR hybrid ↔ pure HBM dominance) — cell maps to linear score 0-100 (HBM-favorable ↔ commodity) using 50/50 weighted KV×context intensities. Three NEW mechanisms per Raul's design insights: (i) DUAL-INPUT X-AXIS via new data/context_length_signals.yaml — operative context = Σ (category_context × category_volume_share) across 5 categories (consumer chat 30K/50%, coding agents 280K/15%, enterprise vertical agents 800K/5%, dev API 50K/20%, other 70K/10%) — captures that enterprise volume share growth is THE central lever even if context stays flat. (ii) ANTICIPATION PREMIUM — market provisions HBM-heavy infra ahead of literal workload demand, so DHCR computes TWO cells (workload-implied + market-deployed = workload + 1 Y-band offset) and uses market-deployed for the score; matrix chart shows both with dashed line, anticipation gap is itself a tracked signal. (iii) SANITY CHECK — three substitution-evidence signals (HBM-substitution news count last 90d, hyperscaler decode-off-HBM mentions, HBM spot/contract price trend); if ≥2 of 3 contradict score → CALIBRATION FLAG badge. Today's read: KV 14 KB/tok (DeepSeek V4 MLA) → R3, operative context 114K tokens → C2, workload cell R3C2 (LPDDR/HBM), market-deployed cell R4C2 (HBM/GDDR with anticipation +1), score 52, volume index 100 (May 2026 baseline), bullish trajectory → Not fired, 3/3 sanity confirm no flag. Status mapping: score ≥65 → Not fired; <30 → Fired; 30-65 + bullish volume → Not fired; 30-65 + flat → Partially fired; 30-65 + bearish → Fired. Volume layer separate from position (HBM bit demand = score × volume_index/100). BULL CASE + BEAR CASE narratives now rendered IN the email (per Raul's explicit ask not to lose context) as green/red boxes with 🐂/🐻 emojis under the DHCR card. Bull case quantified: enterprise share 5%→25-30% × context 800K→3-5M = operative C2→C4, score 70-85, volume 5-10x, HBM demand 10-15x today. Bear case: enterprise stalls <10% share + 1M context, efficiency wins, score drops <50, market broadens to LPDDR/CXL. Framework primer + "why this matters" footer at bottom of card so reader can interpret the score and understand the central thesis. (C) DHCR SECTION PLACEMENT (per Raul May 22 multiple corrections): section 3 (tier indicators table) UNCHANGED — DHCR row stays where it was in v3.4.0/v3.4.1. Section 4 title renamed "Top 5 indicators — deep dive" → "Top 6 indicators — deep dive". DHCR card moved to FIRST position in section 4 (before _build_top5_section call, not after) — it's the framework-level direction monitor that sets macro context before the brief gets into 5 specific tier-level indicator stories. CapEx capitalization sweep: 86 replacements across src/config.py (59 user-facing indicator descriptions), src/analysis/llm_summarizer.py (23 prompt strings), data/enterprise_ai_revenue.yaml (4 note fields). Negative-lookbehind/lookahead regex matches only standalone words — never identifier substrings. Code identifiers UNCHANGED: capex_yoy_pct, mean_capex_ocf_ratio_2q, t2_capex_parabolic, hyperscaler_ai_capex_aggregate stay lowercase per Python convention. 385 tests pass (382 v3.4.1 baseline − 43 obsolete v3.4.0 DHCR tests removed + 36 new in tests/test_v3_4_2_dhcr_matrix.py across 15 classes covering: dual-input X-axis math, matrix fundamentals (KV/context bands, zone grid, anticipation offset, score formula), status mapping across score×volume regimes, sanity check + calibration flag, bull/bear narrative builders, end-to-end snapshot, section 4 placement + Top 6 title + DHCR first + bull/bear boxes, Sonnet retry + Haiku fallback, Layer 2 retry + DHCR skip, CapEx capitalization). Two existing tests updated for new CapEx capitalization (test_v3_39_5_void_closures.py asserts "HBM/CapEx: 50%", test_v3_39_6_calculation_driven.py asserts "Hyperscaler CapEx/OCF strain"). tests/test_v3_4_0_dhcr.py DELETED — superseded by v3.4.2 framework. SLOPPY/RECOVERY MOMENTS RECORDED: (a) v3.4.2 design session — initially proposed removing DHCR from section 3, Raul corrected ("WTD are you stupid! cant you read english"). DHCR stays in section 3 unchanged. Only added to section 4 as 6th deep dive. (b) Initially proposed 40/60 context-weighting per Raul's "drop 1 efficiency level" ask; he meant Y-axis offset, I correctly translated that into anticipation premium (better mechanism than weighting trick). (c) Initially missed Raul's volume insight — said "consumer chat grew 20% so at 40% weight = 8%" which ignored volume side. Restructured around dual-input per-category. (d) When user asked "what is it that you will not calculate the value of DHCR" I had to step back and explain the entire mathematical pipeline from scratch — should have led with that math in the original proposal rather than focusing on placement.
   v3.4.1 (2026-05-22) — Five UI fixes diagnosed from production brief screenshots. (1) Trigger event banner in exec summary now varies background color by DESTINATION status of the transition: red #B91C1C for "to Fired", green #C0DD97 for "to Not fired", yellow #FAC775 for "to Partially fired" — was hardcoded yellow regardless, making bullish and bearish news visually identical in image 1 of May 22 audit. Destination read from to_status field if Layer 2 provides it, otherwise parsed from description string via regex. Label format tightened to "NEW TRIGGER EVENT — TIER N" badge for visual parity. (2) Section 3 change-flag REVERTED from v3.39.7.9 colored-background experiment to plain muted text — per user direction the colored background made each cell read as two competing badges; only the status pill itself carries destination color now, the "CHANGED:" annotation is small bold prefix + #555 light gray description. (3) "Reversed" status ERADICATED via four layers: (a) src/state.py:VALID_STATUSES = {"Fired", "Partially fired", "Not fired"} (Reversed removed — v3.39.7.9 removed it from prompt schema but THIS validation gate was missed, accepting Layer 2 output containing "Reversed" and propagating downstream); (b) src/state.py:LEGACY_STATUS_MIGRATIONS = {"Reversed": "Not fired"} dict with migration applied in load_indicator_evidence_store with warning log; (c) render-time defensive scrub in template.py at both trigger banner and section 3 change-flag rendering — replace("Reversed", "Not fired") on description strings; (d) explicit FORBIDDEN VOCABULARY rule added to Sonnet EXECUTIVE BRIEF SPECIFICATION block naming "Reversed" as banned across all output fields. (4) Executive brief HARD CAP 250 WORDS (May 21 brief reached 411 words = ~24 rendered lines vs target ~15) — framed as "compress, don't cut" with self-check listing five concrete trim levers (intensifiers, restated context, hedges, numerical detail belonging in §3/§4, anchor link explanations). (5) where_we_stand HARD CAP 120 WORDS per field + NEVER-EMPTY rule with t2_capex_parabolic canonical example showing how to populate from carry-forward evidence when today has no fresh data — root cause of empty t2_capex_parabolic cell in May 21 brief was Sonnet hitting max_tokens budget mid-output and silently truncating trailing fields; cap protects schema fit + render-time defensive fallback in template.py checks if where_we_stand.strip() < 30 chars then pulls from signal_reasonings_by_id[indicator.id]['consensus_direction'] with "[Sonnet output truncated — fallback from Layer 2 verdict]" prefix, threaded via new signal_reasonings_by_id kwarg in build_email_html (added to _build_indicators_section signature too, plumbed from fast_tier.py via dict comprehension over signal_reasonings list). 405 tests pass (382 from v3.4.0 + 23 new in tests/test_v3_4_1_six_fixes.py across 7 classes covering all five fixes). Two existing tests updated: test_executive_brief.py:test_trigger_callout_when_triggers_present rewritten for new "NEW TRIGGER EVENT — TIER N" label + #B91C1C destination color assertion, plus 2 new tests for not-fired-reversal green color and Reversed scrub; tests/test_v3_39_7_9_six_fixes.py:test_change_flag_text_color_readable_on_red and test_change_flag_uses_destination_status_color replaced with v3.4.1 plain-text expectation tests (sentinel "v3.4.1 Fix 2" comment marker + #555 muted color + absence of dynamic background interpolation). xlsx renamed memory_cycle_data_source_audit_v3_4_1.xlsx (no content change). KEY LESSON: when reverting a prior version's visual experiment, search for AND remove all the prior version's tests that asserted the old behavior, not just the production code. Recovery moment: initial implementation applied Fix 1's destination-color logic to the WRONG component (section 3 change-flag instead of exec summary trigger banner) — user clarified, I reverted change-flag to plain text per Fix 2 and re-applied color logic to the correct place. Lesson: when user says "the background of the New trigger event on executive summary", that's unambiguously the exec summary banner, not any other component that happens to be near a fire-state transition. Re-read the user message before mapping to code locations.
   v3.4.0 (2026-05-21) — Decode HBM Captive Ratio (DHCR) indicator shipped. The feature release the .3x maintenance window was protecting the version label for. Single new Tier 1 indicator (`t1_decode_hbm_captive_ratio`) collapsing the original ROADMAP indicators 23/24/25 (Inference Efficiency Shock, CXL Production Deployment, LPDDR Datacenter Ramp) into ONE composite direction monitor per Raul's reframe May 21 2026: "I don't think there is a version where we take efficiencies and we keep constrained to small context. Think we push context as much as we can as long as economically possible." Mental model: efficiency gains don't displace HBM — they UNLOCK economic context capacity. Enterprise workloads expand to consume what's economically possible. The binding question is whether enterprise demand-pull grows fast enough to fill the unlocked headroom. Indicator count 22 → 23. DIRECTION MONITOR only — no trigger gate in v3.4.0 (per Raul: front-load iterations on sources/presentation now, enable firing in mid-June after 4-6 weeks of shadow data). Three YAML reference files (all hand-curated): data/inference_arch_reference.yaml (13 open-architecture frontier models from Llama 2 70B Q3 2023 at 320 KB/tok through DeepSeek V4 Q2 2026 at ~14 KB/tok, plus 3 closed-model entries with explicit confidence bands EXCLUDED from frontier computation), data/hbm_per_accelerator.yaml (NVIDIA H100/H200/B100/B200/GB200/B300/GB300/Rubin, AMD MI300X/MI325X/MI355X/MI400, custom hyperscaler silicon, non-HBM Cerebras WSE-3 + Groq + Etched flagged as substitution risk), data/enterprise_ai_revenue.yaml (Microsoft Azure AI / AWS AI / Google Cloud AI / Oracle AI Infra quarterly disclosures + NVIDIA datacenter as total AI demand proxy + hyperscaler capex aggregate). DHCR composite: capacity_creation_yoy = HBM_yoy - KV_yoy; demand_pull = 0.6*enterprise_yoy + 0.4*nvidia_dc_yoy; delta = demand_pull - capacity_creation; 5-level direction enum (strongly_bullish_hbm > +40pp, mildly_bullish_hbm +10 to +40, balanced -10 to +10, mildly_bearish_hbm -40 to -10, strongly_bearish_hbm < -40). Today's read (May 21 2026): frontier KV 14 KB/tok DeepSeek V4, frontier HBM 576 GB GB300, IMPLIED CONTEXT CAPACITY ~42 MILLION TOKENS PER ACCELERATOR (vs ~256K at Q4 2023 = 165× expansion in 30 months), capacity-creation +111% YoY, enterprise AI +216% YoY, NVIDIA datacenter +69% YoY, delta +46pp, direction STRONGLY_BULLISH_HBM. Files added: data/inference_arch_reference.yaml + data/hbm_per_accelerator.yaml + data/enterprise_ai_revenue.yaml + src/analysis/dhcr.py (compute module — frontier_kv, frontier_hbm, implied_context_capacity, capacity_creation_yoy, enterprise_demand aggregation, direction signal with confidence, narrative summary, 11-quarter trajectory) + tests/test_v3_4_0_dhcr.py (55 tests across 17 classes). Files modified: src/config.py (INDICATORS list +1), state/indicator_evidence.json (DHCR bootstrap entry), src/state.py (save_dhcr_state + load_dhcr_prior_state with 12-snapshot history cap), src/email_module/template.py (NEW _build_dhcr_section3_snippet + _build_dhcr_section4_card with supply/demand 2-column layout + mental model footer; build_email_html signature +2 kwargs dhcr_snapshot + dhcr_chart_b64; _build_indicators_section threads dhcr_snapshot for section 3 row replacement), src/analysis/chart_generator.py (NEW generate_dhcr_trajectory_chart — dual-panel matplotlib: top capacity-vs-demand growth rate lines with shaded delta, bottom implied-capacity log-scale showing ~256K→42M token expansion), src/analysis/llm_summarizer.py (DHCR block in COMPUTED METRICS prompt block with mental-model explainer and instruction always-render-Not-fired), src/fast_tier.py (DHCR compute mid-pipeline, persisted to state/dhcr_state.json via save_dhcr_state, threaded into build_email_html call), src/analysis/digester.py (Phase 2 — 5 new extraction fields enterprise_ai_workload_context_tokens / enterprise_ai_customer_name / enterprise_ai_use_case / enterprise_ai_revenue_growth_qoq_pct / agent_product_usage_disclosure feeding DHCR demand-pull narrative), .github/workflows/fast_tier.yml + .github/workflows/deep_tier.yml (Phase 2 — extraction_log_*.jsonl and dhcr_state.json added to git add commit lists, fixing the silent persistence gap where extraction_log was written each run by the digester but never committed back to state/, lost at every runner shutdown — explains why ROADMAP's "3 weeks of accumulated extraction data" premise was empirically false on May 21 audit). Existing tests/test_indicator_evidence.py test_all_22_indicators_present renamed to test_all_23_indicators_present with count 22 → 23. 380 tests pass (325 from v3.39.7.10 + 55 new). xlsx renamed memory_cycle_data_source_audit_v3_4_0.xlsx (no content change). KEY INSIGHTS from May 21 design session worth preserving: (1) Raul rejected my initial "efficiency vs context length trade-off" framing — the correct framing is efficiency UNLOCKS context, market always fills the economic frontier; (2) Raul rejected my 3-reference-workload structure (chat/document/agent each with fixed token counts) because it presumed today's static workload mix — the right structure tracks SUPPLY-SIDE capacity creation and DEMAND-PULL revenue growth, not aggregate context level; (3) Raul rejected trying to measure today's context length directly (impossible at aggregate, and lagging artifact anyway) — the right proxy is enterprise vertical revenue growth because that's where the economic frontier moves to; (4) the DHCR is a DIRECTION MONITOR not a fire/not-fire signal — Sonnet prompt explicitly tells the model "always render current_status='Not fired' for this indicator in v3.4.0; use 'where_we_stand' field to describe direction"; (5) the 42M implied capacity number is THE bull case in concentrated form — efficiency × HBM creates massive headroom; we watch whether enterprise adoption fills it. ROADMAP forward: v3.4.1 (~Q1 2027) activates trigger gates after 4-6 quarters of shadow data validates direction-transition boundaries. v3.4.2+ may auto-extract closed-model KV from cost-per-token gradients (currently hand-curated with confidence bands), add LPDDR-specific TrendForce scrape (open gap from original ROADMAP), integrate Artificial Analysis tokens-$ trend.
@@ -59,6 +61,52 @@ also MU, Samsung, ASML, AMAT, NVDA, AVGO, TSM.
 - The back-and-forth is the point. Design discussion happens in chat sessions;
   this repo's `@claude` integration is for *executing* already-settled specs,
   not for designing from scratch.
+
+---
+
+## Release deliverables checklist — MANDATORY each version bump
+
+Every release (any v3.X.Y bump) must update **all** of the following. The
+v3.4.2 audit found that the data source xlsx was at v3.33 and ROADMAP.md
+was 7 releases behind reality — both because version bumping was wired into
+muscle memory but the auxiliary deliverables weren't. Do not skip:
+
+1. **CHANGES.md** — prepend a section describing what changed, why, files
+   touched, test count delta, and post-deploy watch items.
+2. **CLAUDE.md** — prepend a one-paragraph changelog entry (this very file's
+   top changelog block) with sloppy/recovery moments recorded honestly.
+3. **ROADMAP.md** — update if scope changed, items shipped, or new pending
+   items were added. If the actual shipped path diverges from what the
+   ROADMAP predicted (which has happened), update the ROADMAP to reflect
+   reality and mark the superseded original plan as such. Do NOT leave a
+   ROADMAP that lies.
+4. **`memory_cycle_data_source_audit_vX_Y_Z.xlsx`** — rename to new version
+   AND **update contents** if indicators or data sources changed. Specifically:
+   - New indicator → add a row to the appropriate Tier sheet with all 10
+     columns (ID / Signal / What we're looking for / Trigger phrases /
+     Trigger numeric / Cadence / Stitching / Primary sources / Coverage /
+     Current status).
+   - New data source / YAML / API → add a row to the Source Registry sheet.
+   - Update the Summary sheet header version + append a release-notes entry.
+   - Renaming the xlsx without updating contents is a silent failure mode.
+   - Match existing row styling (font, fill, alignment) when adding rows.
+5. **`UPLOAD_GUIDE.md`** — concise per-release file describing the upload
+   workflow, file delta, acceptance criteria, and post-deploy watch items.
+6. **`tests/test_vX_Y_Z_*.py`** — new test file pinning the behavioral
+   changes. Aim for one class per fix/feature with at least 2-3 assertion-
+   distinct tests each.
+7. **Bundle naming** — the zip is `memory_cycle_brief_vX_Y_Z.zip`. The xlsx
+   inside is `memory_cycle_data_source_audit_vX_Y_Z.xlsx`. Both must agree
+   on the version string.
+8. **Final verification** — run the full pytest suite from the bundle and
+   include the pass count in CHANGES.md. Do not ship if any test fails.
+
+This checklist exists because both the xlsx (v3.33 → v3.4.2 = 7 releases of
+drift) and ROADMAP.md (stale v3.4.1 trigger-gate plan vs actual UI fixes)
+were silently out of sync with shipped code. Updating them is non-negotiable
+even when "the code change is small" — the auxiliary deliverables are how
+the next instance of you / a future user / the operator orients to what
+shipped. Skipping them creates archaeology debt.
 
 ---
 
@@ -153,6 +201,218 @@ than Koyfin's Capital IQ feed (24-72hr). Deferred indefinitely.
 ### 4. Two-tier architecture is fixed
 Do not merge the tiers, do not change the cron strategy, do not move Layer 1 out
 of deep tier. The split exists for runtime and cost reasons.
+
+### 5. DHCR renders in section 4 ONLY, as the LAST card (v3.4.3.1 lock)
+DHCR (`t1_decode_hbm_captive_ratio`) is structurally a Tier 1 indicator but
+its outputs (5×5 matrix, position score 0-100, anticipation premium, sanity
+check, bull/bear context boxes) require the section 4 deep-dive card format
+and do not fit the section 3 tier indicator row format.
+
+**The rule:**
+- Section 3 tier indicator status table: DHCR row MUST NOT appear. The
+  `_build_indicators_section` per-tier loop filters out `t1_decode_hbm_captive_ratio`
+  before iteration.
+- Section 4 deep-dive: DHCR card MUST be the LAST card, appended AFTER
+  `_build_top5_section`. The top-5 Sonnet-picked deep dives lead; DHCR
+  closes with the framework-level direction monitor.
+
+**History:** the v3.4.2 entry in this file's changelog block records the
+opposite ("section 3 unchanged, DHCR FIRST in section 4"). That note was
+incorrect — it captured a misinterpretation of Raul's May 22 2026 ask. The
+intended v3.4.2 instruction was to FIX the section 3 row content (replace
+the v3.4.0 direction snippet with v3.4.2 matrix output), not preserve the
+row. The section 3 row should have been deleted in v3.4.2; instead it
+persisted with stale v3.4.0 fields through v3.4.3, until v3.4.3.1 removed
+it. Do not re-add DHCR to section 3 unless this entire framework changes.
+
+**Authoritative spec:** `DHCR_Framework_Explained.docx`, Appendix B:
+"Daily fast-tier runs read the files, compute the DHCR snapshot, persist
+the snapshot to state/dhcr_state.json, and render the DHCR card into the
+section 4 of the brief email."
+
+### 6. Indicator 7 (Competitor dynamics) EPS-impact framework (v3.4.4 lock)
+
+Four sub-indicators (7A CXMT, 7B Samsung HBM4/HBM4E, 7C Micron, 7D HBF)
+with status calibrated to **estimated SK Hynix EPS impact** (price × volume),
+NOT raw market share. Per Raul's framework session 2026-05-22.
+
+**Status bands per sub:**
+- Not fired: estimated <5% EPS impact
+- Partially fired: 5-20% EPS impact
+- Fired: >20% EPS impact
+
+**Per-sub mechanics (the nuances that distinguish each sub):**
+- **7A CXMT**: DDR4 share gains are IRRELEVANT (SK Hynix EOL'ing DDR4
+  to ~20% of 2025 levels). Only DDR5 and LPDDR5X share gains matter
+  because they damage SK Hynix's commodity DRAM margin floor. Binary
+  trigger on Tier-1 OEM (Dell/HPE/Lenovo/ASUS/Acer) mainstream DDR5
+  adoption. Skip share% tracking per the framework decision — the
+  OEM win IS the signal.
+- **7B Samsung HBM4/HBM4E**: highest-impact sub. HBM is 60% of revenue
+  at 80% margin. Thresholds: Not fired at ≥50% SK Hynix Nvidia HBM4
+  share with HBM gross margin ≥70%. Partially fired at 30-50% Samsung
+  share OR Samsung yields >65% OR margin compression to 60-70% OR
+  HBM4E qualification slipping. Fired at <30% SK Hynix Nvidia share
+  (Samsung >70%) OR HBM4E majority lost OR margin <60%. HBM gross
+  margin convergence is the most reliable corroborator.
+- **7C Micron HBM**: lower fire threshold than 7B because Micron's HBM
+  share gains mostly come from Samsung's portion, not SK Hynix's.
+  Only fires if Micron eats specifically SK Hynix share (rare; Vera
+  Rubin exclusion intact today).
+- **7D HBF (High Bandwidth Flash)**: two-sided. Bear case — SanDisk +
+  Kioxia lead, SK Hynix displaced. Bull case — SK Hynix Solidigm
+  assets (former Intel NAND) position them to lead. Fire condition
+  specifically requires HOT-tier HBM displacement; cold-tier HBF
+  additions don't fire (likely demand-unlocking per DHCR mental model).
+  Renders 🛡️ Moat-extension watch + ⚔️ Substitution-risk watch boxes
+  for the prose nuance — schema stays Fired/Partially/Not fired.
+
+**Composite logic.** Cumulative EPS impact across the 4 subs WITH a Part 14
+dual-threat amplifier:
+- 2+ subs Fired → composite = Fired (regardless of cumulative number;
+  multi-front compression is qualitatively worse)
+- 1 sub Fired + 2+ Partially fired → composite = Fired (cumulative damage
+  exceeds single-vector fire)
+- Cumulative ≥20% OR any single sub Fired → composite = Fired
+- Cumulative 10-20% OR any single sub Partially fired → Partially fired
+- Cumulative <10% AND all subs Not fired → Not fired
+
+**Authoritative state (v3.4.4.1 architecture):**
+- `data/competitor_thresholds.yaml` — schema v2.0: thresholds + sub-indicator
+  metadata + Layer 1 extraction fields per sub + source authority tiers +
+  dual-threat scenario text. STABLE — never auto-modified.
+- `state/competitor_state.json` — current measured values per sub
+  (HBM4 share, gross margin, yields, OEM wins, design wins, HBF status).
+  Sole source of truth for live values. Sole writer is
+  `src/analysis/competitor_aggregator.py:aggregate_competitor_extractions()`
+  which runs daily before `compute_competitor_snapshot()` in the fast-tier
+  pipeline. Bootstrap state was seeded once on v3.4.4.1 deploy (2026-05-22)
+  from the framework session + public Q1-Q2 2026 market data; thereafter
+  the aggregator is the only writer.
+
+Computed by `src/analysis/competitor_scoring.py:compute_competitor_snapshot()`
+which reads BOTH files. Rendered in section 4 ONLY (filtered out of section 3
+alongside DHCR).
+
+**Today's read (2026-05-22 bootstrap):** Partially fired, ~11.5% cumulative
+EPS impact, single-front (7B-driven by Samsung capturing ~28-30% of Vera
+Rubin HBM4 + HBM4E qualification tied). Dual-threat inactive.
+
+### 7. Indicator 8 (US ADR / SPO event) framework (v3.4.4 lock)
+
+Four sub-indicators (8A F-1 filing watch, 8B roadshow demand, 8C pricing
+day, 8D insider sales >$10M threshold). Per Raul's framework session
+2026-05-22.
+
+**Two distinct dimensions bundled because they share a calendar:**
+1. Mechanical drag: -4 to -9% cumulative for established foreign issuers
+   per Doidge-Karolyi-Stulz 2004 + Sarkissian-Schill 2009; fades 1-3 months
+2. Peak-coincidence signal (the framework-relevant value): ADR launching
+   while Tier 2 mostly fired and Tier 3 starting is a classic Phase 4
+   blowoff confirmation per `memory_supercycle_analysis.docx` Part 11
+   (SK Hynix 1995 listing → 1996 crash pattern)
+
+**Locked design decisions:**
+- Canceled F-1 (filed then pulled) = Fired (weak demand signal stronger
+  than completed-but-weak)
+- Insider sales threshold = $10M total in offering window (8D fires)
+- Fired PERSISTS through Phase 4 — no 90-day reversion. Eventually
+  becomes irrelevant only when we exit Phase 4 entirely.
+- Composite = WORST-OF subs UNLESS peak-coincidence rule escalates to Fired
+  (ADR completion + late Phase 4 cycle state triggers escalation regardless
+  of individual sub statuses)
+
+**Confirmed offering structure:**
+- Path: NEW share issuance only — treasury share path closed Feb 9 2026
+  (SK Hynix canceled 12.24 trillion KRW treasury shares)
+- Size: ~17.4M new shares (~2.4% dilution)
+- Estimated raise: $9.6-14B (central case $10B)
+- Timeline: June or July 2026
+- Use of proceeds: M15X Cheongju + Yongin cluster + Indiana fab + $8B
+  ASML EUV order + broader HBM CapEx
+
+**Pre-event state today (2026-05-22 bootstrap):** all 4 subs in
+"Pre-event" waiting state. Phase banner reads "📅 Awaiting F-1 filing
+— expected June-July 2026". SEC EDGAR F-1 feed already wired in
+`WATCH_GOOGLE_QUERIES` (beats Korean press by 1-3 days).
+
+**Authoritative state (v3.4.4.1 architecture):**
+- `data/adr_event_tracking.yaml` — schema v2.0: lifecycle phase enum +
+  composite logic + confirmed offering structure + per-sub thresholds +
+  extraction fields + calendar template + academic calibration refs.
+  STABLE — never auto-modified.
+- `state/adr_state.json` — current lifecycle phase + sub statuses + current
+  measured values (F-1 filing status, underwriter syndicate, roadshow demand
+  classification, pricing day, insider sale events). Sole writer is
+  `src/analysis/adr_aggregator.py:aggregate_adr_extractions()`, runs daily
+  before `compute_adr_snapshot()` in the fast-tier pipeline. SEC EDGAR atom
+  feed already in `WATCH_GOOGLE_QUERIES` feeds F-1 detection.
+
+Computed by `src/analysis/adr_event_tracking.py:compute_adr_snapshot()` which
+reads BOTH files. Rendered in section 4 ONLY (filtered out of section 3).
+
+### 8. Data/state file split + Layer 1 aggregator pipeline (v3.4.4.1 lock)
+
+**Architectural principle established 2026-05-22 in response to Raul's
+challenge of the v3.4.4 "hand-curated quarterly YAML" framing.**
+
+For any indicator whose composite depends on measured values that evolve
+over time, the source files split into two:
+
+- `data/<indicator>.yaml` — STABLE specification. Thresholds, sub-indicator
+  metadata, extraction schema, source authority tiers, scenario text. Only
+  changes with framework code commits. Never written to by the pipeline.
+- `state/<indicator>_state.json` — LIVE measured values. Sole writer is the
+  paired aggregator module (e.g. `src/analysis/competitor_aggregator.py`,
+  `src/analysis/adr_aggregator.py`). Aggregator runs daily as a fast-tier
+  step BEFORE the snapshot computation, reading accumulated
+  `state/extraction_log_*.jsonl` entries from the Layer 1 digester and
+  applying tier-weighted conflict resolution (Tier A: SK Hynix earnings /
+  Samsung earnings / Mirae / KB; Tier B: Counterpoint / TrendForce /
+  SemiAnalysis; Tier C: DigiTimes / ChosunBiz / Korea Times). Bootstrap
+  state is seeded once on deploy from framework session + public data;
+  thereafter the aggregator is the only writer. Atomic write (tmp file +
+  rename). Safe-failing — aggregator exceptions logged, state preserved,
+  snapshot still produced.
+
+The `compute_*_snapshot()` functions read from BOTH files. The Layer 1
+digester's `DIGEST_SYSTEM_PROMPT` defines what fields are extracted under
+the `competitor_signals` / `adr_signals` sub-objects (paralleling the
+existing `architecture_signals` sub-object which feeds DHCR). The
+`_log_indicator_signals()` shadow logger persists extractions to the
+shared daily extraction log. Same flow whether the extraction is empty
+(state preserved) or rich (state updated, status re-evaluated).
+
+The DHCR architecture YAMLs (`data/inference_arch_reference.yaml`,
+`data/hbm_per_accelerator.yaml`, `data/enterprise_ai_revenue.yaml`)
+were brought into the same pattern in **v3.4.5 (2026-05-22)**. State
+files `state/inference_arch_state.json`, `state/hbm_per_accelerator_state.json`,
+`state/enterprise_ai_revenue_state.json` are now sole sources of truth for
+live entries; the YAMLs hold formulas + extraction schemas + source tiers
+only. Aggregator modules: `src/analysis/dhcr_arch_aggregator.py`,
+`dhcr_accelerator_aggregator.py`, `dhcr_revenue_aggregator.py`. Wired into
+fast_tier.py before `compute_dhcr_snapshot()`. `load_dhcr_data()` merges
+both files at load time so downstream compute functions are unchanged.
+
+**v3.4.6 (2026-05-22)** closed the Tier-A source gap. 9 new RSS_FEEDS
+entries (Meta AI / DeepSeek / Mistral / Qwen / Anthropic / DeepMind / HF
+Papers / arxiv cs.LG / arxiv cs.CL). `arxiv_frontier_paper_filter()` in
+`src/data/news.py` applies at fetch time — title-keyword filter drops
+~95% of routine arxiv volume before items reach the relevance scorer.
+`_classify_source_for_tier()` extended to route the new sources to their
+canonical Tier-A labels (arxiv → arxiv; ai.meta.com → ai.meta.com;
+deepseek → deepseek.com; mistral → mistral.ai; qwen → qwenlm.github.io;
+anthropic → anthropic.com; deepmind → deepmind.google).
+
+When the next DeepSeek / Llama / Qwen / Mistral frontier release drops,
+the arch aggregator picks it up from the lab blog directly within hours
+of publication. Full automation across all three DHCR catalogs.
+
+**Outstanding risk (flagged for v3.4.7):** Cloudflare TLS-fingerprint
+blocking. Some lab blogs (Mistral, DeepSeek possibly) may stay 403 even
+with the v3.38.3 Chrome UA because Cloudflare additionally fingerprints
+TLS handshake (JA3/JA4) + HTTP/2. If production confirms this after
+v3.4.6 deploy, `curl-cffi` integration unlocks them.
 
 ---
 

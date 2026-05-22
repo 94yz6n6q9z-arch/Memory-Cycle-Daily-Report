@@ -1074,7 +1074,7 @@ Anchor links — when referencing detail elsewhere in the brief, emit hyperlinks
   §1 = Performance overview (price table)
   §2 = Where we stand in the cycle (phase chart)
   §3 = Tier indicators — daily status (summary cards)
-  §4 = Top 5 indicators — deep dive (deep-dive narratives, includes matrix)
+  §4 = Top 8 indicators — deep dive (5 cycle indicators + Indicator 7 Competitor + Indicator 8 ADR + DHCR)
   §5 = Latest news from the memory & semi market
   §6 = Calendar of events — next 90 days
   §7 = Data source assessment

@@ -596,16 +596,51 @@ def run_fast_tier() -> int:
     }
 
     # v3.4.0 — Compute Decode HBM Captive Ratio (DHCR) snapshot.
-    # New Tier 1 direction monitor. Composite of frontier KV efficiency,
-    # HBM-per-accelerator capacity, and enterprise AI demand growth.
-    # Computed from three YAML reference files (data/inference_arch_reference.yaml,
-    # data/hbm_per_accelerator.yaml, data/enterprise_ai_revenue.yaml).
-    # See src/analysis/dhcr.py for the math and Raul's mental model.
+    # v3.4.5: aggregator step added — reads accumulated Layer 1 extraction logs
+    # and updates state/inference_arch_state.json, state/hbm_per_accelerator_state.json,
+    # and state/enterprise_ai_revenue_state.json with newly-disclosed models,
+    # accelerators, and quarterly revenue points BEFORE the snapshot is computed.
+    # All three aggregators safe-fail; state preserved on error.
+    try:
+        from src.analysis.dhcr_arch_aggregator import aggregate_arch_extractions
+        aggregate_arch_extractions()
+    except Exception as e:
+        logger.error(f"DHCR arch aggregator failed (state preserved): {e}", exc_info=True)
+    try:
+        from src.analysis.dhcr_accelerator_aggregator import aggregate_accelerator_extractions
+        aggregate_accelerator_extractions()
+    except Exception as e:
+        logger.error(f"DHCR accelerator aggregator failed (state preserved): {e}", exc_info=True)
+    try:
+        from src.analysis.dhcr_revenue_aggregator import aggregate_revenue_extractions
+        aggregate_revenue_extractions()
+    except Exception as e:
+        logger.error(f"DHCR revenue aggregator failed (state preserved): {e}", exc_info=True)
+
     try:
         from src.analysis.dhcr import compute_dhcr_snapshot, compute_dhcr_trajectory
         from src.state import save_dhcr_state
+        from src.data.prices import compute_hbm_price_trend
         from dataclasses import asdict
-        dhcr_snapshot = compute_dhcr_snapshot()
+
+        # v3.4.3 — auto-derive HBM/DRAM price trend from accumulated CSV data
+        # instead of operator-supplied parameter. Spot trajectory + contract
+        # forecast revisions combine into rising/flat/falling for DHCR's
+        # sanity check signal #3.
+        try:
+            hbm_price_trend = compute_hbm_price_trend(lookback_days=90)
+            logger.info(f"v3.4.3 auto-derived hbm_price_trend: {hbm_price_trend}")
+        except Exception as _trend_err:
+            logger.warning(f"hbm_price_trend auto-derivation failed: {_trend_err}; defaulting to 'rising'")
+            hbm_price_trend = "rising"
+
+        # v3.4.3 — pass extraction_log_signals for substitution-evidence
+        # signal #1, and the now-auto-derived hbm_price_trend for signal #3
+        extraction_log_signals = computed_metrics.get("extraction_log_signals_last_90d", [])
+        dhcr_snapshot = compute_dhcr_snapshot(
+            extraction_log_signals=extraction_log_signals,
+            hbm_price_trend=hbm_price_trend,
+        )
         dhcr_dict = asdict(dhcr_snapshot)
         computed_metrics["dhcr_snapshot"] = dhcr_dict
         # 11-quarter trajectory for charting
@@ -613,13 +648,23 @@ def run_fast_tier() -> int:
         computed_metrics["dhcr_trajectory"] = dhcr_traj
         # Persist for next run's QoQ comparison
         save_dhcr_state(dhcr_dict)
+        # v3.4.3 — log line updated to v3.4.2 framework fields (was referencing
+        # v3.4.0 fields like .direction / .frontier_hbm_gb_per_accelerator /
+        # .implied_context_capacity_per_accelerator_tokens / .capacity_creation_yoy_pct
+        # which no longer exist in DHCRSnapshot after the v3.4.2 matrix redesign —
+        # this log would have thrown AttributeError in production)
         logger.info(
-            f"DHCR computed: {dhcr_snapshot.direction.upper()} "
-            f"(KV={dhcr_snapshot.frontier_kv_kb_per_token:.0f}KB, "
-            f"HBM={dhcr_snapshot.frontier_hbm_gb_per_accelerator:.0f}GB, "
-            f"capacity={dhcr_snapshot.implied_context_capacity_per_accelerator_tokens:,}t, "
-            f"ent_yoy={dhcr_snapshot.enterprise_ai_yoy_growth_pct or 0:.0f}%, "
-            f"cap_create_yoy={dhcr_snapshot.capacity_creation_yoy_pct or 0:.0f}%)"
+            f"DHCR computed: status={dhcr_snapshot.status} score={dhcr_snapshot.position_score}/100 "
+            f"workload_cell=R{dhcr_snapshot.workload_implied_cell[0]+1}C{dhcr_snapshot.workload_implied_cell[1]+1} "
+            f"({dhcr_snapshot.workload_implied_zone}) "
+            f"market_cell=R{dhcr_snapshot.market_deployed_cell[0]+1}C{dhcr_snapshot.market_deployed_cell[1]+1} "
+            f"({dhcr_snapshot.market_deployed_zone}) "
+            f"KV={dhcr_snapshot.frontier_kv_gb_per_1m_tokens:.1f}GB/1Mtok "
+            f"op_ctx={dhcr_snapshot.operative_context_tokens:,}t "
+            f"vol_idx={dhcr_snapshot.volume_index:.0f} "
+            f"hbm_demand={dhcr_snapshot.hbm_bit_demand_index:.0f} "
+            f"sanity={dhcr_snapshot.sanity_check_confirms}/{dhcr_snapshot.sanity_check_confirms + dhcr_snapshot.sanity_check_contradicts} confirms "
+            f"calibration_flag={dhcr_snapshot.calibration_flag}"
         )
     except FileNotFoundError as e:
         logger.warning(f"DHCR YAML missing — skipping DHCR computation: {e}")
@@ -629,6 +674,81 @@ def run_fast_tier() -> int:
         logger.error(f"DHCR computation failed: {e}", exc_info=True)
         computed_metrics["dhcr_snapshot"] = None
         computed_metrics["dhcr_trajectory"] = []
+
+    # v3.4.4 — Indicator 7 (Competitor dynamics) composite snapshot.
+    # v3.4.4.1: aggregator step added — reads accumulated Layer 1 extraction
+    # logs and updates state/competitor_state.json with refreshed measured
+    # values BEFORE the snapshot is computed. The snapshot then reads from
+    # the freshly-updated state file. State preserved on aggregator failure.
+    try:
+        from src.analysis.competitor_aggregator import aggregate_competitor_extractions
+        aggregate_competitor_extractions()  # updates state/competitor_state.json
+    except Exception as e:
+        logger.error(f"Indicator 7 aggregator failed (state preserved): {e}", exc_info=True)
+
+    try:
+        from src.analysis.competitor_scoring import compute_competitor_snapshot
+        from dataclasses import asdict
+        comp_snapshot = compute_competitor_snapshot()
+        if comp_snapshot is not None:
+            computed_metrics["competitor_snapshot"] = asdict(comp_snapshot)
+            logger.info(
+                f"Indicator 7 (Competitor) computed: status={comp_snapshot.composite_status} "
+                f"cumulative_eps={comp_snapshot.cumulative_eps_impact_pct:.1f}% "
+                f"dual_threat_active={comp_snapshot.dual_threat_active} "
+                f"subs={[(s.sub_id, s.status, f'{s.estimated_eps_impact_pct:.1f}%') for s in comp_snapshot.subs]}"
+            )
+        else:
+            computed_metrics["competitor_snapshot"] = None
+    except FileNotFoundError as e:
+        logger.warning(f"competitor_thresholds.yaml missing — skipping Indicator 7: {e}")
+        computed_metrics["competitor_snapshot"] = None
+    except Exception as e:
+        logger.error(f"Indicator 7 computation failed: {e}", exc_info=True)
+        computed_metrics["competitor_snapshot"] = None
+
+    # v3.4.4 — Indicator 8 (US ADR / SPO event) composite snapshot.
+    # v3.4.4.1: aggregator step added — reads accumulated Layer 1 extraction
+    # logs (SEC EDGAR F-1 detection, roadshow demand language, 424B pricing,
+    # Form 4 + DART insider sales) and updates state/adr_state.json BEFORE
+    # the snapshot is computed.
+    try:
+        from src.analysis.adr_aggregator import aggregate_adr_extractions
+        aggregate_adr_extractions()  # updates state/adr_state.json
+    except Exception as e:
+        logger.error(f"Indicator 8 aggregator failed (state preserved): {e}", exc_info=True)
+
+    try:
+        from src.analysis.adr_event_tracking import (
+            compute_adr_snapshot,
+            cycle_phase_4_late_from_indicators,
+        )
+        from dataclasses import asdict
+        # cycle_phase_4_late used for peak-coincidence escalation.
+        # We don't have tier_assessments yet at this point in the pipeline,
+        # so just pass the DHCR snapshot if available (covers the most
+        # diagnostic Phase 4 signal). Tier signal corroboration is added
+        # in a future revision when Layer 2 runs before this step.
+        cycle_late = cycle_phase_4_late_from_indicators(
+            dhcr_snapshot=computed_metrics.get("dhcr_snapshot"),
+        )
+        adr_snapshot = compute_adr_snapshot(cycle_phase_4_late=cycle_late)
+        if adr_snapshot is not None:
+            computed_metrics["adr_snapshot"] = asdict(adr_snapshot)
+            logger.info(
+                f"Indicator 8 (ADR) computed: status={adr_snapshot.composite_status} "
+                f"phase={adr_snapshot.lifecycle_phase} "
+                f"peak_coincidence_active={adr_snapshot.peak_coincidence_active} "
+                f"subs={[(s.sub_id, s.status) for s in adr_snapshot.subs]}"
+            )
+        else:
+            computed_metrics["adr_snapshot"] = None
+    except FileNotFoundError as e:
+        logger.warning(f"adr_event_tracking.yaml missing — skipping Indicator 8: {e}")
+        computed_metrics["adr_snapshot"] = None
+    except Exception as e:
+        logger.error(f"Indicator 8 computation failed: {e}", exc_info=True)
+        computed_metrics["adr_snapshot"] = None
 
     # ----- Step 4: Layer 2 per-signal reasoning -----
     prior_state = load_prior_state()
@@ -973,6 +1093,9 @@ def run_fast_tier() -> int:
         dhcr_chart_b64=dhcr_chart_b64,
         # v3.4.2 — matrix chart (5x5 memory-zone visualization)
         dhcr_matrix_chart_b64=dhcr_matrix_chart_b64,
+        # v3.4.4 — Indicator 7 (Competitor) + Indicator 8 (ADR) section 4 cards
+        competitor_snapshot=computed_metrics.get("competitor_snapshot"),
+        adr_snapshot=computed_metrics.get("adr_snapshot"),
         # v3.4.1 Fix 5b — Layer 2 fallback for empty where_we_stand
         signal_reasonings_by_id=signal_reasonings_by_id,
     )

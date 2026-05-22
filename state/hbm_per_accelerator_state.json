@@ -1,0 +1,195 @@
+{
+  "_metadata": {
+    "schema_version": "2.0",
+    "bootstrap_date": "2026-05-22",
+    "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
+    "last_aggregator_run": "2026-05-22T12:45:41Z",
+    "description": "Accelerator catalog with HBM capacity per generation. Vendor sections feed frontier_hbm computation. Auto-updated by src/analysis/dhcr_accelerator_aggregator.py."
+  },
+  "nvidia": [
+    {
+      "generation": "H100",
+      "release_date": "2023-03-21",
+      "hbm_gb_per_chip": 80,
+      "hbm_type": "HBM3",
+      "chip_form": "single die",
+      "notes": "Launch generation for the AI cycle.",
+      "source_url": "https://www.nvidia.com/en-us/data-center/h100/"
+    },
+    {
+      "generation": "H200",
+      "release_date": "2024-03-18",
+      "hbm_gb_per_chip": 141,
+      "hbm_type": "HBM3e",
+      "chip_form": "single die",
+      "notes": "First HBM3e production deployment. SK Hynix dominant supplier.",
+      "source_url": "https://www.nvidia.com/en-us/data-center/h200/"
+    },
+    {
+      "generation": "B100",
+      "release_date": "2024-10-15",
+      "hbm_gb_per_chip": 192,
+      "hbm_type": "HBM3e",
+      "chip_form": "single die",
+      "notes": "Blackwell architecture, single-die variant."
+    },
+    {
+      "generation": "B200",
+      "release_date": "2024-11-20",
+      "hbm_gb_per_chip": 192,
+      "hbm_type": "HBM3e",
+      "chip_form": "single die (dual reticle)",
+      "notes": "Dual-reticle Blackwell. 192GB HBM3e in 8 stacks."
+    },
+    {
+      "generation": "GB200",
+      "release_date": "2025-02-15",
+      "hbm_gb_per_chip": 384,
+      "hbm_type": "HBM3e",
+      "chip_form": "superchip (2 GPU dies + 1 CPU)",
+      "notes": "Blackwell superchip. Effective HBM per accelerator unit doubles."
+    },
+    {
+      "generation": "B300",
+      "release_date": "2025-09-30",
+      "hbm_gb_per_chip": 288,
+      "hbm_type": "HBM3e",
+      "chip_form": "single die",
+      "notes": "Blackwell-Ultra. 288GB per GPU via 12-Hi stacks."
+    },
+    {
+      "generation": "GB300",
+      "release_date": "2025-11-15",
+      "hbm_gb_per_chip": 576,
+      "hbm_type": "HBM3e",
+      "chip_form": "superchip"
+    },
+    {
+      "generation": "Rubin (projected)",
+      "release_date": "2026-Q4",
+      "hbm_gb_per_chip": 288,
+      "hbm_type": "HBM4",
+      "chip_form": "single die",
+      "notes": "First HBM4 production. Bandwidth ~2x HBM3e at similar capacity. Capacity scales come with Rubin Ultra.",
+      "confidence": "projected"
+    },
+    {
+      "generation": "Rubin Ultra (projected)",
+      "release_date": "2027-H2",
+      "hbm_gb_per_chip": 1024,
+      "hbm_type": "HBM4",
+      "chip_form": "superchip",
+      "confidence": "projected",
+      "notes": "Speculative based on NVIDIA roadmap. Will represent ~5x HBM3e baseline if delivered."
+    }
+  ],
+  "amd": [
+    {
+      "generation": "MI300X",
+      "release_date": "2023-12-06",
+      "hbm_gb_per_chip": 192,
+      "hbm_type": "HBM3",
+      "notes": "First competitive HBM-per-chip leader (192GB vs H100's 80GB)."
+    },
+    {
+      "generation": "MI325X",
+      "release_date": "2024-10-10",
+      "hbm_gb_per_chip": 256,
+      "hbm_type": "HBM3e",
+      "notes": "AMD maintained capacity lead briefly."
+    },
+    {
+      "generation": "MI355X",
+      "release_date": "2025-06-25",
+      "hbm_gb_per_chip": 288,
+      "hbm_type": "HBM3e",
+      "notes": "CDNA4 architecture."
+    },
+    {
+      "generation": "MI400 (projected)",
+      "release_date": "2026-Q3",
+      "hbm_gb_per_chip": 432,
+      "hbm_type": "HBM4",
+      "confidence": "projected"
+    }
+  ],
+  "custom_silicon": [
+    {
+      "vendor": "Google",
+      "generation": "TPU v5p",
+      "release_date": "2023-12-06",
+      "hbm_gb_per_chip": 95,
+      "hbm_type": "HBM3"
+    },
+    {
+      "vendor": "Google",
+      "generation": "TPU v6e (Trillium)",
+      "release_date": "2024-12-10",
+      "hbm_gb_per_chip": 128,
+      "hbm_type": "HBM3e"
+    },
+    {
+      "vendor": "Google",
+      "generation": "TPU v7 (Ironwood)",
+      "release_date": "2026-03-15",
+      "hbm_gb_per_chip": 192,
+      "hbm_type": "HBM3e"
+    },
+    {
+      "vendor": "AWS",
+      "generation": "Trainium 2",
+      "release_date": "2025-04-15",
+      "hbm_gb_per_chip": 96,
+      "hbm_type": "HBM3"
+    },
+    {
+      "vendor": "Meta",
+      "generation": "MTIA v2",
+      "release_date": "2025-08-22",
+      "hbm_gb_per_chip": 128,
+      "hbm_type": "HBM3e",
+      "notes": "Inference-focused. Lower HBM/chip vs training silicon."
+    },
+    {
+      "vendor": "Microsoft",
+      "generation": "Maia 200",
+      "release_date": "2025-09-30",
+      "hbm_gb_per_chip": 160,
+      "hbm_type": "HBM3e"
+    }
+  ],
+  "non_hbm_accelerators": [
+    {
+      "vendor": "Cerebras",
+      "generation": "WSE-3",
+      "release_date": "2024-03-13",
+      "memory_type": "On-die SRAM",
+      "on_die_memory_gb": 44,
+      "external_memory": "None (pure SRAM)",
+      "ai_compute_share_estimate": "<1%",
+      "notes": "Single-wafer chip with 44GB SRAM. Pure substitution case but limited share.",
+      "listed_ipo_date": "2026-05-14"
+    },
+    {
+      "vendor": "Groq",
+      "generation": "LPU v2",
+      "release_date": "2025-02-20",
+      "memory_type": "On-die SRAM + external DDR",
+      "on_die_memory_gb": 230,
+      "external_memory": "DDR5",
+      "ai_compute_share_estimate": "<1%",
+      "notes": "Inference-only. Uses commodity DDR for capacity tier."
+    },
+    {
+      "vendor": "Etched",
+      "generation": "Sohu",
+      "release_date": "2025-08-01",
+      "memory_type": "Transformer-specific ASIC with on-die SRAM",
+      "on_die_memory_gb": 144,
+      "external_memory": "limited",
+      "ai_compute_share_estimate": "<0.5%",
+      "notes": "Speculative new entrant. Watch but not material yet."
+    }
+  ],
+  "derived_frontier_timeline_notes": "The DHCR uses frontier_hbm_per_accelerator = max(nvidia, amd) shipping\nat each point in time. Custom hyperscaler silicon excluded because\nit's captive (not part of merchant market). Non-HBM accelerators\nexcluded because they don't consume HBM at all (they're the\nsubstitution risk, tracked separately).\n"
+}

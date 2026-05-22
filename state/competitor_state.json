@@ -1,0 +1,105 @@
+{
+  "_metadata": {
+    "schema_version": "2.0",
+    "bootstrap_date": "2026-05-22",
+    "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
+    "last_aggregator_run": "2026-05-22T12:00:00Z",
+    "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
+  },
+  "sub_7a_cxmt": {
+    "current_status": "Not fired",
+    "status_evaluated_at": "2026-05-22",
+    "status_evaluator": "bootstrap",
+    "estimated_eps_impact_pct": 1.0,
+    "current_state": {
+      "cxmt_oem_mainstream_wins": [],
+      "cxmt_oem_lowend_wins": [],
+      "cxmt_ddr5_share_pct": 2.0,
+      "cxmt_total_dram_share_pct": 5.0,
+      "cxmt_ddr5_pricing_pressure_flagged": false,
+      "us_export_controls_intact": true,
+      "ddr5_8000_demonstrated": true,
+      "lpddr5x_10667_demonstrated": true,
+      "amd_expo_1_2_cxmt_support": true,
+      "yield_parity_target_date": "2026-late"
+    },
+    "evidence_log": [
+      {
+        "date": "2026-05-22",
+        "type": "bootstrap",
+        "source": "v3.4.4 framework session + Counterpoint Q1 2026 + DigiTimes",
+        "summary": "CXMT total DRAM share ~5%, estimated DDR5 share ~2%, no Tier-1 OEM mainstream DDR5 win. DDR4 share gains irrelevant per Raul framework decision."
+      }
+    ]
+  },
+  "sub_7b_samsung_hbm4": {
+    "current_status": "Partially fired",
+    "status_evaluated_at": "2026-05-22",
+    "status_evaluator": "bootstrap",
+    "estimated_eps_impact_pct": 10.0,
+    "current_state": {
+      "sk_hynix_hbm4_nvidia_share_pct": 70,
+      "samsung_hbm4_nvidia_share_pct": 28,
+      "micron_hbm4_nvidia_share_pct": 2,
+      "samsung_hbm4_yield_pct": 55,
+      "sk_hynix_hbm4_yield_pct": 80,
+      "hbm_gross_margin_pct_sk_hynix": 80,
+      "hbm_gross_margin_pct_samsung": 52,
+      "hbm4e_qualification_lead": "tied",
+      "samsung_hbm4e_announcement": true,
+      "amd_samsung_hbm4_supply_mou_date": "2026-03-18"
+    },
+    "evidence_log": [
+      {
+        "date": "2026-05-22",
+        "type": "bootstrap",
+        "source": "SK Hynix Q1 2026 earnings + Samsung HBM4 GTC 2026 announcement + Mirae HBM allocation analysis",
+        "summary": "SK Hynix retains 70% Nvidia HBM4 share; Samsung captured ~28-30% Vera Rubin. HBM gross margin ~80% SK Hynix vs ~52% Samsung. HBM4E qualification tied. Partially fired ~10% EPS impact."
+      }
+    ]
+  },
+  "sub_7c_micron": {
+    "current_status": "Not fired",
+    "status_evaluated_at": "2026-05-22",
+    "status_evaluator": "bootstrap",
+    "estimated_eps_impact_pct": 0.5,
+    "current_state": {
+      "micron_total_hbm_share_pct": 18,
+      "micron_vera_rubin_design_win": "excluded",
+      "micron_hbm_share_growth_source": "samsung"
+    },
+    "evidence_log": [
+      {
+        "date": "2026-05-22",
+        "type": "bootstrap",
+        "source": "Counterpoint HBM4 share Q1 2026",
+        "summary": "Micron 18% global HBM4 share, excluded from Vera Rubin primary SKUs. Growth source attributed to Samsung's portion not SK Hynix's."
+      }
+    ]
+  },
+  "sub_7d_hbf": {
+    "current_status": "Not fired",
+    "status_evaluated_at": "2026-05-22",
+    "status_evaluator": "bootstrap",
+    "estimated_eps_impact_pct": 0.0,
+    "current_state": {
+      "hbf_commercial_stage": "pre_commercial",
+      "jedec_hbf_spec_ratified": false,
+      "sk_hynix_on_jedec_hbf_working_group": null,
+      "hyperscaler_hbf_design_wins": [],
+      "hbf_hot_tier_substitution_events": [],
+      "hbf_cold_tier_additions": [],
+      "sk_hynix_hbf_public_roadmap": false,
+      "sk_hynix_solidigm_hbf_integration_announced": false,
+      "sandisk_kioxia_hbf_lead": null
+    },
+    "evidence_log": [
+      {
+        "date": "2026-05-22",
+        "type": "bootstrap",
+        "source": "v3.4.4 framework session — HBF technology landscape review",
+        "summary": "HBF pre-commercial. No hot-tier HBM displacement events. JEDEC HBF spec not yet ratified. SK Hynix HBF roadmap not yet publicly disclosed. Solidigm moat-extension angle latent."
+      }
+    ]
+  }
+}

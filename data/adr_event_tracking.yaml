@@ -1,0 +1,202 @@
+# Indicator 8 (US ADR / SPO event) — THRESHOLDS + METADATA ONLY
+#
+# v3.4.4.1 architecture (2026-05-22):
+#   This file: STABLE framework specification — thresholds, sub-indicator
+#   metadata, extraction schema, calendar template, academic calibration.
+#   Never auto-modified.
+#   state/adr_state.json: LIVE lifecycle phase + sub statuses, auto-updated
+#   by Layer 1 extraction → aggregator pipeline before each fast-tier run.
+
+schema_version: "2.0"
+framework_session_date: "2026-05-22"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Lifecycle phases
+# ─────────────────────────────────────────────────────────────────────────────
+lifecycle_phases:
+  - pre_event       # F-1 not yet filed
+  - f1_filed        # F-1 in EDGAR; roadshow imminent
+  - roadshow        # institutional demand-gathering window
+  - pricing         # 424B pricing day
+  - trading         # first US trading day; ADR live
+  - completed       # offering closed
+  - canceled        # F-1 filed then offering pulled (per Raul May 22: = Fired)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Composite scoring
+# ─────────────────────────────────────────────────────────────────────────────
+composite_logic:
+  description: |
+    Worst-of-subs EXCEPT peak-coincidence rule escalates Fired regardless
+    of sub statuses. Pre-event sub statuses treated as Not fired for
+    composite calculation.
+  peak_coincidence_rule: |
+    If lifecycle_phase in [trading, completed] AND cycle is in late Phase 4
+    (DHCR position_score <= 40 OR >=3 Tier 2 fired in 30d OR any Tier 3
+    fired in 30d), composite = Fired regardless of sub statuses.
+    Captures SK Hynix 1995 listing / 1996 crash pattern per Part 11.
+  fired_persistence: |
+    Fired persists through Phase 4 — no 90-day reversion (per Raul
+    May 22 framework decision). Eventually becomes irrelevant only when
+    we exit Phase 4 entirely.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Confirmed offering structure (Part 14 + Korean press, confirmed Feb 9 2026)
+# ─────────────────────────────────────────────────────────────────────────────
+confirmed_offering_structure:
+  path: "new_share_issuance_only"
+  treasury_path_status: "closed_2026_02_09"
+  treasury_path_close_reason: "SK Hynix canceled 12.24 trillion KRW treasury shares"
+  new_shares_issued_count_millions_est: 17.4
+  share_capital_pct_dilution_est: 2.4
+  estimated_raise_usd_b_low: 9.6
+  estimated_raise_usd_b_central: 10.0
+  estimated_raise_usd_b_high: 14.0
+  use_of_proceeds:
+    - "M15X fab Cheongju (HBM CapEx)"
+    - "Yongin semiconductor cluster"
+    - "Indiana fab"
+    - "$8B ASML EUV order"
+    - "Broader HBM CapEx"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Sub-indicator thresholds + extraction schemas
+# ─────────────────────────────────────────────────────────────────────────────
+
+sub_8a_f1_filing:
+  display_name: "F-1 filing watch + underwriter syndicate quality"
+  description: "Daily SEC EDGAR check for SK Hynix F-1. Beats Korean press by 1-3 days."
+  underwriter_tier_classification:
+    tier_a_top: ["Goldman Sachs", "Morgan Stanley", "JPMorgan", "Citi"]
+    tier_b_acceptable: ["BofA Securities", "Mizuho", "Nomura", "Daiwa", "UBS", "Credit Suisse"]
+    tier_c_weaker: ["smaller US shops", "second-tier Korean brokers"]
+  trigger_thresholds:
+    not_fired:
+      - "f1_filed == false (pre-event)"
+      - "OR (f1_filed == true AND underwriter_lead_tier == A)"
+    partially_fired:
+      - "f1_filed == true AND underwriter_lead_tier == B"
+    fired:
+      - "f1_canceled == true (per Raul May 22: canceled F-1 = Fired)"
+      - "OR (f1_filed == true AND only tier-C underwriters)"
+  extraction_fields:
+    f1_filed: "boolean  # SEC EDGAR F-1 detected"
+    f1_filing_date: "iso_date_or_null"
+    f1_canceled: "boolean  # F-1 filed then offering pulled"
+    underwriter_syndicate: "list_of_strings  # extracted from F-1 cover page"
+    underwriter_lead_tier: "enum_or_null  # A|B|C derived from syndicate"
+  sources:
+    - "SEC EDGAR F-1 atom feed (in WATCH_GOOGLE_QUERIES src/config.py)"
+    - "ChosunBiz / Korea Times (Korean syndicate leaks)"
+
+sub_8b_roadshow_demand:
+  display_name: "Roadshow demand quality"
+  description: "Institutional demand signals during the US roadshow window."
+  demand_language_classification:
+    strong: ["oversubscribed 3x", "oversubscribed 5x", "strong demand", "books closed early"]
+    normal: ["oversubscribed 1-2x", "fully subscribed", "in line with expectations"]
+    weak: ["demand soft", "undersubscribed", "books struggling", "second day extended"]
+  trigger_thresholds:
+    not_fired:
+      - "demand_classification == strong"
+      - "OR roadshow_active == false (pre-event)"
+    partially_fired:
+      - "demand_classification == normal"
+    fired:
+      - "demand_classification == weak"
+      - "OR offering_pulled_for_weak_demand == true"
+  extraction_fields:
+    roadshow_active: "boolean"
+    demand_classification: "enum_or_null  # strong|normal|weak (Layer 1 phrase-match)"
+    coverage_mention_count: "numeric  # how many sources covered the roadshow"
+  sources:
+    - "Reuters / Bloomberg ADR demand coverage"
+    - "ChosunBiz / Korea Times (Korean syndicate-side leaks)"
+
+sub_8c_pricing_day:
+  display_name: "Pricing-day execution"
+  description: "424B prospectus filing — final pricing + discount vs prior close."
+  discount_thresholds:
+    strong: "< 3% discount"
+    normal: "3-5% discount"
+    weak: "> 5% discount"
+  trigger_thresholds:
+    not_fired:
+      - "pricing_day == null (pre-event)"
+      - "OR pricing_discount_pct < 3"
+    partially_fired:
+      - "pricing_discount_pct in [3, 5]"
+    fired:
+      - "pricing_discount_pct > 5"
+      - "OR final_size_pct_of_indicated_max < 80"
+  extraction_fields:
+    pricing_day: "iso_date_or_null"
+    pricing_discount_pct: "numeric_or_null  # from 424B"
+    final_size_usd_b: "numeric_or_null"
+    final_size_pct_of_indicated_max: "numeric_or_null"
+  sources:
+    - "SEC 424B prospectus filings"
+
+sub_8d_insider_sales_in_window:
+  display_name: "Insider sales >$10M in offering window"
+  description: |
+    SEC Form 4 + Korean DART monitoring during 30-day pre-pricing through
+    completion window. Distinct from t2_insider_sales which tracks routine
+    year-round disclosure.
+  insider_sales_threshold_usd_m: 10
+  trigger_thresholds:
+    not_fired:
+      - "insider_sales_total_usd_m_in_window < 10"
+    partially_fired:
+      - "insider_sales_total_usd_m_in_window in [10, 25]"
+    fired:
+      - "insider_sales_total_usd_m_in_window >= 25"
+  extraction_fields:
+    insider_sales_in_window: "list  # [(insider_name, role, usd_m, date), ...]"
+    insider_sales_total_usd_m_in_window: "numeric"
+  sources:
+    - "SEC Form 4 filings"
+    - "Korean DART disclosures"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Calendar (rendered inline in section 4 card)
+# ─────────────────────────────────────────────────────────────────────────────
+calendar_milestones:
+  - date_window: "2026-05-20 to 2026-06-30"
+    event: "Expected F-1 public release window opens"
+    sub_indicator: "8A"
+    mechanical_impact: "-1 to -4% on announcement"
+  - date_window: "2026-05-15 to 2026-06-15"
+    event: "US institutional roadshow"
+    sub_indicator: "8B"
+    mechanical_impact: "Demand signals shape pricing-day expectations"
+  - date_window: "2026-06-15 to 2026-07-31"
+    event: "Expected 424B pricing day"
+    sub_indicator: "8C"
+    mechanical_impact: "-3 to -6% mechanical (highest single-event impact)"
+  - date_window: "2026-06-20 to 2026-08-05"
+    event: "Expected first US trading day"
+    sub_indicator: "8C"
+    mechanical_impact: "+1 to +4% from US flows; multi-month drift unclear"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Academic calibration (for the section 4 card prose)
+# ─────────────────────────────────────────────────────────────────────────────
+academic_calibration:
+  citations:
+    - "Doidge-Karolyi-Stulz 2004 (cross-listing premium)"
+    - "Sarkissian-Schill 2009 (foreign SPO event drag)"
+  mechanical_drag_pct_range: "-4 to -9 cumulative"
+  fade_window_months: "1 to 3"
+  reference_events:
+    - "Saudi Aramco SPO June 2024: $12.4B at 2.6% discount, dropped ~3% on announcement, flat 30 days post"
+    - "TSMC ADR 1997: small positive bump on announcement"
+    - "HDFC Bank, NTT ADRs: minimal impact"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Aggregator config
+# ─────────────────────────────────────────────────────────────────────────────
+aggregator_config:
+  extraction_log_lookback_days: 30
+  insider_sales_window_lookback_days: 30
+  state_file_path: "state/adr_state.json"

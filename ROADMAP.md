@@ -1,6 +1,291 @@
-# v3.4 ROADMAP — Captive-Ratio Indicator — ✅ SHIPPED as v3.4.0 (2026-05-21)
+# v3.4 ROADMAP — Captive-Ratio Indicator (DHCR)
 
-**Status**: ✅ SHIPPED in v3.4.0 on 2026-05-21. The original ROADMAP design called for three separate indicators (23/24/25). After the May 21 design session with Raul, those three collapsed into a single composite Tier 1 indicator (`t1_decode_hbm_captive_ratio`, DHCR) per the mental model reframe described below. See CHANGES.md v3.4.0 entry for the full release notes.
+## v3.4 shipped releases (2026-05-21 / 22)
+
+The v3.4 series consists of three shipped releases plus a v3.4.3 quick-wins candidate. The actual shipped path diverged substantially from the original ROADMAP plan — what was planned as "ship the indicator in v3.4.0, then activate trigger gates in v3.4.1" became "ship a delta-number direction monitor in v3.4.0, redesign the entire framework around a 2-axis matrix in v3.4.2 after the May 22 design session with Raul." The original v3.4.1+ plan (lines documented in the historical section below) is superseded by what actually shipped.
+
+### ✅ v3.4.4.1 (2026-05-22) — Full automation: Layer 1 extraction → aggregator → state file
+
+v3.4.4 shipped with `data/competitor_thresholds.yaml` documented as a "hand-curated monthly refresh" — a misframing that Raul caught immediately ("im not doing anything manual. What are u talking about?"). The intent has always been Layer 1 extraction as the data source; v3.4.4.1 cleans up the framing AND ships the wiring.
+
+Five v3.4.4 references implied manual operator action — all corrected. Architecture split: `data/` files now hold thresholds + schema + extraction-field definitions + source authority tiers (stable, never auto-modified); `state/` files hold the live measured values (sole writers: paired aggregator modules running in fast-tier pipeline before snapshot computation). Layer 1 digester `DIGEST_SYSTEM_PROMPT` extended with `competitor_signals` (23 fields) + `adr_signals` (9 fields) sub-blocks mirroring `architecture_signals`. New `_log_indicator_signals()` shadow logger persists to existing `state/extraction_log_*.jsonl` files. New aggregators (`src/analysis/competitor_aggregator.py`, `src/analysis/adr_aggregator.py`) apply tier-weighted conflict resolution (Tier A: SK Hynix/Samsung/Nvidia/Mirae/KB earnings & broker; Tier B: Counterpoint/TrendForce/SemiAnalysis; Tier C: DigiTimes/ChosunBiz/Korea Times). Bootstrap state seeded once on deploy; thereafter aggregators are the only writers. Atomic state-file writes (tmp + rename). Safe-failing throughout.
+
+Tests: 473 passing (462 v3.4.4 baseline + 11 new aggregator tests; v3.4.4 test helpers updated for thresholds/state split). Today's read confirmed against bootstrap: Competitor Partially fired ~11.5% cumulative EPS (7B-driven); ADR Pre-event lifecycle.
+
+### ✅ v3.4.5 (2026-05-22) — DHCR catalog auto-update
+
+Closes the DHCR architectural-debt item flagged at v3.4.4.1 shipping. The three DHCR reference YAMLs (`inference_arch_reference`, `hbm_per_accelerator`, `enterprise_ai_revenue`) now follow the same data/state split as the v3.4.4.1 Indicator 7 + 8 files. Schema YAMLs hold formulas + extraction definitions + source tiers; state JSONs hold the live model/accelerator/quarterly entries. `load_dhcr_data()` merges both transparently — downstream `compute_*()` functions unchanged.
+
+Three new aggregator modules wired into fast_tier.py before DHCR computation. Three new field-groups added to `DIGEST_SYSTEM_PROMPT` under `architecture_signals`: `new_frontier_model_release`, `new_accelerator_announcement`, `enterprise_ai_quarterly_revenue`. Bootstrap state seeded from v3.4.0 YAML contents (preserved verbatim).
+
+10 new tests; 483 passing. End-to-end verified: DHCR position_score 52, frontier_kv 14 KB/tok via the merged data/state path.
+
+### ✅ v3.4.6 (2026-05-22) — Frontier-model source ingestion
+
+Closes the v3.4.5 Tier-A gap. 9 new RSS_FEEDS entries (Meta AI / DeepSeek / Mistral / Qwen / Anthropic / DeepMind / HF Papers / arxiv cs.LG / arxiv cs.CL). arxiv pre-filter (`arxiv_frontier_paper_filter()`) in news.py applies at fetch time — title-keyword filter for lab names + architecture-family-plus-params + release-language keywords — drops ~95% of routine arxiv volume before items reach the relevance scorer. Source classification extended in `_classify_source_for_tier()`. 11 new tests; 494 passing.
+
+When the next DeepSeek / Llama / Qwen / Mistral frontier release drops, the arch aggregator picks it up from the lab blog directly within hours and DHCR's frontier_kv computation uses the new model on the next fast-tier run.
+
+Known unresolved: Cloudflare TLS-fingerprint blocking on some lab blogs (Mistral, DeepSeek possibly) — same root-cause as the v3.38.4 Investing.com + Damnang issue. If those persist after deploy, curl-cffi integration is a v3.4.7 candidate.
+
+### 📋 v3.4.7 (candidate) — Cloudflare TLS-fingerprint bypass
+
+Some lab blogs (Mistral, DeepSeek) may stay 403 even with the v3.38.3 Chrome UA because Cloudflare additionally fingerprints TLS handshake (JA3/JA4) + HTTP/2 fingerprint. Python `requests` has a recognizable fingerprint regardless of UA string. The proper fix is `curl-cffi` which mimics Chrome's actual TLS handshake. Same plumbing also unlocks Damnang Substack + Investing.com x4 (dropped in v3.38.4 for the same reason). ~3-4h work. Defer until production confirms which feeds need it after v3.4.6 deploy.
+
+## v3.4 shipped releases (2026-05-21 / 22)
+
+### ✅ v3.4.0 (2026-05-21) — DHCR direction monitor (initial version)
+
+One new Tier 1 indicator (`t1_decode_hbm_captive_ratio`), three new YAML reference files (architecture / HBM-per-accelerator / enterprise revenue), 11 quarters of bootstrapped trajectory data (Q4 2023 → Q2 2026). Framework: delta-number direction signal (5-level: strongly_bullish_hbm → strongly_bearish_hbm), composite of three drivers (KV efficiency YoY, HBM-per-accelerator YoY, enterprise AI revenue YoY weighted blend). Phase 2 fix: workflow YAMLs now commit `state/extraction_log_*.jsonl` and `state/dhcr_state.json`.
+
+**Note**: the v3.4.0 delta-number framework was REPLACED by the v3.4.2 matrix framework. The underlying YAMLs and computation pipeline remain in use but the v3.4.0 5-level direction enum is gone.
+
+### ✅ v3.4.1 (2026-05-22) — UI fixes + Reversed eradication + length caps
+
+Five fixes diagnosed from May 22 production screenshots. (1) Trigger event banner color in exec summary now varies by destination status (red Fired / green Not fired / yellow Partially fired). (2) Section 3 change-flag reverted from v3.39.7.9 colored background to plain muted text. (3) "Reversed" status eradicated 4 ways: VALID_STATUSES gate, legacy migration, render-time scrub, Sonnet prompt forbidden vocabulary. (4) Executive brief HARD CAP 250 words. (5) where_we_stand HARD CAP 120 words + never-empty rule + render-time Layer 2 fallback.
+
+**Note**: this release was NOT the "activate trigger gates" plan from the original v3.4.1 ROADMAP. The actual v3.4.1 was UI fixes; the trigger gate concept itself was conceptually superseded by v3.4.2's score-based status mapping.
+
+### ✅ v3.4.2 (2026-05-22) — DHCR matrix redesign + reliability + CapEx
+
+Three workstreams:
+
+**(A) Reliability**: Sonnet streaming call wrapped with 3-retry app-level backoff (30s/90s/240s, ~6min budget) + Haiku 4.5 fallback if all retries fail. Layer 2 per-signal Haiku calls wrapped with 3-retry backoff (10s/30s/90s). DHCR explicitly skipped from Layer 2 (verdict is deterministic). Closes the May 22 03:50 UTC 529 incident where SDK retry was insufficient for sustained API overload.
+
+**(B) DHCR framework redesign** per the May 22 design session: 5×5 matrix mapping KV efficiency (Y, 5 bands) × operative context length (X, 5 bands) onto memory-architecture zones per the May memo. Each cell maps to a memory zone label AND a linear score 0-100 (HBM-favorable ↔ commodity). Three new mechanisms: (i) dual-input X-axis via new `data/context_length_signals.yaml` — operative context = Σ (category_context × volume_share/100) across 5 categories; (ii) anticipation premium — market-deployed cell = workload-implied cell + 1 Y-band, accounts for hyperscalers provisioning HBM ahead of literal demand; (iii) sanity check — score validated against 3 substitution-evidence signals, ≥2 contradicting raises CALIBRATION FLAG. Volume layer separate from position (HBM bit demand = score × volume_index/100). Section 4 renamed "Top 6" with DHCR card rendered FIRST (with matrix chart + bull/bear case context boxes + framework primer). Section 3 unchanged.
+
+**(C) CapEx capitalization**: 86 replacements in user-facing strings. Code identifiers unchanged.
+
+Today's read: KV 14 KB/tok → R3, operative context 114K → C2, workload R3C2 → market R4C2 (anticipation +1), score 52, Not fired, 3/3 sanity confirm.
+
+## ✅ v3.4.3 (2026-05-22) — Quick wins shipped
+
+Three small items from the v3.39 follow-up backlog, all bundled into one micro-release:
+
+**Fix 3a — Layer 2 prompt observability** (was Part 7c). `src/analysis/signal_reasoner.py` appends a per-call audit record to `state/layer2_audit_YYYY-MM-DD.jsonl` for every Layer 2 Haiku call: timestamp, signal_id, tier, prior_status, prompt fingerprint (head 400 chars + total length), evidence input counts, verdict (fired_status/convergence/confidence/consensus_direction/evidence_for_change), and status_transition (None / "no_change" / "Fired→Not fired"). Wrapped in `try/except` — observability never breaks the brief. `state/layer2_audit_*.jsonl` added to fast_tier.yml commit set so per-day audit files accumulate in git. Companion script `scripts/audit_layer2.py` reads the JSONL and produces a summary table (per-indicator call count + convergence% + confidence% + status transitions detail with reasons + reliability check on zero-evidence calls + prompt size distribution).
+
+**Fix 3b — HBM spot/contract price trend automation**. New function `compute_hbm_price_trend(spot_history_csv, contract_forecasts_csv, lookback_days=90)` in `src/data/prices.py` derives `rising`/`flat`/`falling` from accumulated CSV data: (a) DDR5 16Gb spot slope over trailing 90 days (thresholds ±$0.05/day), (b) contract forecast revision direction for latest quarter (thresholds ±3pp central_pct delta). Both signals must agree to call rising/falling; mixed → flat. `src/fast_tier.py` now passes auto-derived `hbm_price_trend` and `extraction_log_signals` to `compute_dhcr_snapshot()`, replacing the operator-supplied `hbm_price_trend="rising"` default.
+
+**Fix 3c — Layer 1 digester retry**. `src/analysis/digester.py:digest_document()` now has the same 3-retry pattern as v3.4.2 added to Sonnet and Layer 2: `[10s, 30s, 90s]` backoffs for 529/overloaded errors. Per-document isolation. Closes the audit gap from v3.4.2 — previously Layer 1 relied on SDK's ~3s built-in retry which is insufficient for sustained API overload windows.
+
+**Bug fix discovered during 3b wiring**: the existing `fast_tier.py` log line at the DHCR computation site referenced v3.4.0 fields (`.direction`, `.frontier_hbm_gb_per_accelerator`, `.implied_context_capacity_per_accelerator_tokens`, `.capacity_creation_yoy_pct`) that NO LONGER EXIST after the v3.4.2 framework redesign. Would have thrown `AttributeError` in production. Log line rewritten to v3.4.2 fields (status, score, workload_cell, market_cell, KV GB/1M, op_ctx, vol_idx, hbm_demand, sanity confirms ratio, calibration_flag). This is the kind of regression v3.4.2's CapEx sweep should have caught had the v3.4.2 release process exercised the full DHCR log path.
+
+414 tests pass (385 v3.4.2 baseline + 29 new in `tests/test_v3_4_3_quick_wins.py` across 8 classes covering: audit record schema + defensive try/except + path format, HBM price trend synthetic rising/falling/flat scenarios + contract revision detection + missing-CSV handling, DHCR integration + extraction_log_signals threading + stale-field removal regression test, Layer 1 retry backoffs + 529 detection + per-document isolation, fast_tier.yml commit set, audit_layer2.py script existence + stdlib-only imports + empty-records handling, no v3.4.2 regressions).
+
+---
+
+## ✅ v3.4.3.1 (2026-05-22) — DHCR placement hotfix + Fired pill readability
+
+Four user-visible issues from v3.4.2 that v3.4.3 shipped without fixing. Raul surfaced them on the May 22 2026 production email review session. Scope deliberately small — placement and rendering only; no framework changes.
+
+**Fix 1 — DHCR removed from section 3 tier indicator status table**. DHCR was rendering as a row in the Tier 1 group since v3.4.0. Per `DHCR_Framework_Explained.docx` Appendix B and the May 22 framework session, DHCR is structurally Tier 1 but renders ONLY as a section 4 deep-dive card — the matrix + score + sanity outputs don't fit the section 3 row format. The v3.4.2 framework redesign was supposed to delete the section 3 row; a handover propagation error preserved a "leave section 3 unchanged" note that contradicted the intended decision. `_build_indicators_section` per-tier loop now filters out `t1_decode_hbm_captive_ratio` before iteration.
+
+**Fix 2 — `_build_dhcr_section3_snippet` function deleted (86 lines)**. The function rendered a v3.4.0 5-level direction enum and accessed four dataclass fields the v3.4.2 redesign eliminated (`direction`, `frontier_hbm_gb_per_accelerator`, `capacity_creation_yoy_pct`, `implied_context_capacity_per_accelerator_tokens`). Same staleness pattern as the v3.4.3 fast_tier.py log line fix.
+
+**Fix 3 — DHCR section 4 card moved from FIRST to LAST position**. DHCR is the macro framing closer of section 4, not the opener. Section 4 order is now: header → top-5 deep dives → DHCR card.
+
+**Fix 4 — White text on Fired and Partially fired status pills**. Default near-black text on the dark red and dark amber backgrounds was unreadable. White text now conditional on those two statuses; light backgrounds keep near-black. Applied in both the section 3 tier table and the section 4 top-5 deep-dive card headers for consistency.
+
+**Important correction to the historical record**: the v3.4.2 entry below (and at line 25 of this file) describes DHCR placement as "Section 4 renamed 'Top 6' with DHCR card rendered FIRST. Section 3 unchanged." Both clauses are now incorrect after v3.4.3.1. The v3.4.2 entry is preserved verbatim because it records what v3.4.2 actually shipped with — not what was intended. The authoritative current state is: **DHCR appears in section 4 ONLY, as the LAST card. NEVER in section 3.** See `CLAUDE.md` locked decisions #5 and `DHCR_Framework_Explained.docx` Appendix B.
+
+423 tests pass (414 v3.4.3 baseline + 9 new in `tests/test_v3_4_3_1_dhcr_placement_and_pills.py` across 4 classes; one v3.4.2 placement test flipped from `assertLess` to `assertGreater` and renamed accordingly).
+
+---
+
+## ✅ v3.4.4 (2026-05-22) — Indicator 7 (Competitor) + Indicator 8 (ADR) + DHCR spectrum bar
+
+The biggest content release since v3.4.0 (DHCR introduction). The framework session 2026-05-22 with Raul produced a substantially different calibration approach than the original ROADMAP v3.4.4 planning text (preserved below at lines 200+ for historical record). Key changes from the plan:
+
+- **Indicator numbering corrected**: DHCR=6, Competitor=7, ADR=8 (originally planned as Competitor=6, ADR=7 before the DHCR-as-Indicator-6 framing was confirmed)
+- **EPS-impact calibration replaces share-%-threshold approach**: per Raul's nuance — "the challenge on competitors should come from will this hit the ASP and will this hit my volume." Status mapped to estimated SK Hynix EPS damage (price × volume), not raw share movements
+- **Composite logic uses cumulative EPS + Part 14 dual-threat amplifier**: 2+ subs Fired escalates regardless of cumulative; 1 Fired + 2+ Partially fired also escalates because multi-front compression exceeds single-vector damage
+- **7D HBF confirmed two-sided**: not just substitution risk, but also Solidigm (former Intel NAND) moat-extension upside. Renders 🛡️ Moat-extension + ⚔️ Substitution-risk milestone boxes rather than collapsing nuance into a single status
+
+### Section 4 final layout (8 cards)
+
+1. Sonnet pick #1
+2. Sonnet pick #2
+3. Sonnet pick #3
+4. Sonnet pick #4
+5. Sonnet pick #5
+6. **Indicator 7 — Competitor dynamics** (NEW) — 4 sub-cards (7A CXMT, 7B Samsung HBM4/4E, 7C Micron, 7D HBF) + composite status pill + Part 14 dual-threat scenario callout
+7. **Indicator 8 — US ADR / SPO event tracking** (NEW) — phase banner + composite status pill + confirmed offering structure box + 4 sub-cards (8A F-1, 8B roadshow, 8C pricing, 8D insider) + calendar milestones table + academic calibration prose
+8. DHCR (still last per v3.4.3.1 lock) — now with v3.4.4 spectrum bar inline after matrix chart
+
+Section title: "Top 6 indicators — deep dive" → **"Top 8 indicators — deep dive"**.
+
+### Indicator 7 EPS-impact framework (locked)
+
+Status bands per sub-indicator: Not fired <5% EPS impact, Partially fired 5-20%, Fired >20%. Per-sub mechanics (the nuances that distinguish each sub) documented in `CLAUDE.md` locked decision #6. Composite = cumulative EPS impact across the 4 subs + Part 14 dual-threat amplifier.
+
+**Today's read (2026-05-22 bootstrap)**: Partially fired, ~11.5% cumulative EPS impact, single-front (7B-driven by Samsung capturing ~28-30% of Vera Rubin HBM4 + HBM4E qualification tied). 7A/7C/7D all Not fired. Dual-threat inactive.
+
+### Indicator 8 ADR framework (locked)
+
+Four sub-indicators: 8A F-1 filing watch + underwriter syndicate quality; 8B roadshow demand quality; 8C pricing-day execution (424B discount); 8D insider sales >$10M in offering window. Locked design: canceled F-1 = Fired; insider threshold $10M; Fired persists through Phase 4 (no 90-day reversion); composite = worst-of subs UNLESS peak-coincidence rule escalates (ADR completion + late Phase 4 → Fired per Part 11 / SK Hynix 1995-1996 pattern).
+
+**Today's state (2026-05-22 bootstrap)**: Pre-F-1, all 4 subs in Pre-event waiting state. Phase banner "📅 Awaiting F-1 filing — expected June-July 2026". Confirmed offering structure rendered prominently (17.4M new shares, 2.4% dilution, $10B central case raise, treasury path closed). Calendar milestones inline. Academic calibration prose at footer (Doidge-Karolyi-Stulz 2004, Sarkissian-Schill 2009; -4 to -9% cumulative mechanical drag).
+
+### DHCR spectrum bar (per Raul's hand-drawn sketch)
+
+Inline HTML/CSS vertical bar inside the DHCR section 4 card, rendered right after the matrix chart. Score axis 0-100 (top→bottom), 5 stacked color-coded segments matching matrix palette. Three visual columns: bar | Memory type | SK Hynix moat. Today's score (52) marked with a left-pointing red arrow at proportional position (48% from top, inside the LPDDR/HBM hybrid Partial-moat band). Renders responsively in email clients with no PNG weight.
+
+Segment boundaries: 85-100 HBM pure (Strongest moat), 65-85 HBM-GDDR/hybrid (Strong), 40-65 LPDDR/HBM hybrid (Partial — duopoly with Samsung), 20-40 LPDDR-led (Weak — Samsung-advantaged), 0-20 DDR commodity (No moat).
+
+### Test summary
+
+- Baseline tests pass: 423/423
+- 1 placement test updated: `test_section_4_title_is_top_6` → `test_section_4_title_is_top_8`
+- New placement test: `test_v3_4_4_indicator_7_renders_between_top5_and_dhcr`
+- 38 new v3.4.4 tests across competitor + ADR + rendering
+- **Total: 462 passing**
+
+See `CLAUDE.md` locked decisions #6 and #7 for the full framework specifications. See `CHANGES.md` for the complete code surface diff.
+
+---
+
+## v3.4.4 — ORIGINAL PLANNING (superseded by v3.4.4 shipped above)
+
+The text below is the pre-build planning section. **Preserved for historical record only** — the actual v3.4.4 release diverged in three substantive ways:
+1. Indicator numbering corrected to DHCR=6, Competitor=7, ADR=8
+2. Calibration approach switched from share-%-based to EPS-impact-based per Raul's nuance
+3. 7D HBF confirmed two-sided (substitution risk + Solidigm moat extension) rather than threat-only
+
+The original planning text follows for reference:
+
+**Scope**: promote two existing tracked indicators from their current standalone-section treatment to full deep-dive cards in section 4, taking the brief from "Top 6 indicators — deep dive" → "**Top 8 indicators — deep dive**".
+
+This is the next concrete release after v3.4.3, locked from the May 22 conversation with Raul referencing Part 14 of `memory_supercycle_analysis.docx`. The two indicators already exist in the framework (`Indicator 6 - Competitors` and `Indicator 7 - US ADR` sheets are already in the audit xlsx) — what's missing is their deep-dive treatment in the daily brief alongside DHCR and the 5 Sonnet-picked deep dives.
+
+### Indicator 6 — Competitor dynamics (with NEW sub-indicator 6D — HBF)
+
+Per Part 14 of the framework doc, this is split across three sub-indicators plus a new fourth that Raul explicitly flagged as missing:
+
+**6A — Chinese commodity DRAM threat (CXMT, YMTC)**. Position as of Q1 2026: ~240,000 wafers/month capacity (about half of SK Hynix), 5% global DRAM market share, 4th globally behind Big Three. DDR5-8000 + LPDDR5X-10667 capability demonstrated. AMD added EXPO 1.2 support for CXMT memory (soft endorsement). Yield parity on DDR5 expected late 2026. Key trigger: any major Tier-1 PC OEM (Dell, HPE, Lenovo, ASUS, Acer) announcing CXMT DDR5 in mainstream / non-low-end product lines. Watch: CXMT IPO success on Shanghai STAR Market, yield parity reaching ~80%, pricing leak via Korea Times / ChosunBiz / DigiTimes for major customers, easing of US export controls on memory equipment. Why it matters: SK Hynix Q1 2026 71.5% operating margin is blended HBM (~80%) + commodity DRAM (~50-60%); if commodity compresses 30pp, blended drops to ~58%, EPS -25-35% even with HBM unchanged.
+
+**6B — Samsung HBM4/HBM4E share gain at Nvidia**. Samsung was effectively shut out of HBM3E supply to Nvidia (SK Hynix ~85-90%, Samsung ~5-10%). HBM4 is different: Samsung passed Nvidia 11Gbps HBM4 qualification first (early 2026), captured ~28-30% of Vera Rubin HBM4 allocation. SK Hynix retains ~70% but lost ~15-20pp in one generation. Forward concern: HBM4E (2027-28) qualification competing now; Samsung unveiled HBM4E at GTC 2026 at 16Gbps/pin. If Samsung wins majority HBM4E, SK Hynix HBM dominance thesis breaks. Watch: Samsung HBM4 yield >65-70% (currently ~50-60%), HBM4E qualification timing at Nvidia/AMD/Google, Vera Rubin Ultra (2027) BOM allocation, Samsung HBM margin commentary (rumored ~50-55% vs SK Hynix HBM 80%+; convergence signals competitive parity), AMD HBM4 supply MOU with Samsung expansion (March 18, 2026).
+
+**6C — Micron HBM threat (smaller, lower priority)**. 18% of 2026 global HBM4 share. Excluded from Vera Rubin allocation specifically. Less structural threat than Samsung. Watch: Micron HBM3E volume ramp, HBM4 design wins at Nvidia or AMD, HBM4E qualification commentary.
+
+**6D — HBF (High Bandwidth Flash) leadership tracking — NEW per Raul's flag (May 22 2026)**. The shift from HBM toward HBF as a complementary or partially substituting memory technology for AI inference is an emerging risk/opportunity that the framework currently doesn't track. HBF combines NAND-like storage density with high bandwidth, potentially addressing the cost-per-token constraint at long context that pure HBM hits. **The question for SK Hynix**: can they be the leader on HBF the way they were on HBM, or will Samsung / Micron / a non-Korean entrant define the standard? Research needed at v3.4.4 build time: (a) current HBF technology landscape — who's published roadmaps, what JEDEC standardization status, who has working samples; (b) SK Hynix's specific HBF positioning vs Samsung vs Micron vs SanDisk/Kioxia; (c) which AI accelerator vendors (Nvidia/AMD/custom) have indicated interest; (d) what triggers should fire (HBF design wins, JEDEC ratification, first production HBF announcement, hyperscaler HBF deployment). This is the sub-indicator most likely to be incomplete on first build — flag at build time that this needs human input on what data sources track HBF specifically.
+
+**Combined scenario** (per Part 14): if China commodity threat materializes (CXMT $30 DDR5 in volume) AND Samsung wins 50% of Nvidia HBM4E allocation, combined stock impact is approximately -30 to -45%; combined with cycle peak at the same time → 60-75% drawdown. The dual-threat scenario is the worst-case overlay on the cycle peak — not base case but meaningful tail risk and the reason this indicator deserves separate tracking outside the universal cycle framework.
+
+### Indicator 7 — US ADR / SPO event tracking
+
+Per Part 14: SK Hynix is launching US ADR listing in **June or July 2026 via NEW share issuance** (treasury share path closed Feb 9 2026 when SK Hynix canceled 12.24 trillion KRW treasury). Path is confirmed:
+
+- **Size**: ~2.4% of total share capital, ~17.4M new shares
+- **Estimated raise**: $9.6-14B depending on share price at pricing (Korean press central case $10B)
+- **Dilution**: 2.4% direct
+- **Use of proceeds**: M15X fab Cheongju, Yongin semiconductor cluster, Indiana fab, $8B ASML EUV order, broader HBM CapEx
+- **Confirmed timeline**: June-July 2026
+
+Primary tracking source: **SEC EDGAR F-1 filings — beats Korean press by 1-3 days**. URL: `sec.gov/cgi-bin/browse-edgar?action=getcompany&company=sk+hynix&type=F-1&dateb=&owner=include&count=40`. Set daily check from late April 2026 onward. When the public F-1 lands, it appears within minutes of submission.
+
+**Mechanical impact (separate from cycle dynamics)**: per academic studies (Doidge-Karolyi-Stulz 2004, Sarkissian-Schill 2009), pure SPO/ADR event drag for established foreign companies is **-4 to -9% cumulative**, fading within 1-3 months as stock returns to fundamentals. Calibration reference points: Saudi Aramco SPO June 2024 ($12.4B at 2.6% discount, dropped ~3% on announcement, traded flat 30 days post); TSMC ADR 1997 (small positive bump); HDFC Bank, NTT ADRs (minimal impact).
+
+**Calendar items to track**:
+- F-1 filing date (the SPO event start — primary trigger)
+- Underwriter syndicate quality (top-tier Goldman/MS/JPM lead = institutional credibility; second-tier = weaker demand signal)
+- Pricing-day discount (<3% strong demand; 3-5% normal; >5% weak)
+- Insider participation in offering (any disclosed insider sales = strong negative signal beyond mechanical)
+- US institutional uptake (oversubscribed 2-5x = positive; below subscription = negative)
+
+**Interaction with cycle thesis**: ADR launch lands BEFORE expected cycle peak window (Q3 2026 - Q1 2027). If June ADR: stock takes -4 to -9% mechanical drag, retraces normally over 1-3 months, cycle continues running. If July ADR + Q2 2026 earnings July 29 fires Tier 2 cycle signals: ADR drag overlaps with cycle deterioration → compounding move (unfavorable scenario). The interaction is what to watch — not the ADR alone.
+
+### v3.4.4 implementation plan
+
+**Section 4 ordering after v3.4.4** (assuming v3.4.3.1 is already in production):
+1. Sonnet pick #1
+2. Sonnet pick #2
+3. Sonnet pick #3
+4. Sonnet pick #4
+5. Sonnet pick #5
+6. Indicator 6 — Competitor dynamics (4 sub-indicators including new 6D HBF)
+7. Indicator 7 — US ADR / SPO event tracking
+8. DHCR — framework-level direction monitor (last, per v3.4.3.1 lock)
+
+**Required changes**:
+1. `src/config.py` — Indicator 6 add sub-indicator 6D for HBF; Indicator 7 update path to new-share-issuance only (treasury path removed)
+2. `src/email_module/template.py` — section 4 template extended to render Indicator 6 + Indicator 7 deep-dive cards between `_build_top5_section` and the DHCR card (DHCR remains LAST per v3.4.3.1); section 4 title rename "Top 6" → "Top 8 indicators — deep dive"
+3. `src/analysis/llm_summarizer.py` — Sonnet prompt anchor link reference updated from §4 ref of "Top 6" → "Top 8"
+4. `data/inference_arch_reference.yaml` or NEW `data/hbf_tracking.yaml` — depending on Raul's preference at build time, the HBF tracking data may need its own YAML
+5. NEW DHCR card visualization element — **0-100 spectrum bar** rendered alongside the existing matrix chart. Per Raul's hand-drawn sketch May 22 2026: vertical bar to the right of the matrix, 100 at top → 0 at bottom, 5 stacked color-coded segments (matching matrix palette: green → yellow → amber → red-orange), each segment annotated with `Memory type` (HBM pure / HBM-GDDR hybrid / LPDDR-HBM hybrid / LPDDR-led / DDR commodity) AND `SK Hynix moat strength` (Strongest → Strong → Partial moat → Weak → No moat) — honest about duopoly with Samsung at the high end. Today's score marked with a left-pointing arrow at the proportional position (52 → 48% from bottom). Implemented as inline HTML/CSS (stacked divs with proportional heights and inline labels), not a matplotlib PNG — responsive in email clients, no image weight.
+6. New tests in `tests/test_v3_4_4_*.py` — validate section 4 renders 8 cards in the right order (top-5 → Ind6 → Ind7 → DHCR); Indicator 6/7 cards have all expected sub-content; HBF sub-indicator structure; spectrum bar renders 5 color-coded segments with correct memory-type + moat labels and the score marker positioned proportionally
+7. xlsx update — Indicator 6 sheet (currently 3 sub-indicators) add sub-6D HBF; Indicator 7 sheet update path to new issuance only
+
+**User decisions needed at v3.4.4 build time**:
+- HBF data source strategy: is there a HBF-specific RSS / news feed / press release source we should add, or wait until HBF news appears in general semiconductor coverage?
+- ADR calendar: do we want a dedicated calendar widget showing F-1 filing watch + pricing day + lockup expiry, or fold into the existing Calendar of Events sheet?
+- Format of the dual-threat combined scenario: explicit "if BOTH 6A AND 6B fire" combined readout in the brief, or keep it as separate cards?
+- Spectrum bar segment boundaries: 20 / 40 / 65 / 85 proposed (matching framework status partitions Fired/Partial/Not fired at 30 and 65, with intermediate splits for LPDDR-led vs LPDDR-HBM hybrid). Adjust if empirical data suggests otherwise.
+
+**Estimated build time**: 1-2 days; HBF research adds ~half day depending on data source availability; spectrum bar adds ~2-3 hours including tests.
+
+---
+
+## v3.4.3+ candidates — Pending items carried over from original v3.4 design
+
+These are the items from the original ROADMAP that never got built because v3.4.1 and v3.4.2 went a different direction. Still relevant; no urgency unless something changes.
+
+### LPDDR-specific TrendForce contract scrape
+
+Pipeline tracks DRAM + HBM but not LPDDR pricing separately. Most relevant now for the DHCR sanity check (if LPDDR pricing rolls over alongside HBM, that's substitution evidence — feeds into the calibration flag logic). Also relevant for any future LPDDR-specific Tier 2 indicator. Source: TrendForce LPDDR contract reports.
+
+### Auto-extract closed-model KV via cost-per-token gradient analysis
+
+GPT-5 / Claude Opus 4.x / Gemini 2.5 currently carry hand-curated `kv_kb_per_token_range` confidence bands in `inference_arch_reference.yaml` because their architecture is private. Long-context cost-per-token data from provider APIs could derive these mechanically — KV scaling shows up as a non-linear cost gradient at long context. Would reduce hand-curation burden and improve frontier KV accuracy at the closed-model upper bound.
+
+### Artificial Analysis tokens-$ trend structured extraction
+
+Already in the RSS pipeline as a feed (v3.2), but no structured extraction. Would feed the Y-axis as a derived efficiency metric. Specifically: parse the headline tokens/$ trends and track them as a time series — could either confirm or contradict the open-model frontier KV reads.
+
+### HotChips / MICRO / ISCA proceedings scrape
+
+Caught loosely via Google News today; proceedings themselves aren't fetched. Architecture-leak signals are time-sensitive (24-hour window after talks). Would improve Y-axis recency for the KV efficiency signal — proceedings often disclose architectures before papers hit arXiv.
+
+---
+
+## v3.4.x recalibration after data accumulation (~Q4 2026 / Q1 2027)
+
+The v3.4.2 matrix framework set everything ex ante:
+- KV band intensities (0.10 / 0.30 / 0.50 / 0.75 / 0.95)
+- Context band intensities (0.10 / 0.30 / 0.55 / 0.80 / 0.95)
+- Score thresholds (≥65 = Not fired, <30 = Fired, 30-65 = volume-trajectory-dependent)
+- Sanity check threshold (5+ substitution news items in 90d = "evidence high")
+- Anticipation premium magnitude (currently fixed +1 Y-band — could become adaptive)
+- KV/context weighting (50/50 with anticipation premium baked in)
+
+After 4-6 quarters of real DHCR data plus monthly `context_length_signals.yaml` refreshes, validate or tune. The recalibration should be empirical: if the matrix consistently flags transitions that don't translate into actual price/inventory moves, the band edges are wrong. If the matrix misses real transitions, the weighting is wrong.
+
+---
+
+## v3.4.x operational dependencies (from v3.4.2 framework)
+
+These aren't features — they're ongoing maintenance commitments created by the v3.4.2 framework that the operator/agent needs to honor:
+
+1. **Monthly `data/context_length_signals.yaml` refresh** — currently manual with procedure documented in YAML header. Review product docs (consumer chat / coding agents / enterprise vertical / dev API / other) + hyperscaler earnings transcripts. Update `typical_context_tokens` × `volume_share_pct` × confidence per category. Append `refresh_evidence` log entry.
+
+2. **Quarterly `data/enterprise_ai_revenue.yaml` refresh** — when each hyperscaler earnings cycle completes, append new quarter to MSFT Azure AI / AWS / GCP / Oracle AI Infra / NVIDIA datacenter arrays. Drives the volume index.
+
+3. **Irregular `data/inference_arch_reference.yaml` refresh** — when a new frontier open-architecture model ships (Llama 3.x, DeepSeek V4/V5, Qwen, Mistral, etc.), append entry. Drives the Y-axis frontier KV.
+
+4. **Irregular `data/hbm_per_accelerator.yaml` refresh** — when a new NVIDIA/AMD accelerator generation announces (or a non-HBM accelerator wins material share), append entry.
+
+---
+
+## Open gaps from original ROADMAP (still open)
+
+1. **LPDDR pricing data** — see v3.4.4+ above
+2. **HotChips / MICRO / ISCA proceedings scrape** — see v3.4.4+ above
+3. **Artificial Analysis / EpochAI tokens-$/cost benchmarks structured extraction** — see v3.4.4+ above
+
+---
+
+## Historical reference — original v3.4 design (SUPERSEDED, kept for context only)
+
+What follows below this line is the original v3.4 plan from before the May 21 design session. **None of it is current.** The "three-indicator design" (Indicators 23/24/25) was collapsed into one composite DHCR per the mental-model reframe; the "v3.4.1+ trigger gates after 4-6 quarters" plan was preempted by the v3.4.2 matrix framework which has score-based status mapping baked in. Kept for design-evolution context.
 
 **The mental-model reframe** (Raul's locked direction May 21, 2026):
 
@@ -9,33 +294,6 @@
 The original ROADMAP framed the three indicators as independent measurements of HBM-erosion forces (efficiency shocks, CXL adoption, LPDDR ramp). Raul rejected that framing. The correct mechanism: efficiency gains don't displace HBM — they UNLOCK economic context capacity. Enterprise workloads then expand to consume what's economically possible. The binding question is whether enterprise demand-pull grows fast enough to fill the unlocked headroom.
 
 So the three indicators are really three INPUTS to one underlying question, and the answer is a direction signal, not a fire/not-fire trigger. DHCR is that single composite direction monitor.
-
-**v3.4.0 shipped what:**
-- ONE new Tier 1 indicator (`t1_decode_hbm_captive_ratio`) — direction monitor only, no trigger gate
-- THREE YAML reference files providing the data substrate (architecture, HBM-per-accelerator, enterprise revenue)
-- 11 quarters of bootstrapped trajectory data (Q4 2023 → Q2 2026) so the trend chart works from day one
-- Phase 2 fix: extraction_log_*.jsonl now persists across runner reboots (was the silent gap that made the ROADMAP's data-accumulation premise empirically false)
-- Today's read: STRONGLY_BULLISH_HBM, +46pp delta, 42M token implied capacity per accelerator
-
-**Why no trigger gate:**
-Per Raul's direction, v3.4.0 ships as direction monitor only. After 4-6 quarters of shadow data (~Q4 2026 / Q1 2027), the band boundaries get validated against real direction transitions and we activate triggers in v3.4.1.
-
----
-
-## What v3.4.1+ will do
-
-**v3.4.1** target ~Q1 2027 after 4-6 quarters of accumulated direction data:
-- Activate trigger gates based on sustained direction transitions:
-  - Partial fire: direction → mildly_bearish_hbm for 2 consecutive quarters
-  - Full fire: direction → strongly_bearish_hbm for 2 consecutive quarters
-  - Reversal: → mildly_bullish_hbm or stronger for 2 quarters reverses prior fire
-- Boundary tuning based on observed signal density (may shift the ±10/40pp band edges)
-
-**v3.4.2+ candidates:**
-- Auto-extracted closed-model KV via cost-per-token gradient analysis at long context (currently hand-curated with confidence bands — GPT-5/Claude 4/Gemini 2.5 each carry explicit kv_kb_per_token_range)
-- LPDDR-specific TrendForce contract scrape (the open gap from the original ROADMAP — pipeline currently tracks DRAM + HBM but not LPDDR pricing separately)
-- Artificial Analysis tokens-$ trend integration as a derived efficiency metric feeding the YAML
-- HotChips / MICRO / ISCA proceedings scrape for architecture-leak signals
 
 ---
 
@@ -115,36 +373,13 @@ Below is the original three-indicator design from before the May 21 reframe. Kep
 
 ---
 
-## Build-day checklist (June 14, 2026)
-
-When picking this up in a future session:
-
-1. Open `state/extraction_log_*.jsonl` files from the past 3-4 weeks. Read 30-50 records. Get a feel for what's actually being extracted and at what frequency.
-2. Tally:
-   - How often does any `architecture_signals` field have a non-null value? (sparsity check)
-   - How often does `cxl_production_deployment` fire? (should be very rare; if frequent → prompt is over-eager)
-   - How often does `custom_silicon_memory_arch` get populated? Across how many distinct hyperscaler tickers? (LPDDR ramp prevalence check)
-   - How often do `deployed_quantization` / `deployed_moe` / `deployed_speculative_decoding` get populated? (efficiency shock frequency)
-3. Set thresholds for Indicators 23 and 25 based on the empirical distribution. Aim for: warning fires ~1-2x per month, fired fires 1-2x per year.
-4. Implement the indicators as additions to `INDICATORS` list in `src/config.py`. Each gets a `trigger_logic_fn` reference (a new pattern — these indicators don't fit the trigger_patterns/trigger_numeric model since they aggregate over time).
-5. Add a new function `evaluate_v34_indicators()` in `src/analysis/signal_reasoner.py` that reads the extraction log and computes the indicator states.
-6. Wire into fast_tier between Layer 2 and Layer 3. The output of these indicators feeds Sonnet exec summary as additional context.
-7. Update `DEPLOYMENT_GUIDE.md` "Where to make adjustments" section to mention the v3.4 indicator thresholds.
-8. Update the email template to include the three new indicators in the appropriate sections.
-
----
-
-## What to ask the user for at v3.4 build time
-
-- Confirmation of threshold targets ("fire warning ~1-2x/month, fired 1-2x/year — agree?")
-- Whether to include or exclude LPDDR pricing (gap #1 above) in this build
-- Whether to wire v3.4 indicators into priority_alerter for real-time push, or keep them daily-only
-
-This is intentionally light — at build time most decisions will already be informed by the extraction log data.
+> **Build-day checklist and "what to ask the user" sections from the original ROADMAP have been removed** — they described the three-indicator build (Indicators 23/24/25) that was collapsed into DHCR in v3.4.0 and then redesigned around the matrix framework in v3.4.2. The work they planned has been done (just differently than originally specified).
 
 ---
 
 # v3.5 — Parking lot (opportunistic fixes)
+
+**Status as of 2026-05-22**: both entries NOT STARTED. Sequenced after v3.4 calibration window. Entry 2 (event deduplication) is architecturally more central — sits underneath multiple scoring paths — and probably should go first when this batch is picked up.
 
 **Status**: not a planned feature version — a catch-all for small/medium items
 surfaced during v3.3–v3.4 work. Build opportunistically; some entries may get
@@ -269,6 +504,10 @@ architecturally central than a bolt-on.
 
 ## Part 6 — Backtest harness against 2017-18 and 2022 cycle peaks
 
+**Status as of 2026-05-22**: NOT STARTED. Recommended priority RAISED — the framework's expected cycle peak window is Q3 2026 - Q1 2027, which is now 4-8 months out. The matrix weights `{tone: 0.4, supplier: 0.4, spot_lead: 0.2}` and the R1-R5/C1-C5 band cutoffs were specified ex ante and have never been validated against historical turns. If the matrix lags or whipsaws in backtest, better to discover it now than miss the peak. Currently 6 indicators are fired or partially fired with untested band thresholds — the more signals fire near the peak, the more matrix accuracy matters.
+
+**Blocked on**: user decision about historical data sourcing — see "What to ask the user" section below. Decision affects build time by 2-4 hours.
+
 **Why**: the matrix weights `{"tone": 0.4, "supplier": 0.4, "spot_lead": 0.2}` and the cell semantics (R1-R5/C1-C5 thresholds) were specified ex ante in Part 1. They have not been validated against historical cycle turns. The framework's underlying logic — that spot drawdown leads contract direction by 6-10 weeks — is empirically grounded (2018 cycle spot peaked ~2 months before contract turned; 2022 cycle DDR4 spot rolled ~6 months ahead per the audit xlsx) but the specific weight choices and band cutoffs are not.
 
 **Closed spec**:
@@ -325,7 +564,9 @@ architecturally central than a bolt-on.
 
 ## Part 7a — Tune persistence categories from real data
 
-**Why**: the bootstrap categorization assigned each indicator's persistence based on a priori judgment about how its underlying data behaves (capex = quarterly, TurboQuant = permanent, P/E = live, LTAs = durable_contract). After 4-8 weeks of GHA runs, we'll have a track record of how often each indicator's evidence is genuinely refreshed vs preserved-by-default. Some categorizations may need correction.
+**Status as of 2026-05-22**: NOT STARTED. Data-accumulation-gated. v3.39.7.3 shipped May 20 — only ~3 days of GHA-accumulated `state/indicator_evidence.json` diff history exist. Wait minimum 4-8 weeks before attempting tuning.
+
+**Why**: the bootstrap categorization assigned each indicator's persistence based on a priori judgment about how its underlying data behaves (CapEx = quarterly, TurboQuant = permanent, P/E = live, LTAs = durable_contract). After 4-8 weeks of GHA runs, we'll have a track record of how often each indicator's evidence is genuinely refreshed vs preserved-by-default. Some categorizations may need correction.
 
 **Data source**: `state/indicator_evidence.json` evolves across GHA commits. Look at the diff between consecutive runs:
 - How often does Layer 2 PRESERVE status because today's evidence didn't match reversal_condition? (expected: most days)
@@ -345,6 +586,8 @@ architecturally central than a bolt-on.
 
 ## Part 7b — Schema migrations + versioning
 
+**Status as of 2026-05-22**: NOT STARTED. Sequenced after Part 7a — schema changes are best driven by empirical findings from 7a (which categorizations need adjusting, which fields need expiry-date awareness, etc.) rather than speculatively. Build after 7a tuning is done.
+
 **Why**: the bootstrap was written with `_metadata.schema_version: "1.0"`. Future schema changes (new fields, new persistence categories, structural reorganization) need a migration path.
 
 **Likely v1.1 additions**:
@@ -360,6 +603,8 @@ architecturally central than a bolt-on.
 ---
 
 ## Part 7c — Layer 2 prompt observability
+
+**Status as of 2026-05-22**: RECOMMENDED FOR v3.4.3 BUNDLE. NOT data-accumulation-gated. Especially useful given the May 22 529 incidents — better diagnostics for understanding which signals get under-attested when LLM calls fail. Low risk, small change. See v3.4.3 — Quick-wins candidate section at the top of this file.
 
 **Why**: the v3.39.7.3 prompt is long (DECISION RULES BY PERSISTENCE CATEGORY + INVALID DOWNGRADES + evidence_log block per indicator). Haiku may follow some rules better than others. Need to track which rules are being applied correctly.
 

@@ -95,6 +95,16 @@ def build_email_html(
     # v3.4.2 — DHCR matrix chart (5x5 with memory-zone color coding).
     # Rendered inside the section 4 DHCR card alongside the trajectory chart.
     dhcr_matrix_chart_b64: Optional[str] = None,
+    # v3.4.4 — Indicator 7 (Competitor dynamics) composite snapshot. Dict
+    # form of CompetitorSnapshot from src/analysis/competitor_scoring.py.
+    # Renders as section 4 deep-dive card with 4 sub-cards + dual-threat
+    # callout. None → card skipped.
+    competitor_snapshot: Optional[dict] = None,
+    # v3.4.4 — Indicator 8 (US ADR / SPO event) composite snapshot. Dict
+    # form of ADREventSnapshot from src/analysis/adr_event_tracking.py.
+    # Renders as section 4 deep-dive card with 4 sub-cards + calendar +
+    # academic-calibration prose. None → card skipped.
+    adr_snapshot: Optional[dict] = None,
     # v3.4.1 Fix 5b: Layer 2 per-signal reasonings indexed by signal_id.
     # Used as defensive fallback in _build_indicators_section when Sonnet's
     # where_we_stand field comes back empty (hit max_tokens mid-output).
@@ -268,29 +278,49 @@ def build_email_html(
         signal_reasonings_by_id=signal_reasonings_by_id,
     ))
 
-    # 6. Top 6 deep dives (section 4 — v3.4.2: renamed from Top 5,
-    # DHCR added as FIRST item per Raul May 22)
-    parts.append("<h2 id='section-4'>4. Top 6 indicators — deep dive</h2>")
+    # 6. Top 8 deep dives (section 4 — v3.4.4: renamed from Top 6.
+    # Final order: 5 Sonnet picks → Indicator 7 (Competitor) → Indicator 8
+    # (US ADR) → DHCR (last; the macro framing closer per v3.4.3.1 lock).
+    # The two new cards are filtered out of section 3 alongside DHCR.)
+    parts.append("<h2 id='section-4'>4. Top 8 indicators — deep dive</h2>")
 
-    # v3.4.2 — DHCR section 4 deep-dive card. Renders FIRST inside section 4.
-    # DHCR is the framework-level direction monitor — sets macro context
-    # (is enterprise demand-pull keeping pace with capacity creation?)
-    # before the brief gets into the 5 specific tier-level indicator stories.
-    # v3.4.2 changes from v3.4.0: matrix chart embedded, dual cells visible
-    # (workload-implied vs market-deployed), bull/bear case context included.
-    if dhcr_snapshot:
-        parts.append(_build_dhcr_section4_card(
-            dhcr_snapshot,
-            matrix_chart_b64=dhcr_matrix_chart_b64,
-            trajectory_chart_b64=dhcr_chart_b64,
-        ))
-
+    # First: the 5 Sonnet-picked per-indicator deep dives.
     parts.append(_build_top5_section(
         analysis.top_5_deep_dives,
         cycle_verdict=cycle_verdict,
         cycle_matrix_chart_b64=cycle_matrix_chart_b64,
         spot_contract_chart_b64=spot_contract_chart_b64,
     ))
+
+    # v3.4.4 — Indicator 7 (Competitor dynamics) deep-dive card.
+    # 4 sub-cards (7A CXMT, 7B Samsung HBM4/4E, 7C Micron, 7D HBF) +
+    # composite status + dual-threat scenario callout.
+    if competitor_snapshot:
+        parts.append(_build_competitor_section4_card(competitor_snapshot))
+
+    # v3.4.4 — Indicator 8 (US ADR / SPO event) deep-dive card.
+    # 4 sub-cards + lifecycle phase pill + calendar milestones + academic
+    # calibration prose. Pre-event state renders as "Awaiting F-1" framing.
+    if adr_snapshot:
+        parts.append(_build_adr_section4_card(adr_snapshot))
+
+    # Last: the DHCR framework-level direction-monitor card (the v3.4.2
+    # matrix snapshot — status pill, score 0-100, workload-vs-market cells
+    # with anticipation premium, 5x5 matrix chart, per-category context
+    # contribution table, volume layer + composite HBM bit demand, sanity
+    # check 3 signals, bull/bear case context boxes, framework primer footer).
+    #
+    # v3.4.3.1 placement rule: DHCR appears in section 4 ONLY, as the LAST
+    # card. NEVER in section 3 tier indicator status table.
+    # v3.4.4 enhancement: spectrum bar visualization inside the DHCR card
+    # (vertical 0-100 bar with memory-architecture segments + SK Hynix
+    # moat-strength labels per Raul's sketch May 22 2026).
+    if dhcr_snapshot:
+        parts.append(_build_dhcr_section4_card(
+            dhcr_snapshot,
+            matrix_chart_b64=dhcr_matrix_chart_b64,
+            trajectory_chart_b64=dhcr_chart_b64,
+        ))
 
     # 7. Latest news
     parts.append("<h2 id='section-5'>5. Latest news from the memory & semi market</h2>")
@@ -559,92 +589,581 @@ def _format_change(value: Optional[float]) -> str:
     return f"<span class='perf-flat'>{value:.2f}%</span>"
 
 
-def _build_dhcr_section3_snippet(dhcr: Optional[dict]) -> str:
-    """v3.4.0 — section 3 summary card for t1_decode_hbm_captive_ratio.
+# v3.4.3.1 — _build_dhcr_section3_snippet (the v3.4.0 direction-monitor
+# snippet) was DELETED in this release. It rendered a 5-level direction
+# enum + v3.4.0 fields (frontier_hbm_gb_per_accelerator,
+# capacity_creation_yoy_pct, implied_context_capacity_per_accelerator_tokens)
+# all of which were eliminated by the v3.4.2 matrix redesign. DHCR no
+# longer appears in section 3 at all. The function had to go with the row.
 
-    Compact direction-monitor representation: shows the composite direction
-    (5-level scale), the key driver numbers (KV efficiency YoY, HBM-per-
-    accelerator YoY, enterprise revenue YoY), and the implied context
-    capacity per accelerator. Color-coded by direction.
 
-    Returns "" if dhcr is None (DHCR computation failed or YAML missing) —
-    section 3 row falls back to pure Sonnet prose.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# v3.4.4 — Indicator 7 (Competitor dynamics) section 4 deep-dive card
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _build_competitor_sub_card(sub: dict) -> str:
+    """Render one sub-indicator card (7A/7B/7C/7D) inside the Indicator 7 card.
+
+    sub is a dict form of SubIndicatorState. 7D additionally renders the
+    🛡️ moat-extension + ⚔️ substitution-risk milestone boxes.
     """
-    if not dhcr:
+    sub_id = sub.get("sub_id", "?")
+    name = sub.get("display_name", "?")
+    status = sub.get("status", "Not fired")
+    eps_impact = float(sub.get("estimated_eps_impact_pct", 0))
+    summary = sub.get("current_state_summary", "")
+    status_color = STATUS_COLORS.get(status, "#CCCCCC")
+    text_color = "#FFFFFF" if status in ("Fired", "Partially fired") else "#1a1a1a"
+
+    parts = []
+    parts.append(
+        "<div style='margin:10px 0;padding:12px;background:#FFFFFF;"
+        "border:1px solid #DDD;border-radius:4px'>"
+    )
+    parts.append(
+        f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:6px'>"
+        f"<strong style='color:#1a1a1a;font-size:13px'>{html.escape(sub_id)} — {html.escape(name)}</strong>"
+        f"<span style='background:{status_color};color:{text_color};"
+        f"padding:3px 10px;border-radius:3px;font-weight:700;font-size:11px'>"
+        f"{html.escape(status)}</span>"
+        f"<span style='color:#666;font-size:11px'>est. EPS impact ~{eps_impact:.1f}%</span>"
+        f"</div>"
+    )
+    parts.append(
+        f"<div style='font-size:12px;color:#333;line-height:1.55'>{html.escape(summary)}</div>"
+    )
+
+    # 7D-specific: render moat-extension + substitution-risk boxes
+    moat_milestones = sub.get("moat_extension_milestones", []) or []
+    sub_risk_milestones = sub.get("substitution_risk_milestones", []) or []
+    if moat_milestones or sub_risk_milestones:
+        parts.append("<div style='margin-top:10px;display:table;width:100%;table-layout:fixed'>")
+        # Moat-extension box (bull-case watch)
+        if moat_milestones:
+            parts.append(
+                "<div style='display:table-cell;width:50%;padding-right:5px;vertical-align:top'>"
+                "<div style='background:#E8F5E9;border:1px solid #4CAF50;border-radius:4px;"
+                "padding:8px 10px;font-size:11px;color:#1a3300;line-height:1.5'>"
+                "<strong style='color:#1B5E20'>🛡️ Moat-extension watch (bull triggers)</strong>"
+                "<ul style='margin:4px 0 0 0;padding-left:18px'>"
+            )
+            for m in moat_milestones[:5]:
+                parts.append(f"<li>{html.escape(m)}</li>")
+            parts.append("</ul></div></div>")
+        # Substitution-risk box (bear-case watch)
+        if sub_risk_milestones:
+            parts.append(
+                "<div style='display:table-cell;width:50%;padding-left:5px;vertical-align:top'>"
+                "<div style='background:#FFEBEE;border:1px solid #E57373;border-radius:4px;"
+                "padding:8px 10px;font-size:11px;color:#5A1A1A;line-height:1.5'>"
+                "<strong style='color:#B71C1C'>⚔️ Substitution-risk watch (bear triggers)</strong>"
+                "<ul style='margin:4px 0 0 0;padding-left:18px'>"
+            )
+            for m in sub_risk_milestones[:5]:
+                parts.append(f"<li>{html.escape(m)}</li>")
+            parts.append("</ul></div></div>")
+        parts.append("</div>")
+
+    parts.append("</div>")
+    return "\n".join(parts)
+
+
+def _build_competitor_section4_card(comp: Optional[dict]) -> str:
+    """v3.4.4 — Indicator 7 (Competitor dynamics) deep-dive card.
+
+    Structure:
+      - Header: title + composite status pill + "N of 4 subs firing" sub-badge
+      - 4 sub-cards (7A/7B/7C/7D), each with sub-status pill + summary +
+        (for 7D) moat-extension + substitution-risk boxes
+      - Composite reasoning (cumulative EPS impact + dual-threat status)
+      - Dual-threat scenario callout (per Part 14) — amber background
+      - Footer with refresh cadence
+    """
+    if not comp:
         return ""
 
-    direction = dhcr.get("direction", "balanced")
-    direction_colors = {
-        "strongly_bullish_hbm": "#2C7A2C",  # deep green
-        "mildly_bullish_hbm": "#C0DD97",
-        "balanced": "#CCCCCC",
-        "mildly_bearish_hbm": "#FAC775",
-        "strongly_bearish_hbm": "#B91C1C",
-    }
-    direction_labels = {
-        "strongly_bullish_hbm": "STRONGLY BULLISH HBM",
-        "mildly_bullish_hbm": "Mildly bullish HBM",
-        "balanced": "Balanced",
-        "mildly_bearish_hbm": "Mildly bearish HBM",
-        "strongly_bearish_hbm": "STRONGLY BEARISH HBM",
-    }
-    direction_arrows = {
-        "strongly_bullish_hbm": "↑↑",
-        "mildly_bullish_hbm": "↑",
-        "balanced": "→",
-        "mildly_bearish_hbm": "↓",
-        "strongly_bearish_hbm": "↓↓",
-    }
+    status = comp.get("composite_status", "Not fired")
+    status_color = comp.get("composite_status_color", "#C0DD97")
+    reasoning = comp.get("composite_reasoning", "")
+    cumulative_eps = float(comp.get("cumulative_eps_impact_pct", 0))
+    subs = comp.get("subs", []) or []
+    dual_threat_active = bool(comp.get("dual_threat_active", False))
+    dual_threat_text = comp.get("dual_threat_scenario_text", "")
+    dual_combined = comp.get("dual_threat_impact_combined_pct", "-30 to -45")
+    dual_with_peak = comp.get("dual_threat_impact_with_peak_pct", "-60 to -75")
+    last_refresh = comp.get("last_refresh", "unknown")
 
-    color = direction_colors.get(direction, "#CCCCCC")
-    label = direction_labels.get(direction, direction)
-    arrow = direction_arrows.get(direction, "→")
+    n_fired = sum(1 for s in subs if s.get("status") == "Fired")
+    n_partial = sum(1 for s in subs if s.get("status") == "Partially fired")
+    sub_badge_text = f"{n_fired + n_partial} of {len(subs)} subs firing"
 
-    # Direction badge (top of cell)
-    text_color = "#FFFFFF" if direction == "strongly_bearish_hbm" else "#1a1a1a"
-    direction_badge = (
-        f"<div style='margin-bottom:6px'>"
-        f"<span style='display:inline-block;background:{color};color:{text_color};"
-        f"padding:3px 10px;border-radius:3px;font-weight:700;font-size:12px'>"
-        f"{arrow} {label}</span>"
+    text_color = "#FFFFFF" if status in ("Fired", "Partially fired") else "#1a1a1a"
+
+    parts = []
+    parts.append(
+        "<div style='margin:24px 0;border:2px solid #555;background:#FAFAFA;"
+        "padding:18px;border-radius:5px'>"
+    )
+
+    # Header
+    parts.append(
+        f"<div style='display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap'>"
+        f"<h3 style='margin:0;color:#1a1a1a;display:inline'>Indicator 7 — Competitor dynamics</h3>"
+        f"<span style='background:{status_color};color:{text_color};padding:6px 14px;"
+        f"border-radius:4px;font-weight:700;font-size:13px'>{html.escape(status)}</span>"
+        f"<span style='background:#444;color:#fff;padding:6px 12px;border-radius:4px;"
+        f"font-weight:600;font-size:11px'>{html.escape(sub_badge_text)}</span>"
+        f"<span style='font-size:12px;color:#666'>cumulative EPS impact ~{cumulative_eps:.1f}%</span>"
         f"</div>"
     )
 
-    # Key driver lines
-    kv = dhcr.get("frontier_kv_kb_per_token", 0)
-    kv_yoy = dhcr.get("kv_yoy_change_pct")
-    hbm = dhcr.get("frontier_hbm_gb_per_accelerator", 0)
-    hbm_yoy = dhcr.get("hbm_per_accelerator_yoy_change_pct")
-    cap_yoy = dhcr.get("capacity_creation_yoy_pct")
-    ent_yoy = dhcr.get("enterprise_ai_yoy_growth_pct")
-    nv_yoy = dhcr.get("nvidia_datacenter_yoy_growth_pct")
-    cap_tokens = dhcr.get("implied_context_capacity_per_accelerator_tokens", 0) or 0
-
-    if cap_tokens >= 1_000_000:
-        cap_s = f"{cap_tokens / 1_000_000:.1f}M"
-    elif cap_tokens >= 1_000:
-        cap_s = f"{cap_tokens / 1_000:.0f}K"
-    else:
-        cap_s = str(cap_tokens)
-
-    def _fmt_pct(v):
-        if v is None:
-            return "n/a"
-        return f"{v:+.0f}%"
-
-    drivers_html = (
-        "<div style='font-size:11px;color:#444;line-height:1.4'>"
-        f"<div><strong>Frontier KV:</strong> {kv:.0f} KB/tok "
-        f"(YoY {_fmt_pct(kv_yoy)}) · "
-        f"<strong>HBM/accel:</strong> {hbm:.0f} GB (YoY {_fmt_pct(hbm_yoy)})</div>"
-        f"<div><strong>Implied capacity:</strong> ~{cap_s} tokens per accelerator</div>"
-        f"<div><strong>Capacity-creation YoY:</strong> {_fmt_pct(cap_yoy)} · "
-        f"<strong>Enterprise AI YoY:</strong> {_fmt_pct(ent_yoy)} · "
-        f"<strong>NVIDIA DC YoY:</strong> {_fmt_pct(nv_yoy)}</div>"
-        "</div>"
+    # Composite reasoning
+    parts.append(
+        f"<div style='font-size:12px;color:#444;margin-bottom:14px;font-style:italic;"
+        f"padding:10px 12px;background:#FFFFFF;border-left:3px solid {status_color}'>"
+        f"<strong style='color:#1a1a1a;font-style:normal'>READ:</strong> "
+        f"{html.escape(reasoning)}"
+        f"</div>"
     )
 
-    return f"<div style='margin-bottom:8px'>{direction_badge}{drivers_html}</div>"
+    # Sub-indicator cards (4 stacked vertically per v3.4.4 layout decision)
+    for sub in subs:
+        parts.append(_build_competitor_sub_card(sub))
+
+    # Dual-threat scenario callout — always rendered (educational even when inactive)
+    dual_threat_bg = "#FFEBEE" if dual_threat_active else "#FFF8E1"
+    dual_threat_border = "#B71C1C" if dual_threat_active else "#B58A1A"
+    dual_threat_header = "⚠️ DUAL-THREAT SCENARIO — ACTIVE" if dual_threat_active else "ℹ️ DUAL-THREAT SCENARIO (reference)"
+    parts.append(
+        f"<div style='margin:14px 0;padding:12px;background:{dual_threat_bg};"
+        f"border:2px solid {dual_threat_border};border-radius:4px;"
+        f"font-size:12px;color:#333;line-height:1.55'>"
+        f"<strong style='color:#1a1a1a'>{html.escape(dual_threat_header)}</strong><br/>"
+        f"Combined stock impact (CXMT + Samsung simultaneously): "
+        f"<strong>{html.escape(dual_combined)}%</strong>. "
+        f"With cycle-peak overlay (Phase 4 window Q3 2026 - Q1 2027): "
+        f"<strong>{html.escape(dual_with_peak)}%</strong>.<br/>"
+        f"<div style='margin-top:6px;color:#555;font-size:11px'>"
+        f"{html.escape(dual_threat_text)}</div>"
+        f"</div>"
+    )
+
+    # Footer
+    parts.append(
+        f"<div style='margin-top:14px;padding-top:10px;border-top:1px solid #DDD;"
+        f"font-size:11px;color:#666'>"
+        f"<strong>FRAMEWORK NOTE:</strong> Sub-indicator statuses calibrated to "
+        f"estimated SK Hynix EPS impact (price × volume), not raw market share. "
+        f"Not fired &lt;5% EPS, Partially fired 5-20%, Fired &gt;20%. Composite "
+        f"applies the Part 14 dual-threat amplifier when 2+ subs Fire (or 1 Fired + "
+        f"2+ Partially fired). Last YAML refresh: {html.escape(last_refresh)}."
+        f"</div>"
+    )
+
+    parts.append("</div>")
+    return "\n".join(parts)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# v3.4.4 — Indicator 8 (US ADR / SPO event) section 4 deep-dive card
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _build_adr_sub_card(sub: dict) -> str:
+    """Render one sub-indicator card (8A/8B/8C/8D)."""
+    sub_id = sub.get("sub_id", "?")
+    name = sub.get("display_name", "?")
+    status = sub.get("status", "Not fired")
+    status_pill_label = sub.get("status_pill_label", status)
+    what_we_watch = sub.get("what_we_watch", []) or []
+    summary = sub.get("current_state_summary", "")
+
+    # Pre-event uses a distinct grey pill
+    if status == "Pre-event":
+        status_color = "#B0BEC5"
+        text_color = "#1a1a1a"
+    else:
+        status_color = STATUS_COLORS.get(status, "#CCCCCC")
+        text_color = "#FFFFFF" if status in ("Fired", "Partially fired") else "#1a1a1a"
+
+    parts = []
+    parts.append(
+        "<div style='margin:10px 0;padding:12px;background:#FFFFFF;"
+        "border:1px solid #DDD;border-radius:4px'>"
+    )
+    parts.append(
+        f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap'>"
+        f"<strong style='color:#1a1a1a;font-size:13px'>{html.escape(sub_id)} — {html.escape(name)}</strong>"
+        f"<span style='background:{status_color};color:{text_color};"
+        f"padding:3px 10px;border-radius:3px;font-weight:700;font-size:11px'>"
+        f"{html.escape(status_pill_label)}</span>"
+        f"</div>"
+    )
+    parts.append(
+        f"<div style='font-size:12px;color:#333;line-height:1.55;margin-bottom:8px'>"
+        f"{html.escape(summary)}</div>"
+    )
+    if what_we_watch:
+        parts.append(
+            "<div style='font-size:11px;color:#666'>"
+            "<strong style='color:#1a1a1a'>What we watch:</strong>"
+            "<ul style='margin:4px 0 0 0;padding-left:18px'>"
+        )
+        for w in what_we_watch[:5]:
+            parts.append(f"<li>{html.escape(w)}</li>")
+        parts.append("</ul></div>")
+    parts.append("</div>")
+    return "\n".join(parts)
+
+
+def _build_adr_section4_card(adr: Optional[dict]) -> str:
+    """v3.4.4 — Indicator 8 (US ADR / SPO event) deep-dive card.
+
+    Structure:
+      - Header: title + composite status pill + lifecycle-phase badge
+      - Composite reasoning
+      - Confirmed offering structure (size, dilution, raise, use of proceeds)
+      - 4 sub-cards (8A/8B/8C/8D)
+      - Calendar milestones inline
+      - Academic calibration prose (mechanical drag references)
+      - Peak-coincidence callout if active
+      - Footer
+    """
+    if not adr:
+        return ""
+
+    status = adr.get("composite_status", "Not fired")
+    status_color = adr.get("composite_status_color", "#C0DD97")
+    reasoning = adr.get("composite_reasoning", "")
+    phase = adr.get("lifecycle_phase", "pre_event")
+    subs = adr.get("subs", []) or []
+    calendar = adr.get("calendar", []) or []
+    offering = adr.get("confirmed_offering_structure", {}) or {}
+    academic = adr.get("academic_calibration", {}) or {}
+    peak_coincidence_active = bool(adr.get("peak_coincidence_active", False))
+    last_refresh = adr.get("last_refresh", "unknown")
+
+    text_color = "#FFFFFF" if status in ("Fired", "Partially fired") else "#1a1a1a"
+
+    # Phase-specific banner text (rendered above the header)
+    phase_banner_text = {
+        "pre_event": "Awaiting F-1 filing — expected June-July 2026",
+        "f1_filed": "F-1 filed — roadshow window opens",
+        "roadshow": "Roadshow active — institutional demand signals incoming",
+        "pricing": "Pricing day window — 424B filing imminent",
+        "trading": "First trading day — ADR live on NYSE/NASDAQ",
+        "completed": "ADR completed — monitoring mechanical drag fade",
+        "canceled": "ADR canceled — sustained weakness signal",
+    }
+    phase_banner = phase_banner_text.get(phase, phase)
+
+    parts = []
+    parts.append(
+        "<div style='margin:24px 0;border:2px solid #555;background:#FAFAFA;"
+        "padding:18px;border-radius:5px'>"
+    )
+
+    # Phase banner
+    parts.append(
+        f"<div style='background:#E3F2FD;color:#0D47A1;padding:6px 12px;"
+        f"border-radius:3px;font-size:12px;font-weight:600;margin-bottom:10px'>"
+        f"📅 {html.escape(phase_banner)}"
+        f"</div>"
+    )
+
+    # Header
+    parts.append(
+        f"<div style='display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap'>"
+        f"<h3 style='margin:0;color:#1a1a1a;display:inline'>Indicator 8 — US ADR / SPO event tracking</h3>"
+        f"<span style='background:{status_color};color:{text_color};padding:6px 14px;"
+        f"border-radius:4px;font-weight:700;font-size:13px'>{html.escape(status)}</span>"
+        f"</div>"
+    )
+
+    # Composite reasoning
+    parts.append(
+        f"<div style='font-size:12px;color:#444;margin-bottom:14px;font-style:italic;"
+        f"padding:10px 12px;background:#FFFFFF;border-left:3px solid {status_color}'>"
+        f"<strong style='color:#1a1a1a;font-style:normal'>READ:</strong> "
+        f"{html.escape(reasoning)}"
+        f"</div>"
+    )
+
+    # Peak-coincidence callout (only if active)
+    if peak_coincidence_active:
+        parts.append(
+            "<div style='margin:10px 0;padding:12px;background:#FFEBEE;"
+            "border:2px solid #B71C1C;border-radius:4px;"
+            "font-size:12px;color:#5A1A1A;line-height:1.55'>"
+            "<strong style='color:#B71C1C'>⚠️ PEAK-COINCIDENCE ESCALATION ACTIVE</strong><br/>"
+            "ADR completion is coincident with late Phase 4 cycle state per "
+            "memory_supercycle_analysis.docx Part 11 (Hynix 1995 listing → 1996 "
+            "crash pattern). Indicator 8 escalated to Fired regardless of "
+            "individual sub statuses."
+            "</div>"
+        )
+
+    # Confirmed offering structure
+    if offering:
+        size_m = offering.get("new_shares_issued_count_millions_est", "?")
+        dilution = offering.get("share_capital_pct_dilution_est", "?")
+        raise_low = offering.get("estimated_raise_usd_b_low", "?")
+        raise_central = offering.get("estimated_raise_usd_b_central", "?")
+        raise_high = offering.get("estimated_raise_usd_b_high", "?")
+        use_of_proceeds = offering.get("use_of_proceeds", []) or []
+        parts.append(
+            "<div style='margin:12px 0;padding:10px 12px;background:#FFFFFF;"
+            "border-left:3px solid #2C5AA0;font-size:12px;color:#333;line-height:1.55'>"
+            "<strong style='color:#1a1a1a'>CONFIRMED OFFERING STRUCTURE</strong><br/>"
+            f"<strong>New shares issued:</strong> ~{size_m}M (~{dilution}% dilution)<br/>"
+            f"<strong>Estimated raise:</strong> ${raise_low}B - ${raise_high}B (central case ${raise_central}B)<br/>"
+            f"<strong>Path:</strong> New share issuance only — treasury share path closed Feb 9 2026<br/>"
+        )
+        if use_of_proceeds:
+            parts.append("<strong>Use of proceeds:</strong> " + html.escape(", ".join(use_of_proceeds)))
+        parts.append("</div>")
+
+    # Sub-indicator cards
+    parts.append("<div style='margin:14px 0'>")
+    parts.append(
+        "<div style='font-weight:600;color:#1a1a1a;font-size:13px;margin-bottom:6px'>"
+        "Sub-indicator status"
+        "</div>"
+    )
+    for sub in subs:
+        parts.append(_build_adr_sub_card(sub))
+    parts.append("</div>")
+
+    # Calendar milestones
+    if calendar:
+        parts.append(
+            "<div style='margin:14px 0;padding:10px 12px;background:#FAFAFA;"
+            "border:1px solid #DDD;border-radius:4px;font-size:12px;color:#333;line-height:1.5'>"
+            "<strong style='color:#1a1a1a'>📆 CALENDAR MILESTONES</strong>"
+            "<table style='width:100%;margin-top:6px;border-collapse:collapse;font-size:11px'>"
+            "<thead><tr style='background:#EEE'>"
+            "<th style='text-align:left;padding:4px 8px'>Date window</th>"
+            "<th style='text-align:left;padding:4px 8px'>Event</th>"
+            "<th style='text-align:left;padding:4px 8px'>Sub</th>"
+            "<th style='text-align:left;padding:4px 8px'>Mechanical impact</th>"
+            "</tr></thead><tbody>"
+        )
+        for m in calendar:
+            parts.append(
+                f"<tr style='border-bottom:1px solid #EEE'>"
+                f"<td style='padding:4px 8px;color:#555'>{html.escape(m.get('date_window', ''))}</td>"
+                f"<td style='padding:4px 8px'>{html.escape(m.get('event', ''))}</td>"
+                f"<td style='padding:4px 8px;color:#666;font-weight:600'>{html.escape(m.get('sub_indicator', ''))}</td>"
+                f"<td style='padding:4px 8px;color:#666'>{html.escape(m.get('mechanical_impact', ''))}</td>"
+                f"</tr>"
+            )
+        parts.append("</tbody></table></div>")
+
+    # Academic calibration
+    if academic:
+        mech_drag = academic.get("mechanical_drag_pct_range", "")
+        fade = academic.get("fade_window_months", "")
+        citations = academic.get("citations", []) or []
+        ref_events = academic.get("reference_events", []) or []
+        parts.append(
+            "<div style='margin:14px 0;padding:10px 12px;background:#F0F4F8;"
+            "border-left:3px solid #455A64;font-size:11px;color:#333;line-height:1.5'>"
+            "<strong style='color:#1a1a1a'>ACADEMIC CALIBRATION (mechanical drag for established foreign issuers)</strong><br/>"
+            f"Mechanical drag: <strong>{html.escape(mech_drag)}%</strong> cumulative; "
+            f"fade window <strong>{html.escape(fade)} months</strong>.<br/>"
+            f"Citations: {html.escape('; '.join(citations))}<br/>"
+            f"Reference events:<ul style='margin:4px 0 0 0;padding-left:18px'>"
+        )
+        for r in ref_events[:5]:
+            parts.append(f"<li>{html.escape(r)}</li>")
+        parts.append("</ul></div>")
+
+    # Footer
+    parts.append(
+        f"<div style='margin-top:14px;padding-top:10px;border-top:1px solid #DDD;"
+        f"font-size:11px;color:#666'>"
+        f"<strong>FRAMEWORK NOTE:</strong> Mechanical drag is small and "
+        f"predictable; the framework-relevant value is the peak-coincidence "
+        f"pattern per Part 11 — memory makers cross-listing at peak is a "
+        f"recurring top-tick pattern (SK Hynix 1995 KRX listing preceded the "
+        f"1996 crash). Fired persists through Phase 4 — no 90-day reversion "
+        f"per the v3.4.4 framework decision. Last YAML refresh: {html.escape(last_refresh)}."
+        f"</div>"
+    )
+
+    parts.append("</div>")
+    return "\n".join(parts)
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# v3.4.4 — DHCR spectrum bar (per Raul's sketch May 22 2026)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _build_dhcr_spectrum_bar(score: int) -> str:
+    """Render the 0-100 spectrum bar showing memory-type + SK Hynix moat
+    strength across the score range, with today's score marked.
+
+    Layout per Raul's hand-drawn sketch:
+      - Vertical bar, 100 at top → 0 at bottom (matches matrix Y-axis convention)
+      - 5 stacked color-coded segments (matrix palette: green → yellow → amber → red-orange)
+      - 3 columns visually: bar | Memory type column | SK Hynix moat column
+      - Today's score marked with a left-pointing red arrow at proportional position
+
+    Segment boundaries (matching DHCR cell intensities and status partitions):
+      85-100  HBM pure          Strongest moat — duopoly peak (~60% share)
+      65-85   HBM-GDDR/hybrid   Strong moat (Samsung+Micron contest at margin)
+      40-65   LPDDR/HBM hybrid  Partial moat — duopoly with Samsung
+      20-40   LPDDR-led         Weak moat (Samsung-advantaged on LPDDR)
+       0-20   DDR commodity     No moat — compete on margin (CXMT/Samsung/Micron)
+    """
+    # Segments defined top-to-bottom (matches visual order — 100 at top)
+    segments = [
+        {
+            "score_range": (85, 100),
+            "color": "#E0775F",  # red-orange (matrix HBM zone)
+            "memory_type": "HBM pure",
+            "memory_detail": "(sold out 2027)",
+            "moat": "Strongest moat",
+            "moat_detail": "Duopoly peak — ~60% share, Samsung gaining",
+        },
+        {
+            "score_range": (65, 85),
+            "color": "#F8A55C",  # amber (matrix HBM_HYBRID zone)
+            "memory_type": "HBM-GDDR / HBM-hybrid",
+            "memory_detail": "(hot working set)",
+            "moat": "Strong moat",
+            "moat_detail": "HBM majority — Samsung + Micron contest at margin",
+        },
+        {
+            "score_range": (40, 65),
+            "color": "#FCE38A",  # yellow (matrix LPDDR zone)
+            "memory_type": "LPDDR / HBM hybrid",
+            "memory_detail": "(transition zone)",
+            "moat": "Partial moat",
+            "moat_detail": "Duopoly with Samsung; Micron contesting",
+        },
+        {
+            "score_range": (20, 40),
+            "color": "#C9E5BC",  # lighter green (matrix DDR_CXL zone)
+            "memory_type": "LPDDR-led",
+            "memory_detail": "(efficiency-driven downshift)",
+            "moat": "Weak moat",
+            "moat_detail": "Samsung-advantaged on LPDDR",
+        },
+        {
+            "score_range": (0, 20),
+            "color": "#A6D89B",  # green (matrix DDR zone)
+            "memory_type": "DDR commodity",
+            "memory_detail": "(efficiency dominant)",
+            "moat": "No moat",
+            "moat_detail": "Compete on margin with Samsung / Micron / CXMT",
+        },
+    ]
+
+    # Total bar height in pixels (visual reference; segment heights scale)
+    BAR_TOTAL_HEIGHT_PX = 360
+    # Marker position: score 52 → 48% from bottom → top:(100-52)/100 = 48% from top
+    marker_from_top_pct = 100 - score
+
+    parts = []
+    parts.append(
+        "<div style='margin:18px 0;padding:14px;background:#FFFFFF;"
+        "border:1px solid #DDD;border-radius:4px'>"
+    )
+    parts.append(
+        "<div style='font-weight:600;color:#1a1a1a;font-size:13px;margin-bottom:10px'>"
+        "SK HYNIX HBM CAPTIVE-RATIO SPECTRUM"
+        "<span style='color:#666;font-weight:400;font-size:11px;margin-left:8px'>"
+        f"— Today's score {score}/100 marks position on the architecture × moat-strength axis"
+        "</span></div>"
+    )
+
+    # Outer table: 3 cells — bar | memory type | moat
+    parts.append("<table style='width:100%;border-collapse:collapse'><tr>")
+
+    # Cell 1: the bar itself + score axis labels on left + marker
+    parts.append(
+        f"<td style='vertical-align:top;width:90px;position:relative'>"
+        f"<div style='position:relative;height:{BAR_TOTAL_HEIGHT_PX}px;width:60px;"
+        f"margin-left:30px;border:1px solid #555'>"
+    )
+    # Stack segments inside the bar (top-to-bottom; each segment is 20% height)
+    for seg in segments:
+        lo, hi = seg["score_range"]
+        height_pct = hi - lo  # always 20 except (65,85) which is 20 and (85,100) which is 15
+        parts.append(
+            f"<div style='height:{height_pct}%;background:{seg['color']};"
+            f"border-bottom:1px solid #555;position:relative'>"
+            f"<span style='position:absolute;left:-32px;top:0;font-size:10px;"
+            f"color:#555;font-variant-numeric:tabular-nums'>{hi}</span>"
+            f"</div>"
+        )
+    # Bottom-axis "0"
+    parts.append(
+        "<span style='position:absolute;left:-32px;bottom:-7px;font-size:10px;"
+        "color:#555;font-variant-numeric:tabular-nums'>0</span>"
+    )
+    # Today's marker — red triangle pointing right at the bar from outside left
+    parts.append(
+        f"<div style='position:absolute;top:{marker_from_top_pct}%;left:-8px;"
+        f"transform:translateY(-50%)'>"
+        f"<span style='display:inline-block;font-size:14px;color:#B91C1C;"
+        f"font-weight:700'>▶</span>"
+        f"<span style='display:inline-block;font-size:11px;color:#B91C1C;"
+        f"font-weight:700;margin-left:2px;vertical-align:middle;background:#FFF;"
+        f"padding:1px 4px;border:1px solid #B91C1C;border-radius:2px'>"
+        f"today {score}</span>"
+        f"</div>"
+    )
+    parts.append("</div></td>")
+
+    # Cell 2: Memory type column (labels aligned to segment midpoints)
+    parts.append(
+        "<td style='vertical-align:top;padding-left:14px'>"
+        "<div style='font-weight:600;font-size:11px;color:#1a1a1a;margin-bottom:4px;"
+        "padding-left:4px;border-left:3px solid #555'>Memory type</div>"
+        f"<div style='position:relative;height:{BAR_TOTAL_HEIGHT_PX}px'>"
+    )
+    # Position each label at the midpoint of its segment
+    for seg in segments:
+        lo, hi = seg["score_range"]
+        midpoint_from_top_pct = 100 - (lo + hi) / 2
+        parts.append(
+            f"<div style='position:absolute;top:{midpoint_from_top_pct}%;left:0;"
+            f"transform:translateY(-50%);font-size:11px;color:#333;line-height:1.4'>"
+            f"<strong>{html.escape(seg['memory_type'])}</strong> "
+            f"<span style='color:#777'>{html.escape(seg['memory_detail'])}</span>"
+            f"</div>"
+        )
+    parts.append("</div></td>")
+
+    # Cell 3: SK Hynix moat column
+    parts.append(
+        "<td style='vertical-align:top;padding-left:14px'>"
+        "<div style='font-weight:600;font-size:11px;color:#1a1a1a;margin-bottom:4px;"
+        "padding-left:4px;border-left:3px solid #555'>SK Hynix moat</div>"
+        f"<div style='position:relative;height:{BAR_TOTAL_HEIGHT_PX}px'>"
+    )
+    for seg in segments:
+        lo, hi = seg["score_range"]
+        midpoint_from_top_pct = 100 - (lo + hi) / 2
+        parts.append(
+            f"<div style='position:absolute;top:{midpoint_from_top_pct}%;left:0;"
+            f"transform:translateY(-50%);font-size:11px;color:#333;line-height:1.4'>"
+            f"<strong>{html.escape(seg['moat'])}</strong>"
+            f"<div style='color:#777;font-size:10px;line-height:1.3'>"
+            f"{html.escape(seg['moat_detail'])}</div>"
+            f"</div>"
+        )
+    parts.append("</div></td>")
+
+    parts.append("</tr></table>")
+    parts.append("</div>")
+    return "\n".join(parts)
 
 
 def _build_dhcr_section4_card(
@@ -753,6 +1272,14 @@ def _build_dhcr_section4_card(
             f"style='width:100%;max-width:760px;margin:8px 0' "
             f"alt='DHCR 5x5 matrix — KV efficiency vs operative context, color-coded by memory zone' />"
         )
+
+    # v3.4.4 — SPECTRUM BAR (per Raul's sketch May 22 2026).
+    # Vertical bar from 100 (top) to 0 (bottom) with 5 stacked color-coded
+    # segments mapping score ranges to memory architecture AND SK Hynix
+    # moat-strength. Today's score marked with a left-pointing arrow at the
+    # proportional position. Renders as inline HTML/CSS (no image) for
+    # responsive scaling in email clients.
+    parts.append(_build_dhcr_spectrum_bar(score))
 
     # Two-column: workload-implied vs market-deployed
     parts.append("<table style='width:100%;border-collapse:collapse;margin:14px 0'><tr>")
@@ -1032,21 +1559,43 @@ def _build_indicators_section(
 
     v3.39.7.9 — rel_strength_verdict param added.
 
-    v3.4.0 — dhcr_snapshot param added. For t1_decode_hbm_captive_ratio,
-    the "Where we stand" cell renders the direction-monitor snippet
-    (composite direction + YoY drivers + implied capacity) instead of
-    Sonnet's prose. This is the only direction-monitor indicator in the
-    framework — its read is the computed numbers, not narrative.
+    v3.4.0 — dhcr_snapshot param was added, originally to inject a section 3
+    direction-monitor snippet for t1_decode_hbm_captive_ratio.
+
+    v3.4.3.1 — DHCR snippet removed; t1_decode_hbm_captive_ratio is filtered
+    out of the per-tier loop entirely. DHCR renders ONLY in section 4 as
+    the last deep-dive card. The dhcr_snapshot parameter is retained for
+    backward-compatible call signatures but is no longer consumed here.
+    See CLAUDE.md locked decisions and DHCR_Framework_Explained.docx.
     """
     # v3.39.7.9 — pre-build the t3_relative_strength computed snippet once
     # so the per-row loop can drop it in cheaply.
     rs_snippet = _build_relative_strength_snippet(rel_strength_verdict)
-    # v3.4.0 — same pattern for DHCR
-    dhcr_snippet = _build_dhcr_section3_snippet(dhcr_snapshot)
+    # v3.4.3.1 — _build_dhcr_section3_snippet prep removed. DHCR no longer
+    # appears in section 3; the section 4 card is the only DHCR surface.
 
     parts = []
+    # v3.4.3.1 — DHCR (t1_decode_hbm_captive_ratio) is structurally Tier 1
+    # but renders ONLY as a section 4 deep-dive card; NEVER in this section 3
+    # tier indicator status table. The v3.4.2 framework redesign (5x5 matrix
+    # with score 0-100, anticipation premium, sanity check) produces outputs
+    # that don't fit the section 3 row format. Filter DHCR out before the
+    # per-tier loop so it can't render here. See CLAUDE.md locked decisions
+    # and DHCR_Framework_Explained.docx Appendix B for the placement rule.
+    #
+    # v3.4.4 — same pattern extended to t1_competitor_dynamics (Indicator 7)
+    # and t1_us_adr_event (Indicator 8). Both are composite indicators with
+    # rich sub-structure (4 subs each + EPS-impact composite for 7, lifecycle
+    # phase + calendar for 8) that render only as section 4 deep-dive cards.
+    SECTION_4_ONLY_INDICATORS = {
+        "t1_decode_hbm_captive_ratio",
+        "t1_competitor_dynamics",
+        "t1_us_adr_event",
+    }
     for tier in (1, 2, 3, 4):
-        tier_assessments = [a for a in assessments if a.tier == tier]
+        tier_assessments = [a for a in assessments
+                            if a.tier == tier
+                            and a.id not in SECTION_4_ONLY_INDICATORS]
         if not tier_assessments:
             continue
 
@@ -1064,6 +1613,14 @@ def _build_indicators_section(
 
         for a in tier_assessments:
             status_color = STATUS_COLORS.get(a.current_status, "#CCCCCC")
+            # v3.4.3.1 — Fired (red) and Partially fired (amber) backgrounds
+            # are too dark for default near-black badge text per Raul May 22.
+            # White text on dark backgrounds; near-black on light backgrounds
+            # (Not fired green, etc.).
+            status_text_color = (
+                "#FFFFFF" if a.current_status in ("Fired", "Partially fired")
+                else "#1a1a1a"
+            )
             # v3.4.1 Fix 2 — REVERTED v3.39.7.9's colored-background experiment.
             # Per user direction 2026-05-22: the "CHANGED:" annotation should
             # render as plain text (no background tint) — only the status pill
@@ -1142,19 +1699,16 @@ def _build_indicators_section(
             where_we_stand_html = html.escape(where_we_stand_raw)
             if a.id == "t3_relative_strength" and rs_snippet:
                 where_we_stand_html = rs_snippet + where_we_stand_html
-            elif a.id == "t1_decode_hbm_captive_ratio" and dhcr_snippet:
-                # v3.4.0 — DHCR direction monitor. Snippet shows the
-                # composite direction + key driver YoY rates + implied
-                # context capacity. Replaces (not prepends to) Sonnet's
-                # prose because the direction monitor IS the read — Sonnet's
-                # text would be redundant with the computed numbers shown.
-                where_we_stand_html = dhcr_snippet
+            # v3.4.3.1 — DHCR (t1_decode_hbm_captive_ratio) snippet branch
+            # removed. DHCR is filtered out of this loop's tier_assessments
+            # at the top of _build_indicators_section; its rendering lives
+            # exclusively in the section 4 deep-dive card.
 
             parts.append(
                 "<tr>"
                 f"<td class='indicator-cell'><strong>{html.escape(a.name)}</strong><br/><span style='color:#888;font-size:11px'>{html.escape(a.description[:120])}</span></td>"
                 f"<td class='indicator-cell'>{html.escape(a.what_to_look_for)}</td>"
-                f"<td class='indicator-cell'><span class='status-badge' style='background:{status_color}'>{html.escape(a.current_status)}</span>{change_flag}</td>"
+                f"<td class='indicator-cell'><span class='status-badge' style='background:{status_color};color:{status_text_color}'>{html.escape(a.current_status)}</span>{change_flag}</td>"
                 f"<td class='indicator-cell'>{where_we_stand_html}</td>"
                 f"<td class='indicator-cell'>{a.latest_developments}{links_html}</td>"
                 "</tr>"
@@ -1243,9 +1797,14 @@ def _build_top5_section(
     parts = []
     for a in top5:
         status_color = STATUS_COLORS.get(a.current_status, "#CCCCCC")
+        # v3.4.3.1 — same Fired/Partially fired white-text fix as section 3.
+        status_text_color = (
+            "#FFFFFF" if a.current_status in ("Fired", "Partially fired")
+            else "#1a1a1a"
+        )
         parts.append(
             f"<h3>{html.escape(a.name)} "
-            f"<span class='status-badge' style='background:{status_color};margin-left:8px'>{html.escape(a.current_status)}</span></h3>"
+            f"<span class='status-badge' style='background:{status_color};color:{status_text_color};margin-left:8px'>{html.escape(a.current_status)}</span></h3>"
         )
         parts.append(f"<p style='font-size:13px'><strong>What we're looking for:</strong> {html.escape(a.what_to_look_for)}</p>")
         parts.append(f"<p style='font-size:13px'><strong>Where we stand:</strong> {html.escape(a.where_we_stand)}</p>")
