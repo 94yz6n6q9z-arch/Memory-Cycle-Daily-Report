@@ -152,10 +152,18 @@ jobs:
           # comparison. Without these two adds, the DHCR direction monitor would
           # work for the current snapshot but historical context (signal
           # accumulation, prior-run comparison) would be lost between runs.
+          # v3.4.3: state/layer2_audit_*.jsonl added — per-day Layer 2 audit
+          # records (one line per per-signal Haiku call) with prompt fingerprints
+          # + verdict snapshots. Used for Part 7c observability — answering
+          # "what did Haiku see for indicator X on date Y, and what did it
+          # return?" Especially useful after the May 22 529 incidents to
+          # diagnose Layer 2 reliability over time. Per-day file naming so
+          # the commit set stays manageable.
           git add -A state/brief_sent_dates.json state/prior_state.json state/cache/ \
                   state/indicator_evidence.json \
                   state/trigger_events_24h.json \
                   state/extraction_log_*.jsonl \
+                  state/layer2_audit_*.jsonl \
                   state/dhcr_state.json \
                   data/dram_spot_history.csv \
                   data/dram_contract_actuals.csv \
