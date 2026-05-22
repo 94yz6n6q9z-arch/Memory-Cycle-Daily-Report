@@ -1,16 +1,16 @@
 {
-  "written_at_iso": "2026-05-21T10:29:22.626572+00:00",
+  "written_at_iso": "2026-05-22T04:49:09.861021+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 3,
     "materials_only": 0,
-    "nothing": 2,
-    "already_processed": 27,
+    "nothing": 3,
+    "already_processed": 29,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "full_transcript",
       "Broadcom": "already_processed",
-      "TSMC": "already_processed",
+      "TSMC": "nothing",
       "Applied Materials": "already_processed",
       "Microsoft": "already_processed",
       "Alphabet": "already_processed",
@@ -30,6 +30,7 @@
       "SK Hynix",
       "Samsung Electronics",
       "Micron",
+      "Nvidia",
       "Broadcom",
       "TSMC",
       "Applied Materials",
@@ -41,6 +42,8 @@
       "Oracle",
       "Dell",
       "HPE",
+      "AMD",
+      "Intel",
       "Cerebras"
     ]
   },
@@ -56,10 +59,10 @@
     {
       "company": "Nvidia",
       "ticker": "NVDA",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 53648
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "Broadcom",
@@ -152,18 +155,18 @@
     {
       "company": "AMD",
       "ticker": "AMD",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 58583
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "Intel",
       "ticker": "INTC",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 51890
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "Cerebras",
@@ -214,6 +217,14 @@
       "char_count": 0
     },
     {
+      "company": "Nvidia",
+      "ticker": "NVDA",
+      "availability": "full_transcript",
+      "source_name": "Yahoo Finance",
+      "note": null,
+      "char_count": 46049
+    },
+    {
       "company": "Broadcom",
       "ticker": "AVGO",
       "availability": "already_processed",
@@ -224,9 +235,9 @@
     {
       "company": "TSMC",
       "ticker": "TSM",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
@@ -300,6 +311,22 @@
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
+    },
+    {
+      "company": "AMD",
+      "ticker": "AMD",
+      "availability": "full_transcript",
+      "source_name": "Yahoo Finance",
+      "note": null,
+      "char_count": 56868
+    },
+    {
+      "company": "Intel",
+      "ticker": "INTC",
+      "availability": "full_transcript",
+      "source_name": "Yahoo Finance",
+      "note": null,
+      "char_count": 51953
     }
   ]
 }
