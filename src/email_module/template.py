@@ -92,6 +92,13 @@ def build_email_html(
     # framework degrades gracefully.
     dhcr_snapshot: Optional[dict] = None,
     dhcr_chart_b64: Optional[str] = None,
+    # v3.4.1 Fix 5b: Layer 2 per-signal reasonings indexed by signal_id.
+    # Used as defensive fallback in _build_indicators_section when Sonnet's
+    # where_we_stand field comes back empty (hit max_tokens mid-output).
+    # Each entry: {"consensus_direction": "...", "confidence_level": "...",
+    # "evidence_sources": [...]}. When None or missing for an indicator,
+    # the original Sonnet text is used as-is (existing behavior).
+    signal_reasonings_by_id: Optional[dict] = None,
 ) -> str:
     """Assemble the full HTML email."""
 
@@ -255,6 +262,7 @@ def build_email_html(
         analysis.indicator_assessments,
         rel_strength_verdict=rel_strength_verdict,
         dhcr_snapshot=dhcr_snapshot,
+        signal_reasonings_by_id=signal_reasonings_by_id,
     ))
 
     # 6. Top 5 deep dives (section 4 — includes cycle matrix card under
@@ -342,14 +350,64 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
         f"</div>"
     )
 
-    # Trigger event line
+    # v3.4.1 Fix 1 — trigger banner background varies by DESTINATION status:
+    #   reverted to "Not fired"      → green (#C0DD97), dark text
+    #   transitioned to "Fired"      → red (#B91C1C), white text
+    #   transitioned to "Partial..." → yellow (#FAC775), dark text
+    # The destination is extracted from the `to_status` field if present,
+    # otherwise parsed from the description string (e.g. "from 'Fired' to
+    # 'Not fired'"). Falls back to the legacy yellow if destination can't
+    # be determined.
+    # v3.4.1 Fix 3b — "Reversed" is forbidden vocabulary; convert at render
+    # time if any code path or stale state slips it through.
     if es.new_triggers_today:
         trigger_lines = []
         for trig in es.new_triggers_today:
+            description = trig.get('description', '')
+            to_status = trig.get('to_status') or ''
+            # Parse destination from description if to_status not provided.
+            # Look for "to 'X'" pattern at end of typical phrasing.
+            if not to_status:
+                import re as _re
+                m = _re.search(r"to ['\"]([^'\"]+)['\"]", description)
+                if m:
+                    to_status = m.group(1)
+            # Normalize: "Reversed" → "Not fired" (v3.4.1 Fix 3b)
+            if to_status == "Reversed":
+                to_status = "Not fired"
+                description = description.replace("'Reversed'", "'Not fired'")
+            # Also sanitize description in case it contains "Reversed" elsewhere
+            description = description.replace("'Reversed'", "'Not fired'")
+            description = description.replace("Reversed", "Not fired")
+            # Pick colors by destination
+            if to_status == "Fired":
+                bg_color = "#B91C1C"
+                border_color = "#7A1212"
+                text_color = "#FFFFFF"
+                label_bg = "#7A1212"
+            elif to_status == "Not fired":
+                bg_color = "#C0DD97"
+                border_color = "#6B8B4A"
+                text_color = "#1a3300"
+                label_bg = "#6B8B4A"
+            elif to_status == "Partially fired":
+                bg_color = "#FAC775"
+                border_color = "#B58A1A"
+                text_color = "#5A3F00"
+                label_bg = "#B58A1A"
+            else:
+                # Unknown destination — legacy yellow
+                bg_color = "#FFEBA1"
+                border_color = "#C68A2A"
+                text_color = "#5A3F00"
+                label_bg = "#C68A2A"
             trigger_lines.append(
-                f"<div class='new-trigger'>"
-                f"<strong>New trigger event on Tier {trig.get('tier', '?')}:</strong> "
-                f"{html.escape(trig.get('indicator_name', ''))} — {html.escape(trig.get('description', ''))}"
+                f"<div style='background:{bg_color};border-left:4px solid {border_color};"
+                f"padding:10px 14px;margin:8px 0;font-size:13px;color:{text_color};border-radius:3px'>"
+                f"<span style='display:inline-block;background:{label_bg};color:#fff;"
+                f"padding:2px 8px;border-radius:3px;font-size:11px;font-weight:700;"
+                f"letter-spacing:0.3px;margin-right:8px'>NEW TRIGGER EVENT — TIER {trig.get('tier', '?')}</span>"
+                f"<strong>{html.escape(trig.get('indicator_name', ''))}</strong> — {html.escape(description)}"
                 f"</div>"
             )
         trigger_text = "\n".join(trigger_lines)
@@ -834,6 +892,7 @@ def _build_indicators_section(
     assessments: list[IndicatorAssessment],
     rel_strength_verdict: Optional[dict] = None,
     dhcr_snapshot: Optional[dict] = None,
+    signal_reasonings_by_id: Optional[dict] = None,
 ) -> str:
     """Build the four-tier indicator status tables.
 
@@ -877,20 +936,25 @@ def _build_indicators_section(
 
         for a in tier_assessments:
             status_color = STATUS_COLORS.get(a.current_status, "#CCCCCC")
-            # v3.39.7.9 — change-flag background now matches destination status
-            # color (per user direction 2026-05-21): red when something fires,
-            # green when reverses to Not fired, yellow for partial transitions.
-            # Pre-v3.39.7.9 change-flag was always #FFEBA1 (yellow) regardless
-            # of where the indicator landed — making fire-transitions look the
-            # same as un-fire-transitions visually.
+            # v3.4.1 Fix 2 — REVERTED v3.39.7.9's colored-background experiment.
+            # Per user direction 2026-05-22: the "CHANGED:" annotation should
+            # render as plain text (no background tint) — only the status pill
+            # itself carries the destination color. The colored background was
+            # visually redundant with the pill and made the cell read as two
+            # competing badges. This version: small bold prefix + plain
+            # description text in muted color.
+            # v3.4.1 Fix 3b — also scrub "Reversed" → "Not fired" at render time
+            # in case any stale state slipped the word through.
             change_flag = ""
             if a.change_vs_prior:
-                # Dark text on yellow/green for readability; white text on red.
-                _flag_text_color = "#FFFFFF" if a.current_status == "Fired" else "#1a1a1a"
+                change_text = a.change_vs_prior[:80]
+                # Eradicate "Reversed" from any code path that still emits it
+                change_text = change_text.replace("'Reversed'", "'Not fired'")
+                change_text = change_text.replace("Reversed", "Not fired")
                 change_flag = (
-                    f"<span class='change-flag' "
-                    f"style='background:{status_color};color:{_flag_text_color}'>"
-                    f"CHANGED: {html.escape(a.change_vs_prior[:80])}</span>"
+                    f"<div style='margin-top:6px;font-size:11px;color:#555;line-height:1.4'>"
+                    f"<strong style='color:#333'>CHANGED:</strong> "
+                    f"{html.escape(change_text)}</div>"
                 )
 
             links_html = ""
@@ -918,7 +982,36 @@ def _build_indicators_section(
             # line. v3.39.7.10 adds an integration test that constructs
             # an IndicatorAssessment(id="t3_relative_strength", ...) and
             # verifies the rendered HTML contains the snippet badges.
-            where_we_stand_html = html.escape(a.where_we_stand)
+            # v3.4.1 Fix 5b — defensive fallback for empty where_we_stand.
+            # The May 21 2026 brief had t2_capex_parabolic's where_we_stand
+            # rendered as empty cell despite rich Layer 2 verdict + evidence
+            # store carry-forward. Root cause: Sonnet hits its max_tokens
+            # budget mid-output and silently truncates trailing fields. The
+            # word cap in the prompt (v3.4.1 Fix 5) is the primary mitigation;
+            # this is belt-and-braces — if the field arrives empty or
+            # absurdly short (<30 chars), render a fallback derived from the
+            # Layer 2 verdict for that indicator (threaded via the new
+            # signal_reasonings_by_id kwarg). User-visible result: a populated
+            # cell with the L2-derived "where we currently stand" prose
+            # instead of an empty cell.
+            where_we_stand_raw = (a.where_we_stand or "").strip()
+            if len(where_we_stand_raw) < 30 and signal_reasonings_by_id:
+                fallback = signal_reasonings_by_id.get(a.id)
+                if fallback:
+                    consensus = (fallback.get("consensus_direction") or "").strip()
+                    confidence = (fallback.get("confidence_level") or "").strip()
+                    if consensus:
+                        fb_text = (
+                            f"[Sonnet output truncated — fallback from Layer 2 verdict] "
+                            f"{consensus[:400]}"
+                        )
+                        if confidence:
+                            fb_text += f" (confidence: {confidence})"
+                        where_we_stand_raw = fb_text
+            # Also scrub "Reversed" → "Not fired" here (v3.4.1 Fix 3b defensive)
+            where_we_stand_raw = where_we_stand_raw.replace("'Reversed'", "'Not fired'")
+            where_we_stand_raw = where_we_stand_raw.replace("Reversed", "Not fired")
+            where_we_stand_html = html.escape(where_we_stand_raw)
             if a.id == "t3_relative_strength" and rs_snippet:
                 where_we_stand_html = rs_snippet + where_we_stand_html
             elif a.id == "t1_decode_hbm_captive_ratio" and dhcr_snippet:

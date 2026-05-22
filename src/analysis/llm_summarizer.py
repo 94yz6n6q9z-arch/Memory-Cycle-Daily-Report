@@ -1053,17 +1053,22 @@ YOUR JOB:
 6. Calculate UPDATED PROBABILITY DISTRIBUTION based on new evidence.
 7. Compare current peak estimate vs prior to flag if peak has shortened or extended.
 
-EXECUTIVE BRIEF SPECIFICATION (v3.39.7.5):
+EXECUTIVE BRIEF SPECIFICATION (v3.39.7.5, length cap v3.4.1):
 
 The `executive_brief` field is the consolidated paragraph at the top of the brief — the FIRST thing the reader sees after the phase line and trigger callouts. It replaces three separate v3.39.7.4 blocks (delta_from_prior_text prose, big_movers list, market_summary) into a single coherent narrative.
 
-Length: 5-8 sentences, ONE paragraph. The reader uses this to decide whether to read on; details are in later sections.
+Length: **HARD CAP 250 WORDS** (v3.4.1 — previous unbounded brief reached 411 words on May 21 2026). The cap is a discipline, not a sacrifice — compress, don't cut. Target 5-8 sentences, ONE paragraph. Remove filler words ("notably", "interestingly", "with respect to"), nest clauses tightly, prefer active voice, lose redundant qualifiers. If a sentence is 30+ words, split it or trim it. The reader uses this to decide whether to read on; details are in later sections — point them to §N rather than restating.
+
+Self-check before emitting: count your words. If >250, compress further. Look first for: (a) intensifiers ("dramatically", "substantially"); (b) restated context already in the indicator status pills; (c) hedges ("appears to", "seems to indicate"); (d) numerical detail that belongs in §3 / §4 cards, not the headline paragraph; (e) anchor link explanations like "see §3 for more" — the anchor itself IS the explanation.
 
 Content — cover all four themes in this order, but blend them into prose (NOT four labeled bullets):
   (i)  Signal fires/unfires today + what drove them (cite the specific indicator and the trigger value / news that caused the change)
   (ii) Big news from today's feed. PRIORITIZE items that align with a framework signal even when they don't formally fire it. Example: a single-firm "Sell SK Hynix" rating doesn't fire t2_insider_sales (which requires actual insider transactions), but in a market of 26-up / 0-down EPS revisions it IS the first sell-side dissent — a psychological inflection the framework cares about deeply. Surface these as "directional confirmation of [signal name]" or "first dissent from the [signal name] consensus".
   (iii) Big movers today — name 2-4 specific tickers with their 1D % moves. Focus on those that diverge from the broader semi tape (especially the memory pure-plays).
   (iv) Macro / AI / semiconductor backdrop news that impacts the trade (Fed decisions, China export controls, NVIDIA orders, AI capex announcements, etc).
+
+FORBIDDEN VOCABULARY (v3.4.1):
+The word "Reversed" is BANNED in all output fields — `executive_brief`, `new_triggers_today`, `change_vs_prior`, `where_we_stand`, `latest_developments`. Use "Not fired" for reversals. If an indicator transitioned from "Fired" to "Not fired", phrase it as: "t2_X reverted to 'Not fired' after [reason]" — NEVER "Status changed from 'Fired' to 'Reversed'". This is a hard rule — any output containing "Reversed" will be post-processed to "Not fired" at render time, but writing it correctly the first time avoids ambiguity.
 
 Anchor links — when referencing detail elsewhere in the brief, emit hyperlinks of the form `[→§N]` where N is the section number (1-7):
   §1 = Performance overview (price table)
@@ -1318,7 +1323,7 @@ triage didn't surface it. Format the headline as: "{{broker}}
 raises/lowers {{ticker}} target to {{new_pt}} from {{prior_pt}}". Use
 the broker's ANALYTICAL EXCERPT lines to write the why_it_matters field.
 
-NUMBER-FIRST INDICATOR FORMAT (v3.39.6 — STRICT):
+NUMBER-FIRST INDICATOR FORMAT (v3.39.6 — STRICT, length cap v3.4.1):
 For every indicator_assessments[] entry, the `where_we_stand` field
 MUST follow this template when the indicator has computed numerical
 evidence (rel-strength spreads, hyperscaler capex/OCF ratios, forward P/E,
@@ -1336,6 +1341,32 @@ EPS revisions, single-day moves, etc.):
      probable when measured" — the metric IS measured. If you don't
      see it in COMPUTED METRICS, say "(not threaded)" — do NOT
      reason backward from news headlines.
+
+**HARD CAP: 120 WORDS per where_we_stand field** (v3.4.1).
+Per the May 21 2026 audit, where_we_stand was sometimes empty (notably
+t2_capex_parabolic on May 21) because Sonnet was hitting its
+max_tokens budget late in the output and silently truncating fields.
+The cap is two-sided protection:
+  - Each individual where_we_stand must be ≤120 words so the schema
+    fits comfortably in the token budget across all 23 indicators.
+  - For indicators with rich evidence (t2_capex_parabolic regularly
+    has 5+ named announcements in the evidence store), use the cap
+    to PRIORITIZE — pick the 2-3 most material items, name them with
+    dollar amounts, link the source. Don't try to list everything;
+    that's what the evidence store is for.
+
+CRITICAL — NEVER LEAVE where_we_stand EMPTY (v3.4.1 Fix 5):
+If today's news has no fresh update on this indicator, where_we_stand
+must STILL be populated with the carried-forward evidence. Pull from
+LAYER 2 PER-SIGNAL VERDICTS or the evidence_store entries for that
+indicator and write a 1-2 sentence summary of "where we currently
+stand based on accumulated evidence" — what's fired, since when, and
+the dollar amounts/dates that drove it. Example for t2_capex_parabolic
+when today has no new capex print: "Fired since Mar 2025: $725B aggregate
+2026 hyperscaler capex (MSFT+GOOGL+AMZN+META) confirmed via Q4 2025
+earnings cycle, latest NVIDIA Q1 FY27 $81.6B revenue with $1T cumulative
+hyperscaler capex by 2027 (Tom's Hardware [→§5]) reinforces the trend."
+NEVER emit empty or sub-30-character where_we_stand — that's a bug.
 
 `latest_developments` should be similarly tight: 2-4 sentences max
 with embedded links, NOT multi-paragraph essays. The reader scans

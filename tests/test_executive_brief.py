@@ -117,7 +117,11 @@ class TestExecutiveBriefRendering(unittest.TestCase):
         self.assertIn("T1: 3/6", html)
 
     def test_trigger_callout_when_triggers_present(self):
-        """new_triggers_today list still renders as the yellow callout."""
+        """v3.4.1: trigger banner format changed to 'NEW TRIGGER EVENT — TIER N'
+        label (caps + em-dash separator) with destination-status background
+        color (red for Fired, green for Not fired, yellow for Partially fired)
+        instead of legacy hardcoded yellow. Confirms both label and color logic.
+        """
         es = _exec_summary(
             brief="Today's brief body.",
             triggers=[
@@ -127,8 +131,40 @@ class TestExecutiveBriefRendering(unittest.TestCase):
             ],
         )
         html = _build_executive_summary(es)
-        self.assertIn("New trigger event on Tier 1", html)
+        # v3.4.1 label format
+        self.assertIn("NEW TRIGGER EVENT", html)
+        self.assertIn("TIER 1", html)
         self.assertIn("PC/Smartphone demand cuts", html)
+        # v3.4.1 destination color — transition to 'Fired' → red background
+        self.assertIn("#B91C1C", html, "Fired destination should render red background")
+
+    def test_trigger_callout_color_for_not_fired_reversal(self):
+        """v3.4.1: reversal from Fired → Not fired renders with green background."""
+        es = _exec_summary(
+            brief="Body.",
+            triggers=[
+                {"tier": 2, "indicator_id": "t2_x", "indicator_name": "Some indicator",
+                 "description": "Status changed from 'Fired' to 'Not fired'."},
+            ],
+        )
+        html = _build_executive_summary(es)
+        self.assertIn("#C0DD97", html, "Not fired destination should render green background")
+
+    def test_trigger_callout_strips_legacy_reversed_vocabulary(self):
+        """v3.4.1 Fix 3b: 'Reversed' in trigger description must be rendered
+        as 'Not fired' (defensive normalization). Belt + braces for the
+        prompt-level forbidden vocabulary rule.
+        """
+        es = _exec_summary(
+            brief="Body.",
+            triggers=[
+                {"tier": 2, "indicator_id": "t2_x", "indicator_name": "Some indicator",
+                 "description": "Status changed from 'Fired' to 'Reversed'."},
+            ],
+        )
+        html = _build_executive_summary(es)
+        self.assertNotIn("Reversed", html, "Forbidden vocabulary 'Reversed' must be scrubbed at render")
+        self.assertIn("Not fired", html)
 
     def test_no_trigger_callout_shows_quiet_text(self):
         """Empty new_triggers_today → 'No new trigger events today.' line."""

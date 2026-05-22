@@ -934,6 +934,16 @@ def run_fast_tier() -> int:
         except Exception as e:
             logger.warning(f"DHCR chart generation failed: {e}", exc_info=True)
 
+    # v3.4.1 Fix 5b — build signal_id-keyed dict from Layer 2 reasonings
+    # so the template can fall back to L2 verdict when Sonnet's
+    # where_we_stand field comes back empty (max_tokens truncation).
+    signal_reasonings_by_id = {}
+    for r in signal_reasonings or []:
+        rd = r.to_dict() if hasattr(r, "to_dict") else r
+        sid = rd.get("signal_id") or rd.get("id")
+        if sid:
+            signal_reasonings_by_id[sid] = rd
+
     html_body = build_email_html(
         analysis=analysis,
         performance=performance,
@@ -950,6 +960,8 @@ def run_fast_tier() -> int:
         # v3.4.0 DHCR
         dhcr_snapshot=dhcr_snapshot_dict,
         dhcr_chart_b64=dhcr_chart_b64,
+        # v3.4.1 Fix 5b — Layer 2 fallback for empty where_we_stand
+        signal_reasonings_by_id=signal_reasonings_by_id,
     )
 
     # Send

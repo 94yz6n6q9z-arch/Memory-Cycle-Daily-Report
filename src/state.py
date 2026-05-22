@@ -535,7 +535,21 @@ EVIDENCE_TYPES = {
     "announcement", "forecast", "computed", "data_point", "transaction",
 }
 
-VALID_STATUSES = {"Fired", "Partially fired", "Not fired", "Reversed"}
+# v3.4.1 Fix 3 — "Reversed" REMOVED from valid statuses. The v3.39.7.9
+# release removed "Reversed" from the Sonnet prompt schema and the
+# signal_reasoner output enum, but THIS validation gate was missed — so
+# Layer 2 output containing "Reversed" was still being accepted at the
+# state-update boundary and propagated downstream into trigger event
+# banners and the evidence store. v3.4.1 closes the upstream gate: any
+# Layer 2 verdict carrying "Reversed" now triggers the silent-skip path
+# (which logs a warning and leaves the prior status untouched). Combined
+# with render-time defensive conversion in template.py, this ensures
+# "Reversed" cannot appear anywhere user-visible.
+VALID_STATUSES = {"Fired", "Partially fired", "Not fired"}
+
+# Legacy alias map for any historical state still carrying "Reversed".
+# Used by load_indicator_evidence_store to migrate entries on read.
+LEGACY_STATUS_MIGRATIONS = {"Reversed": "Not fired"}
 
 
 @dataclass
@@ -698,11 +712,29 @@ def load_indicator_evidence_store(
         logger.error(f"{path}: 'indicators' is not a dict. Returning empty store.")
         return {}
     out: dict[str, IndicatorEvidence] = {}
+    migrated_count = 0
     for ind_id, ind_data in indicators.items():
         try:
-            out[ind_id] = IndicatorEvidence.from_dict(ind_id, ind_data)
+            entry = IndicatorEvidence.from_dict(ind_id, ind_data)
+            # v3.4.1 Fix 3 — legacy migration. Pre-v3.39.7.9 store entries
+            # may have current_status == "Reversed". Migrate on read so
+            # downstream code never sees the forbidden vocabulary.
+            if entry.current_status in LEGACY_STATUS_MIGRATIONS:
+                old = entry.current_status
+                entry.current_status = LEGACY_STATUS_MIGRATIONS[old]
+                migrated_count += 1
+                logger.info(
+                    f"Legacy status migrated for {ind_id}: '{old}' → '{entry.current_status}'"
+                )
+            out[ind_id] = entry
         except Exception as e:
             logger.warning(f"Could not parse evidence for {ind_id}: {e}")
+    if migrated_count:
+        logger.warning(
+            f"v3.4.1 legacy migration: {migrated_count} indicator(s) had "
+            f"'Reversed' status — migrated to 'Not fired' in memory. Next "
+            f"save_indicator_evidence_store call will persist the migration."
+        )
     logger.info(f"Loaded indicator evidence store: {len(out)} indicators from {path}")
     return out
 

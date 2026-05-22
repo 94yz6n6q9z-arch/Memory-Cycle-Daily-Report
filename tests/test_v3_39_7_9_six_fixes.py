@@ -250,28 +250,39 @@ class TestColorScheme:
         from src.email_module.template import STATUS_COLORS
         assert STATUS_COLORS["Not fired"] == "#C0DD97"
 
-    def test_change_flag_uses_destination_status_color(self):
-        """The change-flag inline style binds to status_color (the
-        destination status), not a hardcoded yellow. Verify by code
-        inspection — the template must compute the color dynamically."""
+    def test_change_flag_renders_as_plain_text_v3_4_1(self):
+        """v3.4.1 SUPERSEDED v3.39.7.9 Fix #4: the change-flag colored
+        background experiment was reverted. Per user direction 2026-05-22,
+        the 'CHANGED:' annotation in section 3 renders as plain muted text
+        without a background tint — only the status pill itself carries the
+        destination color. Verify the new render uses plain-text styling
+        rather than the v3.39.7.9 dynamic background-color logic.
+        """
         from pathlib import Path
         src = Path("src/email_module/template.py").read_text()
-        # The change_flag rendering line must use {status_color} variable
-        # (matching the destination status), not a hardcoded color.
-        assert "background:{status_color}" in src, (
-            "change-flag must use {status_color} dynamic interpolation "
-            "so the highlight matches the destination status color."
+        # v3.4.1 sentinel — must be present
+        assert "v3.4.1 Fix 2" in src, (
+            "v3.4.1 Fix 2 comment marker missing — the plain-text revert "
+            "may not have been applied."
+        )
+        # v3.39.7.9 background-color logic must NOT be present anymore
+        assert '#FFFFFF" if a.current_status == "Fired"' not in src, (
+            "v3.39.7.9's white-text-on-red conditional should be removed "
+            "in v3.4.1 (change-flag no longer has a colored background)."
         )
 
-    def test_change_flag_text_color_readable_on_red(self):
-        """When the destination is Fired (dark red), text must be white
-        for readability. When destination is yellow/green, text is dark."""
+    def test_change_flag_no_longer_uses_status_color_background(self):
+        """v3.4.1: the change-flag span no longer interpolates
+        background:{status_color} — was the v3.39.7.9 dynamic coloring
+        that's been reverted to plain text in v3.4.1."""
         from pathlib import Path
         src = Path("src/email_module/template.py").read_text()
-        # Look for the conditional text color logic
-        assert '#FFFFFF" if a.current_status == "Fired"' in src, (
-            "Change-flag text color must switch to white when on red "
-            "(Fired) background for readability."
+        # Find the change_flag construction block specifically (not other
+        # uses of {status_color} elsewhere in the file like status pills)
+        # The reverted block uses 'CHANGED:' prefix in a div with muted text.
+        assert "color:#555" in src, (
+            "v3.4.1 change-flag must use muted text color (#555) for "
+            "plain-text rendering"
         )
 
 

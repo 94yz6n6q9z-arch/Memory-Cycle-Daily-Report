@@ -6,6 +6,89 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.4.1 — UI fixes + Reversed eradication + length caps
+
+Five fixes diagnosed from the May 22 2026 production brief screenshots. All five are presentation/quality refinements on top of v3.4.0's feature work.
+
+### Fix 1 — Trigger event banner color by destination
+
+The exec summary's trigger callouts were hardcoded yellow regardless of where the status was going. Image 1 from the May 22 audit showed two adjacent banners — one for "Fired → Reversed" and one for "Reversed → Fired" — both rendered identical yellow, making it impossible to tell at a glance whether the news was bullish or bearish for SK Hynix.
+
+v3.4.1 binds banner background to destination status:
+- Transition **to 'Fired'** → red `#B91C1C` background, white text
+- Transition **to 'Not fired'** → green `#C0DD97` background, dark text
+- Transition **to 'Partially fired'** → yellow `#FAC775` background, dark text
+- Unknown destination → legacy yellow `#FFEBA1` (defensive default)
+
+The destination is read from `to_status` if Layer 2 provides it, otherwise parsed from the description string (regex `to ['\"]([^'\"]+)['\"]`).
+
+Label format also tightened: "New trigger event on Tier N: ..." → "**NEW TRIGGER EVENT — TIER N**" badge + indicator name + cleaned description, for visual parity with the destination color.
+
+### Fix 2 — Section 3 change-flag reverts to plain text
+
+The v3.39.7.9 Fix #4 introduced colored backgrounds on the `CHANGED:` annotation in the section 3 status column. After production review, the colored-background experiment is **reverted** — per user direction 2026-05-22, only the status pill itself carries the destination color; the `CHANGED:` annotation renders as plain muted text. The colored background made the cell read as two competing badges.
+
+New render: `<div style='margin-top:6px;font-size:11px;color:#555'><strong style='color:#333'>CHANGED:</strong> {description}</div>` — no background, light gray text, bold prefix only.
+
+### Fix 3 — "Reversed" eradicated as a status
+
+The v3.39.7.9 release removed "Reversed" from the Sonnet prompt schema and the signal_reasoner output enum, but **`src/state.py:VALID_STATUSES` still included "Reversed"** — the validation gate at the state-update boundary still accepted it, and Sonnet kept emitting it because it saw the word in legacy log entries it consumed.
+
+Three-layer fix:
+- **(a) Upstream gate** — `VALID_STATUSES = {"Fired", "Partially fired", "Not fired"}` (Reversed removed). Layer 2 verdicts containing "Reversed" now trigger the silent-skip warning path.
+- **(b) Legacy migration on load** — `LEGACY_STATUS_MIGRATIONS = {"Reversed": "Not fired"}`. When `load_indicator_evidence_store` reads a store file with legacy "Reversed" entries, it migrates them in memory with a warning log; the next save persists the migration.
+- **(c) Render-time defensive scrub** — `template.py` substitutes "Reversed" → "Not fired" in the trigger banner description and section 3 change-flag at render time. Belt-and-braces against any code path that still emits it.
+- **(d) Sonnet prompt** — explicit `FORBIDDEN VOCABULARY` rule in the EXECUTIVE BRIEF SPECIFICATION block names "Reversed" as banned across all output fields.
+
+### Fix 4 — Executive brief 250-word hard cap
+
+The May 21 2026 brief's exec_summary reached **411 words** (image 4 from May 22 audit, ~24 rendered lines on Raul's screen). Target: 250 words / ~15 lines. The cap is framed as **"compress, don't cut"** — Sonnet must keep all four content themes (signal changes, news, big movers, macro) but tighten prose: remove filler ("notably", "interestingly"), eliminate restated context already in indicator status pills, drop hedges, and let `[→§N]` anchor links replace explanations.
+
+The prompt includes a self-check step listing five specific compression targets so Sonnet has concrete trim levers rather than vague guidance.
+
+### Fix 5 — `where_we_stand` 120-word cap + render-time fallback
+
+Image 5 from the May 22 audit showed `t2_capex_parabolic`'s where_we_stand rendered **empty** despite a rich Layer 2 verdict (NVIDIA Q1 FY27 $81.6B, $1T hyperscaler capex by 2027, Vera Rubin 435% memory price surge). Root cause: Sonnet hit its `max_tokens` budget mid-output and silently truncated trailing fields. Two-part fix:
+
+**(a) Sonnet prompt — 120-word per-field cap + never-empty rule.** Each where_we_stand must be ≤120 words so the schema fits comfortably across all 23 indicators in the token budget. For evidence-rich indicators, the cap forces PRIORITIZATION (pick 2-3 most material items with dollar amounts, link sources) rather than exhaustive listing. The prompt also contains an explicit "NEVER LEAVE where_we_stand EMPTY" rule with a canonical example for `t2_capex_parabolic`: when today has no fresh capex print, pull from accumulated evidence_store + Layer 2 verdict to write 1-2 sentences of carry-forward state.
+
+**(b) Render-time defensive fallback.** `template.py` checks if `where_we_stand.strip()` is under 30 chars; if so, pulls from `signal_reasonings_by_id[indicator.id]['consensus_direction']` (Layer 2 verdict) and renders it with a "[Sonnet output truncated — fallback from Layer 2 verdict]" prefix. Threaded via new `signal_reasonings_by_id` kwarg in `build_email_html`. Falls through to empty cell only when both Sonnet text AND Layer 2 data are unavailable.
+
+### Test state
+
+405 tests pass:
+```bash
+PYTHONPATH=. python3 -m pytest tests/ -q
+# 405 passed, 88 warnings, 3 subtests passed in 4.79s
+```
+
+382 from v3.4.0 baseline + 23 new in `tests/test_v3_4_1_six_fixes.py` covering all five fixes. Two existing tests updated for the new behavior (one in `test_executive_brief.py` for the new trigger banner label format + destination colors; one in `test_v3_39_7_9_six_fixes.py` superseding the obsolete colored-background assertion).
+
+### Files
+
+| File | Change |
+|---|---|
+| `src/state.py` | Fix 3: `VALID_STATUSES` minus "Reversed", `LEGACY_STATUS_MIGRATIONS` dict, migration on store load |
+| `src/email_module/template.py` | Fix 1: destination-based trigger banner colors + label refresh. Fix 2: change-flag plain text. Fix 3 (b): render-time scrub. Fix 5 (b): render-time Layer 2 fallback. `build_email_html` + `_build_indicators_section` gain `signal_reasonings_by_id` kwarg |
+| `src/analysis/llm_summarizer.py` | Fix 3 (d): FORBIDDEN VOCABULARY block. Fix 4: 250-word hard cap + compress-don't-cut framing + self-check. Fix 5 (a): 120-word per-field cap + never-empty rule + t2_capex_parabolic example |
+| `src/fast_tier.py` | Fix 5 (b): build `signal_reasonings_by_id` dict from Layer 2 reasonings list, thread to `build_email_html` |
+| `tests/test_v3_4_1_six_fixes.py` | NEW — 23 tests across 7 classes |
+| `tests/test_executive_brief.py` | Updated trigger callout test for new label/color format; added 2 new tests for color-by-destination and Reversed scrub |
+| `tests/test_v3_39_7_9_six_fixes.py` | Superseded obsolete colored-background assertions with v3.4.1 plain-text expectations |
+| `state/indicator_evidence.json` | Re-saved (no semantic change — confirms load+save still works) |
+
+xlsx renamed `memory_cycle_data_source_audit_v3_4_1.xlsx` (no content change).
+
+### Watch items post-deploy
+
+- **First brief after upload:** exec_summary word count should be ≤250. If Sonnet still overshoots, the cap needs harder enforcement (e.g. truncating at the API output level rather than relying on prompt discipline).
+- **First trigger event:** banner color should match destination — a Fired transition shows red, a Not fired transition shows green. If banner still renders yellow on a non-Partial-fired transition, the regex parse of `to '...'` failed and Layer 2 needs to set `to_status` explicitly.
+- **Section 3 status cells:** the `CHANGED:` line should render as plain gray text, not a colored badge. Status pill (Fired/Not fired/Partially fired) keeps its color.
+- **Any "Reversed" appearance anywhere:** would be a leak. If seen, the render-time scrub failed — open issue with the rendered HTML.
+- **`t2_capex_parabolic` row:** where_we_stand cell must be populated. If empty, both Sonnet AND Layer 2 fallback failed — Layer 2 reasonings dict may not be threaded. Check `state/extraction_log_*.jsonl` and the fast_tier.py call site.
+
+---
+
 ## v3.4.0 — Decode HBM Captive Ratio (DHCR) indicator
 
 The feature release the .3x maintenance window was protecting the version label for. Ships a single new Tier 1 indicator that collapses what the ROADMAP originally specified as three separate indicators (23 — Inference Efficiency Shock, 24 — CXL Production Deployment, 25 — LPDDR Datacenter Ramp) into one composite direction monitor.
