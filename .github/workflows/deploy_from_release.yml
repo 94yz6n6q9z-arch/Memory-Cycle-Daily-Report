@@ -1,0 +1,148 @@
+name: Deploy from Release
+
+# Triggers when a Release is published in this repo. Downloads the release's
+# memory_cycle_brief_*.zip asset, extracts it, and commits the contents to main.
+# Replaces manual drag-drop uploads which were silently dropping files
+# (GitHub web UI multi-file batches don't always commit every selected file).
+#
+# Workflow installed: v3.4.7 (2026-05-23) — see CHANGES.md.
+#
+# Safety guarantees:
+#   - Only triggers on `release: published` (not drafts or pre-releases)
+#   - Refuses to run if no asset matches `memory_cycle_brief_*.zip`
+#   - Refuses to run if multiple matching assets exist (ambiguous)
+#   - Does NOT delete files that aren't in the bundle (rsync without --delete)
+#   - Does NOT touch `state/` — production runtime JSONs preserved
+#   - Does NOT touch `.git/` or `.github/workflows/` if the bundle contains
+#     them (extra defensive: even if the bundle has these, we keep the
+#     repo's version to avoid bricking the workflow itself)
+#
+# How to publish a deploy:
+#   1. Go to repo → Releases → "Draft a new release"
+#   2. Tag version: vX.Y.Z (e.g. v3.4.7)
+#   3. Attach the memory_cycle_brief_vX_Y_Z.zip as the release asset
+#   4. Click "Publish release"
+#   5. Watch the Actions tab for the "Deploy from Release" run to complete
+#      (~30 seconds). The commit will appear on main with the release tag.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write  # needed to push the deploy commit to main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Don't deploy drafts or pre-releases — only stable published releases
+    if: github.event.release.draft == false && github.event.release.prerelease == false
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Identify the release asset
+        id: find_asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # List assets matching our expected pattern
+          asset_names=$(gh release view "${{ github.event.release.tag_name }}" \
+            --json assets \
+            --jq '.assets[] | select(.name | startswith("memory_cycle_brief_") and endswith(".zip")) | .name')
+          asset_count=$(echo "$asset_names" | grep -c . || true)
+
+          if [ "$asset_count" -eq 0 ]; then
+            echo "::error::No memory_cycle_brief_*.zip asset found in release ${{ github.event.release.tag_name }}"
+            echo "Attach a bundle zip to the release and re-publish."
+            exit 1
+          fi
+          if [ "$asset_count" -gt 1 ]; then
+            echo "::error::Multiple memory_cycle_brief_*.zip assets found:"
+            echo "$asset_names"
+            echo "Release must contain exactly one bundle zip; ambiguous deploy refused."
+            exit 1
+          fi
+
+          asset_name=$(echo "$asset_names" | head -1)
+          echo "asset_name=$asset_name" >> "$GITHUB_OUTPUT"
+          echo "Found bundle asset: $asset_name"
+
+      - name: Download the bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/deploy_extract
+          cd /tmp/deploy_extract
+          gh release download "${{ github.event.release.tag_name }}" \
+            --pattern "memory_cycle_brief_*.zip" \
+            --clobber
+          ls -lh
+
+      - name: Extract bundle
+        run: |
+          set -euo pipefail
+          cd /tmp/deploy_extract
+          unzip -q memory_cycle_brief_*.zip -d unzipped/
+          # Bundle convention: single top-level directory like memory_cycle_brief_v3_4_7/
+          inner_count=$(find unzipped -mindepth 1 -maxdepth 1 -type d | wc -l)
+          if [ "$inner_count" -ne 1 ]; then
+            echo "::error::Bundle should have exactly one top-level directory; found $inner_count"
+            find unzipped -mindepth 1 -maxdepth 1
+            exit 1
+          fi
+          inner_dir=$(find unzipped -mindepth 1 -maxdepth 1 -type d)
+          echo "Bundle inner directory: $inner_dir"
+          echo "Top-level contents:"
+          ls -la "$inner_dir"
+          echo "inner_dir=$inner_dir" >> "$GITHUB_ENV"
+
+      - name: Sync bundle into repo workspace
+        run: |
+          set -euo pipefail
+          # Sync from bundle to repo workspace, preserving:
+          #   - state/                       (runtime data — production-only)
+          #   - .git/                        (git metadata)
+          #   - .github/workflows/           (don't let bundle overwrite this
+          #                                   workflow itself; defensive)
+          # And ignoring:
+          #   - __pycache__/, *.pyc, .pytest_cache/  (build artifacts)
+          rsync -av \
+            --exclude='state/' \
+            --exclude='.git/' \
+            --exclude='.github/workflows/' \
+            --exclude='__pycache__/' \
+            --exclude='*.pyc' \
+            --exclude='.pytest_cache/' \
+            --exclude='.DS_Store' \
+            "$inner_dir/" "$GITHUB_WORKSPACE/"
+
+      - name: Commit and push to main
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "::notice::No changes to commit — repo already at release contents"
+            exit 0
+          fi
+
+          # Summary of what's changing (visible in the workflow log)
+          echo "=== Files changed by this deploy ==="
+          git diff --cached --stat
+
+          git commit -m "Deploy ${{ github.event.release.tag_name }} from release asset (auto-extracted)" \
+                     -m "Bundle: ${{ steps.find_asset.outputs.asset_name }}" \
+                     -m "Release: ${{ github.event.release.html_url }}"
+          git push origin main
+          echo "::notice::Deploy of ${{ github.event.release.tag_name }} committed to main"
