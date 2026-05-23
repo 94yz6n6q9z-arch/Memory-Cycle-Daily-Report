@@ -22,11 +22,38 @@ lxml>=4.9.0
 # When updating: test locally first, then bump the upper bound here.
 anthropic>=0.39.0,<1.0
 
+# v3.4.7 (2026-05-22) — explicit pin of curl_cffi. Already pulled in
+# transitively by yfinance 1.x but we now use it directly in news.py
+# (smart_get) and lab_blog_scrapers.py for Cloudflare TLS-fingerprint
+# bypass. Chrome120 impersonation is the latest stable preset in 0.15.0.
+# If yfinance ever drops curl_cffi as a dep, this line keeps it
+# available. The smart_get helper in src/data/news.py also has a
+# graceful fallback to stdlib requests if curl_cffi can't be imported.
+curl-cffi>=0.7.0
+
 # v3.38.4: drop-in fallback for stdlib json.loads when LLM output is malformed
 # (unescaped quotes/newlines in string fields, trailing commas, truncation).
 # Used by src/analysis/llm_summarizer.py for both Haiku triage and Sonnet
 # analysis. Pure-Python, no compilation, MIT, healthy maintenance cadence.
 json-repair>=0.39.0,<1.0
+
+# v3.4.6.3 (2026-05-22) — CRITICAL: PyYAML required for DHCR catalogs,
+# Indicator 7 (Competitor) thresholds, and Indicator 8 (US ADR/SPO)
+# event-tracking config. Modules that import yaml at module level:
+#   - src/analysis/dhcr.py (try/except fallback raises with helpful message)
+#   - src/analysis/competitor_aggregator.py
+#   - src/analysis/competitor_scoring.py
+#   - src/analysis/adr_aggregator.py
+#   - src/analysis/adr_event_tracking.py
+#   - src/analysis/dhcr_arch_aggregator.py
+#   - src/analysis/dhcr_accelerator_aggregator.py
+#   - src/analysis/dhcr_revenue_aggregator.py
+# Pre-v3.4.6.3 production was missing PyYAML entirely: ALL 8 modules
+# above silently failed to import or compute, snapshots returned None,
+# template skipped the section 4 cards. DHCR has been broken in
+# production since v3.4.0 (shadowed); Indicator 7 + 8 broken since
+# v3.4.4 (their first ship). One-line fix.
+PyYAML>=6.0
 
 # Optional: for FMP analyst estimates augmentation
 # (already covered by requests)
