@@ -387,13 +387,17 @@ class TestSection4Placement(unittest.TestCase):
             "substitution_risk_notes": [],
         }
         html = _build_dhcr_section4_card(dhcr, matrix_chart_b64="fakeb64data")
-        self.assertIn("BULL CASE", html)
-        self.assertIn("BEAR CASE", html)
-        self.assertIn("🐂", html)
-        self.assertIn("🐻", html)
-        # Framework primer explanation
-        self.assertIn("FRAMEWORK PRIMER", html)
-        # Matrix chart embedded
+        # v3.4.9 — bull/bear case boxes, score badge, framework primer block,
+        # and the 🐂/🐻 emoji chrome were all removed in favor of the cards-1-5
+        # structure. The data still surfaces — narrative_summary now lives
+        # inside the "Where we stand" prose paragraph. Updated assertions
+        # verify the new cards-1-5 structure is present.
+        self.assertIn("<strong>What we're looking for:</strong>", html)
+        self.assertIn("<strong>Where we stand:</strong>", html)
+        self.assertIn("<strong>Latest developments:</strong>", html)
+        # The narrative still gets rendered, just inside "Where we stand"
+        self.assertIn("Test narrative", html)
+        # Matrix chart embedded (still rendered as before)
         self.assertIn("data:image/png;base64,fakeb64data", html)
 
 

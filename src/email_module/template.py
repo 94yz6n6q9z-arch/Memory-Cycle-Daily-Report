@@ -677,6 +677,152 @@ def _build_competitor_sub_card(sub: dict) -> str:
 
 
 def _build_competitor_section4_card(comp: Optional[dict]) -> str:
+    """v3.4.9 — Indicator 7 (Competitor dynamics) section 4 card.
+
+    REBUILT to match cards 1-5 structure: header + status pill, then
+    "What we're looking for / Where we stand / Latest developments /
+    source links" labeled paragraphs. The 4 sub-indicators (7A CXMT,
+    7B Samsung HBM4/4E, 7C Micron, 7D HBF) are folded into prose with
+    their statuses inline, instead of separate sub-cards.
+
+    Previous v3.4.4 layout (4 stacked sub-cards each with own status
+    pill, dual-threat banner, framework footer) is dropped per user
+    direction 2026-05-23: look-and-feel must match cards 1-5.
+    """
+    if not comp:
+        return ""
+
+    status = comp.get("composite_status", "Not fired")
+    status_color = comp.get("composite_status_color", "#C0DD97")
+    reasoning = comp.get("composite_reasoning", "")
+    cumulative_eps = float(comp.get("cumulative_eps_impact_pct", 0))
+    subs = comp.get("subs", []) or []
+    dual_threat_active = bool(comp.get("dual_threat_active", False))
+    dual_threat_text = comp.get("dual_threat_scenario_text", "")
+    dual_combined = comp.get("dual_threat_impact_combined_pct", "-30 to -45")
+    dual_with_peak = comp.get("dual_threat_impact_with_peak_pct", "-60 to -75")
+
+    text_color = "#FFFFFF" if status in ("Fired", "Partially fired") else "#1a1a1a"
+
+    parts = []
+    # Header (matches cards 1-5: h3 + status badge inline)
+    parts.append(
+        f"<h3>Indicator 7 — Competitor dynamics "
+        f"<span class='status-badge' "
+        f"style='background:{status_color};color:{text_color};margin-left:8px'>"
+        f"{html.escape(status)}</span></h3>"
+    )
+
+    # What we're looking for
+    parts.append(
+        "<p style='font-size:13px'><strong>What we're looking for:</strong> "
+        "Four sub-indicators tracking competitive threats to SK Hynix's HBM moat, "
+        "calibrated to <em>estimated SK Hynix EPS impact</em> (price × volume), "
+        "not raw market share. Sub-thresholds: Not fired &lt;5% EPS impact, "
+        "Partially fired 5–20%, Fired &gt;20%. <strong>7A</strong> CXMT (Chinese "
+        "DRAM market entry — DDR5 is the trigger, DDR4 is ignored). "
+        "<strong>7B</strong> Samsung HBM4/HBM4E (50% of NVIDIA HBM4 demand is "
+        "Partially fired threshold; 70% triggers Fired). <strong>7C</strong> Micron "
+        "(only counts if Micron eats SK Hynix's share specifically, not Samsung's). "
+        "<strong>7D</strong> HBF / hot-tier displacement (HBM-Flash architecture "
+        "substitution + Solidigm watch). Composite applies the Part 14 dual-threat "
+        "amplifier when 2+ subs fire (or 1 Fired + 2+ Partially fired)."
+        "</p>"
+    )
+
+    # Where we stand — composite read + per-sub status in prose
+    sub_lines = []
+    for sub in subs:
+        sub_id = sub.get("id", "?")
+        sub_name = sub.get("display_name", sub.get("name", "?"))
+        sub_status = sub.get("status", "Not fired")
+        sub_summary = sub.get("summary", "")
+        eps_impact = sub.get("estimated_eps_impact_pct")
+        eps_text = f" (~{eps_impact:.1f}% EPS impact)" if eps_impact is not None else ""
+        sub_lines.append(
+            f"<strong>{html.escape(sub_id)} {html.escape(sub_name)}</strong> — "
+            f"{html.escape(sub_status)}{eps_text}: {html.escape(sub_summary)}"
+        )
+
+    where_we_stand_parts = []
+    where_we_stand_parts.append(
+        f"<strong>COMPUTED METRICS:</strong> Composite status "
+        f"<strong>{html.escape(status)}</strong>; cumulative EPS impact across all "
+        f"subs ~<strong>{cumulative_eps:.1f}%</strong>; "
+        f"{sum(1 for s in subs if s.get('status') == 'Fired')} of {len(subs)} subs "
+        f"Fired, {sum(1 for s in subs if s.get('status') == 'Partially fired')} "
+        f"Partially fired."
+    )
+    if reasoning:
+        where_we_stand_parts.append(html.escape(reasoning))
+    if sub_lines:
+        # Inline sub statuses as a sentence list
+        where_we_stand_parts.append("Sub-indicators: " + "; ".join(sub_lines) + ".")
+    if dual_threat_active:
+        where_we_stand_parts.append(
+            f"<strong>⚠️ DUAL-THREAT SCENARIO ACTIVE</strong> — combined CXMT + "
+            f"Samsung stock impact <strong>{html.escape(dual_combined)}%</strong>; "
+            f"with cycle-peak overlay <strong>{html.escape(dual_with_peak)}%</strong>. "
+            f"{html.escape(dual_threat_text)}"
+        )
+    parts.append(
+        f"<p style='font-size:13px'><strong>Where we stand:</strong> "
+        f"{' '.join(where_we_stand_parts)}</p>"
+    )
+
+    # Latest developments — pull from each sub's recent_news if available
+    dev_lines = []
+    for sub in subs:
+        recent = sub.get("recent_news", []) or []
+        if recent:
+            sub_id = sub.get("id", "?")
+            # Take the top 1-2 most relevant news items per sub
+            for item in recent[:2]:
+                title = item.get("title", "")
+                date = item.get("date", "")
+                if title:
+                    dev_lines.append(
+                        f"<strong>{html.escape(sub_id)}:</strong> "
+                        f"{html.escape(title)}"
+                        + (f" ({html.escape(date)})" if date else "")
+                    )
+    if not dev_lines:
+        dev_lines.append("No new developments today across the four sub-indicators.")
+    parts.append(
+        f"<p style='font-size:13px'><strong>Latest developments:</strong> "
+        f"{' '.join(dev_lines)}</p>"
+    )
+
+    # Source links — pull URLs from sub recent_news, or use canonical sources
+    link_urls = []
+    seen = set()
+    for sub in subs:
+        for item in (sub.get("recent_news", []) or [])[:3]:
+            url = item.get("url")
+            title = item.get("title", "source")
+            if url and url not in seen:
+                link_urls.append((title, url))
+                seen.add(url)
+    # Always include some canonical sources for context
+    canonical = [
+        ("DRAMeXchange", "https://www.dramexchange.com/"),
+        ("TrendForce Press", "https://www.trendforce.com/news/"),
+        ("CXMT news — Google", "https://news.google.com/search?q=CXMT+DDR5"),
+    ]
+    for title, url in canonical:
+        if url not in seen and len(link_urls) < 5:
+            link_urls.append((title, url))
+            seen.add(url)
+    link_html = " · ".join(
+        f"<a href='{html.escape(url)}' target='_blank'>{html.escape(title[:80])}</a>"
+        for title, url in link_urls[:5]
+    )
+    parts.append(f"<p class='links-list' style='font-size:12px'>{link_html}</p>")
+
+    return "".join(parts)
+
+
+def _build_competitor_section4_card_legacy(comp: Optional[dict]) -> str:
     """v3.4.4 — Indicator 7 (Competitor dynamics) deep-dive card.
 
     Structure:
@@ -825,6 +971,169 @@ def _build_adr_sub_card(sub: dict) -> str:
 
 
 def _build_adr_section4_card(adr: Optional[dict]) -> str:
+    """v3.4.9 — Indicator 8 (US ADR / SPO event tracking) section 4 card.
+
+    REBUILT to match cards 1-5 structure: header + status pill, then
+    "What we're looking for / Where we stand / Latest developments /
+    source links" labeled paragraphs. Phase lifecycle, offering structure,
+    sub-statuses, calendar milestones, and academic-calibration prose all
+    folded into the four standard paragraphs.
+
+    Previous v3.4.4 layout (phase banner, reasoning box, peak-coincidence
+    banner, offering structure block, 4 sub-cards, calendar block,
+    academic-calibration box) is dropped per user direction 2026-05-23.
+    """
+    if not adr:
+        return ""
+
+    status = adr.get("composite_status", "Not fired")
+    status_color = adr.get("composite_status_color", "#C0DD97")
+    reasoning = adr.get("composite_reasoning", "")
+    phase = adr.get("lifecycle_phase", "pre_event")
+    subs = adr.get("subs", []) or []
+    calendar = adr.get("calendar", []) or []
+    offering = adr.get("confirmed_offering_structure", {}) or {}
+    academic = adr.get("academic_calibration", {}) or {}
+    peak_coincidence_active = bool(adr.get("peak_coincidence_active", False))
+
+    text_color = "#FFFFFF" if status in ("Fired", "Partially fired") else "#1a1a1a"
+
+    phase_banner_text = {
+        "pre_event": "Awaiting F-1 filing — expected June-July 2026",
+        "f1_filed": "F-1 filed — roadshow window opens",
+        "roadshow": "Roadshow active — institutional demand signals incoming",
+        "pricing": "Pricing day window — 424B filing imminent",
+        "trading": "First trading day — ADR live on NYSE/NASDAQ",
+        "completed": "ADR completed — monitoring mechanical drag fade",
+        "canceled": "ADR canceled — sustained weakness signal",
+    }
+    phase_text = phase_banner_text.get(phase, phase)
+
+    parts = []
+    # Header
+    parts.append(
+        f"<h3>Indicator 8 — US ADR / SPO event tracking "
+        f"<span class='status-badge' "
+        f"style='background:{status_color};color:{text_color};margin-left:8px'>"
+        f"{html.escape(status)}</span></h3>"
+    )
+
+    # What we're looking for
+    parts.append(
+        "<p style='font-size:13px'><strong>What we're looking for:</strong> "
+        "A US ADR (or SPO) by SK Hynix as a peak-coincidence signal — listed "
+        "1995 pre-1996 crash pattern per memory_supercycle_analysis.docx Part 11. "
+        "Four sub-indicators track lifecycle stages: <strong>8A</strong> F-1 "
+        "filing watch (SEC EDGAR — pending filing is Partial, canceled F-1 is "
+        "Fired and persists through Phase 4 with no 90-day reversion). "
+        "<strong>8B</strong> roadshow institutional demand signals. "
+        "<strong>8C</strong> pricing day proximity (424B filing). "
+        "<strong>8D</strong> insider sales &gt;$10M threshold within 90-day window. "
+        "Composite escalates to Fired automatically when ADR completion is "
+        "coincident with late Phase 4 cycle state (peak-coincidence override)."
+        "</p>"
+    )
+
+    # Where we stand
+    where_we_stand_parts = []
+    where_we_stand_parts.append(
+        f"<strong>COMPUTED METRICS:</strong> Phase <strong>{html.escape(phase)}</strong> "
+        f"— {html.escape(phase_text)}. Composite status: <strong>{html.escape(status)}</strong>."
+    )
+    if peak_coincidence_active:
+        where_we_stand_parts.append(
+            "<strong>⚠️ PEAK-COINCIDENCE ESCALATION ACTIVE</strong> — composite "
+            "escalated to Fired regardless of individual sub statuses; ADR completion "
+            "is coincident with late Phase 4 cycle state."
+        )
+    if offering:
+        size_m = offering.get("new_shares_issued_count_millions_est", "?")
+        dilution = offering.get("share_capital_pct_dilution_est", "?")
+        raise_central = offering.get("estimated_raise_usd_b_central", "?")
+        where_we_stand_parts.append(
+            f"Confirmed offering structure: ~<strong>{size_m}M new shares</strong> "
+            f"({dilution}% dilution), estimated raise "
+            f"<strong>${raise_central}B</strong> (central estimate)."
+        )
+    if reasoning:
+        where_we_stand_parts.append(html.escape(reasoning))
+    sub_lines = []
+    for sub in subs:
+        sub_id = sub.get("id", "?")
+        sub_name = sub.get("display_name", sub.get("name", "?"))
+        sub_status = sub.get("status", "Not fired")
+        sub_summary = sub.get("summary", "")
+        sub_lines.append(
+            f"<strong>{html.escape(sub_id)} {html.escape(sub_name)}</strong> — "
+            f"{html.escape(sub_status)}: {html.escape(sub_summary)}"
+        )
+    if sub_lines:
+        where_we_stand_parts.append("Sub-indicators: " + "; ".join(sub_lines) + ".")
+    if calendar:
+        cal_str = "; ".join(
+            f"{html.escape(e.get('date', '?'))}: {html.escape(e.get('description', ''))}"
+            for e in calendar[:3]
+        )
+        where_we_stand_parts.append(f"Upcoming milestones: {cal_str}.")
+    if academic:
+        ac_summary = academic.get("summary") or academic.get("notes", "")
+        if ac_summary:
+            where_we_stand_parts.append(html.escape(ac_summary))
+    parts.append(
+        f"<p style='font-size:13px'><strong>Where we stand:</strong> "
+        f"{' '.join(where_we_stand_parts)}</p>"
+    )
+
+    # Latest developments
+    dev_lines = []
+    for sub in subs:
+        recent = sub.get("recent_news", []) or []
+        for item in recent[:2]:
+            title = item.get("title", "")
+            date = item.get("date", "")
+            sub_id = sub.get("id", "?")
+            if title:
+                dev_lines.append(
+                    f"<strong>{html.escape(sub_id)}:</strong> "
+                    f"{html.escape(title)}"
+                    + (f" ({html.escape(date)})" if date else "")
+                )
+    if not dev_lines:
+        dev_lines.append("No new developments today across the four sub-indicators.")
+    parts.append(
+        f"<p style='font-size:13px'><strong>Latest developments:</strong> "
+        f"{' '.join(dev_lines)}</p>"
+    )
+
+    # Source links
+    link_urls = []
+    seen = set()
+    for sub in subs:
+        for item in (sub.get("recent_news", []) or [])[:3]:
+            url = item.get("url")
+            title = item.get("title", "source")
+            if url and url not in seen:
+                link_urls.append((title, url))
+                seen.add(url)
+    canonical = [
+        ("SEC EDGAR — SK Hynix F-1 watch", "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=sk+hynix"),
+        ("Korea Exchange — SK Hynix disclosures", "https://kind.krx.co.kr/"),
+        ("WSJ — IPO / SPO calendar", "https://www.wsj.com/market-data/stocks/ipo"),
+    ]
+    for title, url in canonical:
+        if url not in seen and len(link_urls) < 5:
+            link_urls.append((title, url))
+            seen.add(url)
+    link_html = " · ".join(
+        f"<a href='{html.escape(url)}' target='_blank'>{html.escape(title[:80])}</a>"
+        for title, url in link_urls[:5]
+    )
+    parts.append(f"<p class='links-list' style='font-size:12px'>{link_html}</p>")
+
+    return "".join(parts)
+
+
+def _build_adr_section4_card_legacy(adr: Optional[dict]) -> str:
     """v3.4.4 — Indicator 8 (US ADR / SPO event) deep-dive card.
 
     Structure:
@@ -1009,70 +1318,86 @@ def _build_adr_section4_card(adr: Optional[dict]) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _build_dhcr_spectrum_bar(score: int) -> str:
-    """Render the 0-100 spectrum bar showing memory-type + SK Hynix moat
-    strength across the score range, with today's score marked.
+def _build_dhcr_spectrum_bar(score: int, market_zone: str = "") -> str:
+    """v3.4.9.2 — DHCR spectrum bar (per Raul's iteration May 23 2026).
 
-    Layout per Raul's hand-drawn sketch:
-      - Vertical bar, 100 at top → 0 at bottom (matches matrix Y-axis convention)
-      - 5 stacked color-coded segments (matrix palette: green → yellow → amber → red-orange)
-      - 3 columns visually: bar | Memory type column | SK Hynix moat column
-      - Today's score marked with a left-pointing red arrow at proportional position
+    Three things changed vs the original v3.4.4 sketch implementation:
 
-    Segment boundaries (matching DHCR cell intensities and status partitions):
-      85-100  HBM pure          Strongest moat — duopoly peak (~60% share)
-      65-85   HBM-GDDR/hybrid   Strong moat (Samsung+Micron contest at margin)
-      40-65   LPDDR/HBM hybrid  Partial moat — duopoly with Samsung
-      20-40   LPDDR-led         Weak moat (Samsung-advantaged on LPDDR)
-       0-20   DDR commodity     No moat — compete on margin (CXMT/Samsung/Micron)
+      1. Colors flipped to financial-signal coding: GREEN at top (HBM =
+         strong moat = positive for SK Hynix), RED at bottom (DDR commodity
+         = no moat = negative). This intentionally diverges from the matrix
+         palette, which colors by memory-type intensity; here we color by
+         moat strength. The bar IS a moat-strength indicator.
+
+      2. Zone boundaries recalibrated to natural cell-score breakpoints:
+         0-30 / 30-50 / 50-65 / 65-80 / 80-100. This makes the cluster of
+         four cells at score 52.5 (R1/C5 LPDDR/HBM, R3/C3 HBM/GDDR,
+         R4/C2 HBM/GDDR, R5/C1 HBM) all land in a single "HBM-GDDR /
+         hybrid" zone, matching the matrix cell labels at that score.
+
+      3. Marker style per sketch — simple black triangle + plain
+         "TODAY X/100" text label to the left of the bar. No callout box,
+         no halo, no connector. (The matrix marker has those because it
+         sits mid-2D-grid; the bar marker sits on a 1D axis where text
+         fits naturally to the left.)
+
+      4. Marker at EXACT score position. No fudging to a zone midpoint.
+         If today's score is 52, the marker sits at the 52 line on the
+         axis. Honest math.
+
+      5. Column headers ("Memory type" / "SK Hynix moat") sit in their own
+         row ABOVE the top of the bar so they label the entire column,
+         not the top segment.
     """
-    # Segments defined top-to-bottom (matches visual order — 100 at top)
+    # Segments defined top-to-bottom (matches visual order — 100 at top).
+    # COLORS FLIPPED vs v3.4.4: green at top (HBM = strong moat), red at
+    # bottom (DDR commodity = no moat).
     segments = [
         {
-            "score_range": (85, 100),
-            "color": "#E0775F",  # red-orange (matrix HBM zone)
-            "memory_type": "HBM pure",
-            "memory_detail": "(sold out 2027)",
+            "score_range": (80, 100),
+            "color": "#A6D89B",  # GREEN — HBM dominant
+            "memory_type": "HBM dominant",
+            "memory_detail": "(R4/C5, R5/C4-C5)",
             "moat": "Strongest moat",
-            "moat_detail": "Duopoly peak — ~60% share, Samsung gaining",
+            "moat_detail": "Sold-out HBM peak — ~60% share, Samsung gaining",
         },
         {
-            "score_range": (65, 85),
-            "color": "#F8A55C",  # amber (matrix HBM_HYBRID zone)
-            "memory_type": "HBM-GDDR / HBM-hybrid",
-            "memory_detail": "(hot working set)",
+            "score_range": (65, 80),
+            "color": "#C9E5BC",  # light green — HBM-leaning
+            "memory_type": "HBM-leaning",
+            "memory_detail": "(R3/C5, R4/C4, R5/C3)",
             "moat": "Strong moat",
             "moat_detail": "HBM majority — Samsung + Micron contest at margin",
         },
         {
-            "score_range": (40, 65),
-            "color": "#FCE38A",  # yellow (matrix LPDDR zone)
-            "memory_type": "LPDDR / HBM hybrid",
-            "memory_detail": "(transition zone)",
+            "score_range": (50, 65),
+            "color": "#FCE38A",  # yellow — transition (HBM/GDDR cluster lives here)
+            "memory_type": "HBM-GDDR / hybrid",
+            "memory_detail": "(R1/C5, R3/C3-C4, R4/C2-C3, R5/C1-C2)",
             "moat": "Partial moat",
-            "moat_detail": "Duopoly with Samsung; Micron contesting",
+            "moat_detail": "Duopoly with Samsung — architecture transition zone",
         },
         {
-            "score_range": (20, 40),
-            "color": "#C9E5BC",  # lighter green (matrix DDR_CXL zone)
+            "score_range": (30, 50),
+            "color": "#F8A55C",  # amber — LPDDR-led
             "memory_type": "LPDDR-led",
-            "memory_detail": "(efficiency-driven downshift)",
+            "memory_detail": "(R1/C3-C4, R2/C2-C4, R3/C1-C2, R4/C1)",
             "moat": "Weak moat",
             "moat_detail": "Samsung-advantaged on LPDDR",
         },
         {
-            "score_range": (0, 20),
-            "color": "#A6D89B",  # green (matrix DDR zone)
+            "score_range": (0, 30),
+            "color": "#E0775F",  # RED — DDR commodity
             "memory_type": "DDR commodity",
-            "memory_detail": "(efficiency dominant)",
+            "memory_detail": "(R1/C1-C2, R2/C1)",
             "moat": "No moat",
-            "moat_detail": "Compete on margin with Samsung / Micron / CXMT",
+            "moat_detail": "Compete on margin — Samsung / Micron / CXMT",
         },
     ]
 
-    # Total bar height in pixels (visual reference; segment heights scale)
     BAR_TOTAL_HEIGHT_PX = 360
-    # Marker position: score 52 → 48% from bottom → top:(100-52)/100 = 48% from top
+    BAR_COL_WIDTH_PX = 150  # widened from 90 to fit "TODAY X/100" text on left
+    # HONEST MATH: marker at exact score position, not segment midpoint
     marker_from_top_pct = 100 - score
 
     parts = []
@@ -1080,12 +1405,28 @@ def _build_dhcr_spectrum_bar(score: int) -> str:
         "<div style='margin:18px 0;padding:14px;background:#FFFFFF;"
         "border:1px solid #DDD;border-radius:4px'>"
     )
+    # Title — include market_zone hint if provided
+    market_hint = (
+        f", market cell: {html.escape(market_zone)}" if market_zone else ""
+    )
     parts.append(
-        "<div style='font-weight:600;color:#1a1a1a;font-size:13px;margin-bottom:10px'>"
+        "<div style='font-weight:600;color:#1a1a1a;font-size:13px;margin-bottom:14px'>"
         "SK HYNIX HBM CAPTIVE-RATIO SPECTRUM"
         "<span style='color:#666;font-weight:400;font-size:11px;margin-left:8px'>"
-        f"— Today's score {score}/100 marks position on the architecture × moat-strength axis"
+        f"— Today's score {score}/100{market_hint}"
         "</span></div>"
+    )
+
+    # HEADER ROW above the bar — column labels above the 100 mark, not next
+    # to the top segment.
+    parts.append(
+        f"<table style='width:100%;border-collapse:collapse;margin-bottom:6px'><tr>"
+        f"<td style='width:{BAR_COL_WIDTH_PX}px'></td>"
+        "<td style='padding:2px 0 2px 14px;font-weight:600;font-size:12px;color:#1a1a1a;"
+        "border-left:3px solid #555'>Memory type</td>"
+        "<td style='padding:2px 0 2px 14px;font-weight:600;font-size:12px;color:#1a1a1a;"
+        "border-left:3px solid #555'>SK Hynix moat</td>"
+        "</tr></table>"
     )
 
     # Outer table: 3 cells — bar | memory type | moat
@@ -1093,14 +1434,14 @@ def _build_dhcr_spectrum_bar(score: int) -> str:
 
     # Cell 1: the bar itself + score axis labels on left + marker
     parts.append(
-        f"<td style='vertical-align:top;width:90px;position:relative'>"
+        f"<td style='vertical-align:top;width:{BAR_COL_WIDTH_PX}px;position:relative'>"
         f"<div style='position:relative;height:{BAR_TOTAL_HEIGHT_PX}px;width:60px;"
-        f"margin-left:30px;border:1px solid #555'>"
+        f"margin-left:{BAR_COL_WIDTH_PX - 60 - 8}px;border:1px solid #555'>"
     )
-    # Stack segments inside the bar (top-to-bottom; each segment is 20% height)
+    # Stack segments inside the bar (top-to-bottom)
     for seg in segments:
         lo, hi = seg["score_range"]
-        height_pct = hi - lo  # always 20 except (65,85) which is 20 and (85,100) which is 15
+        height_pct = hi - lo
         parts.append(
             f"<div style='height:{height_pct}%;background:{seg['color']};"
             f"border-bottom:1px solid #555;position:relative'>"
@@ -1113,45 +1454,50 @@ def _build_dhcr_spectrum_bar(score: int) -> str:
         "<span style='position:absolute;left:-32px;bottom:-7px;font-size:10px;"
         "color:#555;font-variant-numeric:tabular-nums'>0</span>"
     )
-    # Today's marker — red triangle pointing right at the bar from outside left
+
+    # SKETCH-STYLE MARKER per Raul's drawing — black triangle pointing
+    # INTO the bar from the left, with plain "TODAY X/100" text label to
+    # the left of the triangle. No callout box, no halo, no connector.
+    # Marker sits at the exact numeric score position on the axis.
     parts.append(
-        f"<div style='position:absolute;top:{marker_from_top_pct}%;left:-8px;"
-        f"transform:translateY(-50%)'>"
-        f"<span style='display:inline-block;font-size:14px;color:#B91C1C;"
-        f"font-weight:700'>▶</span>"
-        f"<span style='display:inline-block;font-size:11px;color:#B91C1C;"
-        f"font-weight:700;margin-left:2px;vertical-align:middle;background:#FFF;"
-        f"padding:1px 4px;border:1px solid #B91C1C;border-radius:2px'>"
-        f"today {score}</span>"
+        f"<div style='position:absolute;top:{marker_from_top_pct}%;left:0;"
+        f"transform:translateY(-50%);width:0;height:0;overflow:visible'>"
+        # Text label (LEFT of the marker)
+        f"<div style='position:absolute;top:50%;right:8px;transform:translateY(-50%);"
+        f"font-size:12px;color:#1a1a1a;font-weight:700;line-height:1.15;"
+        f"text-align:right;white-space:nowrap'>"
+        f"TODAY<br/><span style='font-size:11px'>{score}/100</span>"
+        f"</div>"
+        # Black triangle pointing INTO the bar (CSS triangle via borders)
+        f"<div style='position:absolute;top:50%;left:-9px;transform:translateY(-50%);"
+        f"width:0;height:0;"
+        f"border-top:7px solid transparent;border-bottom:7px solid transparent;"
+        f"border-left:10px solid #1a1a1a'></div>"
         f"</div>"
     )
     parts.append("</div></td>")
 
-    # Cell 2: Memory type column (labels aligned to segment midpoints)
+    # Cell 2: Memory type column (labels aligned to segment midpoints; no
+    # inner header — header is in the row above the bar now)
     parts.append(
         "<td style='vertical-align:top;padding-left:14px'>"
-        "<div style='font-weight:600;font-size:11px;color:#1a1a1a;margin-bottom:4px;"
-        "padding-left:4px;border-left:3px solid #555'>Memory type</div>"
         f"<div style='position:relative;height:{BAR_TOTAL_HEIGHT_PX}px'>"
     )
-    # Position each label at the midpoint of its segment
     for seg in segments:
         lo, hi = seg["score_range"]
         midpoint_from_top_pct = 100 - (lo + hi) / 2
         parts.append(
             f"<div style='position:absolute;top:{midpoint_from_top_pct}%;left:0;"
-            f"transform:translateY(-50%);font-size:11px;color:#333;line-height:1.4'>"
+            f"transform:translateY(-50%);font-size:11px;color:#333;line-height:1.35'>"
             f"<strong>{html.escape(seg['memory_type'])}</strong> "
-            f"<span style='color:#777'>{html.escape(seg['memory_detail'])}</span>"
+            f"<span style='color:#777;font-size:10px'>{html.escape(seg['memory_detail'])}</span>"
             f"</div>"
         )
     parts.append("</div></td>")
 
-    # Cell 3: SK Hynix moat column
+    # Cell 3: SK Hynix moat column (no inner header)
     parts.append(
         "<td style='vertical-align:top;padding-left:14px'>"
-        "<div style='font-weight:600;font-size:11px;color:#1a1a1a;margin-bottom:4px;"
-        "padding-left:4px;border-left:3px solid #555'>SK Hynix moat</div>"
         f"<div style='position:relative;height:{BAR_TOTAL_HEIGHT_PX}px'>"
     )
     for seg in segments:
@@ -1159,7 +1505,7 @@ def _build_dhcr_spectrum_bar(score: int) -> str:
         midpoint_from_top_pct = 100 - (lo + hi) / 2
         parts.append(
             f"<div style='position:absolute;top:{midpoint_from_top_pct}%;left:0;"
-            f"transform:translateY(-50%);font-size:11px;color:#333;line-height:1.4'>"
+            f"transform:translateY(-50%);font-size:11px;color:#333;line-height:1.35'>"
             f"<strong>{html.escape(seg['moat'])}</strong>"
             f"<div style='color:#777;font-size:10px;line-height:1.3'>"
             f"{html.escape(seg['moat_detail'])}</div>"
@@ -1173,6 +1519,307 @@ def _build_dhcr_spectrum_bar(score: int) -> str:
 
 
 def _build_dhcr_section4_card(
+    dhcr: Optional[dict],
+    matrix_chart_b64: Optional[str] = None,
+    trajectory_chart_b64: Optional[str] = None,
+) -> str:
+    """v3.4.9 — DHCR section 4 deep-dive card.
+
+    REBUILT to match the visual structure of cards 1-5:
+      - Header: title + status pill (no "v3.4.2 framework" prefix label)
+      - "What we're looking for:" — DHCR framework explanation in prose
+      - "Where we stand:" — today's numbers + where-we-came-from prose
+        (replaces the trajectory arrow on the matrix chart per user direction
+        2026-05-23: history is verbalized in prose, not overlaid visually)
+      - "Latest developments:" — substitution risk notes + sanity signal notes
+      - Source links — links to DHCR data sources
+      - Two-column chart row at bottom: matrix (left) + vertical spectrum
+        bar (right) at matching heights. The spectrum bar (the existing
+        _build_dhcr_spectrum_bar HTML/CSS) shows the 0-100 score range
+        with memory type AND SK Hynix moat strength annotated per band,
+        with a marker arrow at today's score. This matches Raul's
+        original sketch from 2026-05-22 — single bar with score on the
+        axis and BOTH memory-type and moat-strength annotations linked
+        to position on the bar.
+
+    Previous v3.4.4/v3.4.2 layout (calibration banner, sub-tables, sanity
+    box, narrative box, bull/bear context boxes) is dropped in favor of
+    the cards-1-5 structure. All quantitative substance preserved — moved
+    into the "Where we stand" prose.
+    """
+    if not dhcr:
+        return ""
+
+    status = dhcr.get("status", "Not fired")
+    status_color = dhcr.get("status_color", "#C0DD97")
+    text_color = "#FFFFFF" if status in ("Fired", "Partially fired") else "#1a1a1a"
+
+    # Header (mirror cards 1-5: h3 + status badge inline)
+    parts = []
+    parts.append(
+        f"<h3>Decode HBM Captive Ratio (DHCR) "
+        f"<span class='status-badge' "
+        f"style='background:{status_color};color:{text_color};margin-left:8px'>"
+        f"{html.escape(status)}</span></h3>"
+    )
+
+    # "What we're looking for" — the framework definition
+    parts.append(
+        "<p style='font-size:13px'><strong>What we're looking for:</strong> "
+        "Position on a 5×5 matrix of KV efficiency (y-axis, R1 most efficient "
+        "to R5 least efficient) crossed with operative context length (x-axis, "
+        "C1 &lt;32K to C5 &gt;10M tokens). The matrix is colored by memory-zone "
+        "intensity (DDR/commodity → LPDDR hybrid → HBM-dominant). Today's "
+        "market-deployed cell yields a 0–100 score; higher = more HBM-intensive "
+        "compute regime, which lengthens SK Hynix's moat in the HBM oligopoly. "
+        "Direction matters more than level: an improving trajectory toward "
+        "lower-row / higher-column cells signals enterprise inference workloads "
+        "pulling architecture toward higher HBM intensity."
+        "</p>"
+    )
+
+    # "Where we stand" — today's numbers + history prose (no chart overlays)
+    parts.append(_build_dhcr_where_we_stand_prose(dhcr))
+
+    # "Latest developments" — substitution risk + sanity signal observations
+    parts.append(_build_dhcr_latest_developments_prose(dhcr))
+
+    # Source links (cards-1-5 style: inline "· " separated)
+    parts.append(_build_dhcr_source_links(dhcr))
+
+    # Two-column chart row: matrix (left) + vertical spectrum bar (right).
+    # The spectrum bar is the v3.4.9.2 _build_dhcr_spectrum_bar HTML/CSS
+    # rendering — vertical 0-100 bar with score-based color gradient,
+    # marker at exact score position, market cell label in subtitle.
+    if matrix_chart_b64:
+        score = dhcr.get("position_score", 0)
+        # Resolve the market-deployed cell's memory-zone label for the
+        # spectrum-bar subtitle (e.g. "HBM/GDDR"). The matrix cell label
+        # comes from the canonical MEMORY_ZONES grid in chart_generator.
+        market_zone = _dhcr_market_zone_label(dhcr)
+        parts.append(_build_dhcr_chart_row(matrix_chart_b64, score, market_zone))
+
+    return "".join(parts)
+
+
+def _dhcr_market_zone_label(dhcr: dict) -> str:
+    """v3.4.9.2 — resolve the matrix cell zone label (e.g. 'HBM/GDDR')
+    for the market-deployed cell, used as a subtitle on the spectrum bar.
+
+    Mirrors the MEMORY_ZONES grid in src/analysis/chart_generator.py so
+    the spectrum bar's market-cell label always matches what the matrix
+    displays. The grid is duplicated here (small, stable) rather than
+    imported to avoid a circular template→chart_generator dependency.
+    """
+    MEMORY_ZONES = [
+        ["DDR",      "DDR/LPDDR", "LPDDR",    "LPDDR/HBM",  "LPDDR/HBM"],   # R1
+        ["DDR/CXL",  "DDR/LPDDR", "LPDDR",    "LPDDR/HBM",  "HBM/hetero"],  # R2
+        ["LPDDR",    "LPDDR/HBM", "HBM/GDDR", "HBM/hetero", "HBM"],         # R3
+        ["HBM/GDDR", "HBM/GDDR",  "HBM",      "HBM",        "HBM"],         # R4
+        ["HBM",      "HBM",       "HBM",      "HBM",        "HBM"],         # R5
+    ]
+    cell = dhcr.get("market_deployed_cell")
+    if not cell or not isinstance(cell, (list, tuple)) or len(cell) != 2:
+        return ""
+    r, c = int(cell[0]), int(cell[1])
+    if 0 <= r < 5 and 0 <= c < 5:
+        return MEMORY_ZONES[r][c]
+    return ""
+
+
+def _build_dhcr_where_we_stand_prose(dhcr: dict) -> str:
+    """v3.4.9 — Verbalize today's DHCR numbers and the 'where we came from'
+    trajectory. Replaces the v3.4.2 chart-overlay arrow."""
+    score = dhcr.get("position_score", 0)
+    market_cell = dhcr.get("market_deployed_cell", (0, 0))
+    market_zone = dhcr.get("market_deployed_zone", "?")
+    workload_cell = dhcr.get("workload_implied_cell", (0, 0))
+    workload_zone = dhcr.get("workload_implied_zone", "?")
+    anticipation_gap = dhcr.get("anticipation_gap_bands", 0)
+    kv_gb = dhcr.get("frontier_kv_gb_per_1m_tokens", 0)
+    model = dhcr.get("frontier_model_name", "?")
+    op_ctx = dhcr.get("operative_context_tokens", 0)
+    op_ctx_s = f"{op_ctx/1000:.0f}K" if op_ctx < 1_000_000 else f"{op_ctx/1_000_000:.2f}M"
+    ent_rr = dhcr.get("enterprise_ai_run_rate_usd_b", 0)
+    ent_yoy = dhcr.get("enterprise_ai_yoy_growth_pct") or 0
+    hbm_demand = dhcr.get("hbm_bit_demand_index", 0)
+    reasoning = dhcr.get("status_reasoning", "")
+    narrative = dhcr.get("narrative_summary", "")
+
+    # "Where we came from" — synthesize trajectory from prior_score field if present
+    # The trajectory list is on the snapshot; we read prior scores to verbalize history
+    trajectory = dhcr.get("trajectory", []) or []
+    history_phrase = _verbalize_dhcr_history(score, trajectory)
+
+    # COMPUTED METRICS block (matches the cards-1-5 pattern of putting hard
+    # numbers up front in "Where we stand")
+    sentences = []
+    sentences.append(
+        f"<strong>COMPUTED METRICS:</strong> Position score "
+        f"<strong>{score}/100</strong>, status: {html.escape(status_label(dhcr))}. "
+        f"Today's market-deployed cell: R{market_cell[0]+1}/C{market_cell[1]+1} "
+        f"({html.escape(market_zone)}). Frontier KV efficiency: "
+        f"<strong>{kv_gb:.1f} GB per 1M tokens</strong> ({html.escape(model)}). "
+        f"Operative context length: <strong>~{op_ctx_s} tokens</strong> "
+        f"(volume-weighted across enterprise inference workloads)."
+    )
+    sentences.append(
+        f"Anticipation gap: <strong>+{anticipation_gap} Y-band(s)</strong> — "
+        f"market provisions HBM-heavy infrastructure ahead of literal workload "
+        f"demand (workload-implied cell: R{workload_cell[0]+1}/C{workload_cell[1]+1}, "
+        f"{html.escape(workload_zone)})."
+    )
+    sentences.append(
+        f"Volume layer: enterprise AI run-rate <strong>${ent_rr:.0f}B</strong> "
+        f"annualized ({ent_yoy:+.0f}% YoY); composite HBM bit demand index "
+        f"<strong>{hbm_demand:.0f}</strong> (score × volume / 100)."
+    )
+    if history_phrase:
+        sentences.append(history_phrase)
+    if reasoning:
+        sentences.append(html.escape(reasoning))
+    if narrative:
+        sentences.append(html.escape(narrative))
+
+    body = " ".join(sentences)
+    return f"<p style='font-size:13px'><strong>Where we stand:</strong> {body}</p>"
+
+
+def _verbalize_dhcr_history(today_score: float, trajectory: list) -> str:
+    """v3.4.9 — Turn the trajectory list into prose so we don't need the
+    blue arrow on the matrix. Returns an empty string if no usable history."""
+    if not trajectory or len(trajectory) < 1:
+        return ""
+    # trajectory entries are dicts ordered oldest → newest, each with a
+    # `position_score` field (and a `date` field if available)
+    prior_scores = [t.get("position_score") for t in trajectory if t.get("position_score") is not None]
+    if not prior_scores:
+        return ""
+    oldest = prior_scores[0]
+    delta = today_score - oldest
+    if abs(delta) < 2:
+        direction_word = "broadly flat"
+    elif delta > 0:
+        direction_word = f"up {delta:+.0f} points"
+    else:
+        direction_word = f"down {delta:+.0f} points"
+    n_points = len(prior_scores)
+    return (
+        f"<strong>Where we came from:</strong> trajectory is {direction_word} "
+        f"over the last {n_points} reading(s) — prior score was {oldest:.0f}/100, "
+        f"today {today_score:.0f}/100."
+    )
+
+
+def _build_dhcr_latest_developments_prose(dhcr: dict) -> str:
+    """v3.4.9 — Convert substitution risk notes + sanity signals into a
+    bulleted-prose Latest developments block matching cards 1-5."""
+    subst = dhcr.get("substitution_risk_notes", []) or []
+    sanity_confirms = dhcr.get("sanity_check_confirms", 0)
+    sanity_contradicts = dhcr.get("sanity_check_contradicts", 0)
+    subst_count = dhcr.get("sanity_signal_substitution_news_count", 0)
+    decode_off_hbm = dhcr.get("sanity_signal_hyperscaler_decode_mentions", 0)
+    hbm_price = dhcr.get("sanity_signal_hbm_price_trend", "?")
+    calibration_flag = dhcr.get("calibration_flag", False)
+
+    bullets = []
+    bullets.append(
+        f"Sanity check: {sanity_confirms}/3 signals confirm matrix output, "
+        f"{sanity_contradicts}/3 contradict"
+        + (" — <strong>CALIBRATION FLAG ACTIVE</strong>" if calibration_flag else "")
+        + "."
+    )
+    bullets.append(
+        f"HBM-substitution news (last 90d): {subst_count} items "
+        f"(threshold for concern: 5+); hyperscaler decode-off-HBM mentions: "
+        f"{decode_off_hbm}; HBM spot/contract price trend: "
+        f"<strong>{html.escape(hbm_price)}</strong>."
+    )
+    if subst:
+        # Show up to 3 substitution risk observations as continuation
+        bullets.append(
+            "Substitution-risk observations: "
+            + "; ".join(html.escape(s) for s in subst[:3])
+            + "."
+        )
+
+    body = " ".join(bullets)
+    return f"<p style='font-size:13px'><strong>Latest developments:</strong> {body}</p>"
+
+
+def _build_dhcr_source_links(dhcr: dict) -> str:
+    """v3.4.9 — DHCR source links in the same '· ' inline format as cards 1-5."""
+    # DHCR sources are stable per the framework — list the canonical primaries
+    links = [
+        ("Anthropic engineering — context window roadmap", "https://www.anthropic.com/engineering"),
+        ("Meta AI — Llama architecture papers", "https://ai.meta.com/research/"),
+        ("DeepMind — Gemini model cards", "https://deepmind.google/technologies/gemini/"),
+        ("MSFT Azure AI revenue — earnings transcripts", "https://www.microsoft.com/en-us/investor/"),
+        ("NVIDIA datacenter revenue", "https://investor.nvidia.com/"),
+    ]
+    link_html = " · ".join(
+        f"<a href='{html.escape(url)}' target='_blank'>{html.escape(title[:80])}</a>"
+        for title, url in links
+    )
+    return f"<p class='links-list' style='font-size:12px'>{link_html}</p>"
+
+
+def _build_dhcr_chart_row(
+    matrix_chart_b64: Optional[str],
+    score: int,
+    market_zone: str = "",
+) -> str:
+    """v3.4.9.2 — Two-column chart layout per Raul's original sketch.
+    Matrix (left) + vertical spectrum bar (right) at matching heights.
+
+    The right column uses `_build_dhcr_spectrum_bar` (v3.4.9.2):
+    a vertical 0-100 bar with 5 score-based color-coded segments
+    (green at top for HBM dominance, red at bottom for DDR commodity),
+    annotated with memory type per band AND SK Hynix moat strength per
+    band, both linked to the same 0-100 score axis. Today's score is
+    marked with a black triangle + plain "TODAY X/100" text label at
+    the exact score position (no zone-midpoint fudging).
+
+    Parameters
+    ----------
+    matrix_chart_b64
+        Base64-encoded matrix PNG (renders left column).
+    score
+        Today's DHCR position_score, 0-100.
+    market_zone
+        Matrix cell zone label for the market-deployed cell (e.g.
+        "HBM/GDDR"). Shown in the spectrum bar's subtitle so the bar
+        and matrix agree on the market position.
+    """
+    cells = []
+    if matrix_chart_b64:
+        cells.append(
+            "<td style='width:60%;vertical-align:top;padding-right:10px'>"
+            f"<img src='data:image/png;base64,{matrix_chart_b64}' "
+            f"style='width:100%;display:block' "
+            f"alt='DHCR 5x5 matrix — KV efficiency vs operative context' />"
+            "</td>"
+        )
+    # Right column: the v3.4.9.2 vertical spectrum bar
+    cells.append(
+        "<td style='width:40%;vertical-align:top;padding-left:10px'>"
+        f"{_build_dhcr_spectrum_bar(score, market_zone)}"
+        "</td>"
+    )
+    if not cells:
+        return ""
+    return (
+        "<table style='width:100%;border-collapse:collapse;margin:14px 0'>"
+        f"<tr>{''.join(cells)}</tr></table>"
+    )
+
+
+def status_label(snap: dict) -> str:
+    """Helper to get a clean status string for the DHCR snapshot."""
+    return snap.get("status", "Not fired")
+
+
+def _build_dhcr_section4_card_legacy(
     dhcr: Optional[dict],
     matrix_chart_b64: Optional[str] = None,
     trajectory_chart_b64: Optional[str] = None,

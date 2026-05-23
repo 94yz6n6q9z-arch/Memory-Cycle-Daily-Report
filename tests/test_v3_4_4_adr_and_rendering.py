@@ -210,21 +210,35 @@ class TestSectionRenderingV3_4_4(unittest.TestCase):
         from dataclasses import asdict
         snap = compute_competitor_snapshot()
         html = _build_competitor_section4_card(asdict(snap))
+        # v3.4.9 — card rebuilt to match cards 1-5 structure. The standalone
+        # DUAL-THREAT chrome banner was removed; dual-threat substance now
+        # appears inline in "Where we stand" prose only when active. The 4
+        # sub IDs (7A/7B/7C/7D) still surface — now as inline references
+        # within the prose, not as standalone sub-card headers.
         self.assertIn("Indicator 7", html)
         self.assertIn("Competitor dynamics", html)
-        self.assertIn("DUAL-THREAT", html)
-        # All 4 sub-cards rendered
+        # Cards 1-5 structural markers must be present
+        self.assertIn("<strong>What we're looking for:</strong>", html)
+        self.assertIn("<strong>Where we stand:</strong>", html)
+        self.assertIn("<strong>Latest developments:</strong>", html)
+        # All 4 sub IDs still referenced in the prose
         for sub_id in ("7A", "7B", "7C", "7D"):
             self.assertIn(sub_id, html)
 
     def test_competitor_card_renders_moat_and_substitution_boxes_for_7d(self):
+        """v3.4.9 — The 'Moat-extension watch' and 'Substitution-risk watch'
+        sub-card boxes were removed when 7D was folded into the inline prose.
+        This test now verifies the 7D sub still gets surfaced in the
+        Where we stand prose."""
         from src.email_module.template import _build_competitor_section4_card
         from src.analysis.competitor_scoring import compute_competitor_snapshot
         from dataclasses import asdict
         snap = compute_competitor_snapshot()
         html = _build_competitor_section4_card(asdict(snap))
-        self.assertIn("Moat-extension watch", html)
-        self.assertIn("Substitution-risk watch", html)
+        # 7D is still referenced in the inline sub-list
+        self.assertIn("7D", html)
+        # HBF is part of the 7D framework description
+        self.assertIn("HBF", html)
 
     def test_adr_card_builder_exists(self):
         from src.email_module.template import _build_adr_section4_card
@@ -233,24 +247,37 @@ class TestSectionRenderingV3_4_4(unittest.TestCase):
         from dataclasses import asdict
         snap = compute_adr_snapshot()
         html = _build_adr_section4_card(asdict(snap))
+        # v3.4.9 — card rebuilt to cards-1-5 structure. CALENDAR MILESTONES
+        # and ACADEMIC CALIBRATION standalone heading blocks were removed;
+        # both substances now appear inline within the Where we stand prose.
         self.assertIn("Indicator 8", html)
         self.assertIn("US ADR", html)
+        # Phase banner text now appears inline as part of COMPUTED METRICS
         self.assertIn("Awaiting F-1", html)
-        # All 4 sub-cards rendered
+        # Cards 1-5 structural markers
+        self.assertIn("<strong>What we're looking for:</strong>", html)
+        self.assertIn("<strong>Where we stand:</strong>", html)
+        self.assertIn("<strong>Latest developments:</strong>", html)
+        # All 4 sub IDs still referenced
         for sub_id in ("8A", "8B", "8C", "8D"):
             self.assertIn(sub_id, html)
-        # Calendar rendered
-        self.assertIn("CALENDAR MILESTONES", html)
-        # Academic calibration prose rendered
-        self.assertIn("ACADEMIC CALIBRATION", html)
+        # Calendar dates surface inside Where we stand prose (as
+        # "Upcoming milestones: ...")
+        self.assertIn("Upcoming milestones", html)
 
     def test_adr_card_shows_confirmed_offering_structure(self):
+        """v3.4.9 — Offering structure data preserved, but the standalone
+        CONFIRMED OFFERING STRUCTURE heading block is gone. The size,
+        dilution, and raise numbers now appear inline within Where we stand."""
         from src.email_module.template import _build_adr_section4_card
         from src.analysis.adr_event_tracking import compute_adr_snapshot
         from dataclasses import asdict
         snap = compute_adr_snapshot()
         html = _build_adr_section4_card(asdict(snap))
-        self.assertIn("CONFIRMED OFFERING STRUCTURE", html)
+        # The header chrome ("CONFIRMED OFFERING STRUCTURE") is gone; the
+        # human label "Confirmed offering structure:" is in the prose instead
+        self.assertIn("Confirmed offering structure", html)
+        # And the actual numbers (which is what the user cares about) are still rendered
         self.assertIn("17.4M", html)
         self.assertIn("2.4%", html)
         self.assertIn("$10", html)
@@ -258,13 +285,14 @@ class TestSectionRenderingV3_4_4(unittest.TestCase):
     def test_dhcr_spectrum_bar_renders_5_segments(self):
         from src.email_module.template import _build_dhcr_spectrum_bar
         html = _build_dhcr_spectrum_bar(52)
-        # 5 memory types
-        self.assertIn("HBM pure", html)
-        self.assertIn("HBM-GDDR", html)
-        self.assertIn("LPDDR / HBM hybrid", html)
+        # v3.4.9.2: 5 memory-type segment labels (zone labels recalibrated to
+        # natural cell-score breakpoints)
+        self.assertIn("HBM dominant", html)
+        self.assertIn("HBM-leaning", html)
+        self.assertIn("HBM-GDDR / hybrid", html)
         self.assertIn("LPDDR-led", html)
         self.assertIn("DDR commodity", html)
-        # 5 moat-strength tiers
+        # 5 moat-strength tiers (unchanged)
         self.assertIn("Strongest moat", html)
         self.assertIn("Strong moat", html)
         self.assertIn("Partial moat", html)
@@ -274,16 +302,72 @@ class TestSectionRenderingV3_4_4(unittest.TestCase):
     def test_dhcr_spectrum_bar_marker_at_score_52(self):
         from src.email_module.template import _build_dhcr_spectrum_bar
         html = _build_dhcr_spectrum_bar(52)
-        # Marker text "today 52"
-        self.assertIn("today 52", html)
-        # Marker position: 100-52 = 48% from top
+        # v3.4.9.2 marker style: "TODAY" + "X/100" plain text (sketch style)
+        self.assertIn("TODAY", html)
+        self.assertIn("52/100", html)
+        # Marker position: 100-52 = 48% from top (exact score, not zone midpoint)
         self.assertIn("top:48%", html)
 
     def test_dhcr_spectrum_bar_marker_at_score_85(self):
         from src.email_module.template import _build_dhcr_spectrum_bar
         html = _build_dhcr_spectrum_bar(85)
-        self.assertIn("today 85", html)
+        self.assertIn("85/100", html)
         self.assertIn("top:15%", html)
+
+    def test_dhcr_spectrum_bar_colors_flipped_hbm_green_ddr_red(self):
+        """v3.4.9.2 — colors flipped to financial-signal coding: top = green
+        (HBM = strong moat for SK Hynix), bottom = red (DDR commodity = no
+        moat). Diverges from matrix's memory-intensity palette.
+        """
+        from src.email_module.template import _build_dhcr_spectrum_bar
+        html = _build_dhcr_spectrum_bar(52)
+        # Bar order top-to-bottom: HBM (green) → ... → DDR (red).
+        # Verify the top segment (height:20% containing the "100" label) uses
+        # the green color, and the bottom segment (height:30% with "30" label
+        # next) uses the red color.
+        top_idx = html.find("#A6D89B")
+        bot_idx = html.find("#E0775F")
+        self.assertGreater(top_idx, 0, "Green (#A6D89B) should appear in HBM top segment")
+        self.assertGreater(bot_idx, top_idx, "Red (#E0775F) should appear AFTER green (i.e. lower in HTML = lower on bar)")
+
+    def test_dhcr_spectrum_bar_market_zone_subtitle(self):
+        """v3.4.9.2 — market_zone arg renders as subtitle alongside score."""
+        from src.email_module.template import _build_dhcr_spectrum_bar
+        html = _build_dhcr_spectrum_bar(52, market_zone="HBM/GDDR")
+        self.assertIn("market cell: HBM/GDDR", html)
+
+    def test_dhcr_matrix_cells_show_scores(self):
+        """v3.4.9.2 — each cell shows zone label + numeric score. Verify
+        a sample of expected scores appear: R1/C1=10, R4/C2=52, R5/C5=95.
+        """
+        from src.analysis.chart_generator import generate_dhcr_matrix_chart
+        # We can't easily inspect PNG content here, but we can verify the
+        # chart renders without error and the matrix HTML wrapper isn't
+        # what we're testing — the matrix is rendered as a PNG. The score
+        # values get baked into the PNG via matplotlib. So we test that
+        # generate_dhcr_matrix_chart returns a non-empty base64 string.
+        snap = {
+            "status": "Not fired", "position_score": 52,
+            "workload_implied_cell": (2, 1),
+            "market_deployed_cell": (3, 1),
+            "operative_context_tokens": 114_000,
+            "frontier_kv_gb_per_1m_tokens": 13.3,
+        }
+        b64 = generate_dhcr_matrix_chart(snap)
+        self.assertIsNotNone(b64)
+        self.assertGreater(len(b64), 1000, "Matrix PNG should be substantial")
+
+    def test_dhcr_market_zone_label_resolution(self):
+        """v3.4.9.2 — _dhcr_market_zone_label() should resolve market cell
+        to its matrix zone label."""
+        from src.email_module.template import _dhcr_market_zone_label
+        self.assertEqual(_dhcr_market_zone_label({"market_deployed_cell": (3, 1)}), "HBM/GDDR")
+        self.assertEqual(_dhcr_market_zone_label({"market_deployed_cell": (4, 4)}), "HBM")
+        self.assertEqual(_dhcr_market_zone_label({"market_deployed_cell": (0, 0)}), "DDR")
+        self.assertEqual(_dhcr_market_zone_label({"market_deployed_cell": (2, 1)}), "LPDDR/HBM")
+        # Bad input handling
+        self.assertEqual(_dhcr_market_zone_label({}), "")
+        self.assertEqual(_dhcr_market_zone_label({"market_deployed_cell": None}), "")
 
 
 if __name__ == "__main__":

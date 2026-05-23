@@ -220,9 +220,17 @@ class TestDHCRRendersLastInSection4(unittest.TestCase):
             "Decode HBM Captive Ratio", dhcr_html,
             "DHCR section 4 card must render the title 'Decode HBM Captive Ratio'"
         )
+        # v3.4.9 — The standalone "SCORE 52/100" badge was removed in favor of
+        # the cards-1-5 structure. The score now appears inside the COMPUTED
+        # METRICS line in the "Where we stand" paragraph, formatted as
+        # "Position score <strong>52/100</strong>".
         self.assertIn(
-            "SCORE 52/100", dhcr_html,
-            "DHCR section 4 card must render the score badge"
+            "Position score", dhcr_html,
+            "DHCR card must render the position score within Where we stand prose"
+        )
+        self.assertIn(
+            "52/100", dhcr_html,
+            "DHCR card must render the score value 52/100 (in COMPUTED METRICS prose)"
         )
 
 

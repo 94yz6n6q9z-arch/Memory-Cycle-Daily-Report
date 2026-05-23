@@ -1184,6 +1184,164 @@ def generate_dhcr_trajectory_chart(trajectory: list[dict]) -> Optional[str]:
 # ============================================================
 
 def generate_dhcr_matrix_chart(snapshot: dict, trajectory: Optional[list[dict]] = None) -> Optional[str]:
+    """v3.4.9.2 — DHCR 5x5 matrix matching the Indicator 1 Cycle Matrix style.
+
+    v3.4.9.2 visual changes (per user direction 2026-05-23):
+      - SCORE PRINTED ON EACH CELL (zone label on top, numeric score below)
+        — restored from earlier iterations, lost in the v3.4.9 redesign
+      - CELL COLORS FLIPPED to score-based gradient (HBM cells = green,
+        DDR cells = red) — matches the spectrum bar's financial-signal
+        coding. The matrix is now a moat-strength heatmap: green = strong
+        moat for SK Hynix, red = no moat.
+
+    Carried over from v3.4.9:
+      - Y-axis flipped: R5 (least efficient) at TOP, R1 (most efficient) at BOTTOM
+      - TODAY marker: single filled black dot with yellow halo + yellow callout box
+      - No historical trajectory overlay (history goes in card prose)
+      - No workload-implied circle (single market-deployed marker)
+
+    Args:
+        snapshot: DHCRSnapshot dict
+        trajectory: ignored (kept for signature compatibility)
+
+    Returns base64-encoded PNG, or None on failure.
+    """
+    if not snapshot:
+        return None
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        logger.warning(f"matplotlib not available for DHCR matrix: {e}")
+        return None
+
+    # Zone label per cell — matches dhcr.py MEMORY_ZONES and the spectrum
+    # bar's _dhcr_market_zone_label() in template.py
+    MEMORY_ZONES = [
+        ["DDR",     "DDR/LPDDR", "LPDDR",    "LPDDR/HBM",  "LPDDR/HBM"],
+        ["DDR/CXL", "DDR/LPDDR", "LPDDR",    "LPDDR/HBM",  "HBM/hetero"],
+        ["LPDDR",   "LPDDR/HBM", "HBM/GDDR", "HBM/hetero", "HBM"],
+        ["HBM/GDDR","HBM/GDDR",  "HBM",      "HBM",        "HBM"],
+        ["HBM",     "HBM",       "HBM",      "HBM",        "HBM"],
+    ]
+    # KV / context intensities used to derive the per-cell score. Must match
+    # the dhcr.py formula so the matrix scores agree with snapshot.position_score.
+    KV_INTENSITIES = [0.10, 0.30, 0.50, 0.75, 0.95]    # R1..R5
+    CTX_INTENSITIES = [0.10, 0.30, 0.55, 0.80, 0.95]   # C1..C5
+
+    # v3.4.9.2 — SCORE-BASED color gradient (FLIPPED vs prior versions).
+    # Green at top (high score = HBM = strong SK Hynix moat),
+    # red at bottom (low score = DDR commodity = no moat).
+    # Boundaries match the spectrum bar's zones for consistency.
+    def _score_to_color(score: float) -> str:
+        if score >= 80: return "#A6D89B"  # green — HBM dominant
+        if score >= 65: return "#C9E5BC"  # light green — HBM-leaning
+        if score >= 50: return "#FCE38A"  # yellow — HBM-GDDR / hybrid (R4/C2 cluster)
+        if score >= 30: return "#F8A55C"  # amber — LPDDR-led
+        return "#E0775F"                   # red — DDR commodity
+
+    y_labels = ["R1 <1 GB/1M tok", "R2 1-4 GB/1M", "R3 4-16 GB/1M",
+                "R4 16-32 GB/1M", "R5 >32 GB/1M tok"]
+    x_labels = ["C1 <32K", "C2 32-200K", "C3 200K-1M", "C4 1M-10M", "C5 >10M"]
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    # Draw grid cells with y-axis flip per v3.4.9: r=0 (R1) at BOTTOM (display_y=0),
+    # r=4 (R5) at TOP (display_y=4)
+    for r in range(5):
+        for c in range(5):
+            display_y = r
+            zone_label = MEMORY_ZONES[r][c]
+            cell_score = (KV_INTENSITIES[r] + CTX_INTENSITIES[c]) / 2 * 100
+            color = _score_to_color(cell_score)
+            rect = plt.Rectangle((c, display_y), 1, 1, facecolor=color,
+                                 edgecolor="#333", linewidth=0.8)
+            ax.add_patch(rect)
+            # v3.4.9.2 — TWO LINES PER CELL: zone label (top) + numeric score (bottom)
+            ax.text(c + 0.5, display_y + 0.62, zone_label,
+                    ha="center", va="center", fontsize=9, color="#222",
+                    fontweight="bold")
+            ax.text(c + 0.5, display_y + 0.32, f"{cell_score:.0f}",
+                    ha="center", va="center", fontsize=11, color="#1a1a1a",
+                    fontweight="bold", family="monospace")
+
+    # TODAY marker + callout box (Indicator 1 Cycle Matrix style)
+    market_row, market_col = snapshot.get("market_deployed_cell", (0, 0))
+    market_display_y = market_row
+    status = snapshot.get("status", "Not fired")
+
+    # Filled black dot at today's cell center
+    ax.scatter(
+        [market_col + 0.5], [market_display_y + 0.5],
+        s=420, c="#1a1a1a", edgecolors="#FFC83D", linewidths=3,
+        zorder=10,
+    )
+
+    # Yellow callout box, positioned above the dot when there's room,
+    # otherwise below it
+    callout_x = market_col + 0.5
+    callout_above = market_display_y < 3
+    if callout_above:
+        callout_y = market_display_y + 1.3
+        connector_y_start = market_display_y + 0.7
+        connector_y_end = callout_y - 0.1
+    else:
+        callout_y = market_display_y - 0.8
+        connector_y_start = market_display_y + 0.3
+        connector_y_end = callout_y + 0.3
+    ax.plot(
+        [callout_x, callout_x], [connector_y_start, connector_y_end],
+        color="#1a1a1a", linewidth=1.2, zorder=9,
+    )
+    callout_text = f"TODAY\n{status} (R{market_row+1} / C{market_col+1})"
+    ax.text(
+        callout_x, callout_y, callout_text,
+        ha="center", va="center", fontsize=11, fontweight="bold",
+        color="#1a1a1a",
+        bbox=dict(
+            boxstyle="round,pad=0.45", fc="#FFF4C9", ec="#1a1a1a", linewidth=1.4,
+        ),
+        zorder=11,
+    )
+
+    ax.set_xlim(0, 5)
+    ax.set_ylim(0, 5)
+    ax.set_xticks([i + 0.5 for i in range(5)])
+    ax.set_xticklabels(x_labels, fontsize=9)
+    ax.set_yticks([i + 0.5 for i in range(5)])
+    ax.set_yticklabels(y_labels, fontsize=9)
+    ax.set_xlabel("Operative context length (volume-weighted) →  longer context",
+                  fontsize=11, fontweight="bold")
+    ax.set_ylabel("KV efficiency  ↑  less efficient (more HBM-intensive)",
+                  fontsize=11, fontweight="bold")
+    ax.set_aspect("equal")
+
+    score = snapshot.get("position_score", 0)
+    op_ctx = snapshot.get("operative_context_tokens", 0)
+    op_ctx_s = f"{op_ctx/1000:.0f}K" if op_ctx < 1_000_000 else f"{op_ctx/1_000_000:.2f}M"
+    kv_gb = snapshot.get("frontier_kv_gb_per_1m_tokens", 0)
+    ax.set_title(
+        f"DHCR Matrix — score {score}/100, status: {status}",
+        fontsize=13, fontweight="bold", pad=22,
+    )
+    fig.text(
+        0.5, 0.91,
+        f"KV: {kv_gb:.1f} GB/1M tok  ·  Operative context: {op_ctx_s}",
+        ha="center", fontsize=10, color="#555",
+    )
+
+    plt.tight_layout(rect=(0, 0, 1, 0.93))
+
+    import io, base64
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=110, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode("ascii")
+
+
+def generate_dhcr_matrix_chart_legacy(snapshot: dict, trajectory: Optional[list[dict]] = None) -> Optional[str]:
     """v3.4.2: Render the DHCR 5x5 matrix with memory-zone coloring.
 
     Visualization:

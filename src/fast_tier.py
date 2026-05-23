@@ -1042,7 +1042,11 @@ def run_fast_tier() -> int:
             logger.error(f"Cycle chart rendering failed: {e}", exc_info=True)
 
     # v3.4.0 — Generate DHCR trajectory chart from the snapshot data
-    # v3.4.2 — Also generate DHCR matrix chart (5x5 memory-zone visualization)
+    # v3.4.2 — Also generate DHCR matrix chart (5x5 memory-zone visualization).
+    # v3.4.9 — Matrix redesigned: y-flip, single TODAY marker + callout, no
+    # overlay circles or trajectory arrow. The right-hand spectrum bar in the
+    # card is inline HTML (`_build_dhcr_spectrum_bar` in template.py), not a
+    # generated PNG — no separate chart generation step needed for it.
     dhcr_chart_b64 = None
     dhcr_matrix_chart_b64 = None
     dhcr_snapshot_dict = computed_metrics.get("dhcr_snapshot")

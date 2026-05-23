@@ -1135,7 +1135,15 @@ Length: **HARD CAP 250 WORDS** (v3.4.1 — previous unbounded brief reached 411 
 Self-check before emitting: count your words. If >250, compress further. Look first for: (a) intensifiers ("dramatically", "substantially"); (b) restated context already in the indicator status pills; (c) hedges ("appears to", "seems to indicate"); (d) numerical detail that belongs in §3 / §4 cards, not the headline paragraph; (e) anchor link explanations like "see §3 for more" — the anchor itself IS the explanation.
 
 Content — cover all four themes in this order, but blend them into prose (NOT four labeled bullets):
-  (i)  Signal fires/unfires today + what drove them (cite the specific indicator and the trigger value / news that caused the change)
+  (i)  Signal fires/unfires today + what drove them (cite the specific indicator and the trigger value / news that caused the change).
+       **v3.4.9 — VOCABULARY DISCIPLINE for cards 6-8 (DHCR, Competitor, ADR):**
+       Indicators 6, 7, 8 are WATCH-ONLY OVERLAYS — they do NOT count toward Tier 1's `X/6 fired` totals. A status change in one of these is an INDICATOR change, NOT a signal firing. Use this exact vocabulary:
+         - For status changes in indicators 1-5: "signal fires" / "signal unfires" / "one new signal fires today" — correct.
+         - For status changes in cards 6, 7, 8: "indicator changed status" / "DHCR moved to 'Partially fired'" / "Indicator 7 (Competitor dynamics) updated to..." — DO NOT say "signal fires today" or "new signal" for these. They are framework overlays for context, not triggers in the firing count.
+       Concrete examples of correct vs incorrect phrasing:
+         WRONG: "One new signal fires today: t1_competitor_dynamics upgrades to 'Partially fired' as CXMT enters DDR5..."
+         RIGHT: "One indicator changed status today: Competitor dynamics (Indicator 7) moved to 'Partially fired' as CXMT enters DDR5..." OR "No new signals fired today; one watch indicator (Competitor dynamics) updated to 'Partially fired' as CXMT enters DDR5..."
+       The reason for the distinction: the T1 firing count is the institutional read for "are we in peak"; mixing watch-overlay status changes into that signal triggers false-positive reads.
   (ii) Big news from today's feed. PRIORITIZE items that align with a framework signal even when they don't formally fire it. Example: a single-firm "Sell SK Hynix" rating doesn't fire t2_insider_sales (which requires actual insider transactions), but in a market of 26-up / 0-down EPS revisions it IS the first sell-side dissent — a psychological inflection the framework cares about deeply. Surface these as "directional confirmation of [signal name]" or "first dissent from the [signal name] consensus".
   (iii) Big movers today — name 2-4 specific tickers with their 1D % moves. Focus on those that diverge from the broader semi tape (especially the memory pure-plays).
   (iv) Macro / AI / semiconductor backdrop news that impacts the trade (Fed decisions, China export controls, NVIDIA orders, AI CapEx announcements, etc).

@@ -6,7 +6,122 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
-## v3.4.8 — Lab blog selectivity + defensive Haiku parsing + drop CF-blocked feeds
+## v3.4.9 — Section 4 cards 6-8 restructure + DHCR chart redesign + workflow hardening
+
+### Why this exists
+
+2026-05-23 production fast-tier run (post-v3.4.8 deploy) revealed three issues:
+
+1. **fast_tier.yml commit-state step crashed.** Pipeline ran end-to-end and email was delivered, but the post-pipeline `git pull --rebase` failed with `cannot pull with rebase: You have unstaged changes`. Root cause: the workflow's `git add` had an explicit per-file allowlist that missed v3.4.4+ state files (`competitor_state.json`, `adr_state.json`, `enterprise_ai_revenue_state.json`, `hbm_per_accelerator_state.json`, `inference_arch_state.json`). Pre-v3.4.8 these never existed (PyYAML was missing → modules crashed before touching disk). v3.4.8 fixed PyYAML → modules ran → state files appeared → next commit step exposed the latent bug. **Result**: today's `brief_sent_dates.json` was committed locally but never pushed; next cron risks re-sending a duplicate brief; today's competitor/ADR/DHCR-aggregator state was lost.
+
+2. **deep_tier.yml had the SAME class of bug, silently.** deep_tier's commit step used a similar explicit allowlist (`state/digests/`, `state/cache/`, plus `[ -f ... ] && git add` guards for diagnostics + transcript_status files), AND its `git pull --rebase origin main || true` line silently swallowed rebase failures. Consequence: when v3.4.4+ state files showed up in the working tree (same root cause), rebase failed silently → push either no-op'd or pushed a stale commit → `state/deep_tier_diagnostics.json` never landed on main → next 4 scheduled deep_tier crons each did a fresh checkout, saw no today-dated diagnostics file, and ran the full pipeline. The 5-cron schedule was supposed to be 1 real run + 4 idempotency-exit early returns; in practice it was 5 full runs every day, all reporting SUCCESS because the failure was swallowed. User observed this 2026-05-23 with deep tier runs #48-52 all taking 30s instead of the expected 10s for idempotency-exit.
+
+3. **Cards 6, 7, 8 looked completely different from cards 1-5.** v3.4.4 introduced bespoke chrome (status banners, sub-cards with their own status pills, dual-threat callout boxes, calibration flags, score badges, framework-primer footers) that didn't match the simple 4-paragraph format of cards 1-5 (`What we're looking for` / `Where we stand` / `Latest developments` / source links). Reader experience was visually jarring when scrolling from card 5 to card 6.
+
+4. **DHCR matrix and spectrum bar were both confusing.** Matrix: five overlaid visual elements (workload-implied black-outlined circle, market-deployed red filled circle, dashed gray anticipation-gap arrow, solid blue 90d-trajectory arrow, "90d ago" label) with no in-chart legend. Y-axis had R1 (most efficient) at top per matplotlib convention; user requested R5 (least efficient, most HBM-intensive) at top. Cell labels showed only zone names, no scores. Cell colors used memory-type intensity gradient that conflicted with the spectrum bar's financial-signal coding. Spectrum bar: red triangle marker with red-bordered "today 52" box didn't match the matrix's TODAY callout; column headers ("Memory type" / "SK Hynix moat") sat next to the top segment looking like labels for HBM-pure rather than the whole column; the bar marker was placed at the wrong zone (markers at score 52 visually fell in "LPDDR/HBM" zone while the matrix said R4/C2 = "HBM/GDDR").
+
+### Fixes
+
+**1. `.github/workflows/fast_tier.yml` — wholesale state/ add** (Option B from the proposal)
+
+Replaced the explicit per-file allowlist with `git add -A state/ data/dram_*.csv`. Future-proof — any new indicator that writes to `state/` gets committed automatically without requiring a workflow edit. `state/` is by convention only intentional persistence files; nothing temporary lives there.
+
+Verified end-to-end in a sandbox: with the wholesale add, all 11 changed files (3 modified + 8 untracked, including the v3.4.4+ files that broke v3.4.8) get staged → commit → working tree clean → `pull --rebase` + `push` succeed cleanly.
+
+**Deployment note**: this is one of two v3.4.9 changes that does NOT go through the release-extract workflow (which excludes `.github/workflows/` from rsync). Manual one-time edit via GitHub UI required, same pattern as installing `deploy_from_release.yml` originally.
+
+**2. `.github/workflows/deep_tier.yml` — wholesale state/ add + fail-loudly rebase**
+
+Same fix as fast_tier:
+- Wholesale `git add -A state/` replaces the explicit allowlist (`state/digests/`, `state/cache/`, `[ -f deep_tier_diagnostics.json ] && git add`, `[ -f transcript_status.json ] && git add`, `state/extraction_log_*.jsonl`). Catches any new state file added by future framework versions.
+- Removed the `git pull --rebase origin main || true` pattern (which silently swallowed rebase failures). Replaced with the v3.39.7.4-style explicit failure: `if ! git pull --rebase ...; then exit 1; fi`, with one retry on push failure that also fails loudly if both attempts fail.
+
+**Deployment note**: same as fast_tier — manual GitHub UI edit required (excluded from rsync).
+
+**Expected effect**: deep_tier's idempotency works correctly. Run #1 succeeds → `state/deep_tier_diagnostics.json` pushed to main → runs #2-5 do a fresh checkout, see today's diagnostics file in the checkout, exit early in ~10s. 5x daily compute reduced to 1x + 4 quick exits.
+
+**3. Section 4 cards 6, 7, 8 — restructured to match cards 1-5**
+
+All three cards (DHCR / Competitor / ADR) rebuilt to the same minimal 4-paragraph format as cards 1-5:
+
+- `<h3>` header with title + status pill (`Not fired` / `Partially fired` / `Fired` — no special prefix like "Watch indicator" or "Overlay")
+- `<p><strong>What we're looking for:</strong></p>` — framework definition in prose
+- `<p><strong>Where we stand:</strong></p>` — `COMPUTED METRICS` line up front, then all the quantitative substance previously in chrome blocks (sub-statuses, dual-threat detail, offering structure, calendar milestones, academic calibration, sanity check, etc.) folded into prose
+- `<p><strong>Latest developments:</strong></p>` — bulleted news/observations
+- `<p class='links-list'>` — `·`-separated source links
+
+**4. DHCR matrix and spectrum bar — v3.4.9.2 visual redesign**
+
+Matrix (`generate_dhcr_matrix_chart`):
+- **Score on every cell** — each cell shows zone label on top + numeric score below (e.g. R4/C2 displays "HBM/GDDR" + "52"; R3/C2 displays "LPDDR/HBM" + "40"). Restored from earlier iterations.
+- **Cell colors flipped to score-based gradient** — same gradient as the spectrum bar (green at high scores = HBM cells, red at low scores = DDR cells). The matrix is now a moat-strength heatmap.
+- Y-axis flipped (R5 top, R1 bottom) carried over from v3.4.9 initial design
+- TODAY marker (black dot + yellow halo + yellow callout box + connector line) carried over
+
+Spectrum bar (`_build_dhcr_spectrum_bar`):
+- **Colors flipped to financial-signal coding** — green at top (HBM = strong moat = positive for SK Hynix), red at bottom (DDR commodity = no moat). Diverges intentionally from prior matrix palette; now both visuals share the score-based gradient.
+- **Zone boundaries recalibrated to natural cell-score breakpoints**: 0-30 / 30-50 / 50-65 / 65-80 / 80-100. Score 52.5 (the cluster of R1/C5, R3/C3, R4/C2, R5/C1) now lands honestly in the "HBM-GDDR / hybrid" zone (50-65), matching the matrix cell label at that score.
+- **Marker at EXACT score position**, not segment midpoint — honest math. If today's score is 52, the marker sits at the 52 line on the axis.
+- **Sketch-style marker** per Raul's drawing: simple black triangle + plain "TODAY X/100" text label to the left of the bar. No callout box, no halo, no connector. (The matrix marker keeps its callout because it sits mid-2D-grid; the bar's 1D axis has natural reading space to the left.)
+- **Column headers above the 100 mark** — "Memory type" and "SK Hynix moat" sit in their own row above the top of the bar so they label the entire column, not just the top segment.
+- **Market-cell subtitle** — bar title now includes "market cell: HBM/GDDR" (or whatever cell the matrix shows TODAY at), so the visualizations agree visibly.
+
+### Tests
+
+20 new tests in `tests/test_v3_4_9_cards_restructure_and_workflow.py`:
+- 11 tests on cards 6, 7, 8 structure (status pills, 4 labeled paragraphs each, chrome removal)
+- 3 tests on DHCR matrix style (single TODAY marker, callout box, y-axis flip)
+- 3 tests on DHCR spectrum bar (memory type labels, marker text + position, score-flip colors, market-zone subtitle)
+- 1 test on the Sonnet prompt indicator-vs-signal vocabulary block
+- 2 tests on fast_tier.yml workflow change (wholesale add present, old allowlist absent)
+
+3 new tests in same file for deep_tier.yml hardening (v3.4.9.2):
+- wholesale state/ add present
+- broken `|| true` rebase pattern absent
+- explicit fail-loudly pattern present
+
+7 new tests in `tests/test_v3_4_4_adr_and_rendering.py` for the v3.4.9.2 visualization:
+- spectrum bar 5 segments with new zone labels
+- marker at exact score 52
+- marker at exact score 85
+- colors flipped (green top / red bottom)
+- market_zone subtitle renders
+- matrix returns substantial PNG
+- _dhcr_market_zone_label resolves correctly
+
+6 v3.4.2-3.4.4 tests updated to match v3.4.9 structure (old chrome assertions like `"BULL CASE"`, `"SCORE 52/100"`, `"DUAL-THREAT"`, `"CALENDAR MILESTONES"`, `"CONFIRMED OFFERING STRUCTURE"`, `"Moat-extension watch"` replaced with assertions on the new prose-based structure).
+
+**Full suite: 613 passing** (586 v3.4.8 baseline + 27 v3.4.9 net new).
+
+### Files modified
+- `.github/workflows/fast_tier.yml` — wholesale `git add -A state/ data/dram_*.csv`
+- `.github/workflows/deep_tier.yml` — wholesale `git add -A state/` + fail-loudly rebase/push
+- `src/email_module/template.py` — rebuilt `_build_dhcr_section4_card`, `_build_competitor_section4_card`, `_build_adr_section4_card`; added `_build_dhcr_where_we_stand_prose`, `_verbalize_dhcr_history`, `_build_dhcr_latest_developments_prose`, `_build_dhcr_source_links`, `_build_dhcr_chart_row`, `_dhcr_market_zone_label` helpers; rewrote `_build_dhcr_spectrum_bar` (v3.4.9.2 design — color flip, exact-score marker, sketch-style marker, headers above 100)
+- `src/analysis/chart_generator.py` — rewrote `generate_dhcr_matrix_chart` (v3.4.9.2 design — score on each cell, cell colors flipped to score-based gradient, y-axis flip carried over from v3.4.9)
+- `src/analysis/llm_summarizer.py` — Sonnet prompt's executive_brief section now has the `VOCABULARY DISCIPLINE for cards 6-8` block
+- `src/fast_tier.py` — no new chart generation step (the spectrum bar is inline HTML, not a PNG)
+
+### Files added
+- `tests/test_v3_4_9_cards_restructure_and_workflow.py` (23 tests)
+
+### Deployment
+
+1. Manually edit `.github/workflows/fast_tier.yml` via GitHub UI (deploy_from_release excludes `.github/workflows/`). Replace the explicit `git add` list with `git add -A state/ data/dram_*.csv 2>/dev/null || true`.
+2. Manually edit `.github/workflows/deep_tier.yml` via GitHub UI. Replace the explicit allowlist with `git add -A state/`. Replace `git pull --rebase origin main || true` and its retry with the v3.4.9.2 fail-loudly retry pattern (see bundle's deep_tier.yml as reference).
+3. Publish release `v3.4.9` with `memory_cycle_brief_v3_4_9.zip` attached. Deploy workflow auto-extracts and commits the code changes.
+
+### Expected next-run effects
+
+- Email's exec summary uses "indicator" wording for 6-8 status changes, not "signal fires"
+- Cards 6, 7, 8 in section 4 look identical in structure to cards 1-5
+- DHCR matrix: R5 at top, score number on every cell, score-based color gradient (green for HBM cells, red for DDR cells), TODAY callout
+- DHCR spectrum bar: green top / red bottom, marker at exact numeric score, sketch-style triangle + plain text, headers above 100, market-cell name in subtitle
+- Fast tier commit step succeeds; `state/brief_sent_dates.json` gets pushed to main; no duplicate brief risk
+- Deep tier idempotency works: first scheduled run pushes diagnostics → next 4 see today-dated file → exit in ~10s instead of running full pipeline
+
+---
+
+
 
 ### Why this exists
 
