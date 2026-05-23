@@ -225,10 +225,27 @@ jobs:
 
       - name: Commit state (idempotency record + prior-state for tomorrow's diff)
         if: ${{ steps.gate.outputs.run == 'true' && success() }}
+        env:
+          # v3.4.9.1: GITHUB_TOKEN exposed to this step so the commit script
+          # can embed the token in the origin URL (see git remote set-url
+          # below). This bypasses the actions/checkout `http.extraheader`
+          # auth mechanism which has been intermittently ignored by
+          # `git pull --rebase` in this workflow (production log 2026-05-23
+          # 15:45 UTC: "fatal: could not read Username for 'https://github.com':
+          # No such device or address" — extraheader was still in .git/config
+          # per the Post Checkout cleanup log, just not honored). Issue
+          # discussed in actions/checkout#664 and flutter/flutter#141980.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git config --global user.name "memory-cycle-brief-bot"
           git config --global user.email "bot@memory-cycle-brief"
+          # v3.4.9.1: switch origin URL to use embedded x-access-token auth.
+          # `https://x-access-token:${TOKEN}@github.com/owner/repo.git` is the
+          # community-standard fix for the extraheader auth flake. Auth then
+          # flows via the URL itself, no extraheader lookup involved. Safe to
+          # set unconditionally — replaces the post-Checkout origin URL.
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           # v3.39.7: data/ CSVs added to commit set so the cycle matrix
           # accumulates spot/contract/signal history across GHA runs. Without
           # this, the runner's writes to data/dram_*_history.csv would be
