@@ -1,0 +1,38 @@
+name: Bright Data probe (manual)
+
+# v3.4.10 — Manual diagnostic. Triggered from the GitHub Actions UI when
+# the production pipeline shows Yahoo Finance transcript failures and we
+# want to differentiate "Bright Data systemically degraded" from "Yahoo
+# per-ticker block." See scripts/probe_bright_data.py for what it does.
+#
+# Not on any cron. Runs only when manually dispatched.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal deps
+        run: |
+          set -euo pipefail
+          # Probe only needs `requests` — no need to install the full project
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run Bright Data probe
+        env:
+          RESIDENTIAL_PROXY_URL: ${{ secrets.RESIDENTIAL_PROXY_URL }}
+        run: |
+          python scripts/probe_bright_data.py
