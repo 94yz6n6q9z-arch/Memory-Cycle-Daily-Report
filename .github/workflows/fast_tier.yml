@@ -159,17 +159,21 @@ jobs:
           # return?" Especially useful after the May 22 529 incidents to
           # diagnose Layer 2 reliability over time. Per-day file naming so
           # the commit set stays manageable.
-          git add -A state/brief_sent_dates.json state/prior_state.json state/cache/ \
-                  state/indicator_evidence.json \
-                  state/trigger_events_24h.json \
-                  state/extraction_log_*.jsonl \
-                  state/layer2_audit_*.jsonl \
-                  state/dhcr_state.json \
-                  data/dram_spot_history.csv \
-                  data/dram_contract_actuals.csv \
-                  data/dram_contract_quarterly_forecasts.csv \
-                  data/dram_contract_signals.csv \
-                  2>/dev/null || true
+          # v3.4.9: replaced explicit per-file allowlist with wholesale
+          # `state/` directory. The prior allowlist missed competitor_state.json,
+          # adr_state.json, enterprise_ai_revenue_state.json,
+          # hbm_per_accelerator_state.json, inference_arch_state.json (all
+          # v3.4.4+ adds for Indicators 6/7/8). Pre-v3.4.8 these never got
+          # written because PyYAML was missing and the modules crashed before
+          # touching disk; once v3.4.8 fixed PyYAML, the modules ran, the
+          # state files appeared on disk, and the next commit-state step
+          # crashed with "cannot pull with rebase: You have unstaged changes"
+          # because the new files were untracked. Wholesale `state/` is
+          # future-proof: any new indicator that writes state gets committed
+          # automatically without requiring a workflow edit. `state/` is by
+          # convention only intentional persistence files; nothing temporary
+          # lives there.
+          git add -A state/ data/dram_*.csv 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No state changes."
             exit 0
