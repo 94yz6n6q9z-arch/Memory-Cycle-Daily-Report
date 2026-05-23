@@ -165,10 +165,21 @@ jobs:
 
       - name: Commit digests + caches
         if: ${{ steps.gate.outputs.run == 'true' && success() }}
+        env:
+          # v3.4.9.1: same fix as fast_tier.yml — bypass actions/checkout
+          # extraheader auth flake by embedding the token in origin URL.
+          # Latent here pre-v3.4.9 because the prior `git pull --rebase ... || true`
+          # pattern silently swallowed every auth failure (idempotency was broken
+          # but workflow status was green). With v3.4.9's fail-loudly retry,
+          # deep_tier would hit the SAME auth failure that fast_tier hit
+          # 2026-05-23 15:45 UTC — see fast_tier.yml comment + actions/checkout#664.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git config --global user.name "memory-cycle-brief-bot"
           git config --global user.email "bot@memory-cycle-brief"
+          # v3.4.9.1: token-in-URL auth (see env comment above for rationale).
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           # v3.4.9: WHOLESALE state/ add — replaces the explicit allowlist
           # below. Same fix as fast_tier.yml v3.4.9. The prior explicit
           # allowlist (digests/, cache/, deep_tier_diagnostics.json,
