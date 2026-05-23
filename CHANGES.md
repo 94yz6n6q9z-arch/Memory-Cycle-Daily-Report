@@ -6,7 +6,100 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
-## v3.4.9 — Section 4 cards 6-8 restructure + DHCR chart redesign + workflow hardening
+## v3.4.10 — Yahoo earnings-window cascade + Bright Data probe + dead RSS cleanup + DHCR 50/50 split
+
+### Why this exists
+
+2026-05-23 production diagnostics surfaced four issues:
+
+1. **Yahoo Finance proxy fired for tickers we already had cached.** The v3.33 cascade ran Yahoo for any US ticker where MF didn't return `full_transcript` THIS RUN — including the very common `already_processed` case (MF found the URL but it was already in `seen_urls`). Result: every daily fast-tier run burned 13 Bright Data proxy fetches on US tickers whose transcripts we already had digested. Oracle's WARN row on 2026-05-23 was diagnostic: MF returned `already_processed` (cached Q3 FY2026), cascade fell through to Yahoo, Yahoo proxy fetch failed, email diagnostic table showed FAIL for a transcript we already had.
+
+2. **No operational signal for when to actually try Yahoo.** Even when MF legitimately failed, Yahoo retries on days far from any earnings call are diminishing returns — MF coverage IS comprehensive, just sometimes slow. Without knowing whether a fresh call had happened recently, the cascade either over-fired (burning proxy bandwidth) or under-fired (missing fresh transcripts in the 0-2 day post-call window when MF hasn't transcribed yet).
+
+3. **Two RSS feeds had been failing for multiple runs.** Mistral News (`/news/rss/`) returning 404 since the v3.4.6.3 retry; SemiAnalysis Free (`semianalysis.com/feed/`) returning 403 (Cloudflare tightening beyond what curl_cffi's Chrome120 fingerprint bypasses). Both still in `RSS_FEEDS` and contributing to the FAIL row count in the diagnostic table.
+
+4. **DHCR matrix took ~70% of horizontal space, squeezing the spectrum bar's column labels into ugly two-character wraps.**
+
+### Fixes
+
+**1. `src/data/transcript_sources.py` — earnings-window cascade gate**
+
+New rule for the `yahoo_to_run` construction inside `fetch_all_transcripts`:
+
+```
+For each ticker in YAHOO_TRANSCRIPT_TICKERS:
+  - SK Hynix (HY9H.MU) / Samsung (SSU.F)  → always try Yahoo
+    (international ADRs not in Finnhub by ticker; Yahoo's own seen_urls
+    cache short-circuits no-new-transcript days to ~50KB)
+
+  - US ticker with MF returned `full_transcript` THIS RUN  → skip Yahoo
+
+  - US ticker otherwise  → try Yahoo IFF today is 0-2 days post-earnings
+    (per Finnhub /calendar/earnings, with persistent cache)
+```
+
+Replaces v3.33's "fire Yahoo for ANYTHING that isn't a fresh full_transcript including already_processed" rule that was burning 13 proxy fetches/day on cached US tickers.
+
+**2. `src/data/finnhub.py` — `fetch_earnings_calendar_date(ticker)` helper**
+
+New `fetch_earnings_calendar_date()` queries `/calendar/earnings?symbol=X&from=today-90d&to=today+30d` and returns the most recent past earnings date (or None). Used by the cascade gate to decide whether a US ticker is in its 0-2 day post-earnings window.
+
+**3. `src/data/transcript_sources.py` — earnings-calendar cache**
+
+New file `state/earnings_calendar_cache.json` (persisted via the v3.4.9 wholesale `state/` git commit). Four refresh rules implemented in `_cache_entry_needs_refresh`:
+- Cache miss → fetch
+- Entry age > 7 days → fetch (weekly heartbeat)
+- Cached earnings_date within ±30 days of today → daily refresh (catches reschedules)
+- Cached earnings_date past but ≤ 5 days ago → daily refresh (post-call updates)
+- Else → use cache
+
+If Finnhub call fails: keep last good entry, don't poison cache. Worst-case impact of stale cache is one extra (or one missed) Yahoo proxy fetch — not catastrophic.
+
+**4. `scripts/probe_bright_data.py` + `.github/workflows/probe_bright_data.yml` — manual Bright Data sanity check**
+
+Standalone script: hits Yahoo earnings-index URLs for 5 tickers (ORCL, NVDA, MU, MSFT, AMAT) through Bright Data, no caching, no gate. Reports per-ticker HTTP status + response time + body length + anchor count + exception. Workflow yml exposes it as a manual `workflow_dispatch` trigger from the Actions UI.
+
+Use case: when production diagnostics show a Yahoo failure, run the probe to distinguish "Bright Data systemically degraded" (all 5 tickers fail) from "Yahoo per-ticker block" (1-2 fail, rest OK). Exit codes: 0 = all healthy, 1 = degraded, 2 = config error.
+
+**5. `src/config.py` — RSS_FEEDS pruned**
+
+Dropped Mistral News and SemiAnalysis Free per failure patterns above. Coverage substitutes:
+- Mistral: arxiv cs.LG/cs.CL + Google News queries already pick up Mistral releases via tech-press
+- SemiAnalysis: when their analysis goes viral, Reuters/Bloomberg/Tom's Hardware cover it (whose feeds we DO ingest)
+
+**6. `src/email_module/template.py` — DHCR matrix/bar 50/50 split**
+
+`_build_dhcr_chart_row` column widths changed from 60%/40% to 50%/50%. Spectrum bar's Memory type + SK Hynix moat columns can now render their labels on single lines instead of wrapping into ugly two-character columns.
+
+### Tests
+
+33 new tests in `tests/test_v3_4_10_yahoo_cascade_and_probe.py` covering:
+- All four cache refresh rules (including corrupted-entry defenses)
+- Earnings-window gate (in-window / out-of-window / default-attempt on missing data)
+- Cascade integration (already_processed outside window SKIPS, already_processed in window RUNS, full_transcript ALWAYS skips, Korean tickers ALWAYS run)
+- Cache file I/O (load missing, load corrupt, save+load roundtrip)
+- Finnhub failure doesn't poison cache (cached value preserved on exception)
+- Mistral News + SemiAnalysis Free absent from RSS_FEEDS
+- Bright Data probe script imports cleanly, ORCL canary in ticker list, exit code 2 when proxy URL unset, workflow yml exists with workflow_dispatch trigger
+- Finnhub earnings calendar helper returns max past date / None / handles malformed
+
+Plus one updated test in `tests/test_v3_4_6_frontier_sources.py` moving Mistral News from the "surviving" list to the "dropped" list.
+
+**Total: 658 tests passing (was 625 in v3.4.9.1).**
+
+### Expected next-run effect
+
+For the typical daily run (no US tickers in earnings window):
+- Yahoo proxy attempts drop from ~13 (every US ticker not in MF this run) to 2 (just SK Hynix + Samsung)
+- Finnhub adds ~2-3 calls/day (most US tickers cache-hit; only tickers in ±30d window refresh daily)
+- Bright Data bandwidth usage drops ~85% on no-earnings-day runs
+- During peak earnings weeks (e.g., February for the calendar-year reporters), Yahoo fires for the 2-4 US tickers in their window, which is exactly when fresh transcripts might be on Yahoo before MF transcribes
+
+For diagnostic clarity: Yahoo failures now signal something actionable (proxy issue OR genuine in-window block) rather than the noisy "Yahoo failed on Oracle but we already had Oracle cached so who cares" of v3.33-v3.4.9.
+
+---
+
+
 
 ### Why this exists
 
@@ -40,7 +133,26 @@ Same fix as fast_tier:
 
 **Expected effect**: deep_tier's idempotency works correctly. Run #1 succeeds → `state/deep_tier_diagnostics.json` pushed to main → runs #2-5 do a fresh checkout, see today's diagnostics file in the checkout, exit early in ~10s. 5x daily compute reduced to 1x + 4 quick exits.
 
-**3. Section 4 cards 6, 7, 8 — restructured to match cards 1-5**
+**3. `.github/workflows/fast_tier.yml` and `deep_tier.yml` — YAML-level idempotency gate**
+
+Mirrors the pattern from `daily-ticker-report/.github/workflows/daily.yml` (which Raul has been running for months without ever seeing duplicate emails or 5x repeated work). The gate runs as the SECOND step in each workflow, immediately after Checkout, BEFORE Python setup or pip install.
+
+Gate logic uses the runner image's pre-installed `python3` (stdlib only — no dependencies). It reads:
+- `state/brief_sent_dates.json` for fast tier idempotency (today in `dates` list → skip)
+- `state/deep_tier_diagnostics.json` for fast tier cascade and deep tier idempotency (`run_date` == today → fast: cascade satisfied, deep: skip)
+- `FORCE_RUN=1` env var (set when `event_name == 'workflow_dispatch'`) bypasses both checks for manual recovery / testing
+
+Every subsequent step is guarded with `if: ${{ steps.gate.outputs.run == 'true' }}` — Set up Python, Install dependencies, the main pipeline step, the Commit state step. When the gate says skip, none of them run.
+
+**Before v3.4.9 idempotency gate**: a no-op follow-up cron (brief already sent today) consumed ~80 seconds of runner time per workflow: 5s checkout + 5s setup Python + 60s `pip install` + 10s `python -m src.fast_tier` startup before the internal check exits. 4 fallback fast-tier crons + 4 fallback deep-tier crons × Mon-Sat = ~9 minutes/day of wasted GitHub Actions minutes.
+
+**After v3.4.9 idempotency gate**: no-op runs do ~8 seconds: 5s checkout + 2s gate + 1s "Stop early" echo. ~72 seconds saved per no-op × 8 no-ops/day = ~9.5 min/day reclaimed. Mon-Sat = ~57 min/week back under the 2000-min/month Free tier budget.
+
+The internal idempotency check in `fast_tier.py` (`has_brief_been_sent_today`) and `deep_tier.py` (existing diagnostics-dated-today check) is preserved as defense in depth. It handles the `FORCE_RUN=1` path (where the YAML gate is bypassed) and provides a safety net if the gate ever misreads state.
+
+**Deployment note**: this change is in both yml files, also requiring manual GitHub UI edits (deploy_from_release excludes `.github/workflows/`). The replacement yml files are attached as release assets so it's a paste-from-asset action, not a diff merge.
+
+**4. Section 4 cards 6, 7, 8 — restructured to match cards 1-5**
 
 All three cards (DHCR / Competitor / ADR) rebuilt to the same minimal 4-paragraph format as cards 1-5:
 
@@ -50,7 +162,7 @@ All three cards (DHCR / Competitor / ADR) rebuilt to the same minimal 4-paragrap
 - `<p><strong>Latest developments:</strong></p>` — bulleted news/observations
 - `<p class='links-list'>` — `·`-separated source links
 
-**4. DHCR matrix and spectrum bar — v3.4.9.2 visual redesign**
+**5. DHCR matrix and spectrum bar — v3.4.9.2 visual redesign**
 
 Matrix (`generate_dhcr_matrix_chart`):
 - **Score on every cell** — each cell shows zone label on top + numeric score below (e.g. R4/C2 displays "HBM/GDDR" + "52"; R3/C2 displays "LPDDR/HBM" + "40"). Restored from earlier iterations.
@@ -91,7 +203,7 @@ Spectrum bar (`_build_dhcr_spectrum_bar`):
 
 6 v3.4.2-3.4.4 tests updated to match v3.4.9 structure (old chrome assertions like `"BULL CASE"`, `"SCORE 52/100"`, `"DUAL-THREAT"`, `"CALENDAR MILESTONES"`, `"CONFIRMED OFFERING STRUCTURE"`, `"Moat-extension watch"` replaced with assertions on the new prose-based structure).
 
-**Full suite: 613 passing** (586 v3.4.8 baseline + 27 v3.4.9 net new).
+**Full suite: 621 passing** (586 v3.4.8 baseline + 35 v3.4.9 net new).
 
 ### Files modified
 - `.github/workflows/fast_tier.yml` — wholesale `git add -A state/ data/dram_*.csv`
@@ -106,8 +218,8 @@ Spectrum bar (`_build_dhcr_spectrum_bar`):
 
 ### Deployment
 
-1. Manually edit `.github/workflows/fast_tier.yml` via GitHub UI (deploy_from_release excludes `.github/workflows/`). Replace the explicit `git add` list with `git add -A state/ data/dram_*.csv 2>/dev/null || true`.
-2. Manually edit `.github/workflows/deep_tier.yml` via GitHub UI. Replace the explicit allowlist with `git add -A state/`. Replace `git pull --rebase origin main || true` and its retry with the v3.4.9.2 fail-loudly retry pattern (see bundle's deep_tier.yml as reference).
+1. Replace `.github/workflows/fast_tier.yml` via GitHub UI (deploy_from_release excludes `.github/workflows/`). Paste the full contents from the `fast_tier.yml` release asset.
+2. Replace `.github/workflows/deep_tier.yml` via GitHub UI. Paste the full contents from the `deep_tier.yml` release asset.
 3. Publish release `v3.4.9` with `memory_cycle_brief_v3_4_9.zip` attached. Deploy workflow auto-extracts and commits the code changes.
 
 ### Expected next-run effects
@@ -118,6 +230,7 @@ Spectrum bar (`_build_dhcr_spectrum_bar`):
 - DHCR spectrum bar: green top / red bottom, marker at exact numeric score, sketch-style triangle + plain text, headers above 100, market-cell name in subtitle
 - Fast tier commit step succeeds; `state/brief_sent_dates.json` gets pushed to main; no duplicate brief risk
 - Deep tier idempotency works: first scheduled run pushes diagnostics → next 4 see today-dated file → exit in ~10s instead of running full pipeline
+- **NEW: GitHub Actions tab shows clean ~8s no-op runs for the 4 fallback fast-tier crons and 4 fallback deep-tier crons after each first-success-of-the-day. Total runner time per day drops from ~45 min to ~36 min (one real run each + 8 fast no-ops at 8s each).**
 
 ---
 

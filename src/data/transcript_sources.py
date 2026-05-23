@@ -90,7 +90,7 @@ import random
 import re
 import time
 from dataclasses import dataclass, field, asdict
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -122,6 +122,176 @@ MATERIALS_MIN_CHARS = 400
 
 # State cache for already-digested transcript URLs.
 SEEN_CACHE_PATH = Path("state/cache/transcripts_seen.json")
+
+# v3.4.10 — Earnings calendar cache for the Yahoo-fire-window gate.
+# Persists across runs via the v3.4.9 wholesale state/ git commit.
+EARNINGS_CACHE_PATH = Path("state/earnings_calendar_cache.json")
+
+# v3.4.10 — Yahoo earnings-window: only fire Yahoo proxy fetch for a US
+# ticker if the most-recent past earnings call was THIS many days ago or
+# fewer. Rationale: MF transcribes US earnings calls within 0-2 days; if
+# MF doesn't have it after 72 hours, Yahoo retries are diminishing returns
+# (and we'll get it via MF on a subsequent day anyway, since MF's coverage
+# IS comprehensive — it's just sometimes slow).
+YAHOO_EARNINGS_WINDOW_DAYS = 2
+
+# v3.4.10 — Set of company display names that are NON-US-listed in
+# YAHOO_TRANSCRIPT_TICKERS (SK Hynix on Munich + Samsung on Frankfurt).
+# These don't have Finnhub earnings-calendar coverage by their ADR ticker,
+# so the earnings-window gate doesn't apply — they fall through to the
+# "always attempt Yahoo, let Yahoo's own seen_urls cache short-circuit"
+# path. The Yahoo seen_urls cache makes the no-new-transcript day cost
+# ~one 50KB index fetch per ticker, which is cheap.
+INTERNATIONAL_YAHOO_COMPANIES = {"sk hynix", "samsung electronics"}
+
+
+# ============================================================
+# v3.4.10 — Finnhub earnings-calendar cache
+# ============================================================
+# Operational design (matches user-facing rule from 2026-05-23 design
+# discussion):
+#
+#   For a US ticker, we fire Yahoo IF AND ONLY IF the most-recent past
+#   earnings date is 0-2 days ago. Outside that window, MF coverage is
+#   the bottleneck and Yahoo retries don't help.
+#
+#   To answer "when was the most recent earnings call?" we call Finnhub
+#   /calendar/earnings (cheap, no proxy needed). To avoid 16 Finnhub
+#   calls per fast-tier run, we cache the answer in
+#   state/earnings_calendar_cache.json with these refresh rules:
+#
+#     - Cache miss → fetch
+#     - fetched_at > 7 days ago → fetch (weekly heartbeat — catches new
+#       earnings appearing on the calendar that prior runs hadn't seen)
+#     - cached earnings_date within ±30 days of today → fetch daily.
+#       Earnings dates DO move (analyst-day shifts, weather, exec
+#       scheduling) and most often in the month immediately before the
+#       call. Daily refresh in the window catches reschedules same-day.
+#     - cached earnings_date is past but ≤ 5 days ago → fetch daily.
+#       Finnhub occasionally updates the date stamp post-call (rare but
+#       happens); also lets us settle the post-call window correctly.
+#     - Else (>30 days from earnings, fetched within last week) → use cache.
+#
+#   If Finnhub call fails: keep the prior cache entry, don't poison it.
+#   Next run retries. Worst-case impact of a stale cache entry is one
+#   extra (or one missed) Yahoo proxy fetch — not catastrophic.
+
+def _load_earnings_cache() -> dict:
+    """Read state/earnings_calendar_cache.json. Returns {} if missing/corrupt."""
+    if not EARNINGS_CACHE_PATH.exists():
+        return {}
+    try:
+        with open(EARNINGS_CACHE_PATH) as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning(f"Could not read {EARNINGS_CACHE_PATH}: {e}; starting fresh")
+        return {}
+
+
+def _save_earnings_cache(cache: dict) -> None:
+    """Write state/earnings_calendar_cache.json. Best-effort; logs on error."""
+    EARNINGS_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with open(EARNINGS_CACHE_PATH, "w") as f:
+            json.dump(cache, f, indent=2, sort_keys=True)
+    except OSError as e:
+        logger.warning(f"Could not write {EARNINGS_CACHE_PATH}: {e}")
+
+
+def _cache_entry_needs_refresh(entry: Optional[dict], today: date) -> bool:
+    """Apply the four refresh rules. See module docstring above for rationale."""
+    if entry is None:
+        return True
+    fetched_at_str = entry.get("fetched_at")
+    if not fetched_at_str:
+        return True
+    try:
+        fetched_at = datetime.fromisoformat(fetched_at_str.replace("Z", "+00:00"))
+        # Normalize to date for day-level comparisons
+        fetched_date = fetched_at.date() if hasattr(fetched_at, "date") else fetched_at
+    except (ValueError, AttributeError):
+        return True
+
+    age_days = (today - fetched_date).days
+    if age_days > 7:
+        return True  # weekly heartbeat
+
+    earnings_date_str = entry.get("earnings_date")
+    if earnings_date_str is None:
+        # Cached null (no recent earnings for this ticker). Only refresh weekly.
+        return False
+    try:
+        earnings_date = date.fromisoformat(earnings_date_str)
+    except (ValueError, TypeError):
+        return True  # corrupt entry — refresh
+
+    days_to_earnings = (earnings_date - today).days  # negative = past, positive = future
+    if abs(days_to_earnings) <= 30:
+        return True  # daily heartbeat in the ±30d window
+    if -5 <= days_to_earnings <= 0:
+        return True  # post-call window (catches Finnhub revising the date)
+    return False
+
+
+def _get_recent_earnings_date(ticker: str) -> Optional[date]:
+    """Return most recent past earnings date for `ticker`, using cache + Finnhub.
+
+    Returns None if (a) no earnings data available, or (b) Finnhub call fails
+    AND no cached value exists. Callers treat None as "default to attempt"
+    (preserve coverage rather than silently miss).
+    """
+    cache = _load_earnings_cache()
+    today = date.today()
+    entry = cache.get(ticker)
+
+    if _cache_entry_needs_refresh(entry, today):
+        try:
+            from src.data.finnhub import fetch_earnings_calendar_date
+            fresh_date = fetch_earnings_calendar_date(ticker)
+            cache[ticker] = {
+                "earnings_date": fresh_date.isoformat() if fresh_date else None,
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "source": "finnhub",
+            }
+            _save_earnings_cache(cache)
+            return fresh_date
+        except Exception as e:
+            # Finnhub call failed — DON'T poison the cache. Fall through to
+            # the cached value (if any), else None.
+            logger.warning(
+                f"Finnhub earnings calendar fetch failed for {ticker} ({e}); "
+                f"using cached value if any."
+            )
+
+    if entry and entry.get("earnings_date"):
+        try:
+            return date.fromisoformat(entry["earnings_date"])
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
+def _is_in_yahoo_earnings_window(ticker: str,
+                                  window_days: int = YAHOO_EARNINGS_WINDOW_DAYS) -> bool:
+    """v3.4.10 — True iff the ticker had earnings 0..window_days days ago.
+
+    Used by the cascade to decide whether to burn Bright Data on a Yahoo
+    proxy fetch. Default-attempt semantics: if we can't determine the
+    earnings date (Finnhub error + cache miss), return True. Better to
+    occasionally waste a fetch than silently miss a real transcript.
+    """
+    recent_date = _get_recent_earnings_date(ticker)
+    if recent_date is None:
+        # No data — default to attempt (preserve coverage)
+        return True
+    days_since = (date.today() - recent_date).days
+    in_window = 0 <= days_since <= window_days
+    logger.info(
+        f"Yahoo earnings-window check {ticker}: last earnings {recent_date.isoformat()} "
+        f"({days_since}d ago); in {window_days}d window = {in_window}"
+    )
+    return in_window
 
 
 # ============================================================
@@ -1304,22 +1474,54 @@ def fetch_all_transcripts(
         if cur is None or _rank.get(r.availability, 0) > _rank.get(cur, 0):
             covered[r.company.lower()] = r.availability
 
-    # v3.33: Yahoo fires for ANYTHING that isn't a fresh full_transcript from
-    # this run. Per Raul's rule: "goal is the transcript" — cost is secondary.
-    # This catches:
-    #   • "nothing"           — MF + IR found nothing → Yahoo tries
-    #   • "materials_only"    — only slides found → Yahoo tries for the call text
-    #   • "already_processed" — MF returned an OLD cached URL; the new quarter
-    #                           may already be on Yahoo even before MF transcribes.
-    #                           Yahoo's own URL cache handles the no-new-content
-    #                           case (one ~50KB index fetch + skip).
-    #   • not present at all  — Yahoo is the only source for SK Hynix + Samsung
-    # The only state that skips Yahoo is "full_transcript" captured this run.
+    # v3.4.10: Yahoo fires ONLY when one of these is true:
+    #
+    #   (a) Korean ADR tickers (SK Hynix HY9H.MU, Samsung SSU.F). Always
+    #       try — there's no Motley Fool coverage and IR scrapers can only
+    #       get materials, not the call transcript. Yahoo's own seen_urls
+    #       cache short-circuits no-new-transcript days to ~50KB.
+    #
+    #   (b) US tickers WITHIN the earnings window (0-2 days post-call) AND
+    #       MF didn't already get the full transcript THIS RUN. Outside the
+    #       window, daily Yahoo retries are diminishing returns — MF
+    #       eventually transcribes US calls and we'll pick it up on a
+    #       later daily run.
+    #
+    # Both override the prior v3.33 "fire Yahoo for anything not
+    # full_transcript including already_processed" rule. That was burning
+    # Bright Data bandwidth on tickers we already had cached. See
+    # CHANGES.md v3.4.10 for the operational rationale.
+    #
+    # The already_processed case is now subsumed by (b): if we already
+    # have it cached AND we're outside the earnings window, the cached
+    # transcript IS the latest one — no need to recheck Yahoo. If we're
+    # INSIDE the earnings window, the cached URL might be the prior
+    # quarter and a fresh call's transcript may already be on Yahoo, so
+    # we do try.
     yahoo_to_run = {}
     for company, ticker in yahoo_tickers.items():
-        cur = covered.get(company.lower())  # None if MF + IR didn't see this company
-        if cur != "full_transcript":
+        cur = covered.get(company.lower())
+
+        # Skip if we already got a fresh full transcript via MF/IR
+        if cur == "full_transcript":
+            continue
+
+        # International tickers (SK Hynix, Samsung): always try, no
+        # earnings-calendar check (Finnhub doesn't cover their ADR tickers
+        # reliably)
+        if company.lower() in INTERNATIONAL_YAHOO_COMPANIES:
             yahoo_to_run[company] = ticker
+            continue
+
+        # US ticker: apply earnings-window gate
+        if _is_in_yahoo_earnings_window(ticker):
+            yahoo_to_run[company] = ticker
+        else:
+            logger.info(
+                f"Yahoo skipped for {company} ({ticker}): outside "
+                f"{YAHOO_EARNINGS_WINDOW_DAYS}-day post-earnings window "
+                f"(prior MF status: {cur or 'not seen'})"
+            )
 
     yahoo_results: list[TranscriptResult] = []
     if yahoo_to_run:

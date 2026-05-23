@@ -1536,8 +1536,15 @@ RSS_FEEDS = {
     "HuggingFace Blog": "https://huggingface.co/blog/feed.xml",
     # CXL / memory disaggregation canary — Astera Labs is the pure-play
     "Astera Labs Newsroom": "https://www.asteralabs.com/category/news/feed/",
-    # SemiAnalysis free posts (the rest is paywalled but headlines + intros are useful)
-    "SemiAnalysis Free": "https://semianalysis.com/feed/",
+    # v3.4.10 — SemiAnalysis Free DROPPED. Production diagnostics 2026-05-23
+    # showed persistent HTTP 403 on https://semianalysis.com/feed/ — same
+    # Cloudflare-tightened-beyond-JA3 pattern as the 5 v3.4.8 drops
+    # (Damnang Substack + Investing.com x4). curl_cffi with Chrome120 TLS
+    # fingerprint doesn't bypass it anymore. Coverage substitute: arxiv
+    # cs.LG/cs.CL + tech-press via Google News queries already pick up the
+    # signal from SemiAnalysis posts (when their analysis goes viral, it
+    # gets covered by Reuters/Bloomberg/Tom's Hardware whose feeds we DO
+    # ingest).
 
     # v3.4.6 / v3.4.6.3 — Frontier-model lab sources for the DHCR arch
     # aggregator's Tier-A signal coverage.
@@ -1578,7 +1585,13 @@ RSS_FEEDS = {
     #   - Mistral News — RETRY at /news/rss/ (removed .xml suffix per
     #     common pattern; original /news/feed.xml was 404). If this also
     #     fails in production, drop in v3.4.6.4.
-    "Mistral News": "https://mistral.ai/news/rss/",
+    # v3.4.10 — Mistral News DROPPED. The v3.4.6.3 retry at /news/rss/ (after
+    # the original /news/feed.xml was 404) is ALSO returning 404 in production
+    # 2026-05-23 — Mistral simply doesn't publish a stable RSS endpoint.
+    # Coverage substitute: arxiv cs.LG/cs.CL + Google News queries pick up
+    # Mistral releases via tech-press coverage (Reuters/TechCrunch). The
+    # WATCH_GOOGLE_QUERIES list already includes Mistral release queries
+    # from the v3.4.6.3 compensation work.
     "arxiv cs.LG (filtered)": "https://rss.arxiv.org/rss/cs.LG",
     "arxiv cs.CL (filtered)": "https://rss.arxiv.org/rss/cs.CL",
 }

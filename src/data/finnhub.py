@@ -84,6 +84,43 @@ def fetch_insider_transactions(ticker: str) -> dict:
     return _get("stock/insider-transactions", {"symbol": ticker})
 
 
+def fetch_earnings_calendar_date(ticker: str) -> Optional["date"]:
+    """v3.4.10 — Most recent past earnings_date for `ticker`, via Finnhub
+    /calendar/earnings, used by the transcript cascade's earnings-window
+    gate (decides whether to burn Bright Data on a Yahoo fetch).
+
+    Query window: [today-90d, today+30d]. Returns:
+      - The most recent earnings_date that is <= today, OR
+      - None if Finnhub has no past earnings in window (e.g., ticker is a
+        newly-IPO'd name pre-first-call), or call fails.
+
+    Future-only earnings dates (entries with date > today) are ignored —
+    the gate cares only about whether a call has already happened that
+    might have a transcript online.
+
+    Raises if FINNHUB_API_KEY isn't set OR the HTTP call fails. Caller is
+    expected to catch and fall back to cache or default.
+    """
+    from datetime import date, timedelta
+    today = date.today()
+    from_date = (today - timedelta(days=90)).isoformat()
+    to_date = (today + timedelta(days=30)).isoformat()
+    data = _get("calendar/earnings", {"symbol": ticker, "from": from_date, "to": to_date})
+    entries = data.get("earningsCalendar", []) if isinstance(data, dict) else []
+    past_dates = []
+    for e in entries:
+        d_str = e.get("date") if isinstance(e, dict) else None
+        if not d_str:
+            continue
+        try:
+            d = date.fromisoformat(d_str)
+        except (ValueError, TypeError):
+            continue
+        if d <= today:
+            past_dates.append(d)
+    return max(past_dates) if past_dates else None
+
+
 def _detect_revision_direction(history: list[dict]) -> Optional[str]:
     """Compare two most recent monthly snapshots to detect net direction.
 

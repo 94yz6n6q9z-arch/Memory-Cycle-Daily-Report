@@ -1794,7 +1794,7 @@ def _build_dhcr_chart_row(
     cells = []
     if matrix_chart_b64:
         cells.append(
-            "<td style='width:60%;vertical-align:top;padding-right:10px'>"
+            "<td style='width:50%;vertical-align:top;padding-right:10px'>"
             f"<img src='data:image/png;base64,{matrix_chart_b64}' "
             f"style='width:100%;display:block' "
             f"alt='DHCR 5x5 matrix — KV efficiency vs operative context' />"
@@ -1802,7 +1802,7 @@ def _build_dhcr_chart_row(
         )
     # Right column: the v3.4.9.2 vertical spectrum bar
     cells.append(
-        "<td style='width:40%;vertical-align:top;padding-left:10px'>"
+        "<td style='width:50%;vertical-align:top;padding-left:10px'>"
         f"{_build_dhcr_spectrum_bar(score, market_zone)}"
         "</td>"
     )

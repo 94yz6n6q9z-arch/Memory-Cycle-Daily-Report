@@ -411,5 +411,169 @@ class TestDeepTierWorkflowHardening(unittest.TestCase):
         )
 
 
+class TestYamlLevelIdempotencyGate(unittest.TestCase):
+    """v3.4.9 — both workflows now have a YAML-level idempotency gate as the
+    SECOND step (after Checkout, before Set up Python). All subsequent steps
+    are conditionally gated on `steps.gate.outputs.run == 'true'`. This mirrors
+    the pattern from daily-ticker-report/.github/workflows/daily.yml. Effect:
+    follow-up scheduled crons on a day the brief was already sent take ~8s
+    of runner time (checkout + gate + echo) instead of ~80s (full Python
+    install + pipeline startup before the internal idempotency check exits).
+    """
+
+    def _read_yml(self, name: str) -> str:
+        from pathlib import Path
+        path = (Path(__file__).resolve().parents[1]
+                / ".github/workflows" / name)
+        if not path.exists():
+            self.skipTest(f"{name} not in bundle")
+        return path.read_text()
+
+    def test_fast_tier_has_gate_step_before_python_setup(self):
+        src = self._read_yml("fast_tier.yml")
+        # "Decide whether to run" step must appear BEFORE "Set up Python"
+        gate_idx = src.find('name: Decide whether to run')
+        py_idx = src.find('name: Set up Python')
+        self.assertGreater(gate_idx, 0, "fast_tier.yml missing 'Decide whether to run' gate step")
+        self.assertGreater(py_idx, gate_idx,
+            "fast_tier.yml: 'Set up Python' must come AFTER the gate step "
+            "so no-op runs skip the Python install entirely")
+
+    def test_deep_tier_has_gate_step_before_python_setup(self):
+        src = self._read_yml("deep_tier.yml")
+        gate_idx = src.find('name: Decide whether to run')
+        py_idx = src.find('name: Set up Python')
+        self.assertGreater(gate_idx, 0, "deep_tier.yml missing 'Decide whether to run' gate step")
+        self.assertGreater(py_idx, gate_idx,
+            "deep_tier.yml: 'Set up Python' must come AFTER the gate step")
+
+    def test_fast_tier_subsequent_steps_gated(self):
+        """All steps after the gate must be conditionally executed based on
+        steps.gate.outputs.run == 'true'. Otherwise the gate is decorative."""
+        src = self._read_yml("fast_tier.yml")
+        # Count occurrences of the gate condition. With 4 stage-gated steps
+        # (Set up Python, Install dependencies, Run fast tier, Commit state)
+        # we expect at least 4 references.
+        gate_refs = src.count("steps.gate.outputs.run == 'true'")
+        self.assertGreaterEqual(gate_refs, 4,
+            f"fast_tier.yml: expected ≥4 step-level gate refs, found {gate_refs}. "
+            "Each post-gate step must be guarded with "
+            "`if: ${{ steps.gate.outputs.run == 'true' }}`")
+
+    def test_deep_tier_subsequent_steps_gated(self):
+        src = self._read_yml("deep_tier.yml")
+        gate_refs = src.count("steps.gate.outputs.run == 'true'")
+        self.assertGreaterEqual(gate_refs, 4,
+            f"deep_tier.yml: expected ≥4 step-level gate refs, found {gate_refs}")
+
+    def test_fast_tier_gate_checks_both_lock_and_cascade(self):
+        """The fast tier gate must check BOTH state/brief_sent_dates.json
+        (idempotency lock) AND state/deep_tier_diagnostics.json (cascade gate).
+        """
+        src = self._read_yml("fast_tier.yml")
+        gate_section = src.split("name: Decide whether to run")[1].split("name: Stop early")[0]
+        self.assertIn("state/brief_sent_dates.json", gate_section,
+            "fast_tier.yml gate must read state/brief_sent_dates.json (idempotency)")
+        self.assertIn("state/deep_tier_diagnostics.json", gate_section,
+            "fast_tier.yml gate must read state/deep_tier_diagnostics.json (cascade)")
+
+    def test_deep_tier_gate_checks_diagnostics_lock(self):
+        src = self._read_yml("deep_tier.yml")
+        gate_section = src.split("name: Decide whether to run")[1].split("name: Stop early")[0]
+        self.assertIn("state/deep_tier_diagnostics.json", gate_section,
+            "deep_tier.yml gate must read state/deep_tier_diagnostics.json (idempotency)")
+
+    def test_both_gates_honor_force_run_bypass(self):
+        """Manual workflow_dispatch sets FORCE_RUN=1 which bypasses the gate.
+        Both yml files must implement this bypass."""
+        for name in ("fast_tier.yml", "deep_tier.yml"):
+            src = self._read_yml(name)
+            self.assertIn("FORCE_RUN", src,
+                f"{name}: gate must support FORCE_RUN=1 bypass for manual dispatch")
+            self.assertIn("workflow_dispatch", src,
+                f"{name}: must wire workflow_dispatch trigger")
+
+    def test_gate_logic_runs_via_runner_python(self):
+        """The gate runs BEFORE Set up Python step, so it must use `python3`
+        from the runner image (not a venv'd Python from setup-python). This
+        is the whole point — no install needed to decide whether to install.
+        """
+        for name in ("fast_tier.yml", "deep_tier.yml"):
+            src = self._read_yml(name)
+            gate_section = src.split("name: Decide whether to run")[1].split("name: Stop early")[0]
+            self.assertIn("python3 - <<'PY'", gate_section,
+                f"{name}: gate must invoke `python3` (runner's pre-installed) "
+                "via heredoc, not `python` (which requires setup-python)")
+
+
+class TestTokenInUrlAuthHardening(unittest.TestCase):
+    """v3.4.9.1 — both workflows must rewrite origin URL to embed the
+    GITHUB_TOKEN before any push/pull operation. This bypasses the
+    actions/checkout `http.extraheader` auth path which has been
+    intermittently ignored by `git pull --rebase` (production failure
+    2026-05-23 15:45 UTC: 'fatal: could not read Username for
+    https://github.com: No such device or address').
+
+    Pattern: `git remote set-url origin
+    https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git`
+    """
+
+    def _read_yml(self, name: str) -> str:
+        from pathlib import Path
+        path = (Path(__file__).resolve().parents[1]
+                / ".github/workflows" / name)
+        if not path.exists():
+            self.skipTest(f"{name} not in bundle")
+        return path.read_text()
+
+    def test_fast_tier_commit_step_has_github_token_env(self):
+        src = self._read_yml("fast_tier.yml")
+        # GITHUB_TOKEN must be exposed to the commit step
+        commit_section = src.split("name: Commit state")[1].split("name: Create issue")[0]
+        self.assertIn("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}", commit_section,
+            "fast_tier.yml commit step must expose GITHUB_TOKEN via env: per v3.4.9.1")
+
+    def test_deep_tier_commit_step_has_github_token_env(self):
+        src = self._read_yml("deep_tier.yml")
+        # Deep tier's commit step is the last named step — split on its name only
+        commit_section = src.split("name: Commit digests + caches")[1]
+        self.assertIn("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}", commit_section,
+            "deep_tier.yml commit step must expose GITHUB_TOKEN via env: per v3.4.9.1")
+
+    def test_both_workflows_rewrite_origin_with_embedded_token(self):
+        """Both workflows must call `git remote set-url origin
+        https://x-access-token:${GITHUB_TOKEN}@github.com/...` before push/pull."""
+        for name in ("fast_tier.yml", "deep_tier.yml"):
+            src = self._read_yml(name)
+            self.assertIn("x-access-token:${GITHUB_TOKEN}@github.com", src,
+                f"{name}: must embed GITHUB_TOKEN in origin URL per v3.4.9.1")
+            self.assertIn("git remote set-url origin", src,
+                f"{name}: must call `git remote set-url origin ...` to apply the embedded-token URL")
+
+    def test_token_rewrite_happens_before_first_push_or_pull(self):
+        """The `git remote set-url` must appear BEFORE any git pull / push
+        in the commit step — otherwise the auth flake we're fixing still
+        hits the first operation. Match actual command lines (not mentions
+        in comment blocks) by looking for `if ! git pull` or `\\n          git push`.
+        """
+        for name in ("fast_tier.yml", "deep_tier.yml"):
+            src = self._read_yml(name)
+            if name == "fast_tier.yml":
+                section = src.split("name: Commit state")[1].split("name: Create issue")[0]
+            else:
+                section = src.split("name: Commit digests + caches")[1]
+            set_url_idx = section.find("git remote set-url origin")
+            # Look for the actual `if ! git pull` retry block (the real command,
+            # not the long inline comment about why we do it)
+            first_pull_idx = section.find("if ! git pull --rebase origin main")
+            self.assertGreater(set_url_idx, 0,
+                f"{name}: missing `git remote set-url origin` in commit step")
+            self.assertGreater(first_pull_idx, 0,
+                f"{name}: missing `if ! git pull --rebase origin main` command")
+            self.assertLess(set_url_idx, first_pull_idx,
+                f"{name}: `git remote set-url` (idx {set_url_idx}) must come BEFORE "
+                f"the `if ! git pull --rebase` command (idx {first_pull_idx})")
+
+
 if __name__ == "__main__":
     unittest.main()

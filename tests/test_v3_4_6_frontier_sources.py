@@ -98,8 +98,9 @@ class TestRSSFeedsConfig(unittest.TestCase):
 
     def test_surviving_frontier_feeds_present(self):
         from src.config import RSS_FEEDS
+        # v3.4.10: "Mistral News" removed from the surviving list — see
+        # test_dropped_feeds_absent below for the assertion.
         for name in (
-            "Mistral News",
             "arxiv cs.LG (filtered)",
             "arxiv cs.CL (filtered)",
         ):
@@ -107,9 +108,9 @@ class TestRSSFeedsConfig(unittest.TestCase):
             self.assertTrue(RSS_FEEDS[name].startswith("http"), f"{name} URL malformed")
 
     def test_dropped_feeds_absent(self):
-        """v3.4.6.3 — these were in v3.4.6 but production confirmed
-        they don't work as RSS endpoints. Asserting absence so the
-        config doesn't quietly regrow them in a future merge."""
+        """v3.4.6.3 + v3.4.10 — these were in v3.4.6 / v3.4.8 / v3.4.9 but
+        production confirmed they don't work as RSS endpoints. Asserting
+        absence so the config doesn't quietly regrow them in a future merge."""
         from src.config import RSS_FEEDS
         for name in (
             "Meta AI Blog",
@@ -118,9 +119,14 @@ class TestRSSFeedsConfig(unittest.TestCase):
             "Anthropic News",
             "Google DeepMind Blog",
             "HuggingFace Papers",
+            # v3.4.10: persistent 404 on /news/rss/ after v3.4.6.3 retry
+            "Mistral News",
+            # v3.4.10: persistent 403 (Cloudflare beyond JA3) — same class
+            # as the 5 v3.4.8 drops
+            "SemiAnalysis Free",
         ):
             self.assertNotIn(name, RSS_FEEDS,
-                f"{name} was dropped in v3.4.6.3 (no native RSS available) — "
+                f"{name} was dropped (no working RSS available) — "
                 f"don't re-add without confirming a working URL")
 
     def test_compensating_google_news_queries_present(self):
