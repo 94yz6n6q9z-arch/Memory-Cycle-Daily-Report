@@ -409,6 +409,55 @@ class BrokerAction:
     source_url: str
 
 
+def _safe_construct_list(cls, items: list, source_name: str) -> list:
+    """v3.4.8 — Safely construct a list of dataclass instances from
+    Haiku-parsed dicts, skipping entries with missing or invalid fields.
+
+    Why this exists: when Haiku's response exceeds its output token cap,
+    json.loads fails on truncated text. v3.38.4 added json_repair as a
+    fallback to recover what's parseable from the partial response. But
+    a recovered partial response can contain dicts that are missing
+    fields that the target dataclass requires (e.g. a broker_action
+    dict missing `source_url` because the truncation happened mid-key).
+    Constructing the dataclass with `cls(**partial_dict)` then raises
+    TypeError, blowing up the entire pipeline.
+
+    This helper unpacks each entry individually, logs a WARNING on any
+    construction failure (with the specific field error from Python's
+    TypeError message), and continues. The pipeline degrades gracefully:
+    you lose a few broker_actions instead of the entire daily brief.
+
+    Non-dict entries (e.g. if json_repair returned a string in place of
+    an object) are also skipped with a separate log line.
+
+    The 2026-05-23 production crash that motivated this:
+      TypeError: BrokerAction.__init__() missing 1 required
+                 positional argument: 'source_url'
+    """
+    result = []
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            logger.warning(
+                f"Skipped non-dict {cls.__name__} entry at {source_name}[{i}]: "
+                f"got {type(item).__name__} ({item!r:.80})"
+            )
+            continue
+        try:
+            result.append(cls(**item))
+        except TypeError as e:
+            logger.warning(
+                f"Skipped malformed {cls.__name__} at {source_name}[{i}]: {e}. "
+                f"Likely json_repair recovery of truncated Haiku output. "
+                f"Available keys: {sorted(item.keys())}"
+            )
+    if result and len(result) < len(items):
+        logger.info(
+            f"_safe_construct_list({cls.__name__}, {source_name}): "
+            f"kept {len(result)}/{len(items)} entries"
+        )
+    return result
+
+
 @dataclass
 class NewsTriage:
     """Output of Haiku stage 1: structured news pre-processing."""
@@ -574,7 +623,15 @@ def haiku_triage_news(
 
     return NewsTriage(
         relevant_news=parsed.get("relevant_news", []),
-        broker_actions=[BrokerAction(**a) for a in parsed.get("broker_actions", [])],
+        # v3.4.8 — Defensive BrokerAction construction. The previous
+        # comprehension `[BrokerAction(**a) for a in ...]` crashed with
+        # TypeError when json_repair recovered a truncated Haiku output
+        # that had a broker_action entry missing the required
+        # `source_url` field. Production crash on 2026-05-23 was
+        # exactly this. Now we skip-with-warning on bad entries.
+        broker_actions=_safe_construct_list(
+            BrokerAction, parsed.get("broker_actions", []), "broker_actions"
+        ),
         trendforce_commentary=parsed.get("trendforce_commentary", []),
         indicator_relevance=parsed.get("indicator_relevance", {}),
     )

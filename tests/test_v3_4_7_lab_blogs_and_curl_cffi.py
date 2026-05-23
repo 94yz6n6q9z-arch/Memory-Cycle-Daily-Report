@@ -23,18 +23,18 @@ class TestAnthropicNewsParser(unittest.TestCase):
     def test_basic_extraction(self):
         from src.data.lab_blog_scrapers import parse_anthropic_news
         html = """
-        <a href="https://www.anthropic.com/news/widening-conversation-ai">May 19, 2026Announcements Widening the conversation on frontier AI</a>
-        <a href="https://www.anthropic.com/news/anthropic-kpmg">May 19, 2026Announcements KPMG integrates Claude across its core business</a>
+        <a href="https://www.anthropic.com/news/claude-5">May 19, 2026Announcements Introducing Claude 5</a>
+        <a href="https://www.anthropic.com/news/sonnet-47">May 19, 2026Announcements Sonnet 4.7 now available</a>
         """
         items = parse_anthropic_news(html)
         self.assertEqual(len(items), 2)
         self.assertEqual(items[0].source, "anthropic.com")
         self.assertEqual(items[0].published.date(), datetime(2026, 5, 19).date())
-        self.assertIn("frontier AI", items[0].title)
+        self.assertIn("Claude 5", items[0].title)
 
     def test_relative_url_normalized(self):
         from src.data.lab_blog_scrapers import parse_anthropic_news
-        html = '<a href="/news/test-slug">May 1, 2026Announcements Test Title</a>'
+        html = '<a href="/news/test-slug">May 1, 2026Announcements Introducing Claude 5</a>'
         items = parse_anthropic_news(html)
         self.assertEqual(len(items), 1)
         self.assertTrue(items[0].url.startswith("https://www.anthropic.com/"))
@@ -48,8 +48,8 @@ class TestAnthropicNewsParser(unittest.TestCase):
     def test_dedup_by_url(self):
         from src.data.lab_blog_scrapers import parse_anthropic_news
         html = """
-        <a href="https://www.anthropic.com/news/x">May 1, 2026Announcements Title</a>
-        <a href="https://www.anthropic.com/news/x">May 1, 2026Announcements Title</a>
+        <a href="https://www.anthropic.com/news/x">May 1, 2026Announcements Introducing Claude 5</a>
+        <a href="https://www.anthropic.com/news/x">May 1, 2026Announcements Introducing Claude 5</a>
         """
         items = parse_anthropic_news(html)
         self.assertEqual(len(items), 1)
@@ -61,7 +61,7 @@ class TestMetaAIBlogParser(unittest.TestCase):
         from src.data.lab_blog_scrapers import parse_meta_ai_blog
         html = """
         <div>
-          <a href="https://ai.meta.com/blog/scaling-how-we-build-test-advanced-ai/">Scaling How We Build and Test Our Most Advanced AI</a>
+          <a href="https://ai.meta.com/blog/llama-4/">Introducing Llama 4</a>
           <span>April 08, 2026</span>
         </div>
         """
@@ -96,7 +96,7 @@ class TestDeepMindBlogParser(unittest.TestCase):
         from src.data.lab_blog_scrapers import parse_deepmind_blog
         html = """
         <a href="https://deepmind.google/blog/co-scientist-a-multi-agent-ai-partner/">
-          <h3>Co-Scientist: A multi-agent AI partner to accelerate research</h3>
+          <h3>Introducing Gemini 2.5 Pro</h3>
           <span>May 2026 Science</span>
         </a>
         """
@@ -110,7 +110,7 @@ class TestDeepMindBlogParser(unittest.TestCase):
         from src.data.lab_blog_scrapers import parse_deepmind_blog
         html = """
         <a href="/blog/test-slug/">
-          <h3>Test Title</h3>
+          <h3>Introducing Gemini 2.5</h3>
           <span>March 2026</span>
         </a>
         """
@@ -129,7 +129,7 @@ class TestFetchOrchestrator(unittest.TestCase):
         from src.diagnostics import DiagnosticsCollector
 
         mock_resp = MagicMock()
-        mock_resp.text = '<a href="/news/x">May 22, 2026Announcements Recent Item</a>'
+        mock_resp.text = '<a href="/news/x">May 22, 2026Announcements Introducing Claude 5</a>'
         mock_resp.raise_for_status = MagicMock()
 
         cfgs = [LabBlogConfig(
@@ -330,27 +330,4 @@ class TestDiagnosticVisibility(unittest.TestCase):
         self.assertEqual(collector.statuses[0].detail, f"client={CLIENT_NAME}")
 
 
-class TestRestoredCloudflareFeeds(unittest.TestCase):
-    """v3.4.7.1 — Damnang Substack + Investing.com x4 restored to
-    RSS_FEEDS after being dropped in v3.38.4. They were dropped
-    because Cloudflare blocked Python requests' TLS fingerprint;
-    curl-cffi Chrome120 impersonation should bypass."""
-
-    def test_damnang_substack_in_feeds(self):
-        from src.config import RSS_FEEDS
-        self.assertIn("Damnang Substack (memory architecture)", RSS_FEEDS)
-
-    def test_investing_x4_in_feeds(self):
-        from src.config import RSS_FEEDS
-        for name in (
-            "Investing.com MU news",
-            "Investing.com NVDA news",
-            "Investing.com AMAT news",
-            "Investing.com ASML news",
-        ):
-            self.assertIn(name, RSS_FEEDS, f"{name} should be restored in v3.4.7.1")
-
-
-
-if __name__ == "__main__":
-    unittest.main()
+# TestRestoredCloudflareFeeds removed in v3.4.8 — feeds dropped per CF-block confirmation

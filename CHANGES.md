@@ -6,7 +6,105 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
-## v3.4.7 — Section 4 reorder + curl-cffi TLS bypass + lab blog HTML scrapers + diagnostic visibility
+## v3.4.8 — Lab blog selectivity + defensive Haiku parsing + drop CF-blocked feeds
+
+### Why this exists
+
+v3.4.7 production crashed on 2026-05-23 with:
+```
+TypeError: BrokerAction.__init__() missing 1 required positional argument: 'source_url'
+```
+
+Root cause chain:
+1. v3.4.7 added 4 new lab blog scrapers (Anthropic / Meta AI / DeepMind / HF Daily Papers) which ingested everything those sites published — partnerships, hiring posts, policy talks, applied-AI work — not just model releases
+2. News volume into Haiku triage grew from ~80-100 items pre-v3.4.7 to **139 items** on the May 23 run
+3. Haiku's response truncated at ~7500 output tokens (Haiku 4.5 caps output around 8192 regardless of requested max_tokens; `HAIKU_MAX_TOKENS=16000` is theoretical, not actual)
+4. json_repair (v3.38.4 fallback) recovered 52 relevant_news items from the partial JSON
+5. The recovered data had one broker_action dict missing `source_url` (truncated mid-key)
+6. `BrokerAction(**incomplete_dict)` raised TypeError → fast-tier crashed before email rendering
+
+### Fixes
+
+**1. Lab blog selectivity (root cause)** — `src/data/lab_blog_scrapers.py`
+
+New `_is_architecture_relevant(title)` helper applied inline in all 3 HTML parsers. A title passes only if either:
+
+- It contains a frontier-lab model name (Claude / Llama / Gemini / Mistral / DeepSeek / Qwen / Sonnet / Haiku / Opus / Phi / Gemma / GPT-N / oN) AND either a release verb (introducing / launching / announcing / released / now available / technical report / etc.) OR a version number (5, 4.6, 2.5, V3, etc.)
+- It contains an unambiguous architecture/efficiency term (MoE / mixture-of-experts / KV cache / HBM / context window / sparse attention / FlashAttention / inference speed / quantization / distillation / reasoning model / tokens per second / NN[BM] parameters)
+
+Examples filtered out: `"Anthropic acquires Stainless"`, `"KPMG integrates Claude"`, `"Widening the conversation on frontier AI"`, `"Engineering culture at Meta AI"`, `"AI policy at Davos"`.
+
+Examples kept: `"Introducing Claude 5"`, `"Llama 4 technical report"`, `"Gemini 2.5 Pro with 1M context window"`, `"Reducing KV cache memory with sparse attention"`.
+
+False-positive risk: low (rare for a non-architecture post to mention a model name + version). False-negative risk to monitor: if DHCR misses a known model release, the filter is too strict — adjust regex.
+
+**2. HuggingFace Daily Papers dropped** — `src/data/lab_blog_scrapers.py`
+
+HF Daily Papers is a manually-curated subset of arxiv. We already ingest arxiv cs.LG and cs.CL via dedicated RSS feeds (pre-v3.4.7), so the overlap is ~80-90%. HF Papers added curation quality but not new coverage, while contributing ~10-15 items per run to Haiku triage — most of which are general ML research not relevant to memory cycle.
+
+The `parse_huggingface_daily_papers` function stays in the module so it can be re-enabled later via a one-line registry change, but no longer runs in normal operation.
+
+**3. Per-source max_items cap (belt-and-braces)** — `src/data/lab_blog_scrapers.py`
+
+`LabBlogConfig.max_items = 5` default. Orchestrator sorts each source's items newest-first and caps to that many. Protects against a back-catalog day (e.g. a lab publishing 10 posts in a week) blowing past the budget despite the recency filter. Logs when the cap fires.
+
+**4. Defensive `_safe_construct_list` helper** — `src/analysis/llm_summarizer.py`
+
+The actual bug fix. New helper unpacks each entry individually, catches `TypeError` from missing required dataclass fields, logs a `WARNING` with the missing-field details, and continues. Construction of `broker_actions` in `haiku_triage_news` now uses this helper.
+
+When json_repair returns a partial response with malformed entries, the pipeline degrades gracefully — losing a few broker_actions instead of the entire daily brief. The log lines show exactly what was dropped:
+
+```
+WARNING Skipped malformed BrokerAction at broker_actions[3]: missing 1 required
+        positional argument: 'source_url'. Likely json_repair recovery of
+        truncated Haiku output. Available keys: ['action', 'broker', 'detail', 'ticker']
+INFO _safe_construct_list(BrokerAction, broker_actions): kept 7/8 entries
+```
+
+**5. Drop the 5 Cloudflare-blocked feeds** — `src/config.py`
+
+v3.4.7 production confirmed `client=curl_cffi + status=FAIL + Cloudflare hint` for Damnang Substack and Investing.com MU/NVDA/AMAT/ASML. CF has tightened beyond JA3/JA4 fingerprinting (likely HTTP/2 frame-order or IP reputation). Per the v3.4.7 diagnostic plan, these are now dropped from RSS_FEEDS. Coverage for MU/NVDA/AMAT/ASML retained via Google News queries from v3.4.6.3.
+
+### What this does NOT change
+
+- `HAIKU_MAX_TOKENS = 16000` stays. It's already at the model's hard cap; bumping further has no effect.
+- arxiv cs.LG/cs.CL RSS feeds stay. These covered the model-architecture papers that HF Papers was duplicating.
+- No prompt changes to Haiku triage. The fix is at the volume-in side, not the parse-out side.
+
+### Tests
+
+20 new tests in `tests/test_v3_4_8_selectivity_and_defensive_parsing.py`:
+- Strict filter behavior (model releases pass, partnerships/policy/hiring filtered)
+- Per-parser application of the filter
+- max_items cap enforcement
+- HF Daily Papers absence from LAB_BLOG_SCRAPERS
+- 5 CF-blocked feeds absence from RSS_FEEDS
+- `_safe_construct_list` complete/missing-field/non-dict cases
+- End-to-end pipeline robustness: the exact 2026-05-23 crash scenario reconstructed and confirmed not to crash
+
+10 v3.4.7 tests updated for v3.4.8 behavior (generic test titles like `"Test Title"` replaced with filter-passing titles like `"Introducing Claude 5"`; obsolete `TestRestoredCloudflareFeeds` class removed since those feeds are now intentionally absent).
+
+**Full suite: 586 passing** (568 v3.4.7 baseline + 20 v3.4.8 net new, with 2 tests obsoleted by v3.4.8 changes).
+
+### Files modified
+- `src/data/lab_blog_scrapers.py` — `_is_architecture_relevant` filter, model/release/version/arch regexes, filter wired into all 3 HTML parsers, HF Papers unregistered, `max_items=5` per config, cap enforcement in orchestrator
+- `src/analysis/llm_summarizer.py` — `_safe_construct_list` helper, `broker_actions` construction defensive
+- `src/config.py` — 5 CF-blocked feeds removed from RSS_FEEDS
+
+### Files added
+- `tests/test_v3_4_8_selectivity_and_defensive_parsing.py` (20 tests)
+
+### Expected impact on next fast-tier run
+
+- News volume into Haiku triage: 139 → ~105-115 items
+- Haiku output: comfortably under the 8192 token cap; no truncation
+- Pipeline reaches Layer 3 Sonnet synthesis and emits email
+- Email's data-source table no longer shows 5 FAIL rows for Damnang + Investing.com x4
+- Lab blog rows show fewer items but the items shown are signal (model releases / architecture posts only)
+
+---
+
+
 
 ### Section 4 ordering locked
 

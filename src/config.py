@@ -1517,25 +1517,21 @@ RSS_FEEDS = {
     # broker-name Google News queries.
     "CNBC Technology": "https://www.cnbc.com/id/19854910/device/rss/rss.html",
     "Investing.com Asia Equities": "https://www.investing.com/rss/news_301.rss",
-    # v3.4.7.1 (2026-05-22) — RESTORED. These 5 feeds were dropped in
-    # v3.38.4 because Python `requests` failed Cloudflare's JA3/JA4 TLS
-    # fingerprint check (UA-only fix insufficient). v3.4.7's smart_get
-    # uses curl_cffi with Chrome120 impersonation, which should pass
-    # the same checks. Re-added so production diagnostics tell us per
-    # feed whether the bypass works:
-    #   - If client=curl_cffi + status=OK → bypass confirmed, leave restored
-    #   - If client=curl_cffi + status=FAIL with Cloudflare hint → CF
-    #     tightened beyond JA3 (e.g. now fingerprinting HTTP/2 frame
-    #     order); drop again in v3.4.8
-    #   - If client=stdlib → curl_cffi failed to import on the runner;
-    #     fix the dependency before any conclusions
-    # The detail-column client tag from v3.4.7.1 makes this decision
-    # evidence-based rather than guessed.
-    "Damnang Substack (memory architecture)": "https://damnang.substack.com/feed",
-    "Investing.com MU news": "https://www.investing.com/equities/micron-tech-inc-news/rss",
-    "Investing.com NVDA news": "https://www.investing.com/equities/nvidia-corp-news/rss",
-    "Investing.com AMAT news": "https://www.investing.com/equities/applied-matls-inc-news/rss",
-    "Investing.com ASML news": "https://www.investing.com/equities/asml-holdings-nv-news/rss",
+    # v3.4.8 (2026-05-23) — DROPPED AGAIN. v3.4.7 production confirmed
+    # that curl-cffi Chrome120 impersonation is NOT enough to bypass
+    # Cloudflare for these endpoints. Per the diagnostic plan:
+    # `client=curl_cffi + FAIL + Cloudflare hint` → CF tightened
+    # beyond JA3/JA4 (likely HTTP/2 frame-order or IP reputation
+    # fingerprinting). Removed:
+    #   - Damnang Substack (memory architecture)
+    #   - Investing.com MU news
+    #   - Investing.com NVDA news
+    #   - Investing.com AMAT news
+    #   - Investing.com ASML news
+    # Coverage retained via the Google News queries added in v3.4.6.3
+    # for MU/NVDA/AMAT/ASML and via Damnang's content surfacing through
+    # other tech-press secondaries. No re-restoration attempt planned;
+    # if Cloudflare relaxes, we can revisit.
     # HuggingFace publishes a working RSS for model + research drops
     "HuggingFace Blog": "https://huggingface.co/blog/feed.xml",
     # CXL / memory disaggregation canary — Astera Labs is the pure-play
