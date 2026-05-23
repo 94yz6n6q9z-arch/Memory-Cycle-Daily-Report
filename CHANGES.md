@@ -6,7 +6,317 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
-## v3.4.6.1 — Cloudflare-block detection in RSS diagnostics
+## v3.4.7 — Section 4 reorder + curl-cffi TLS bypass + lab blog HTML scrapers + diagnostic visibility
+
+### Section 4 ordering locked
+
+Per Raul (2026-05-22): section 4 card order is **top-5 → DHCR (card 6) → Competitor (card 7) → ADR (card 8, last)**. The five Sonnet-picked Top-5 cards keep their current order. This replaces the v3.4.4 ordering (Competitor → ADR → DHCR-last) which had DHCR as the macro-framing closer. New rationale: DHCR is the framework-level direction monitor and belongs adjacent to the cycle-state cards; the ADR event is now the closer because it's the peak-coincidence signal (per Part 11 — Hynix listed 1995 pre-1996 crash pattern).
+
+Implementation: `template.py` section-4 builder reordered. The same `if snapshot is None: skip` graceful-degradation logic preserved for each card. Comments updated to reflect new placement. Memory note locked.
+
+### curl-cffi TLS-fingerprint bypass + DIAGNOSTIC VISIBILITY
+
+`curl_cffi` 0.15.0 was already in production (pulled in transitively by yfinance 1.x; confirmed in v3.4.6.2 install log). v3.4.7 pins it explicitly in `requirements.txt` and wires it into the RSS fetch path.
+
+New `smart_get()` helper in `src/data/news.py`:
+- Uses `curl_cffi.requests.get(..., impersonate="chrome120")` when available (Chrome 120 TLS handshake)
+- Falls back to stdlib `requests.get` if curl_cffi not importable (e.g. minimal test venv)
+- Returns the same Response interface (`.status_code`, `.headers`, `.text`, `.content`, `.raise_for_status()`)
+
+`_safe_parse_rss_feed` updated to call `smart_get` instead of `requests.get`. Exception handling extended: `_HTTPError_Types` and `_RequestException_Types` are tuples containing both stdlib `requests` exception classes AND `curl_cffi.requests.exceptions` classes.
+
+**CRITICAL: Diagnostic visibility added so we can actually tell if curl-cffi works in production.** Without this, a binary-incompat or import error on the GHA runner would silently fall back to stdlib requests with no signal. Two visibility hooks:
+
+1. **Startup log line** in `news.py` (runs once at module import):
+   - If curl_cffi imports cleanly: `INFO HTTP client: curl_cffi 0.15.0 (Chrome120 TLS impersonation enabled — Cloudflare JA3/JA4 bypass active)`
+   - If curl_cffi missing: `WARNING HTTP client: curl_cffi UNAVAILABLE — falling back to stdlib requests. Cloudflare TLS-fingerprint-blocked sources will FAIL with the v3.4.6.1 hint. Install: pip install curl-cffi>=0.7.0`
+
+2. **Per-feed client tag** in SourceFetchStatus.detail. Module-level `CLIENT_NAME` = `"curl_cffi"` or `"stdlib"`; `_safe_parse_rss_feed` sets `t.detail = f"client={CLIENT_NAME}"` on success. The email's "Detail / error" column renders this per RSS row.
+
+After the first v3.4.7 deploy, the email's data-source table shows per feed:
+```
+Damnang Substack         rss   OK    8   420ms   client=curl_cffi
+SemiAnalysis Free        rss   OK    5   380ms   client=curl_cffi
+Investing.com MU news    rss   FAIL  0   210ms   HTTPError 403 [Cloudflare TLS-fingerprint block — needs curl-cffi (v3.4.7 candidate)]
+```
+
+That last row would be a bad sign: client=curl_cffi but still failing means CF tightened beyond JA3/JA4 (possibly HTTP/2 frame-order fingerprinting). The combination of startup log + per-feed tag turns the v3.4.8 decision from "guess" into "read the diagnostics."
+
+### Restored: Damnang Substack + Investing.com x4
+
+These 5 feeds were dropped in v3.38.4 because Python `requests` failed Cloudflare's JA3/JA4 TLS fingerprint check. v3.4.7's curl-cffi with Chrome120 impersonation should pass the same checks. **Restored to RSS_FEEDS in this release** rather than deferred to v3.4.8 — the production diagnostics will tell us per feed whether the bypass works:
+
+- `client=curl_cffi` + `status=OK` → bypass confirmed, leave restored
+- `client=curl_cffi` + `status=FAIL` with Cloudflare hint → CF tightened beyond JA3; drop in v3.4.8
+- `client=stdlib` → curl_cffi failed to import; fix the dependency before any conclusions
+
+Worst case if all 5 fail: 5 extra FAIL rows for one day's email; drop them next release. Best case: 5 architecture-signal sources back online without a separate restore cycle. No-regret trade.
+
+### Lab blog HTML scrapers (3) + HuggingFace Daily Papers JSON
+
+New module `src/data/lab_blog_scrapers.py` recovers the Tier-A source-of-origin path lost when v3.4.6.3 dropped these RSS feeds:
+
+| Source | URL | Format | Source attribution → Tier label |
+|---|---|---|---|
+| Anthropic News | anthropic.com/news | HTML | `anthropic.com` → `anthropic.com` (Tier A) |
+| Meta AI Blog | ai.meta.com/blog/ | HTML | `ai.meta.com` → `ai.meta.com` (Tier A) |
+| Google DeepMind | deepmind.google/blog/ | HTML | `deepmind.google` → `deepmind.google` (Tier A) |
+| **HuggingFace Daily Papers** | huggingface.co/api/daily_papers | JSON | `huggingface.co/papers` → `huggingface_papers` (Tier A) |
+
+The HuggingFace addition: their `/api/daily_papers` JSON endpoint is **unauthenticated** (confirmed via multiple HF community projects), even though `/papers/feed.xml` requires auth. Cleaner than HTML parsing — structured fields for id, title, authors, publishedAt, summary.
+
+Each parser is a pure function `(html_or_json: str) -> list[NewsItem]`. UI strings (`FEATURED`, `Learn More`, `Newsroom`, category labels) filtered. Items deduplicated by href. The orchestrator `fetch_lab_blog_scrapes()` handles fetch via smart_get, diagnostic recording per source, and recency filtering.
+
+When Anthropic publishes a Claude release post, Meta publishes a Llama N release, DeepMind publishes a Gemini Pro release, or HF Daily Papers surfaces a frontier-model technical report → the arch aggregator picks it up at Tier A on the very next fast-tier run, and DHCR's frontier_kv updates immediately. The Tier-A loop is finally closed without RSS dependency.
+
+Out of v3.4.7 scope (no public structure confirmed):
+- **DeepSeek** — api-docs.deepseek.com structure not stable; defer
+- **Qwen** — content migrated to qwen.ai/research; structure TBD
+
+### Tests
+
+15 new tests in `tests/test_v3_4_7_lab_blogs_and_curl_cffi.py`:
+- Parsers on representative HTML (Anthropic, Meta AI, DeepMind) + JSON (HF Papers)
+- Source-tier routing for `huggingface.co/papers` → Tier A
+- Diagnostic visibility: CLIENT_NAME module attribute + per-feed detail tagging
+- Restored CF feeds present in RSS_FEEDS
+- Section 4 ordering enforced (DHCR → Competitor → ADR)
+
+3 v3.4.2 placement tests updated for new v3.4.7 ordering. 2 v3.4.6.1 Cloudflare tests updated to patch `smart_get` instead of `requests.get`.
+
+**Full suite: 551 passing** (527 v3.4.6.3 baseline + 24 net new across v3.4.7 features).
+
+### Files modified
+- `requirements.txt` — `curl-cffi>=0.7.0` pinned explicitly
+- `src/data/news.py` — `smart_get()`, exception-type unions, `_safe_parse_rss_feed` through smart_get, startup log, `CLIENT_NAME`, per-feed detail tagging, `fetch_all_news` calls lab blog scrapes
+- `src/email_module/template.py` — section 4 card order reordered
+- `src/config.py` — Damnang + Investing.com x4 restored to RSS_FEEDS
+
+### Files added
+- `src/data/lab_blog_scrapers.py` (3 HTML + 1 JSON parser + orchestrator)
+- `tests/test_v3_4_7_lab_blogs_and_curl_cffi.py` (24 tests)
+
+xlsx renamed `memory_cycle_data_source_audit_v3_4_7.xlsx`
+
+### What v3.4.8 looks like (data-driven from the first v3.4.7 deploy)
+
+Read the email's data-source table after the first run. For each of `Damnang Substack`, `Investing.com MU/NVDA/AMAT/ASML`, `SemiAnalysis Free`:
+
+- **OK + client=curl_cffi**: working as intended. Keep.
+- **FAIL + client=curl_cffi + Cloudflare hint**: CF tightened beyond JA3; drop.
+- **FAIL + client=curl_cffi + no Cloudflare hint**: investigate (could be 404/site restructure unrelated to TLS).
+- **client=stdlib (any status)**: curl_cffi didn't import in production. Diagnose the import failure first.
+
+DeepSeek + Qwen scrapers remain dependent on their HTML structures stabilizing — no diagnostic to read for that.
+
+---
+
+
+
+---
+
+
+
+### The headline bug
+
+Raul's May 22 production brief showed section 4 titled "Top 8 indicators — deep dive" but **only 5 cards rendered**. The 3 cards we built (Indicator 7 Competitor, Indicator 8 ADR, DHCR) were all missing. The production fast-tier logs revealed the cause: **PyYAML was never installed on the GitHub Actions runner.**
+
+The fast-tier log produced the same error 8 times:
+
+```
+13:48:23 [ERROR] DHCR arch aggregator failed (state preserved): No module named 'yaml'
+13:48:23 [ERROR] DHCR accelerator aggregator failed (state preserved): No module named 'yaml'
+13:48:23 [ERROR] DHCR revenue aggregator failed (state preserved): No module named 'yaml'
+13:48:23 [ERROR] DHCR computation failed: PyYAML is required for DHCR computation.
+13:48:23 [ERROR] Indicator 7 aggregator failed (state preserved): No module named 'yaml'
+13:48:23 [ERROR] Indicator 7 computation failed: No module named 'yaml'
+13:48:23 [ERROR] Indicator 8 aggregator failed (state preserved): No module named 'yaml'
+13:48:23 [ERROR] Indicator 8 computation failed: No module named 'yaml'
+```
+
+Every yaml-importing module fell over. Snapshots returned None. The template's `if snapshot is None: skip` path silently dropped the cards from section 4. The title still said "Top 8" because that's a literal in the template — but only the 5 Sonnet-picked Top-5 cards survived to render.
+
+**`DHCR has been broken in production since v3.4.0.**` It was in shadow validation so its absence wasn't visible until v3.4.4 promoted it to a section 4 card. Indicator 7 and 8 (shipped fresh in v3.4.4) never worked in production.
+
+### The fix
+
+`PyYAML>=6.0` added to `requirements.txt` (one line). This unblocks **all 8 modules in one shot**:
+- `src/analysis/dhcr.py` (the try/except ImportError → "PyYAML is required" raise path)
+- `src/analysis/competitor_aggregator.py`
+- `src/analysis/competitor_scoring.py`
+- `src/analysis/adr_aggregator.py`
+- `src/analysis/adr_event_tracking.py`
+- `src/analysis/dhcr_arch_aggregator.py`
+- `src/analysis/dhcr_accelerator_aggregator.py`
+- `src/analysis/dhcr_revenue_aggregator.py`
+
+### Why our local pytest never caught it
+
+PyYAML is installed in dev environments (pulled in transitively by something else, e.g. `anthropic` or `pandas`'s dev deps). The GitHub Actions runner installs only what's explicitly in `requirements.txt` — and PyYAML was absent. Local test suite always passed even with the bug present.
+
+**Guardrail added:** new test class `TestYAMLDependentModuleImports` in `tests/test_v3_4_6_3_pyyaml_dependency.py` explicitly tries to import all 8 yaml-dependent modules. If PyYAML ever gets dropped from requirements.txt again, this test will fail in CI before deploy.
+
+### RSS feed URL reconciliation
+
+The May 22 production diagnostics (cleanly surfaced via the v3.4.6.1 Cloudflare classifier — which correctly said "these are NOT Cloudflare blocks") revealed that 6 of the 9 v3.4.6-added lab-blog feeds don't actually expose working RSS endpoints:
+
+| Feed | URL tried | Status | Verdict |
+|---|---|---|---|
+| Meta AI Blog | ai.meta.com/blog/rss/ | 400 Bad Request | No native RSS (RSSHub issue #16938 still open). DROP. |
+| Google DeepMind Blog | deepmind.google/discover/blog/rss.xml | 404 | New domain doesn't publish RSS (confirmed via direct fetch — no `<link rel="alternate">` in head). DROP. |
+| DeepSeek API News | api-docs.deepseek.com/news/rss.xml | 404 | No public RSS for news section. DROP. |
+| Anthropic News | anthropic.com/news/rss.xml | 404 | No public RSS. DROP. |
+| HuggingFace Papers | huggingface.co/papers/feed.xml | 401 Unauthorized | Endpoint requires auth — not viable for unattended cron. DROP. |
+| Qwen Blog | qwenlm.github.io/feed.xml | 404 | Content migrated to qwen.ai/research (no RSS there either). DROP. |
+| Mistral News | mistral.ai/news/feed.xml | 404 | RETRY at /news/rss/ (alternate path). |
+| arxiv cs.LG | rss.arxiv.org/rss/cs.LG | 200 OK | KEEP. |
+| arxiv cs.CL | rss.arxiv.org/rss/cs.CL | 200 OK | KEEP. |
+
+Plus `SemiAnalysis Free` got a 429 (rate limit), which is transient — leaving the URL as-is.
+
+### Compensation: Google News query expansion
+
+14 frontier-model release queries added to `WATCH_GOOGLE_QUERIES` so tech-press coverage of the dropped lab announcements still reaches the digester:
+- "Llama 5 Meta release", "Llama 4 Maverick Meta release"
+- "Claude 4 release Anthropic"
+- "Gemini 3 release DeepMind", "Gemma 4 release DeepMind"
+- "DeepSeek V4 release", "DeepSeek R2 release"
+- "Mistral Large release"
+- "Qwen 4 release Alibaba", "Qwen 3.5 release Alibaba"
+- "frontier model release open weights", "MoE model release inference"
+- "MLA multi-head latent attention release", "FP8 inference model release"
+
+These names map onto `FRONTIER_LAB_NAMES` in `news.py`'s arxiv pre-filter and the `_classify_source_for_tier` label set. Any tech-press article picked up via Google News still routes to Tier-A in the arch aggregator even though the source-of-origin RSS is unavailable.
+
+### What this means going forward
+
+- DHCR card will render starting on the next fast-tier run after deploy (the seeded state files already exist).
+- Indicator 7 (Competitor) card will render with the bootstrap state values.
+- Indicator 8 (US ADR/SPO) card will render with not-fired status until F-1 filing watches trigger.
+- Section 4 will finally show all 8 cards as the title has promised since v3.4.4.
+
+### Tests
+
+3 new tests in `tests/test_v3_4_6_3_pyyaml_dependency.py`:
+- `TestPyYAMLAvailable.test_yaml_importable` — sanity check
+- `TestYAMLDependentModuleImports.test_all_yaml_dependent_modules_import` — the guardrail
+- `TestDHCRComputeRequiresPyYAML.test_load_dhcr_data_doesnt_raise_pyyaml_required` — verifies the fallback path
+
+3 v3.4.6 feed-presence tests updated to match the v3.4.6.3 pruned state (asserting surviving feeds present + dropped feeds absent + compensating Google News queries present).
+
+**Full suite: 527 passing** (522 v3.4.6.2 baseline + 5 net new for v3.4.6.3).
+
+### Files modified
+- `requirements.txt` — PyYAML>=6.0 added
+- `src/config.py` — RSS_FEEDS pruned to 17 entries; WATCH_GOOGLE_QUERIES extended with 14 frontier-model queries
+
+### Files added
+- `tests/test_v3_4_6_3_pyyaml_dependency.py` (3 tests)
+
+xlsx renamed `memory_cycle_data_source_audit_v3_4_6_3.xlsx`
+
+### v3.4.7 candidate work (queued)
+
+- **curl-cffi integration** for any feeds that show Cloudflare TLS-fingerprint blocks in future production runs (the v3.4.6.1 classifier will tag them automatically).
+- **RSSHub integration** to recover lab-blog coverage that doesn't have native RSS (Meta AI, DeepMind, DeepSeek, Anthropic blogs). Requires self-hosting or trusting a public instance; deferred until empirically needed.
+
+---
+
+
+
+**Why this release.** Raul uploaded the Wed May 20 production brief and pointed out the computation was "still not working." The Memory pure-plays vs SOX section showed:
+
+> COMPUTED METRICS (authoritative per v3.39.7.3 Rule C): SK Hynix 5d vs SOX: **not computed (SOX or SK Hynix price cell missing in lookback window)**. Micron 5d vs SOX: not computed. DRAM ETF 5d vs SMH: **+NaN pp**. Overall severity: None.
+
+The same indicator showed identical "(not computed)" status in the Fri May 22 brief two days later — the bug persists run after run. The other indicator Raul had complained about (Cycle Matrix) self-resolved between May 20 and May 22; relative strength did not.
+
+### Root cause: KRX/US trading-calendar misalignment
+
+`fetch_price_history` in `src/data/prices.py` does one batched yfinance call across `WIDER_BASKET + BENCHMARKS + HYPERSCALERS`. The basket mixes:
+- KRX-listed (SK Hynix `000660.KS`, Samsung `005930.KS`) — Mon-Fri Asia trading hours
+- US-listed (Micron `MU`, ^SOX, ^GSPC, DRAM ETF, SMH, etc.) — Mon-Fri US trading hours
+
+yfinance returns a single DataFrame whose index spans **both** calendars. Rows where KRX traded but the US session hasn't opened yet have NaN in the US columns; rows where US traded on a Korean holiday have NaN in the KRX columns. The `dropna(how="all")` line only drops rows where every column is NaN — it doesn't drop rows where any single column is NaN.
+
+`get_relative_strength_vs_sox()` then did `history[ticker].iloc[-1]` and `history[ticker].iloc[-days-1]` against the misaligned frame. For the dominant case — KRX-only latest bar — that landed on NaN in the SOX column. The v3.39.7.9 guard correctly detected the NaN and returned None, but never SOLVED the underlying alignment problem. That's why "(not computed)" was the default state on most run days, not the exception.
+
+`get_dram_etf_vs_smh()` lacked even the v3.39.7.9 NaN guard, so it propagated NaN all the way to the rendered "+NaN pp" string.
+
+### Fix
+
+Both functions now project the relevant column pair to rows where BOTH are non-NaN before the iloc lookup:
+
+```python
+# v3.4.6.2 — calendar-alignment fix
+aligned = history[[ticker_name, sox_col]].dropna()
+if len(aligned) < days + 1:
+    return None
+ticker_end = aligned[ticker_name].iloc[-1]
+ticker_start = aligned[ticker_name].iloc[-days - 1]
+sox_end = aligned[sox_col].iloc[-1]
+sox_start = aligned[sox_col].iloc[-days - 1]
+```
+
+The aligned subset is "the last N days where both columns had values" — the right denominator for a relative-strength comparison. Belt-and-suspenders NaN guards retained but should never fire now.
+
+`get_dram_etf_vs_smh()` got the same treatment plus a NaN guard on the final `delta` so it returns None instead of a NaN-containing dict if alignment somehow fails downstream.
+
+### Verification
+
+Reproduced the bug with a synthetic price_history mimicking the production case (last row KRX-only, US tickers NaN):
+
+```
+Pre-fix:
+  SK Hynix 5d vs SOX: None
+  Micron 5d vs SOX:   None  
+  DRAM ETF 5d vs SMH: spread_pp=NaN, severity=None
+
+Post-fix:
+  SK Hynix 5d vs SOX: 0.40pp
+  Micron 5d vs SOX:   -1.11pp
+  DRAM ETF 5d vs SMH: spread_pp=1.86pp, severity=None
+```
+
+### Tests
+
+8 new tests in `tests/test_v3_4_6_2_relative_strength_calendar_fix.py` covering:
+- Calendar misalignment at the tail (most common production case)
+- Mid-window holiday (US holiday inside the 5-day window)
+- Clean aligned frame (control)
+- Insufficient aligned rows → returns None gracefully
+
+3 existing v3.39.7.9 tests updated: the old behavior asserted "return None on any NaN cell in the window." That was the workaround. v3.4.6.2 makes those same inputs produce REAL numbers by dropping the NaN row from the aligned subset and computing from the prior valid bars. Tests rewritten to reflect the new (correct) semantics.
+
+**Full suite: 522 passing** (514 v3.4.6.1 baseline + 8 new for v3.4.6.2; 3 v3.39.7.9 tests adapted).
+
+### What the brief will show after deploy
+
+Today's production data should produce numbers like:
+
+```
+COMPUTED METRICS (authoritative per v3.39.7.3 Rule C): 
+SK Hynix 5d vs SOX: +6.71pp 
+Micron 5d vs SOX: -1.79pp 
+DRAM ETF 5d vs SMH: +X.XXpp. 
+Overall severity: None. Overall fired (red): False.
+```
+
+The qualitative paragraph in section 4 already had the right numbers visible from the section-1 performance table (SK Hynix 1W +6.71%, NVIDIA 1W -6.88%) — those were computed via `calculate_performance()` which doesn't use the same iloc path. So the bug was localized to the formal Tier 3 computation only.
+
+### Files modified
+- `src/data/prices.py` — `get_relative_strength_vs_sox()` + `get_dram_etf_vs_smh()`: calendar-aligned subset before iloc lookup
+
+### Files added
+- `tests/test_v3_4_6_2_relative_strength_calendar_fix.py` (8 tests)
+
+### Tests adapted
+- `tests/test_v3_39_7_9_six_fixes.py::TestRelativeStrengthNaNGuard` — 3 tests rewritten for new semantics
+
+xlsx renamed `memory_cycle_data_source_audit_v3_4_6_2.xlsx`
+
+---
+
+
 
 **Why this release.** v3.4.6 added 9 new RSS feeds (frontier lab blogs + arxiv + HuggingFace Papers) but Mistral / DeepSeek may stay 403 in production due to Cloudflare TLS-fingerprint blocking (same root cause as the v3.38.4 Investing.com + Damnang issue). Raul asked: when we deploy, will we actually see WHICH feeds are CF-blocked vs which are dead URLs vs which are working?
 

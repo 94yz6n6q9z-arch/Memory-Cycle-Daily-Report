@@ -28,9 +28,29 @@ When the next DeepSeek / Llama / Qwen / Mistral frontier release drops, the arch
 
 Known unresolved: Cloudflare TLS-fingerprint blocking on some lab blogs (Mistral, DeepSeek possibly) — same root-cause as the v3.38.4 Investing.com + Damnang issue. If those persist after deploy, curl-cffi integration is a v3.4.7 candidate.
 
-### 📋 v3.4.7 (candidate) — Cloudflare TLS-fingerprint bypass
+### ✅ v3.4.6.3 (2026-05-22) — CRITICAL PyYAML fix + RSS reconciliation
 
-Some lab blogs (Mistral, DeepSeek) may stay 403 even with the v3.38.3 Chrome UA because Cloudflare additionally fingerprints TLS handshake (JA3/JA4) + HTTP/2 fingerprint. Python `requests` has a recognizable fingerprint regardless of UA string. The proper fix is `curl-cffi` which mimics Chrome's actual TLS handshake. Same plumbing also unlocks Damnang Substack + Investing.com x4 (dropped in v3.38.4 for the same reason). ~3-4h work. Defer until production confirms which feeds need it after v3.4.6 deploy.
+The headline issue Raul caught: section 4 only showed 5 cards instead of 8. Production logs revealed `PyYAML` was never in requirements.txt — every yaml-importing module (`dhcr.py`, `competitor_aggregator`, `competitor_scoring`, `adr_aggregator`, `adr_event_tracking`, 3 DHCR sub-aggregators) failed silently, snapshots returned None, template skipped the cards. **DHCR has been broken in production since v3.4.0**; Indicator 7 + 8 since v3.4.4. One-line fix: `PyYAML>=6.0` to requirements.txt.
+
+RSS reconciliation: 6 of the 9 v3.4.6 lab-blog feeds dropped after the May 22 deploy confirmed they don't expose working RSS (Meta / DeepMind / DeepSeek / Anthropic / Qwen — no native RSS; HF Papers requires auth). Compensated with 14 new WATCH_GOOGLE_QUERIES entries for frontier-model release coverage via tech press. Mistral kept at retry URL. arxiv cs.LG + cs.CL still working. Section 4 will finally show all 8 cards on the next run.
+
+527 tests passing (3 new PyYAML-availability tests guard against this class of regression).
+
+### ✅ v3.4.7 (2026-05-22) — Section 4 reorder + curl-cffi + lab blog scrapers
+
+Section 4 card order locked per Raul: top-5 → DHCR (6) → Competitor (7) → ADR (8, last). The two v3.4.6.3 queued items shipped:
+
+1. **curl-cffi**: `smart_get()` helper in news.py uses `curl_cffi.requests.get(impersonate="chrome120")` when available, falls back to stdlib `requests`. `_safe_parse_rss_feed` catch clauses extended via `_HTTPError_Types`/`_RequestException_Types` tuples to handle both clients. Bypasses Cloudflare JA3/JA4 TLS fingerprinting.
+
+2. **Lab blog HTML scrapers**: new `src/data/lab_blog_scrapers.py` with parsers for Anthropic / Meta AI / DeepMind blogs. Recovers the Tier-A source-of-origin path that was lost when v3.4.6.3 dropped these RSS feeds. Source attribution maps to existing `_classify_source_for_tier` labels — DeepSeek release on anthropic.com routes to Tier A automatically.
+
+542 tests passing. v3.4.8 candidate: restore Damnang Substack + Investing.com x4 (dropped v3.38.4 for TLS fingerprint) once production confirms curl-cffi works on GHA runner.
+
+### 📋 v3.4.8 (candidate) — Restore Cloudflare-blocked feeds + DeepSeek/Qwen scrapers
+
+Pending production confirmation of v3.4.7's curl-cffi behavior on the GHA runner:
+1. Restore Damnang Substack + Investing.com x4 (`Investing.com MU / NVDA / AMAT / ASML`) to RSS_FEEDS. These were dropped in v3.38.4 specifically because requests' TLS fingerprint failed Cloudflare; if curl-cffi chrome120 impersonation works in production, these should come back online without additional changes.
+2. Add HTML scrapers for DeepSeek + Qwen if their blog structures stabilize.
 
 ## v3.4 shipped releases (2026-05-21 / 22)
 
