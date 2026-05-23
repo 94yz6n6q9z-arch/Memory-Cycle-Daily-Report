@@ -107,17 +107,30 @@ jobs:
           set -euo pipefail
           cd /tmp/deploy_extract
           unzip -q memory_cycle_brief_*.zip -d unzipped/
-          # Bundle convention: single top-level directory like memory_cycle_brief_v3_4_7/
-          inner_count=$(find unzipped -mindepth 1 -maxdepth 1 -type d | wc -l)
+          # CRITICAL: use ABSOLUTE paths in find so the inner_dir we
+          # write to $GITHUB_ENV survives the next step's CWD change.
+          # The next step runs in $GITHUB_WORKSPACE, not /tmp/deploy_extract,
+          # so a relative path like "unzipped/memory_cycle_brief_v3_4_7"
+          # would resolve incorrectly. v3.4.7.1 deploy attempt failed
+          # exactly on this — rsync looked under $GITHUB_WORKSPACE/unzipped/
+          # which doesn't exist.
+          inner_count=$(find /tmp/deploy_extract/unzipped -mindepth 1 -maxdepth 1 -type d | wc -l)
           if [ "$inner_count" -ne 1 ]; then
             echo "::error::Bundle should have exactly one top-level directory; found $inner_count"
-            find unzipped -mindepth 1 -maxdepth 1
+            find /tmp/deploy_extract/unzipped -mindepth 1 -maxdepth 1
             exit 1
           fi
-          inner_dir=$(find unzipped -mindepth 1 -maxdepth 1 -type d)
+          inner_dir=$(find /tmp/deploy_extract/unzipped -mindepth 1 -maxdepth 1 -type d)
           echo "Bundle inner directory: $inner_dir"
           echo "Top-level contents:"
           ls -la "$inner_dir"
+          # Defensive: verify it's actually a directory before passing
+          # downstream — if find returned something weird, fail loud here
+          # rather than confuse rsync.
+          if [ ! -d "$inner_dir" ]; then
+            echo "::error::Resolved inner_dir is not a directory: $inner_dir"
+            exit 1
+          fi
           echo "inner_dir=$inner_dir" >> "$GITHUB_ENV"
 
       - name: Sync bundle into repo workspace
