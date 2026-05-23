@@ -3,13 +3,13 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-05-22T12:00:00Z",
+    "last_aggregator_run": "2026-05-23T17:07:49Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-05-22",
-    "status_evaluator": "bootstrap",
+    "status_evaluated_at": "2026-05-23",
+    "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 1.0,
     "current_state": {
       "cxmt_oem_mainstream_wins": [],
@@ -34,8 +34,8 @@
   },
   "sub_7b_samsung_hbm4": {
     "current_status": "Partially fired",
-    "status_evaluated_at": "2026-05-22",
-    "status_evaluator": "bootstrap",
+    "status_evaluated_at": "2026-05-23",
+    "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 10.0,
     "current_state": {
       "sk_hynix_hbm4_nvidia_share_pct": 70,
@@ -60,8 +60,8 @@
   },
   "sub_7c_micron": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-05-22",
-    "status_evaluator": "bootstrap",
+    "status_evaluated_at": "2026-05-23",
+    "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.5,
     "current_state": {
       "micron_total_hbm_share_pct": 18,
@@ -79,8 +79,8 @@
   },
   "sub_7d_hbf": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-05-22",
-    "status_evaluator": "bootstrap",
+    "status_evaluated_at": "2026-05-23",
+    "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.0,
     "current_state": {
       "hbf_commercial_stage": "pre_commercial",
@@ -97,7 +97,7 @@
       {
         "date": "2026-05-22",
         "type": "bootstrap",
-        "source": "v3.4.4 framework session — HBF technology landscape review",
+        "source": "v3.4.4 framework session \u2014 HBF technology landscape review",
         "summary": "HBF pre-commercial. No hot-tier HBM displacement events. JEDEC HBF spec not yet ratified. SK Hynix HBF roadmap not yet publicly disclosed. Solidigm moat-extension angle latent."
       }
     ]

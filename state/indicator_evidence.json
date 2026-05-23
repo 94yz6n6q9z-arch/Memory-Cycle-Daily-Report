@@ -2,14 +2,14 @@
   "_metadata": {
     "schema_version": "1.0",
     "bootstrap_source": "memory_supercycle_analysis.docx, May 9, 2026 \u2014 Part 5 firing table (lines 285-326 in extracted text)",
-    "last_full_update": "2026-05-22",
+    "last_full_update": "2026-05-23",
     "description": "Persistent evidence store. Per-indicator: current_status, fired_since, evidence_log of WHAT data fired it and reversal_condition. Layer 2 reads this on each run, preserves prior fired state unless today's evidence matches the reversal_condition. Live-persistence indicators (forward_pe, rel_strength, cycle matrix) are recomputed each run regardless. See src/state.py for the API and docstrings."
   },
   "indicators": {
     "t1_spot_decline": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-20",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-20",
@@ -21,13 +21,13 @@
         }
       ],
       "next_check_due": null,
-      "display_name": "DRAM Price Evolution (spot + contract matrix)",
-      "notes": "Renamed from 'DDR5 spot first MoM decline' to 'DRAM Price Evolution' in v3.39.7.3 to reflect that the matrix encompasses both spot and contract dynamics. The ID t1_spot_decline is preserved for state-file backward compatibility."
+      "notes": "Renamed from 'DDR5 spot first MoM decline' to 'DRAM Price Evolution' in v3.39.7.3 to reflect that the matrix encompasses both spot and contract dynamics. The ID t1_spot_decline is preserved for state-file backward compatibility.",
+      "display_name": "DRAM Price Evolution (spot + contract matrix)"
     },
     "t1_lead_times": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -43,7 +43,7 @@
     "t1_price_cuts_no_demand": {
       "current_status": "Fired",
       "fired_since": "2026-04-28",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-04-28",
@@ -59,7 +59,7 @@
     "t1_oem_inventory": {
       "current_status": "Fired",
       "fired_since": "2025-09-01",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2025-09-01",
@@ -75,7 +75,7 @@
     "t1_efficiency_shock": {
       "current_status": "Fired",
       "fired_since": "2026-03-24",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-03-24",
@@ -91,7 +91,7 @@
     "t1_demand_destruction": {
       "current_status": "Fired",
       "fired_since": "2026-04-15",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-04-15",
@@ -107,7 +107,7 @@
     "t2_eps_revisions": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -124,7 +124,7 @@
     "t2_capex_parabolic": {
       "current_status": "Fired",
       "fired_since": "2026-01-15",
-      "last_updated": "2026-05-18",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-01-15",
@@ -149,7 +149,7 @@
     "t2_ltas_signed": {
       "current_status": "Fired",
       "fired_since": "2025-12-01",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2025-12-01",
@@ -173,7 +173,7 @@
     "t2_insider_sales": {
       "current_status": "Fired",
       "fired_since": "2026-03-15",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-03-15",
@@ -190,7 +190,7 @@
     "t2_pe_compressed": {
       "current_status": "Fired",
       "fired_since": "2026-04-20",
-      "last_updated": "2026-05-20",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-20",
@@ -207,7 +207,7 @@
     "t2_hyperscaler_capex_revenue": {
       "current_status": "Fired",
       "fired_since": "2026-01-30",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-01-30",
@@ -223,7 +223,7 @@
     "t2_spot_contract_spread": {
       "current_status": "Fired",
       "fired_since": "2026-04-01",
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-04-01",
@@ -240,7 +240,7 @@
     "t3_contract_decline": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -256,7 +256,7 @@
     "t3_supplier_inventory_rebuild": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -272,7 +272,7 @@
     "t3_relative_strength": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-20",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-03-15",
@@ -297,7 +297,7 @@
     "t3_wfe_orders_crack": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -313,7 +313,7 @@
     "t3_eps_miss_guidance": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -329,7 +329,7 @@
     "t4_yoy_asp_negative": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -345,7 +345,7 @@
     "t4_guidance_cuts": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -361,7 +361,7 @@
     "t4_capex_slashed": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -377,7 +377,7 @@
     "t4_layoffs": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-09",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -391,25 +391,25 @@
       "next_check_due": "2026-07-29"
     },
     "t1_decode_hbm_captive_ratio": {
-      "fired": false,
-      "fired_date": null,
+      "current_status": "Not fired",
+      "fired_since": null,
+      "last_updated": "",
       "evidence_log": [
         {
-          "date_iso": "2026-05-21",
-          "kind": "bootstrap",
-          "description": "Indicator launched in v3.4.0 as a direction monitor. No trigger gate \u2014 computed direction from data/inference_arch_reference.yaml, data/hbm_per_accelerator.yaml, data/enterprise_ai_revenue.yaml via src/analysis/dhcr.py:compute_dhcr_snapshot(). v3.4.0 ships with 11 quarters of bootstrapped trajectory data from Q4 2023 through Q2 2026. Current direction (May 2026): strongly_bullish_hbm \u2014 enterprise AI revenue growing 216% YoY vs supply-side capacity creation 111% YoY (delta +46pp).",
-          "source_url": "",
+          "date": "",
+          "type": "data_point",
+          "value": "",
+          "source": "",
+          "persistence": "quarterly",
           "reversal_condition": "Direction flips to mildly_bearish_hbm or strongly_bearish_hbm for 2 consecutive quarters, indicating efficiency/HBM-packing has outpaced enterprise demand growth. In v3.4.0 this is informational only \u2014 no automated trigger. v3.4.1+ may attach a trigger to direction transitions after shadow-validation period."
         }
       ],
-      "last_status": "Not fired",
-      "last_layer_2_run_iso": null,
-      "last_layer_3_run_iso": null
+      "next_check_due": null
     },
     "t1_competitor_dynamics": {
       "current_status": "Partially fired",
       "fired_since": "2026-05-22",
-      "last_updated": "2026-05-22",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-22",
@@ -421,13 +421,13 @@
         }
       ],
       "next_check_due": "2026-06-22",
-      "display_name": "Competitor dynamics (CXMT, Samsung HBM4, Micron, HBF)",
-      "notes": "v3.4.4 NEW. Section 4 deep-dive only (filtered out of section 3 tier table like DHCR). Sub-indicator EPS-impact thresholds in data/competitor_thresholds.yaml. User-facing label 'Indicator 7'; legacy internal sub-IDs (i6a/i6b/i6c/i7d) preserved in COMPANY_SPECIFIC_INDICATORS for Layer 1/2 back-compat."
+      "notes": "v3.4.4 NEW. Section 4 deep-dive only (filtered out of section 3 tier table like DHCR). Sub-indicator EPS-impact thresholds in data/competitor_thresholds.yaml. User-facing label 'Indicator 7'; legacy internal sub-IDs (i6a/i6b/i6c/i7d) preserved in COMPANY_SPECIFIC_INDICATORS for Layer 1/2 back-compat.",
+      "display_name": "Competitor dynamics (CXMT, Samsung HBM4, Micron, HBF)"
     },
     "t1_us_adr_event": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-05-22",
+      "last_updated": "2026-05-23",
       "evidence_log": [
         {
           "date": "2026-05-22",
@@ -439,8 +439,8 @@
         }
       ],
       "next_check_due": "2026-05-23",
-      "display_name": "US ADR / SPO event tracking",
-      "notes": "v3.4.4 NEW. Section 4 deep-dive only. Per-sub status mapped to event lifecycle phase (pre_event \u2192 f1_filed \u2192 roadshow \u2192 pricing \u2192 trading \u2192 completed | canceled). Authoritative state: data/adr_event_tracking.yaml. User-facing label 'Indicator 8'; legacy internal sub-ID i7_adr_launch preserved in COMPANY_SPECIFIC_INDICATORS."
+      "notes": "v3.4.4 NEW. Section 4 deep-dive only. Per-sub status mapped to event lifecycle phase (pre_event \u2192 f1_filed \u2192 roadshow \u2192 pricing \u2192 trading \u2192 completed | canceled). Authoritative state: data/adr_event_tracking.yaml. User-facing label 'Indicator 8'; legacy internal sub-ID i7_adr_launch preserved in COMPANY_SPECIFIC_INDICATORS.",
+      "display_name": "US ADR / SPO event tracking"
     }
   }
 }
