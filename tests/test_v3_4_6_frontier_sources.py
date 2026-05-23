@@ -86,17 +86,55 @@ class TestSourceClassification(unittest.TestCase):
 
 
 class TestRSSFeedsConfig(unittest.TestCase):
-    """Verify the new feed entries exist in RSS_FEEDS."""
+    """Verify the new feed entries exist in RSS_FEEDS.
 
-    def test_lab_blogs_present(self):
+    v3.4.6.3 reconciliation: 6 of the 9 v3.4.6-added feeds were dropped
+    after production confirmed they don't expose native RSS or require
+    auth (Meta AI Blog, DeepMind Blog, DeepSeek API News, Anthropic News,
+    Qwen Blog, HuggingFace Papers). 3 surviving feeds tested below.
+    Coverage gap compensated via WATCH_GOOGLE_QUERIES entries that map
+    onto the FRONTIER_LAB_NAMES set in news.py's arxiv pre-filter.
+    """
+
+    def test_surviving_frontier_feeds_present(self):
         from src.config import RSS_FEEDS
         for name in (
-            "Meta AI Blog", "DeepSeek API News", "Mistral News",
-            "Qwen Blog", "Anthropic News", "Google DeepMind Blog",
-            "HuggingFace Papers", "arxiv cs.LG (filtered)", "arxiv cs.CL (filtered)",
+            "Mistral News",
+            "arxiv cs.LG (filtered)",
+            "arxiv cs.CL (filtered)",
         ):
             self.assertIn(name, RSS_FEEDS, f"{name} missing from RSS_FEEDS")
             self.assertTrue(RSS_FEEDS[name].startswith("http"), f"{name} URL malformed")
+
+    def test_dropped_feeds_absent(self):
+        """v3.4.6.3 — these were in v3.4.6 but production confirmed
+        they don't work as RSS endpoints. Asserting absence so the
+        config doesn't quietly regrow them in a future merge."""
+        from src.config import RSS_FEEDS
+        for name in (
+            "Meta AI Blog",
+            "DeepSeek API News",
+            "Qwen Blog",
+            "Anthropic News",
+            "Google DeepMind Blog",
+            "HuggingFace Papers",
+        ):
+            self.assertNotIn(name, RSS_FEEDS,
+                f"{name} was dropped in v3.4.6.3 (no native RSS available) — "
+                f"don't re-add without confirming a working URL")
+
+    def test_compensating_google_news_queries_present(self):
+        """When the lab blogs were dropped, frontier-model release Google
+        News queries were added so tech-press coverage of the same
+        releases still reaches the digester."""
+        from src.config import WATCH_GOOGLE_QUERIES
+        # Sample of names that should be covered via Google News queries
+        lab_keywords_to_cover = ["llama", "claude", "deepseek", "qwen", "mistral", "gemini", "gemma"]
+        for kw in lab_keywords_to_cover:
+            matching = [q for q in WATCH_GOOGLE_QUERIES if kw in q.lower()]
+            self.assertTrue(matching,
+                f"No WATCH_GOOGLE_QUERIES entry covers '{kw}' — the lab blog "
+                f"was dropped in v3.4.6.3 and no Google News compensation added")
 
 
 class TestArchAggregatorTierAFromLabBlog(unittest.TestCase):

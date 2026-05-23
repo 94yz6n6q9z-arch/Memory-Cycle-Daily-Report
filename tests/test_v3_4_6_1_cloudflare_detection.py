@@ -131,7 +131,7 @@ class TestSafeParseRSSFeedSurfacesHint(unittest.TestCase):
         mock_resp.raise_for_status = MagicMock(side_effect=http_error)
 
         collector = DiagnosticsCollector()
-        with patch("src.data.news.requests.get", return_value=mock_resp):
+        with patch("src.data.news.smart_get", return_value=mock_resp):
             items = _safe_parse_rss_feed(
                 source_name="Test CF-Blocked Feed",
                 feed_url="https://example.cloudflare-fronted.com/feed.xml",
@@ -163,7 +163,7 @@ class TestSafeParseRSSFeedSurfacesHint(unittest.TestCase):
         mock_resp.raise_for_status = MagicMock(side_effect=http_error)
 
         collector = DiagnosticsCollector()
-        with patch("src.data.news.requests.get", return_value=mock_resp):
+        with patch("src.data.news.smart_get", return_value=mock_resp):
             _safe_parse_rss_feed(
                 source_name="Test Dead URL",
                 feed_url="https://example.com/feed.xml",
@@ -193,7 +193,7 @@ class TestSafeParseRSSFeedSurfacesHint(unittest.TestCase):
         mock_resp.raise_for_status = MagicMock()
 
         collector = DiagnosticsCollector()
-        with patch("src.data.news.requests.get", return_value=mock_resp):
+        with patch("src.data.news.smart_get", return_value=mock_resp):
             _safe_parse_rss_feed(
                 source_name="Test CF 200 Challenge",
                 feed_url="https://example.com/feed.xml",

@@ -279,12 +279,15 @@ def build_email_html(
     ))
 
     # 6. Top 8 deep dives (section 4 — v3.4.4: renamed from Top 6.
-    # Final order: 5 Sonnet picks → Indicator 7 (Competitor) → Indicator 8
-    # (US ADR) → DHCR (last; the macro framing closer per v3.4.3.1 lock).
-    # The two new cards are filtered out of section 3 alongside DHCR.)
+    # v3.4.7 (2026-05-22) — Ordering LOCKED per Raul:
+    #   Cards 1-5: the 5 Sonnet-picked per-indicator deep dives (current order)
+    #   Card 6:    DHCR (framework-level macro direction monitor)
+    #   Card 7:    Indicator 7 — Competitor dynamics
+    #   Card 8:    Indicator 8 — US ADR / SPO event (last, ties to peak-coincidence)
+    # All three of these (DHCR/Competitor/ADR) are filtered out of section 3.)
     parts.append("<h2 id='section-4'>4. Top 8 indicators — deep dive</h2>")
 
-    # First: the 5 Sonnet-picked per-indicator deep dives.
+    # Cards 1-5: the 5 Sonnet-picked per-indicator deep dives.
     parts.append(_build_top5_section(
         analysis.top_5_deep_dives,
         cycle_verdict=cycle_verdict,
@@ -292,35 +295,38 @@ def build_email_html(
         spot_contract_chart_b64=spot_contract_chart_b64,
     ))
 
-    # v3.4.4 — Indicator 7 (Competitor dynamics) deep-dive card.
-    # 4 sub-cards (7A CXMT, 7B Samsung HBM4/4E, 7C Micron, 7D HBF) +
-    # composite status + dual-threat scenario callout.
-    if competitor_snapshot:
-        parts.append(_build_competitor_section4_card(competitor_snapshot))
-
-    # v3.4.4 — Indicator 8 (US ADR / SPO event) deep-dive card.
-    # 4 sub-cards + lifecycle phase pill + calendar milestones + academic
-    # calibration prose. Pre-event state renders as "Awaiting F-1" framing.
-    if adr_snapshot:
-        parts.append(_build_adr_section4_card(adr_snapshot))
-
-    # Last: the DHCR framework-level direction-monitor card (the v3.4.2
-    # matrix snapshot — status pill, score 0-100, workload-vs-market cells
-    # with anticipation premium, 5x5 matrix chart, per-category context
+    # Card 6: DHCR framework-level direction-monitor card (v3.4.2 matrix
+    # snapshot — status pill, score 0-100, workload-vs-market cells with
+    # anticipation premium, 5x5 matrix chart, per-category context
     # contribution table, volume layer + composite HBM bit demand, sanity
     # check 3 signals, bull/bear case context boxes, framework primer footer).
-    #
-    # v3.4.3.1 placement rule: DHCR appears in section 4 ONLY, as the LAST
-    # card. NEVER in section 3 tier indicator status table.
-    # v3.4.4 enhancement: spectrum bar visualization inside the DHCR card
-    # (vertical 0-100 bar with memory-architecture segments + SK Hynix
-    # moat-strength labels per Raul's sketch May 22 2026).
+    # v3.4.4 enhancement: spectrum bar visualization (vertical 0-100 bar
+    # with memory-architecture segments + SK Hynix moat-strength labels).
+    # v3.4.7 placement: card 6 (first after top-5). DHCR is structurally
+    # Tier 1 but renders in section 4 ONLY — never in the section 3 tier
+    # indicator row table.
     if dhcr_snapshot:
         parts.append(_build_dhcr_section4_card(
             dhcr_snapshot,
             matrix_chart_b64=dhcr_matrix_chart_b64,
             trajectory_chart_b64=dhcr_chart_b64,
         ))
+
+    # Card 7: Indicator 7 — Competitor dynamics deep-dive card.
+    # 4 sub-cards (7A CXMT, 7B Samsung HBM4/4E, 7C Micron, 7D HBF) +
+    # composite status + dual-threat scenario callout. Status calibrated
+    # to estimated SK Hynix EPS impact (price × volume), not share %.
+    if competitor_snapshot:
+        parts.append(_build_competitor_section4_card(competitor_snapshot))
+
+    # Card 8 (last): Indicator 8 — US ADR / SPO event deep-dive card.
+    # 4 sub-cards (8A F-1 watch, 8B roadshow, 8C pricing day, 8D insider
+    # sales >$10M) + lifecycle phase pill + calendar milestones + academic
+    # calibration prose. Pre-event state renders as "Awaiting F-1" framing.
+    # Peak-coincidence signal per Part 11 — last position emphasises that
+    # the ADR event is the closer of the section, the macro-peak warning.
+    if adr_snapshot:
+        parts.append(_build_adr_section4_card(adr_snapshot))
 
     # 7. Latest news
     parts.append("<h2 id='section-5'>5. Latest news from the memory & semi market</h2>")
@@ -1587,11 +1593,13 @@ def _build_indicators_section(
     # and t1_us_adr_event (Indicator 8). Both are composite indicators with
     # rich sub-structure (4 subs each + EPS-impact composite for 7, lifecycle
     # phase + calendar for 8) that render only as section 4 deep-dive cards.
-    SECTION_4_ONLY_INDICATORS = {
-        "t1_decode_hbm_captive_ratio",
-        "t1_competitor_dynamics",
-        "t1_us_adr_event",
-    }
+    # v3.4.7 — The set lives in src/config.py as the canonical source of
+    # truth so the count sites (llm_summarizer._compute_tier_status_summary
+    # and chart_generator.bucket_assessments_by_tier) use exactly the
+    # same list. Drift between section-3 filter and exec-summary count
+    # was the cause of the May 23 2026 "T1: 5/6 fired vs section-3 4/6"
+    # discrepancy.
+    from src.config import SECTION_4_ONLY_INDICATORS
     for tier in (1, 2, 3, 4):
         tier_assessments = [a for a in assessments
                             if a.tier == tier

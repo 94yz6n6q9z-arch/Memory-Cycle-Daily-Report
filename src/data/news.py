@@ -37,6 +37,70 @@ from src.diagnostics import DiagnosticsCollector
 
 logger = logging.getLogger(__name__)
 
+# v3.4.7 — curl-cffi for Cloudflare TLS-fingerprint bypass.
+# yfinance 1.x pulled curl_cffi in as a transitive dep so it's already
+# available in production (confirmed via the v3.4.6.2 fast-tier install
+# log: `curl_cffi-0.15.0`). We use it for RSS fetches + lab blog scrapes
+# because Python `requests` has a JA3 fingerprint that Cloudflare's
+# advanced bot rules recognize regardless of User-Agent. curl-cffi
+# impersonates Chrome's actual TLS handshake.
+#
+# Wrapped in try/except so the codebase still imports if curl_cffi
+# isn't available locally (e.g. tests in a minimal venv).
+try:
+    from curl_cffi import requests as _cffi_requests  # type: ignore
+    from curl_cffi.requests import exceptions as _cffi_exceptions  # type: ignore
+    _HAS_CURL_CFFI = True
+    # Exception-type unions so callers can catch BOTH stdlib requests
+    # exceptions and curl_cffi ones with a single `except` clause.
+    # curl_cffi.requests.exceptions mirrors requests' hierarchy
+    # (HTTPError, RequestException, ConnectionError, etc.) but the
+    # classes themselves are separate identities.
+    _HTTPError_Types = (requests.HTTPError, _cffi_exceptions.HTTPError)
+    _RequestException_Types = (requests.RequestException, _cffi_exceptions.RequestException)
+except ImportError:
+    _cffi_requests = None
+    _cffi_exceptions = None
+    _HAS_CURL_CFFI = False
+    _HTTPError_Types = (requests.HTTPError,)
+    _RequestException_Types = (requests.RequestException,)
+
+
+# v3.4.7.1 — startup logging + module-level CLIENT_NAME for diagnostics.
+# Surfaces in the fast_tier runner log so we can VERIFY curl_cffi is
+# actually being used in production rather than silently fallen back to
+# stdlib requests. Without this signal, a binary-incompat or import
+# error on the GHA runner is invisible until someone goes digging — and
+# the v3.4.8 restore decision (Damnang Substack + Investing.com x4)
+# requires knowing whether the TLS bypass actually works.
+def _log_http_client_status() -> None:
+    if _HAS_CURL_CFFI:
+        try:
+            import curl_cffi
+            ver = getattr(curl_cffi, "__version__", "unknown")
+        except Exception:
+            ver = "unknown"
+        logger.info(
+            f"HTTP client: curl_cffi {ver} (Chrome120 TLS impersonation enabled "
+            f"— Cloudflare JA3/JA4 bypass active)"
+        )
+    else:
+        logger.warning(
+            "HTTP client: curl_cffi UNAVAILABLE — falling back to stdlib requests. "
+            "Cloudflare TLS-fingerprint-blocked sources will FAIL with the "
+            "v3.4.6.1 hint. Install: pip install curl-cffi>=0.7.0"
+        )
+
+
+# Per-feed client tag: appended to SourceFetchStatus.detail so the email's
+# 'Detail / error' column shows `client=curl_cffi` per row. Makes it
+# possible to read off the email which client served each feed and
+# verify TLS impersonation took effect.
+CLIENT_NAME = "curl_cffi" if _HAS_CURL_CFFI else "stdlib"
+
+# Log once at import time.
+_log_http_client_status()
+
 
 @dataclass
 class NewsItem:
@@ -70,6 +134,34 @@ HEADERS = {
     "Accept": "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
 }
+
+
+def smart_get(url: str, headers: Optional[dict] = None, timeout: int = 20):
+    """v3.4.7 — HTTP GET that uses curl_cffi (Chrome TLS impersonation) when
+    available, falling back to stdlib `requests` otherwise.
+
+    Returns a response object exposing the same attributes the existing
+    code reads: `.status_code`, `.headers`, `.text`, `.content`,
+    `.raise_for_status()`. Both libraries' Response objects match.
+
+    Why this matters: pre-v3.4.7, every HTTP request used Python's
+    `requests` library, whose TLS fingerprint (JA3/JA4) Cloudflare's
+    advanced bot rules recognize and challenge even with a perfect
+    User-Agent string. Sources dropped in v3.38.4 for this reason
+    (Damnang Substack, Investing.com x4) become reachable once
+    curl_cffi mimics Chrome's actual handshake. The v3.4.6.1 classifier
+    will still surface CF-block hints if the underlying impersonation
+    is somehow detected, so we keep the diagnostic safety net.
+    """
+    if _HAS_CURL_CFFI:
+        # Chrome 120 impersonation is the latest stable preset in 0.15.0
+        return _cffi_requests.get(
+            url,
+            headers=headers or HEADERS,
+            timeout=timeout,
+            impersonate="chrome120",
+        )
+    return requests.get(url, headers=headers or HEADERS, timeout=timeout)
 
 # SEC requires a descriptive UA with a real contact email for EDGAR access;
 # generic UAs get blocked with 403. We reuse EMAIL_RECIPIENT (already set as
@@ -696,6 +788,20 @@ def fetch_all_news(
     # into Layer 2 + Layer 3 like any other news item.
     all_items.extend(scrape_trendforce_prices(collector=collector))
 
+    # v3.4.7 — Lab blog HTML scrapers (Anthropic / Meta AI / DeepMind).
+    # Replaces the 6 RSS feeds dropped in v3.4.6.3 with direct HTML
+    # parsing. Items emitted with source='anthropic.com' / 'ai.meta.com'
+    # / 'deepmind.google' so _classify_source_for_tier routes them to
+    # Tier A in the arch aggregator. Lazy import to avoid circular
+    # dependency (lab_blog_scrapers imports from this module).
+    try:
+        from src.data.lab_blog_scrapers import fetch_lab_blog_scrapes
+        all_items.extend(fetch_lab_blog_scrapes(
+            hours_back=hours_back, collector=collector,
+        ))
+    except Exception as e:
+        logger.warning(f"Lab blog scrapes orchestrator failed: {e}")
+
     # Deduplicate by normalized title
     seen_titles = set()
     deduped = []
@@ -1044,19 +1150,26 @@ def _safe_parse_rss_feed(
 
     def _parse() -> list[NewsItem]:
         try:
-            resp = requests.get(feed_url, headers=HEADERS, timeout=20)
+            # v3.4.7 — smart_get uses curl_cffi (Chrome TLS impersonation)
+            # when available; stdlib requests otherwise. Bypasses Cloudflare
+            # JA3 fingerprinting for Damnang / Investing.com / SemiAnalysis
+            # without breaking sites that work fine over stdlib.
+            resp = smart_get(feed_url, headers=HEADERS, timeout=20)
             resp.raise_for_status()
-        except requests.HTTPError as e:
+        except _HTTPError_Types as e:
             # v3.4.6.1 — Cloudflare bot-detection / TLS-fingerprint block hint.
             # 403/429/503 with Cloudflare headers or challenge-page body is the
             # signature of TLS-fingerprint blocking — generic requests.HTTPError
             # alone doesn't tell you whether to retry a URL or whether the
             # source genuinely doesn't exist. The hint makes the diagnostic
             # actionable in the email's data-source validation table.
-            hint = _classify_blocking_response(e.response) if e.response is not None else ""
+            # v3.4.7 — _HTTPError_Types is a tuple of both stdlib requests
+            # HTTPError and curl_cffi HTTPError, so this handler works for
+            # either underlying HTTP client.
+            hint = _classify_blocking_response(getattr(e, "response", None)) if getattr(e, "response", None) is not None else ""
             suffix = f" {hint}" if hint else ""
             raise RuntimeError(f"HTTP fetch failed: {e}{suffix}")
-        except requests.RequestException as e:
+        except _RequestException_Types as e:
             raise RuntimeError(f"HTTP fetch failed: {e}")
 
         # v3.4.6.1 — Cloudflare challenge-page returned with HTTP 200.
@@ -1095,6 +1208,14 @@ def _safe_parse_rss_feed(
             with collector.track(source_name, source_type) as t:
                 out = _parse()
                 t.items_returned = len(out)
+                # v3.4.7.1 — Per-feed client tag. Appended to detail so the
+                # email's Detail/error column shows `client=curl_cffi` (or
+                # `client=stdlib`) per RSS row. Makes the v3.4.8 restore
+                # decision evidence-based: if Damnang + Investing.com x4
+                # come back FAIL with client=curl_cffi, Cloudflare has
+                # tightened beyond TLS fingerprint; drop again. If they
+                # come back OK with client=curl_cffi, restore confirmed.
+                t.detail = f"client={CLIENT_NAME}"
         else:
             out = _parse()
     except Exception as e:

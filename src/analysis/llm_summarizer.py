@@ -184,14 +184,30 @@ def _compute_tier_status_summary(assessments: list) -> str:
       "(N partial)" annotation so the reader knows the full-fire breakdown.
     - The denominator per tier is fixed: T1=6, T2=7, T3=5, T4=4.
 
+    v3.4.7 (2026-05-23) — SECTION_4_ONLY_INDICATORS (DHCR + Competitor +
+    ADR) are now EXCLUDED from the numerator. They were already excluded
+    from the denominator (T1=6, not 9), but the numerator counted them.
+    That mismatch produced the May 23 brief discrepancy: exec said
+    "T1: 5/6 fired (1 partial)" while section 3 said "4/6 fired" —
+    Competitor's partial-fire was counted in exec only.
+
     Output format examples:
       "T1: 3/6 fired | T2: 5/7 fired (1 partial) | T3: 0/5 fired | T4: 0/4 fired"
       "T1: 0/6 fired | T2: 0/7 fired | T3: 0/5 fired | T4: 0/4 fired"
     """
+    # Import here to avoid module-load cycles (config imports from misc)
+    from src.config import SECTION_4_ONLY_INDICATORS
+
     TIER_DENOMINATORS = {1: 6, 2: 7, 3: 5, 4: 4}
     counts = {1: [0, 0], 2: [0, 0], 3: [0, 0], 4: [0, 0]}  # [fired_total, partial_subset]
     for a in assessments:
-        tier = getattr(a, "tier", 0) or _tier_from_id(getattr(a, "id", ""))
+        id_ = getattr(a, "id", "")
+        # v3.4.7 — DHCR/Competitor/ADR are watch-only overlays and must
+        # not contribute to the T1 firing count per Raul 2026-05-23.
+        # Until their tier placement is settled, exclude entirely.
+        if id_ in SECTION_4_ONLY_INDICATORS:
+            continue
+        tier = getattr(a, "tier", 0) or _tier_from_id(id_)
         if tier not in TIER_DENOMINATORS:
             continue
         status = (getattr(a, "current_status", "") or "").strip().lower()

@@ -186,12 +186,20 @@ class TestSectionRenderingV3_4_4(unittest.TestCase):
     """Section 4 renders 8 cards in the right order; cards filtered from section 3."""
 
     def test_section_3_filter_excludes_all_three_section4_only_indicators(self):
+        # v3.4.7 — SECTION_4_ONLY_INDICATORS canonical definition lives in
+        # src/config.py (lifted out of template.py so the count sites
+        # in llm_summarizer.py and chart_generator.py can share it).
+        # template.py still imports and uses it.
+        from src.config import SECTION_4_ONLY_INDICATORS
+        self.assertEqual(SECTION_4_ONLY_INDICATORS, frozenset({
+            "t1_decode_hbm_captive_ratio",
+            "t1_competitor_dynamics",
+            "t1_us_adr_event",
+        }))
+        # template.py imports and references the constant
         src = (Path(__file__).resolve().parents[1] / "src/email_module/template.py").read_text()
-        # Filter set must contain all 3
         self.assertIn("SECTION_4_ONLY_INDICATORS", src)
-        self.assertIn('"t1_decode_hbm_captive_ratio"', src)
-        self.assertIn('"t1_competitor_dynamics"', src)
-        self.assertIn('"t1_us_adr_event"', src)
+        self.assertIn("from src.config import SECTION_4_ONLY_INDICATORS", src)
 
     def test_competitor_card_builder_exists(self):
         from src.email_module.template import _build_competitor_section4_card

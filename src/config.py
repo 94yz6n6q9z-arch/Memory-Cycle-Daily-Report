@@ -1117,6 +1117,37 @@ INDICATORS: list[Indicator] = [
 # specific structural overlays, not generalizable cycle-phase signals — same
 # rationale as DHCR (Indicator 6).
 
+
+# v3.4.7 (2026-05-23) — CANONICAL constant for "structurally Tier 1 but
+# render in section 4 only AND don't count toward the T1/T2/T3/T4 firing
+# tallies". Indicators 6 (DHCR), 7 (Competitor), 8 (ADR) are watch-only
+# overlays per Raul's 2026-05-23 decision: they're useful to keep an eye
+# on but their tier placement is uncertain, so they MUST NOT affect:
+#   - section 3 tier indicator row table (already filtered, template.py)
+#   - exec summary "T1: X/6 fired" count (this constant now applied
+#     to llm_summarizer._compute_tier_status_summary)
+#   - cycle chart side panels "Tier 1 fired (X/Y)" (this constant now
+#     applied to chart_generator.bucket_assessments_by_tier)
+#   - bear/base/bull case probability computations
+#
+# Bug report that motivated this (Raul 2026-05-23):
+# > "on exec summary we say T1: 5/6 fired (1 partial), but when i look at
+# >  section 3 i see 4 out of 6 fired with no partial firing"
+# Root cause: section 3 filtered via SECTION_4_ONLY_INDICATORS in
+# template.py but the same filter wasn't applied to the count sites.
+# Indicator 7 (Competitor) moved to Partially fired on the CXMT
+# Corsair Vengeance DDR5 design-win news → exec count +1 to T1, but
+# section 3 (correctly) shows the original 4/6.
+#
+# Once we settle the tier placement of 6/7/8 in a few weeks, this set
+# may shrink. For now it's the definitive list of "don't count in T1".
+SECTION_4_ONLY_INDICATORS = frozenset({
+    "t1_decode_hbm_captive_ratio",  # Indicator 6 — DHCR
+    "t1_competitor_dynamics",        # Indicator 7 — Competitor
+    "t1_us_adr_event",               # Indicator 8 — ADR / SPO
+})
+
+
 COMPANY_SPECIFIC_INDICATORS = {
     # Indicator 6 — Competitor Dynamics (3 sub-threats)
     "i6a_cxmt_commodity": {

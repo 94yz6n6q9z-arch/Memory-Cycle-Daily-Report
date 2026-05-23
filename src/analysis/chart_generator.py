@@ -249,14 +249,26 @@ def _categorize_indicators(
     t3_relative_strength which is currently NOT actually fired).
     "Partially fired" is counted as fired.
 
+    v3.4.7 (2026-05-23) — SECTION_4_ONLY_INDICATORS (DHCR / Competitor /
+    ADR) are EXCLUDED from totals AND counts. Per Raul 2026-05-23 these
+    are watch-only overlays whose tier placement is unsettled; until
+    that's decided, they must not affect the side-panel "Tier 1 fired
+    (X/Y)" tally any more than they affect the section 3 row table.
+
     Returns: (t1_fired_labels, t2_fired_labels, t23_pending_labels,
               t1_total, t2_total, t3_total, t1_fired_count, t2_fired_count)
     """
+    from src.config import SECTION_4_ONLY_INDICATORS
+
     # Build id → short_label map from INDICATORS config
     label_map = {}
     tier_map = {}
     totals = {1: 0, 2: 0, 3: 0, 4: 0}
     for ind in indicators_config:
+        if ind.id in SECTION_4_ONLY_INDICATORS:
+            # v3.4.7 — DHCR/Competitor/ADR don't contribute to the
+            # per-tier denominators in the side-panel chart.
+            continue
         label_map[ind.id] = ind.short_label or (ind.name[:25] + "…") if len(ind.name) > 25 else (ind.short_label or ind.name)
         tier_map[ind.id] = ind.tier
         totals[ind.tier] = totals.get(ind.tier, 0) + 1
@@ -270,9 +282,14 @@ def _categorize_indicators(
     t1_fired, t2_fired, t23_pending = [], [], []
     t1_fired_count, t2_fired_count = 0, 0
     for a in indicator_assessments:
-        tier = getattr(a, "tier", 0) or tier_map.get(getattr(a, "id", ""), 0)
+        id_ = getattr(a, "id", "")
+        if id_ in SECTION_4_ONLY_INDICATORS:
+            # v3.4.7 — Skip in the firing tallies too. The deep-dive
+            # cards in section 4 surface their status independently.
+            continue
+        tier = getattr(a, "tier", 0) or tier_map.get(id_, 0)
         label = label_map.get(
-            getattr(a, "id", ""),
+            id_,
             (getattr(a, "name", "") or "?")[:25],
         )
         if tier == 1 and is_fired(getattr(a, "current_status", "")):

@@ -355,44 +355,61 @@ class TestValueChainInferencePrompt:
 # ============================================================
 
 class TestRelativeStrengthNaNGuard:
-    """get_relative_strength_vs_sox returns None (not NaN) when the
-    underlying price data has gaps."""
+    """get_relative_strength_vs_sox handles NaN price cells without
+    propagating NaN downstream. v3.4.6.2 upgraded the v3.39.7.9 guard
+    (return None on any NaN) to a calendar-alignment fix (project to
+    rows where both columns are non-NaN, then compute). The tests below
+    cover both behaviors:
+      - Sufficient aligned rows remain → compute correctly from the
+        aligned subset (no None, no NaN downstream)
+      - Insufficient aligned rows → return None
+    """
 
-    def test_returns_none_when_ticker_price_nan(self):
-        """If the ticker's price at lookback day is NaN, return None.
-        For days=5, lookback is iloc[-6] = index 4 in a 10-row dataframe."""
+    def test_single_ticker_nan_uses_aligned_subset(self):
+        """One NaN in the ticker column drops that row from the aligned
+        pair. With 9 remaining aligned bars and days=5 we still compute."""
         from src.data.prices import get_relative_strength_vs_sox
-        # Build a history dataframe with NaN at the lookback position (index 4)
+        import math
         idx = pd.date_range("2026-05-13", periods=10, freq="D")
         history = pd.DataFrame({
             "SK Hynix": [100, 101, 102, 103, float("nan"), 105, 106, 107, 108, 110],
             "MSCI ACWI Semiconductor": [200, 201, 202, 203, 204, 205, 206, 207, 208, 210],
         }, index=idx)
+        # v3.4.6.2: aligned subset has 9 rows (the NaN row dropped). days=5
+        # needs 6 rows; we have 9 → real number returned.
         result = get_relative_strength_vs_sox("SK Hynix", history, days=5)
-        # Pre-v3.39.7.9 this would have returned NaN; now returns None
-        assert result is None
+        assert result is not None
+        assert isinstance(result, float)
+        assert not math.isnan(result)
 
-    def test_returns_none_when_sox_price_nan(self):
-        """SOX NaN at the lookback position (iloc[-6] = index 4) returns None."""
+    def test_single_sox_nan_uses_aligned_subset(self):
+        """One NaN in the SOX column drops that row from the aligned pair.
+        Result computed from the remaining 9 aligned bars."""
         from src.data.prices import get_relative_strength_vs_sox
+        import math
         idx = pd.date_range("2026-05-13", periods=10, freq="D")
         history = pd.DataFrame({
             "SK Hynix": [100, 101, 102, 103, 104, 105, 106, 107, 108, 110],
             "MSCI ACWI Semiconductor": [200, 201, 202, 203, float("nan"), 205, 206, 207, 208, 210],
         }, index=idx)
         result = get_relative_strength_vs_sox("SK Hynix", history, days=5)
-        assert result is None
+        assert result is not None
+        assert not math.isnan(result)
 
-    def test_returns_none_when_end_price_nan(self):
-        """NaN at the most recent price also returns None."""
+    def test_tail_nan_uses_prior_aligned_bar(self):
+        """The dominant production case — latest bar is KRX-only, SOX NaN
+        at iloc[-1]. v3.4.6.2 drops that row from the aligned pair and
+        computes from the prior 9 bars (which include 5+ valid days)."""
         from src.data.prices import get_relative_strength_vs_sox
+        import math
         idx = pd.date_range("2026-05-13", periods=10, freq="D")
         history = pd.DataFrame({
             "SK Hynix": [100, 101, 102, 103, 104, 105, 106, 107, 108, float("nan")],
             "MSCI ACWI Semiconductor": [200, 201, 202, 203, 204, 205, 206, 207, 208, 210],
         }, index=idx)
         result = get_relative_strength_vs_sox("SK Hynix", history, days=5)
-        assert result is None
+        assert result is not None
+        assert not math.isnan(result)
 
     def test_returns_valid_float_when_data_clean(self):
         """Sanity check: clean data still returns a real number."""

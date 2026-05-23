@@ -391,42 +391,48 @@ def get_relative_strength_vs_sox(
 
     Returns a percentage. Negative means underperformance.
 
-    v3.39.7.9: NaN guard. Pre-v3.39.7.9 if `history[ticker_name].iloc[-1]`
-    or `iloc[-days-1]` landed on a NaN cell (e.g. MSCI ACWI Semiconductor
-    has gaps when US and global trading calendars don't align), the
-    arithmetic returned NaN — which then formatted as "+nanpp" downstream
-    because `value is not None` doesn't catch NaN (NaN IS a valid float,
-    just not a useful one). Returning None explicitly when NaN is detected
-    lets the format-side `is None` check render "(not computed)" instead.
+    v3.39.7.9: NaN guard for cells in the lookback window.
+
+    v3.4.6.2 (2026-05-22) — FIX for calendar misalignment between KRX
+    (SK Hynix, Samsung Electronics) and US-listed tickers (^SOX, MU,
+    DRAM, SMH). The yfinance batch returns a DataFrame whose index spans
+    both calendars; KRX-only trading days have NaN in US columns and
+    vice versa. iloc[-1]/iloc[-days-1] therefore landed on NaN whenever
+    the most recent date in the DataFrame was a KRX-only day (KRX trades
+    Mon-Fri Asia hours; US ETFs/indices fill in later on US calendar).
+    The previous v3.39.7.9 guard correctly detected NaN and returned
+    None — but never produced a number on days when the calendars
+    didn't align at the tail, which was MOST run days for SK Hynix
+    (where the next-day's US bar hadn't landed yet at brief-send time).
+    The fix: project both columns onto rows where BOTH have values,
+    then take iloc[-1]/iloc[-days-1] from the aligned subset.
     """
     sox_col = "MSCI ACWI Semiconductor"  # name we use for SOX in BENCHMARKS
     if sox_col not in history.columns or ticker_name not in history.columns:
         return None
 
-    if len(history) < days + 1:
+    # v3.4.6.2 — project onto rows where both series have values.
+    # This is the calendar-alignment fix.
+    aligned = history[[ticker_name, sox_col]].dropna()
+    if len(aligned) < days + 1:
         return None
 
-    # Use .iloc to get raw values — these can be NaN if the price cell is missing
-    ticker_end = history[ticker_name].iloc[-1]
-    ticker_start = history[ticker_name].iloc[-days - 1]
-    sox_end = history[sox_col].iloc[-1]
-    sox_start = history[sox_col].iloc[-days - 1]
+    # Use .iloc against the aligned subset — guaranteed non-NaN cells now.
+    ticker_end = aligned[ticker_name].iloc[-1]
+    ticker_start = aligned[ticker_name].iloc[-days - 1]
+    sox_end = aligned[sox_col].iloc[-1]
+    sox_start = aligned[sox_col].iloc[-days - 1]
 
-    # v3.39.7.9 NaN guard — if any of the four price cells is NaN, we can't
-    # compute a meaningful relative-strength number. Return None so the
-    # format-side renders "(not computed)" instead of "+nanpp".
+    # Belt-and-suspenders NaN guard (kept from v3.39.7.9 in case dropna
+    # was somehow circumvented by a future caller).
     if any(pd.isna(v) for v in (ticker_end, ticker_start, sox_end, sox_start)):
         return None
-    # Guard against zero start prices (no genuine price has these, but
-    # defend against pathological data quality):
     if ticker_start == 0 or sox_start == 0:
         return None
 
     ticker_return = (ticker_end / ticker_start - 1) * 100
     sox_return = (sox_end / sox_start - 1) * 100
 
-    # Final guard — divisions above can still produce NaN/Inf if anything
-    # slipped through (e.g. via numpy broadcasting quirks); explicit check.
     if pd.isna(ticker_return) or pd.isna(sox_return):
         return None
 
@@ -464,17 +470,41 @@ def get_dram_etf_vs_smh(
     signal independent of any single stock's idiosyncrasies. v3.39: yellow watch
     threshold (< -5pp) — same as prior versions; this sub-trigger was never the
     whipsawing one. Red fire threshold (< -10pp) added for parity.
+
+    v3.4.6.2 (2026-05-22) — Same calendar-alignment fix as
+    get_relative_strength_vs_sox. Both DRAM and SMH are US-listed so they
+    usually agree, but the upstream DataFrame index spans KRX trading
+    days too — so the latest row can still be a KRX-only day with NaN
+    in the US columns. Previously this produced a `spread_pp: NaN`
+    that rendered as "+NaN pp" in the email. Now: project to aligned
+    rows, then iloc; return None if fewer than `days + 1` aligned
+    bars exist.
     """
     dram_col = "Roundhill DRAM ETF"
     smh_col = "VanEck Semi ETF (SMH)"
     if dram_col not in history.columns or smh_col not in history.columns:
         return None
-    if len(history) < days + 1:
+
+    aligned = history[[dram_col, smh_col]].dropna()
+    if len(aligned) < days + 1:
         return None
 
-    dram_return = (history[dram_col].iloc[-1] / history[dram_col].iloc[-days - 1] - 1) * 100
-    smh_return = (history[smh_col].iloc[-1] / history[smh_col].iloc[-days - 1] - 1) * 100
+    dram_end = aligned[dram_col].iloc[-1]
+    dram_start = aligned[dram_col].iloc[-days - 1]
+    smh_end = aligned[smh_col].iloc[-1]
+    smh_start = aligned[smh_col].iloc[-days - 1]
+
+    if any(pd.isna(v) for v in (dram_end, dram_start, smh_end, smh_start)):
+        return None
+    if dram_start == 0 or smh_start == 0:
+        return None
+
+    dram_return = (dram_end / dram_start - 1) * 100
+    smh_return = (smh_end / smh_start - 1) * 100
     delta = dram_return - smh_return
+
+    if pd.isna(delta):
+        return None
 
     if delta < -10.0:
         severity = "red"

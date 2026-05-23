@@ -317,34 +317,36 @@ class TestSection4Placement(unittest.TestCase):
             "Old 'Top 5 indicators — deep dive' title should be removed")
 
     def test_dhcr_card_renders_after_top5_section(self):
-        """v3.4.3.1 — DHCR card must be appended AFTER _build_top5_section in
-        section 4 (renders LAST per Raul May 22 2026). v3.4.4 — Indicator 7
-        (Competitor) and Indicator 8 (ADR) cards are inserted between top-5
-        and DHCR; DHCR remains the last card per locked decision."""
+        """v3.4.7 (2026-05-22) — DHCR card moved to FIRST position after
+        top-5 (was last in v3.4.3.1-v3.4.6.3). New section 4 order:
+        top-5 → DHCR (6) → Competitor (7) → ADR (8 = last).
+        DHCR must still appear AFTER the top-5 section."""
         src = (REPO_ROOT / "src/email_module/template.py").read_text()
-        # Find the section-4 header
         header_idx = src.index("section-4'>4. Top 8")
-        # Find DHCR card append and top5 section append AFTER the header
         after_header = src[header_idx:]
         dhcr_call_idx = after_header.index("_build_dhcr_section4_card(")
         top5_call_idx = after_header.index("_build_top5_section(")
         self.assertGreater(dhcr_call_idx, top5_call_idx,
-            "v3.4.3.1: DHCR card must be appended AFTER top5 section "
-            "in section 4 (DHCR is the last/closing card, not the first)")
+            "DHCR card must be appended AFTER top5 section in section 4")
 
-    def test_v3_4_4_indicator_7_renders_between_top5_and_dhcr(self):
-        """v3.4.4 — Indicator 7 (Competitor) card must render between top-5
-        and DHCR. Order: top-5 → Indicator 7 → Indicator 8 → DHCR."""
+    def test_v3_4_7_section_4_ordering(self):
+        """v3.4.7 — Section 4 card ordering LOCKED per Raul:
+        top-5 → DHCR (card 6) → Competitor (card 7) → ADR (card 8, last).
+        Replaces the v3.4.4 ordering (Competitor → ADR → DHCR last)."""
         src = (REPO_ROOT / "src/email_module/template.py").read_text()
         header_idx = src.index("section-4'>4. Top 8")
         after_header = src[header_idx:]
         top5_idx = after_header.index("_build_top5_section(")
+        dhcr_idx = after_header.index("_build_dhcr_section4_card(")
         ind7_idx = after_header.index("_build_competitor_section4_card(")
         ind8_idx = after_header.index("_build_adr_section4_card(")
-        dhcr_idx = after_header.index("_build_dhcr_section4_card(")
-        self.assertLess(top5_idx, ind7_idx)
-        self.assertLess(ind7_idx, ind8_idx)
-        self.assertLess(ind8_idx, dhcr_idx)
+        # v3.4.7 ordering: top-5 → DHCR → Competitor → ADR
+        self.assertLess(top5_idx, dhcr_idx,
+            "top-5 must come before DHCR (DHCR is card 6, first after top-5)")
+        self.assertLess(dhcr_idx, ind7_idx,
+            "DHCR (card 6) must come before Competitor (card 7)")
+        self.assertLess(ind7_idx, ind8_idx,
+            "Competitor (card 7) must come before ADR (card 8, last)")
 
     def test_dhcr_card_renders_with_matrix_chart_kwarg(self):
         """DHCR card now accepts matrix_chart_b64 kwarg (v3.4.2)."""
