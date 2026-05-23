@@ -52,8 +52,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # List assets matching our expected pattern
+          # List assets matching our expected pattern.
+          # --repo $GITHUB_REPOSITORY makes gh independent of CWD git config
+          # (defensive — this step runs in the checkout so gh would auto-
+          # detect anyway, but explicit is safer if anyone refactors).
           asset_names=$(gh release view "${{ github.event.release.tag_name }}" \
+            --repo "$GITHUB_REPOSITORY" \
             --json assets \
             --jq '.assets[] | select(.name | startswith("memory_cycle_brief_") and endswith(".zip")) | .name')
           asset_count=$(echo "$asset_names" | grep -c . || true)
@@ -80,11 +84,23 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/deploy_extract
-          cd /tmp/deploy_extract
+          # CRITICAL: do NOT `cd /tmp/deploy_extract` before calling gh —
+          # gh CLI tries to infer the repo from the current working
+          # directory's git config, and /tmp is not a git repo. The bug
+          # that broke v3.4.7's first deploy attempt was exactly this:
+          #
+          #   failed to run git: fatal: not a git repository
+          #
+          # Fix: stay in $GITHUB_WORKSPACE (which IS the git checkout),
+          # use --dir to write the output to /tmp/deploy_extract, and
+          # add --repo as belt-and-braces so gh doesn't need to infer
+          # at all.
           gh release download "${{ github.event.release.tag_name }}" \
+            --repo "$GITHUB_REPOSITORY" \
             --pattern "memory_cycle_brief_*.zip" \
+            --dir /tmp/deploy_extract \
             --clobber
-          ls -lh
+          ls -lh /tmp/deploy_extract
 
       - name: Extract bundle
         run: |
