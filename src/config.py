@@ -1486,10 +1486,25 @@ RSS_FEEDS = {
     # broker-name Google News queries.
     "CNBC Technology": "https://www.cnbc.com/id/19854910/device/rss/rss.html",
     "Investing.com Asia Equities": "https://www.investing.com/rss/news_301.rss",
-    # v3.38.4: Damnang Substack DROPPED for same reason as Investing.com x4 —
-    # Cloudflare TLS fingerprint check, UA-only fix insufficient. Architectural
-    # signal coverage retained via Google News queries on KV cache compression,
-    # CXMT DDR5, HBM AI bottleneck, inference efficiency breakthrough.
+    # v3.4.7.1 (2026-05-22) — RESTORED. These 5 feeds were dropped in
+    # v3.38.4 because Python `requests` failed Cloudflare's JA3/JA4 TLS
+    # fingerprint check (UA-only fix insufficient). v3.4.7's smart_get
+    # uses curl_cffi with Chrome120 impersonation, which should pass
+    # the same checks. Re-added so production diagnostics tell us per
+    # feed whether the bypass works:
+    #   - If client=curl_cffi + status=OK → bypass confirmed, leave restored
+    #   - If client=curl_cffi + status=FAIL with Cloudflare hint → CF
+    #     tightened beyond JA3 (e.g. now fingerprinting HTTP/2 frame
+    #     order); drop again in v3.4.8
+    #   - If client=stdlib → curl_cffi failed to import on the runner;
+    #     fix the dependency before any conclusions
+    # The detail-column client tag from v3.4.7.1 makes this decision
+    # evidence-based rather than guessed.
+    "Damnang Substack (memory architecture)": "https://damnang.substack.com/feed",
+    "Investing.com MU news": "https://www.investing.com/equities/micron-tech-inc-news/rss",
+    "Investing.com NVDA news": "https://www.investing.com/equities/nvidia-corp-news/rss",
+    "Investing.com AMAT news": "https://www.investing.com/equities/applied-matls-inc-news/rss",
+    "Investing.com ASML news": "https://www.investing.com/equities/asml-holdings-nv-news/rss",
     # HuggingFace publishes a working RSS for model + research drops
     "HuggingFace Blog": "https://huggingface.co/blog/feed.xml",
     # CXL / memory disaggregation canary — Astera Labs is the pure-play
@@ -1497,31 +1512,46 @@ RSS_FEEDS = {
     # SemiAnalysis free posts (the rest is paywalled but headlines + intros are useful)
     "SemiAnalysis Free": "https://semianalysis.com/feed/",
 
-    # v3.4.6 — Frontier-model lab blogs. Feed the DHCR arch aggregator's
-    # Tier-A source set so newly-released frontier inference models get
-    # picked up at the lab announcement (highest authority on architecture
-    # specs). Several of these failed in v3.38.3's prune as 404/DNS; URLs
-    # below are documented current endpoints — production may show some
-    # still 403/404 (Cloudflare TLS fingerprinting on Mistral/DeepSeek a
-    # known risk; if so they fall through and Google News covers the
-    # release indirectly via Tier-B/C).
-    "Meta AI Blog": "https://ai.meta.com/blog/rss/",
-    "DeepSeek API News": "https://api-docs.deepseek.com/news/rss.xml",
-    "Mistral News": "https://mistral.ai/news/feed.xml",
-    "Qwen Blog": "https://qwenlm.github.io/feed.xml",
-    "Anthropic News": "https://www.anthropic.com/news/rss.xml",
-    "Google DeepMind Blog": "https://deepmind.google/discover/blog/rss.xml",
-    # HuggingFace Papers (community-curated daily) — distinct from
-    # "HuggingFace Blog" above which is the official HF announcements feed.
-    # Papers feed surfaces academic releases including major foundation
-    # model papers within 24h of arxiv posting.
-    "HuggingFace Papers": "https://huggingface.co/papers/feed.xml",
-    # arxiv — direct ML/NLP paper RSS. Volume is ~100-200/day in cs.LG
-    # alone, so news.py applies arxiv_frontier_paper_filter() before items
-    # reach the relevance scorer. Filter retains items whose title matches
-    # known frontier-model release patterns (vendor names, parameter-count
-    # patterns, architecture-family keywords); 95%+ of routine papers
-    # dropped at fetch time. See src/data/news.py:arxiv_frontier_paper_filter
+    # v3.4.6 / v3.4.6.3 — Frontier-model lab sources for the DHCR arch
+    # aggregator's Tier-A signal coverage.
+    #
+    # v3.4.6.3 EMPIRICAL RECONCILIATION (2026-05-22): The May 22 deploy
+    # exposed that most of the v3.4.6 lab blog URLs don't work as RSS.
+    # Production diagnostics (cleanly surfaced via the v3.4.6.1 Cloudflare
+    # classifier, which correctly distinguished these from TLS-fingerprint
+    # blocks) reported:
+    #   - Meta AI Blog (ai.meta.com/blog/rss/) — 400 Bad Request.
+    #     Confirmed: Meta doesn't publish a native RSS for ai.meta.com/blog;
+    #     RSSHub issue #16938 (Sept 2024) is still open requesting one.
+    #   - Google DeepMind Blog (deepmind.google/discover/blog/rss.xml/) — 404.
+    #     New deepmind.google domain doesn't expose RSS (no <link rel="alternate">
+    #     in the blog page head, confirmed via direct fetch).
+    #   - DeepSeek API News (api-docs.deepseek.com/news/rss.xml) — 404.
+    #     No public RSS for the news section.
+    #   - Anthropic News (anthropic.com/news/rss.xml) — 404. No public RSS.
+    #   - HuggingFace Papers (huggingface.co/papers/feed.xml) — 401
+    #     Unauthorized. Endpoint exists but is authenticated-only; not
+    #     viable for an unattended cron.
+    #   - Qwen Blog (qwenlm.github.io/feed.xml) — 404. Qwen's blog content
+    #     has migrated to qwen.ai/research (no native RSS there either).
+    #
+    # All 6 above DROPPED. Compensation: WATCH_GOOGLE_QUERIES below
+    # extended with frontier-model release queries that pick up the same
+    # signal via tech-press coverage. The arch-aggregator's Tier-A source
+    # set still routes the labels correctly when content does come in
+    # via other means (e.g. RSSHub if added in v3.4.7).
+    #
+    # KEEP:
+    #   - arxiv cs.LG + cs.CL — direct academic source, has working RSS,
+    #     pre-filtered via arxiv_frontier_paper_filter() to drop ~95% of
+    #     routine volume before items reach the relevance scorer.
+    #   - HuggingFace Blog (huggingface.co/blog/feed.xml) — kept (line
+    #     1494 above); this is the official HF announcements feed and
+    #     distinct from the Papers feed.
+    #   - Mistral News — RETRY at /news/rss/ (removed .xml suffix per
+    #     common pattern; original /news/feed.xml was 404). If this also
+    #     fails in production, drop in v3.4.6.4.
+    "Mistral News": "https://mistral.ai/news/rss/",
     "arxiv cs.LG (filtered)": "https://rss.arxiv.org/rss/cs.LG",
     "arxiv cs.CL (filtered)": "https://rss.arxiv.org/rss/cs.CL",
 }
@@ -1903,6 +1933,28 @@ WATCH_GOOGLE_QUERIES = {
     "CXMT DDR5",
     "ChangXin Memory production",
     "Chinese DRAM OEM",
+    # v3.4.6.3 — Frontier-model release queries to compensate for the
+    # 6 lab-blog RSS feeds dropped in v3.4.6.3 (Meta AI / DeepMind /
+    # DeepSeek / Anthropic / HF Papers / Qwen — none publish native RSS).
+    # These names map onto the FRONTIER_LAB_NAMES set in news.py's arxiv
+    # pre-filter and the _classify_source_for_tier label set, so any
+    # tech-press article that mentions them gets correctly tier-A
+    # routed even though the source-of-origin RSS is unavailable.
+    "Llama 5 Meta release",
+    "Llama 4 Maverick Meta release",
+    "Claude 4 release Anthropic",
+    "Gemini 3 release DeepMind",
+    "Gemma 4 release DeepMind",
+    "DeepSeek V4 release",
+    "DeepSeek R2 release",
+    "Mistral Large release",
+    "Qwen 4 release Alibaba",
+    "Qwen 3.5 release Alibaba",
+    "frontier model release open weights",
+    "MoE model release inference",
+    # Inference architecture watchers — pick up papers covered by tech press
+    "MLA multi-head latent attention release",
+    "FP8 inference model release",
 }
 
 
