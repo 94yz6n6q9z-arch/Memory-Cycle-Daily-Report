@@ -1154,3 +1154,159 @@ def list_recent_quarter_diffs(max_quarters_back: int = 1) -> list[dict]:
             except (json.JSONDecodeError, OSError) as e:
                 logger.warning(f"Could not load quarter digest {f}: {e}")
     return out
+
+
+# ============================================================
+# v3.5.0 — Event deduplication log
+# ============================================================
+# state/event_log.json tracks every distinct real-world event so that
+# coverage echoes (8-10 ingested items from different sources all
+# reporting the SAME earnings call) are counted ONCE — not 8-10 times —
+# by the t2_eps_revisions rolling-sum engine.
+#
+# Schema (one entry per event):
+#   "<ticker>:earnings_call:<quarter_key>": {
+#     "first_observed": ISO string,
+#     "first_observation_source": str,
+#     "primary_verdict": str,           # "bearish" | "bullish" | "neutral"
+#     "primary_score": float,           # the score that was actually counted
+#     "event_date_iso": str,            # YYYY-MM-DD
+#     "observations": list[dict],       # all subsequent echoes
+#     "divergence_flagged": bool,       # True if later obs contradicts primary
+#     "n_observations": int
+#   }
+#
+# Auto-pruned to last 180 days on each write.
+
+EVENT_LOG_FILE = STATE_DIR / "event_log.json"
+EVENT_LOG_PRUNE_DAYS = 180
+
+
+def event_key_for_earnings(ticker: str, event_date_iso: str) -> str:
+    """Canonical event key for an earnings-call event.
+
+    All broker notes / transcripts / news items about the same earnings
+    quarter for the same ticker resolve to the same key.
+
+    >>> event_key_for_earnings("000660.KS", "2026-07-29")
+    '000660.KS:earnings_call:2026-Q3'
+    """
+    qk = quarter_key_from_event_date(event_date_iso) or "unknown"
+    return f"{ticker}:earnings_call:{qk}"
+
+
+def load_event_log() -> dict:
+    """Load state/event_log.json — returns {} on missing file or parse error."""
+    if not EVENT_LOG_FILE.exists():
+        return {}
+    try:
+        with open(EVENT_LOG_FILE) as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning(f"Could not load event_log.json: {e}")
+        return {}
+
+
+def save_event_log(log: dict) -> None:
+    """Persist event log atomically; prunes entries older than 180 days."""
+    log = prune_event_log(log)
+    EVENT_LOG_FILE.parent.mkdir(exist_ok=True)
+    tmp = EVENT_LOG_FILE.with_suffix(".json.tmp")
+    try:
+        with open(tmp, "w") as f:
+            json.dump(log, f, indent=2, default=str)
+        tmp.replace(EVENT_LOG_FILE)
+    except OSError as e:
+        logger.warning(f"Could not write event_log.json: {e}")
+        try:
+            tmp.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+def prune_event_log(log: dict, days: int = EVENT_LOG_PRUNE_DAYS) -> dict:
+    """Remove events older than `days` days."""
+    cutoff = (date.today() - timedelta(days=days)).isoformat()
+    return {k: v for k, v in log.items()
+            if v.get("event_date_iso", "9999") >= cutoff}
+
+
+def is_known_event(event_key: str, log: dict) -> bool:
+    """True if this event already has a primary verdict in the log."""
+    return event_key in log
+
+
+def record_event_primary(
+    event_key: str,
+    source: str,
+    primary_verdict: str,
+    primary_score: float,
+    event_date_iso: str,
+    log: dict,
+) -> None:
+    """Record the first observation of an event as the primary verdict.
+
+    Mutates `log` in-place.  Caller is responsible for save_event_log().
+    """
+    log[event_key] = {
+        "first_observed": datetime.utcnow().isoformat(),
+        "first_observation_source": source,
+        "primary_verdict": primary_verdict,
+        "primary_score": round(primary_score, 3),
+        "event_date_iso": event_date_iso,
+        "observations": [],
+        "divergence_flagged": False,
+        "n_observations": 1,
+    }
+    logger.info(f"EventLog: primary recorded for {event_key} ({primary_verdict}, score={primary_score:+.1f})")
+
+
+def record_event_observation(
+    event_key: str,
+    source: str,
+    summary: str,
+    score_direction: str,    # "bearish" | "bullish" | "neutral"
+    log: dict,
+) -> bool:
+    """Record a subsequent observation of a known event.
+
+    Returns True if this observation DIVERGES from the primary verdict
+    (i.e. primary is bearish but this observation is bullish or vice versa).
+    Mutates `log` in-place.  Caller is responsible for save_event_log().
+    """
+    entry = log.get(event_key)
+    if entry is None:
+        logger.warning(f"EventLog.record_observation: unknown event_key {event_key}")
+        return False
+    entry["observations"].append({
+        "source": source,
+        "ts": datetime.utcnow().isoformat(),
+        "summary": summary,
+        "verdict": score_direction,
+    })
+    entry["n_observations"] = entry.get("n_observations", 1) + 1
+    # Divergence: primary verdict disagrees with this observation
+    primary = entry.get("primary_verdict", "neutral")
+    diverges = (
+        primary in ("bearish", "bullish")
+        and score_direction in ("bearish", "bullish")
+        and primary != score_direction
+    )
+    if diverges:
+        entry["divergence_flagged"] = True
+        logger.info(
+            f"EventLog: divergence flagged for {event_key} "
+            f"(primary={primary}, echo={score_direction}, source={source})"
+        )
+    return diverges
+
+
+def get_divergent_events(log: dict, days: int = 30) -> list[dict]:
+    """Return events with divergence_flagged=True that occurred in the last `days` days."""
+    cutoff = (date.today() - timedelta(days=days)).isoformat()
+    return [
+        {"event_key": k, **v}
+        for k, v in log.items()
+        if v.get("divergence_flagged") and v.get("event_date_iso", "0000") >= cutoff
+    ]

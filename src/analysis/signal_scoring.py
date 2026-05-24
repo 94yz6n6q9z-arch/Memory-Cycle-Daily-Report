@@ -69,6 +69,9 @@ class BrokerAction:
     score_breakdown: dict[str, Any]           # transparent breakdown for the brief
     source: str                              # "Naver" | "Finnhub" | "Mirae PDF" | etc.
     note_excerpt: Optional[str] = None        # short verbatim quote (Layer 1 digest)
+    # v3.5.0 — event deduplication fields
+    event_type: str = "broker_action"         # "broker_action" | "earnings_coverage"
+    event_key: Optional[str] = None           # set for earnings_coverage actions
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -535,6 +538,17 @@ def actions_from_broker_pdf_digests(digests: list[dict]) -> list[BrokerAction]:
 
         excerpt = (digest.get("key_quotes") or [None])[0]
 
+        # v3.5.0 — detect earnings-related digests so ingest_and_evaluate()
+        # can deduplicate coverage echoes via the event log.
+        # A PDF digest is earnings-related when it carries explicit EPS revision
+        # or revenue beat/miss fields — meaning the broker was responding to a
+        # specific earnings event, not issuing an independent sector note.
+        _is_earnings = any(
+            km.get(k) is not None
+            for k in ("fy27_eps_revision_pct", "fy27_eps_change_pct", "fy27_eps_pct_change",
+                      "fy27_eps_new", "eps_beat_miss_direction", "eps_surprise_pct")
+        )
+
         scored = score_action(
             action_date_iso=published_iso,
             broker_raw_name=broker,
@@ -548,6 +562,12 @@ def actions_from_broker_pdf_digests(digests: list[dict]) -> list[BrokerAction]:
             rating_change_label=f"{direction.capitalize()} {('₩' + format(prior_pt, ',.0f') + ' → ₩' + format(new_pt, ',.0f')) if (prior_pt and new_pt) else ''}".strip(),
             note_excerpt=excerpt,
         )
+        # v3.5.0 — tag event type so ingest_and_evaluate() can deduplicate
+        # earnings-period coverage echoes via the event log.
+        if _is_earnings:
+            from src.state import event_key_for_earnings
+            scored.event_type = "earnings_coverage"
+            scored.event_key = event_key_for_earnings(ticker, published_iso)
         new_actions.append(scored)
     return new_actions
 
@@ -564,19 +584,108 @@ def ingest_and_evaluate(
 ) -> dict[str, Any]:
     """Ingest all sources, update running state, evaluate triggers.
 
+    v3.5.0 — event deduplication layer added BEFORE append_new_actions().
+    Earnings-coverage actions (tagged by actions_from_broker_pdf_digests)
+    are checked against the event log:
+      - First observation → score it normally + record in log as primary
+      - Subsequent echoes → record as observation only; DO NOT re-score
+    This prevents a single earnings event covered by 8-10 sources from
+    compounding into a false t2_eps_revisions fire.
+
+    Divergence detection: if a later echo contradicts the primary verdict
+    (bearish echo after bullish primary or vice versa), divergence_flagged
+    is set in the log and surfaced in the verdict for template rendering.
+
     Returns the dict that Layer 2's t2_eps_revisions reasoner will see.
     """
-    state = load_running_state()
+    from src.state import (
+        load_event_log, save_event_log,
+        is_known_event, record_event_primary, record_event_observation,
+        get_divergent_events,
+    )
+
+    running_state = load_running_state()
     new_actions: list[BrokerAction] = []
+
     if naver_payload:
-        new_actions.extend(actions_from_naver(naver_payload, state))
+        new_actions.extend(actions_from_naver(naver_payload, running_state))
     if finnhub_payload:
         new_actions.extend(actions_from_finnhub(finnhub_payload))
     if broker_pdf_digests:
         new_actions.extend(actions_from_broker_pdf_digests(broker_pdf_digests))
 
-    state = append_new_actions(new_actions)
-    verdict = evaluate_trigger(state, today=today)
-    verdict["new_actions_today"] = [a.to_dict() for a in new_actions if a.action_date_iso == (today or date.today()).isoformat()]
-    verdict["total_actions_in_state"] = len(state.actions)
+    # ── v3.5.0 event deduplication ───────────────────────────────────────────
+    event_log = load_event_log()
+    actions_to_score: list[BrokerAction] = []
+    echoes_suppressed: int = 0
+    divergences_found: int = 0
+
+    for action in new_actions:
+        if action.event_type != "earnings_coverage" or not action.event_key:
+            # Not an earnings-coverage action — pass through unchanged
+            actions_to_score.append(action)
+            continue
+
+        ekey = action.event_key
+        score_direction = "bearish" if action.score < 0 else ("bullish" if action.score > 0 else "neutral")
+
+        if not is_known_event(ekey, event_log):
+            # First observation for this event — score it and record as primary
+            actions_to_score.append(action)
+            verdict_label = f"{score_direction} coverage of {action.ticker} earnings"
+            record_event_primary(
+                event_key=ekey,
+                source=action.source,
+                primary_verdict=score_direction,
+                primary_score=action.score,
+                event_date_iso=action.action_date_iso,
+                log=event_log,
+            )
+            logger.info(
+                f"EventDedup: new event {ekey} — first observation scored "
+                f"(source={action.source}, score={action.score:+.1f})"
+            )
+        else:
+            # Echo — suppress from scoring, record observation, check divergence
+            summary = (action.note_excerpt or action.rating_change_label or
+                       f"score={action.score:+.1f}")
+            diverged = record_event_observation(
+                event_key=ekey,
+                source=action.source,
+                summary=summary[:120],
+                score_direction=score_direction,
+                log=event_log,
+            )
+            echoes_suppressed += 1
+            if diverged:
+                divergences_found += 1
+            logger.info(
+                f"EventDedup: echo suppressed for {ekey} "
+                f"(source={action.source}, score={action.score:+.1f})"
+                + (" ← DIVERGENCE" if diverged else "")
+            )
+
+    try:
+        save_event_log(event_log)
+    except Exception as _el_err:
+        logger.warning(f"EventDedup: could not save event_log.json: {_el_err}")
+
+    # ── Score only de-duplicated actions ─────────────────────────────────────
+    running_state = append_new_actions(actions_to_score)
+    verdict = evaluate_trigger(running_state, today=today)
+
+    today_iso = (today or date.today()).isoformat()
+    verdict["new_actions_today"] = [
+        a.to_dict() for a in actions_to_score
+        if a.action_date_iso == today_iso
+    ]
+    verdict["total_actions_in_state"] = len(running_state.actions)
+    verdict["dedup_stats"] = {
+        "total_new_actions": len(new_actions),
+        "actions_scored": len(actions_to_score),
+        "echoes_suppressed": echoes_suppressed,
+        "divergences_found": divergences_found,
+    }
+    verdict["divergent_events"] = get_divergent_events(event_log, days=30)
     return verdict
+

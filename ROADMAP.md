@@ -4,6 +4,22 @@
 
 The v3.4 series consists of three shipped releases plus a v3.4.3 quick-wins candidate. The actual shipped path diverged substantially from the original ROADMAP plan — what was planned as "ship the indicator in v3.4.0, then activate trigger gates in v3.4.1" became "ship a delta-number direction monitor in v3.4.0, redesign the entire framework around a 2-axis matrix in v3.4.2 after the May 22 design session with Raul." The original v3.4.1+ plan (lines documented in the historical section below) is superseded by what actually shipped.
 
+### ✅ v3.4.14 (2026-05-24) — Context-length auto-refresh (X-axis automation)
+
+Closes the last manual operational commitment from the v3.4.2 DHCR framework. `data/context_length_signals.yaml` was the only DHCR input requiring monthly human edits — both `typical_context_tokens` per category (scraper) and `volume_share_pct` per category (aggregator) are now tracked automatically.
+
+Two new modules following the v3.4.5 aggregator pattern:
+
+**`src/data/context_length_scraper.py`** — monthly product-doc scraper. Fetches published context-window limits from OpenAI, Anthropic, Google (consumer_chat), Cursor, Claude Code, GitHub Copilot, Devin (coding_agents), MS Copilot Enterprise, Anthropic Enterprise (enterprise_vertical_agents), OpenAI + Anthropic API docs (developer_raw_api), Perplexity (other_creative_rag). 4-status taxonomy per v3.4.13 pattern; 3-consecutive-`parser_no_match` sentinel. Runs via new monthly `.github/workflows/context_length_refresh.yml` (06:00 UTC on the 1st). Only records history entries on ≥5% change to suppress noise.
+
+**`src/analysis/context_length_aggregator.py`** — daily volume-share aggregator. Reads new `context_volume_signals` extraction field (added to Layer 1 DIGEST_SYSTEM_PROMPT) from accumulated earnings transcripts. ≥3 consistent directional signals → proposal. Auto-commits when max delta ≤10pp AND ≥5 signals. Larger deltas surface as `pending_confirmation` in the DHCR card diagnostic (amber box with proposed shares and evidence quotes).
+
+State split: live values in `state/context_length_state.json` (typical_context_tokens per category with time-series history; volume_shares committed + proposed + operative_context_history). `load_dhcr_data()` reads state and overrides YAML; falls back to YAML if state absent.
+
+Template: `_build_operative_context_trend()` adds "over the last quarter, operative context has moved..." prose to DHCR where-we-stand section (per Raul's direction — no trend line on the matrix, text only). `_build_context_volume_proposal_diagnostic()` renders pending proposals as an amber box in the DHCR card.
+
+49 new tests. 804 passing total. Zero regressions.
+
 ### ✅ v3.4.13 (2026-05-23) — LPDDR contract direction scraper + observable status taxonomy (was v3.4.3+ Item 1)
 
 Adds LPDDR direction signal to the pipeline — TrendForce publishes QoQ % direction in free press releases (1Q26 "+90% QoQ", 2Q26 "narrowing"); v3.4.13 extracts it into `data/lpddr_contract_history.csv` and surfaces in DHCR sanity-check output as informational signal. Critical architectural decision: explicit 4-status taxonomy on `LpddrScrapeResult` (`data_extracted` / `no_lpddr_content_in_releases` / `parser_no_match` / `fetch_failed`) so "no data" is distinguishable from "scraper broken" in diagnostics. 3-consecutive-parser_no_match sentinel at `state/lpddr_scraper_consecutive_parser_no_match.json` escalates the diagnostic from ⚠️ to ❌ after 3 runs (~36 hours), ensuring regex bugs don't sit at warning indefinitely. Regex evaluation order is flat → falling → rising (specific → general) so "narrowing growth" resolves to FLAT not RISING. LPDDR direction is informational only for v1 — does NOT affect DHCR confirms/contradicts math (needs 2-3 quarters of data before calibration). Three unit tests pin this invariant. 755 tests passing (723 baseline + 32 new). Zero regressions.
@@ -300,13 +316,13 @@ After 4-6 quarters of real DHCR data plus monthly `context_length_signals.yaml` 
 
 These aren't features — they're ongoing maintenance commitments created by the v3.4.2 framework that the operator/agent needs to honor:
 
-1. **Monthly `data/context_length_signals.yaml` refresh** — currently manual with procedure documented in YAML header. Review product docs (consumer chat / coding agents / enterprise vertical / dev API / other) + hyperscaler earnings transcripts. Update `typical_context_tokens` × `volume_share_pct` × confidence per category. Append `refresh_evidence` log entry.
+1. **Monthly `data/context_length_signals.yaml` refresh** — ✅ AUTOMATED as of v3.4.14. `context_length_scraper.py` (monthly GHA) handles `typical_context_tokens`; `context_length_aggregator.py` (daily fast-tier) handles `volume_share_pct` via Layer 1 extraction. YAML is now schema-only.
 
-2. **Quarterly `data/enterprise_ai_revenue.yaml` refresh** — when each hyperscaler earnings cycle completes, append new quarter to MSFT Azure AI / AWS / GCP / Oracle AI Infra / NVIDIA datacenter arrays. Drives the volume index.
+2. **Quarterly `data/enterprise_ai_revenue.yaml` refresh** — ✅ AUTOMATED as of v3.4.5. `dhcr_revenue_aggregator.py` writes to `state/enterprise_ai_revenue_state.json`.
 
-3. **Irregular `data/inference_arch_reference.yaml` refresh** — when a new frontier open-architecture model ships (Llama 3.x, DeepSeek V4/V5, Qwen, Mistral, etc.), append entry. Drives the Y-axis frontier KV.
+3. **Irregular `data/inference_arch_reference.yaml` refresh** — ✅ AUTOMATED as of v3.4.5. `dhcr_arch_aggregator.py` writes to `state/inference_arch_state.json`.
 
-4. **Irregular `data/hbm_per_accelerator.yaml` refresh** — when a new NVIDIA/AMD accelerator generation announces (or a non-HBM accelerator wins material share), append entry.
+4. **Irregular `data/hbm_per_accelerator.yaml` refresh** — ✅ AUTOMATED as of v3.4.5. `dhcr_accelerator_aggregator.py` writes to `state/hbm_per_accelerator_state.json`.
 
 ---
 
@@ -420,7 +436,7 @@ Below is the original three-indicator design from before the May 21 reframe. Kep
 
 Shipped as v3.4.12 in the same session as the v3.4.11 Phase 5 detector. See `CHANGES.md` v3.4.12 entry for the full design rationale and cost analysis. Effective coverage builds through SK Hynix Q3 2026 print (late October, peak window).
 
-## ✅ Entry 2 — Event deduplication (APPROVED 2026-05-23, build first)
+## ✅ Entry 2 — Event deduplication (SHIPPED 2026-05-24 as v3.5.0)
 
 **Why**: one earnings event is observed repeatedly — the call, analyst notes (D-0 to D+1), the Yahoo transcript (D+1 to D+2), Korean broker PDF echoes (D+1 to D+3), news rehashes. Potentially 8-10 ingested items per event. Today `t2_eps_revisions` scores each arrival independently, so coverage volume compounds into a false-positive fire on ECHO not evidence. **This matters acutely after v3.4.11**: `t2_eps_revisions` GATES Phase 5 detection conditions B AND C. A false-positive on `t2_eps_revisions` mistriggers Phase 5 — the framework we just shipped.
 

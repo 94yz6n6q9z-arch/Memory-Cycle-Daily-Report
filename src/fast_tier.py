@@ -626,6 +626,15 @@ def run_fast_tier() -> int:
         aggregate_revenue_extractions()
     except Exception as e:
         logger.error(f"DHCR revenue aggregator failed (state preserved): {e}", exc_info=True)
+    # v3.4.14 — volume-share aggregator: reads context_volume_signals from
+    # Layer 1 extraction logs and proposes / auto-commits volume_share_pct
+    # updates in state/context_length_state.json BEFORE the snapshot is computed.
+    try:
+        from src.analysis.context_length_aggregator import run_context_volume_aggregator
+        cl_agg_result = run_context_volume_aggregator()
+        logger.info(f"Context volume aggregator: {cl_agg_result}")
+    except Exception as e:
+        logger.error(f"Context volume aggregator failed (state preserved): {e}", exc_info=True)
 
     try:
         from src.analysis.dhcr import compute_dhcr_snapshot, compute_dhcr_trajectory
@@ -668,7 +677,58 @@ def run_fast_tier() -> int:
             hbm_price_trend=hbm_price_trend,
             lpddr_contract_direction=lpddr_direction,
         )
+        snap_dict["narrative_summary"] = build_narrative_summary(snap_dict)
         dhcr_dict = asdict(dhcr_snapshot)
+
+        # v3.4.14 — attach operative context history from context_length_state.json
+        # and append today's computed operative context to the history time-series.
+        # This is what powers the "over the last quarter" trend prose in template.py.
+        try:
+            from pathlib import Path as _Path
+            import json as _json2
+            _cl_state_path = _Path("state/context_length_state.json")
+            if _cl_state_path.exists():
+                _cl_state = _json2.loads(_cl_state_path.read_text())
+                _hist = _cl_state.get("operative_context_history") or []
+
+                # Append today's reading (deduplicated by date)
+                import datetime as _dt
+                _today = _dt.date.today().isoformat()
+                _existing_dates = {h.get("date") for h in _hist}
+                _ctx_band = dhcr_dict.get("context_band_name", "?")
+                if _today not in _existing_dates:
+                    _hist.append({
+                        "date": _today,
+                        "operative_context_tokens": dhcr_snapshot.operative_context_tokens,
+                        "band": _ctx_band,
+                    })
+                    # Prune to last 24 months (keep history lean)
+                    _hist = sorted(_hist, key=lambda h: h.get("date", ""))[-24:]
+                    _cl_state["operative_context_history"] = _hist
+                    # Atomic write
+                    _cl_tmp = _cl_state_path.with_suffix(".json.tmp")
+                    _cl_tmp.write_text(_json2.dumps(_cl_state, indent=2))
+                    _cl_tmp.replace(_cl_state_path)
+
+                dhcr_dict["operative_context_history"] = _hist
+                _vol = _cl_state.get("volume_shares") or {}
+                if _vol.get("proposal_status") == "pending_confirmation" and _vol.get("proposed"):
+                    dhcr_dict["context_volume_proposal"] = {
+                        "proposed": _vol["proposed"],
+                        "committed": _vol.get("committed") or {},
+                        "created": _vol.get("proposal_created", ""),
+                        "evidence": _vol.get("proposal_evidence") or [],
+                    }
+                else:
+                    dhcr_dict["context_volume_proposal"] = None
+            else:
+                dhcr_dict["operative_context_history"] = []
+                dhcr_dict["context_volume_proposal"] = None
+        except Exception as _cl_err:
+            logger.warning(f"Could not attach context_length history to dhcr_dict: {_cl_err}")
+            dhcr_dict["operative_context_history"] = []
+            dhcr_dict["context_volume_proposal"] = None
+
         computed_metrics["dhcr_snapshot"] = dhcr_dict
         # 11-quarter trajectory for charting
         dhcr_traj = compute_dhcr_trajectory(quarters_back=11)
@@ -1130,7 +1190,12 @@ def run_fast_tier() -> int:
     eps_scoring_verdict = None
     for r in signal_reasonings:
         if r.signal_id == "t2_eps_revisions":
-            eps_scoring_verdict = r.raw_evidence_dump.get("signal_specific_data", {}).get("weighted_scoring_verdict")
+            sig_data = r.raw_evidence_dump.get("signal_specific_data", {})
+            eps_scoring_verdict = sig_data.get("weighted_scoring_verdict")
+            # v3.5.0 — attach divergent_events so template can render them
+            if eps_scoring_verdict is not None:
+                eps_scoring_verdict["divergent_events"] = sig_data.get("divergent_events", [])
+                eps_scoring_verdict["dedup_stats"] = sig_data.get("dedup_stats", {})
             break
 
     # ----- v3.39.7 cycle matrix follow-up (override + charts) -----

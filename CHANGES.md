@@ -1,5 +1,50 @@
 # Memory Cycle Brief — Changelog
 
+## v3.5.0 (2026-05-24) — Event deduplication
+
+Closes the coverage-echo false-positive risk that has existed since v3.4.11 shipped Phase 5 detection. A single earnings event (e.g. SK Hynix Q2 2026) can generate 8-10 ingested items from different sources — the call wire, Yahoo Finance transcript, Naver Finance, Korean broker PDFs, Reuters, Korea Herald, analyst note echoes. Previously each of these scored independently against `t2_eps_revisions`, compounding the rolling bearish/bullish sum by the number of sources rather than the number of events. Since `t2_eps_revisions` gates Phase 5 conditions B and C, a coverage-echo false-positive could mistrigger Phase 5 on noise.
+
+**`src/state.py`** — New EventLog helpers at module bottom: `event_key_for_earnings()`, `load_event_log()`, `save_event_log()` (atomic, prunes >180 days), `prune_event_log()`, `is_known_event()`, `record_event_primary()`, `record_event_observation()` (returns divergence_flagged), `get_divergent_events()`. State persisted to `state/event_log.json`.
+
+**`src/analysis/signal_scoring.py`** — `BrokerAction` dataclass gains two default-bearing fields: `event_type: str = "broker_action"` and `event_key: Optional[str] = None` (backward-compatible; old state files load cleanly). `actions_from_broker_pdf_digests()` tags any action whose digest contains EPS revision fields (`fy27_eps_revision_pct`, `fy27_eps_new`, `eps_beat_miss_direction`, etc.) as `event_type="earnings_coverage"` and sets `event_key` via `event_key_for_earnings()`. `ingest_and_evaluate()` rewritten with a dedup layer: earnings-coverage actions are checked against the event log before `append_new_actions()`; first observation scores normally and records primary; subsequent echoes are suppressed (recorded as observations, not scored). `dedup_stats` and `divergent_events` added to the verdict dict.
+
+**`src/analysis/signal_reasoner.py`** — `dedup_stats` and `divergent_events` forwarded from scoring_verdict into `signal_specific` so they flow to the template.
+
+**`src/fast_tier.py`** — `eps_scoring_verdict` extraction updated to attach `divergent_events` and `dedup_stats` when present.
+
+**`src/email_module/template.py`** — `_build_eps_revisions_section()` extended: dedup footer ("N echoes suppressed") shown when echoes were suppressed; divergent-events amber box shown when sources contradict each other (e.g. one broker PDF calls Q2 a beat while another calls it a miss).
+
+**Divergence detection** is the secondary output: when a later echo contradicts the primary verdict (bearish echo after a bullish primary or vice versa), `divergence_flagged=True` is set in the event log, surfaced as a warning box in the brief. This is a signal-quality flag — it means either a data quality problem (mis-tagged source) or a genuinely contested earnings outcome worth investigating.
+
+34 new tests in `tests/test_v3_5_0_event_dedup.py` across 9 test classes. 838 tests passing (804 baseline + 34 new). Zero regressions. 27 pre-existing baseline failures unchanged.
+
+
+## v3.4.14 (2026-05-24) — Context-length auto-refresh
+
+Closes the last remaining manual operational commitment from the v3.4.2 DHCR framework: `data/context_length_signals.yaml` was the only DHCR input requiring monthly human edits. This release makes both dimensions of the X-axis automatic — context window sizes and volume-share mix.
+
+**Two new modules follow the v3.4.5 aggregator pattern (data/ schema-only, state/ live values):**
+
+`src/data/context_length_scraper.py` — monthly product-doc scraper. Fetches published context-window limits from OpenAI, Anthropic, Google, Cursor, Claude Code, GitHub Copilot, Devin, and Perplexity docs. Computes weighted average per workload category. 4-status observability taxonomy (`data_extracted` / `no_context_spec_found` / `parser_no_match` / `fetch_failed`); 3-consecutive-`parser_no_match` sentinel escalates to ❌. Updates `state/context_length_state.json` atomically. Only writes a new history entry when change ≥5% (avoids noise from trivial page rewording). Runs via new monthly `.github/workflows/context_length_refresh.yml`.
+
+`src/analysis/context_length_aggregator.py` — daily volume-share aggregator. Reads `context_volume_signals` from Layer 1 extraction logs (90-day lookback). When ≥3 consistent directional signals exist for a category (e.g. 3 different earnings calls saying enterprise is growing), proposes a volume_share_pct update. Auto-commits when max delta ≤10pp per category AND ≥5 signals. Larger deltas written as `pending_confirmation` and surfaced in the DHCR card diagnostic section for manual review.
+
+**Layer 1 digester extended:** `context_volume_signals` field added to `DIGEST_SYSTEM_PROMPT` under `architecture_signals`. Haiku extracts when earnings transcripts explicitly discuss workload category mix (enterprise token volume, coding agent share, consumer vs. enterprise mix).
+
+**`src/analysis/dhcr.py` updated:** `load_dhcr_data()` reads `state/context_length_state.json` for live `typical_context_tokens` and committed `volume_share_pct` values. Falls back to YAML if state file absent or category missing — full backward compatibility. Also exposes `operative_context_history` and pending `context_volume_proposal` to downstream callers.
+
+**`src/fast_tier.py` updated:** `run_context_volume_aggregator()` wired into the DHCR aggregator block (runs before `compute_dhcr_snapshot()`). After computing dhcr_dict, today's operative context is appended to `operative_context_history` in state (deduped by date, pruned to last 24 months). Pending proposal attached to dhcr_dict for template rendering.
+
+**`src/email_module/template.py` updated:** Two additions to DHCR section 4:
+- `_build_operative_context_trend()`: 1-2 sentence "over the last quarter, operative context has moved..." prose in the "Where we stand" block. Compares current operative context against the entry closest to 90 days ago in history. Notes the enterprise volume share × context expansion as the primary driver and flags the C2→C3 threshold as the key watch point. Renders only when ≥2 history entries and ≥14 days of data exist.
+- `_build_context_volume_proposal_diagnostic()`: amber box rendered in the DHCR card when a volume-share proposal is pending confirmation. Shows current vs. proposed shares per category and the supporting evidence quotes. Explains auto-commit conditions and the manual commit path.
+
+**`.github/workflows/context_length_refresh.yml`** — new monthly GHA workflow. Runs 06:00 UTC on the 1st of every month (before the daily fast-tier brief). Creates a GitHub Issue on failure (same pattern as other critical workflows). Uses the v3.4.7 push-retry pattern.
+
+**49 new tests** in `tests/test_v3_4_14_context_length.py` across 10 test classes. 804 tests passing (755 baseline + 49 new). Zero regressions. 27 pre-existing baseline failures unchanged (state-file-dependent tests).
+
+This is the most consequential operational improvement to the DHCR framework since v3.4.2 — the X-axis was previously frozen at May 2026 values. As enterprise volume share moves from 5% toward 30% (the core thesis), the framework will now detect and track that shift automatically.
+
 This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensive diagnostics across both pipelines). v3.4 (captive-ratio indicators) is intentionally deferred — see `ROADMAP.md`.
 
 > **A note on version numbering.** v3.31 through v3.39.x are all maintenance fixes, deliberately numbered in the .3x range rather than as v3.4. This keeps the v3.4 label for the planned captive-ratio indicators.

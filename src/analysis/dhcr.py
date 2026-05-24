@@ -207,8 +207,12 @@ def load_dhcr_data(data_dir: Optional[Path] = None, state_dir: Optional[Path] = 
     merges them at load time so downstream `compute_*()` functions see the
     same dict shape they always have.
 
-    Legacy data/context_length_signals.yaml is unchanged for now (5 reference
-    workload categories — manageable scope, no auto-update wiring yet).
+    v3.4.14: context_length_signals.yaml is now partially automated.
+    state/context_length_state.json (written by context_length_scraper.py
+    monthly and context_length_aggregator.py on each fast-tier run) overrides
+    the YAML's typical_context_tokens and volume_share_pct per category when
+    present.  Falls back to YAML values if the state file is absent or a
+    category is missing — full backward compatibility preserved.
     """
     if yaml is None:
         raise ValueError("PyYAML is required for DHCR computation.")
@@ -247,6 +251,48 @@ def load_dhcr_data(data_dir: Optional[Path] = None, state_dir: Optional[Path] = 
         # Strip _metadata before merge; downstream compute functions don't read it
         state.pop("_metadata", None)
         out[name].update(state)
+
+    # v3.4.14 — override context YAML values with live state when available.
+    # state/context_length_state.json is the sole writer for typical_context_tokens
+    # (monthly scraper) and volume_share_pct committed values (aggregator).
+    # Falls back gracefully to YAML if state file absent or category missing.
+    context_state_path = state_dir / "context_length_state.json"
+    out["operative_context_history"] = []   # populated below if state exists
+    out["context_volume_proposal"] = None
+    out["context_volume_proposal_evidence"] = []
+
+    if context_state_path.exists():
+        try:
+            cl_state = _json.loads(context_state_path.read_text())
+            typical = cl_state.get("typical_context_tokens") or {}
+            vol = cl_state.get("volume_shares") or {}
+            committed_shares = vol.get("committed") or {}
+            categories = out["context"].get("categories") or {}
+
+            for cat_key, cat_data in categories.items():
+                # Override typical_context_tokens from scraper state
+                if cat_key in typical and typical[cat_key].get("current"):
+                    cat_data["typical_context_tokens"] = typical[cat_key]["current"]
+                # Override volume_share_pct from committed shares
+                if cat_key in committed_shares:
+                    cat_data["volume_share_pct"] = committed_shares[cat_key]
+
+            out["operative_context_history"] = cl_state.get("operative_context_history") or []
+
+            # Surface pending volume-share proposal for template diagnostic
+            if vol.get("proposal_status") == "pending_confirmation" and vol.get("proposed"):
+                out["context_volume_proposal"] = {
+                    "proposed": vol["proposed"],
+                    "committed": committed_shares,
+                    "created": vol.get("proposal_created", ""),
+                }
+                out["context_volume_proposal_evidence"] = vol.get("proposal_evidence") or []
+        except Exception as _cl_err:
+            logger.warning(
+                f"Could not apply context_length_state.json overrides: {_cl_err}; "
+                f"falling back to YAML values"
+            )
+
     return out
 
 

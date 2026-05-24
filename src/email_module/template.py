@@ -1590,6 +1590,11 @@ def _build_dhcr_section4_card(
     # "Where we stand" — today's numbers + history prose (no chart overlays)
     parts.append(_build_dhcr_where_we_stand_prose(dhcr))
 
+    # v3.4.14 — pending volume-share proposal (amber box if awaiting confirmation)
+    proposal_html = _build_context_volume_proposal_diagnostic(dhcr)
+    if proposal_html:
+        parts.append(proposal_html)
+
     # "Latest developments" — substitution risk + sanity signal observations
     parts.append(_build_dhcr_latest_developments_prose(dhcr))
 
@@ -1685,6 +1690,12 @@ def _build_dhcr_where_we_stand_prose(dhcr: dict) -> str:
     )
     if history_phrase:
         sentences.append(history_phrase)
+
+    # v3.4.14 — operative context trend from context_length_state.json history
+    ctx_trend = _build_operative_context_trend(dhcr)
+    if ctx_trend:
+        sentences.append(ctx_trend)
+
     if reasoning:
         sentences.append(html.escape(reasoning))
     if narrative:
@@ -1717,6 +1728,148 @@ def _verbalize_dhcr_history(today_score: float, trajectory: list) -> str:
         f"<strong>Where we came from:</strong> trajectory is {direction_word} "
         f"over the last {n_points} reading(s) — prior score was {oldest:.0f}/100, "
         f"today {today_score:.0f}/100."
+    )
+
+
+def _build_operative_context_trend(dhcr: dict) -> str:
+    """v3.4.14 — Produce a 1-2 sentence trend phrase for operative context.
+
+    Uses operative_context_history from context_length_state.json (attached
+    to dhcr_dict in fast_tier.py).  Returns empty string if fewer than
+    2 historical data points exist (nothing to compare against).
+
+    Raul's direction: render in the 'Where we stand' text section —
+    'over the last quarter it has moved...' — no trend line on the matrix.
+    """
+    history = dhcr.get("operative_context_history") or []
+    current_tokens = dhcr.get("operative_context_tokens", 0)
+    current_band = dhcr.get("context_band_name", "?")
+
+    if len(history) < 2 or not current_tokens:
+        return ""
+
+    # Find the entry closest to ~90 days ago for the "last quarter" comparison
+    from datetime import date as _date, timedelta as _td
+    import datetime as _dt
+    try:
+        target_date = _date.today() - _td(days=90)
+        # history entries are dicts with 'date' (YYYY-MM-DD) and 'operative_context_tokens'
+        parsed = []
+        for h in history:
+            try:
+                d = _dt.date.fromisoformat(h["date"])
+                v = int(h.get("operative_context_tokens", 0))
+                if v > 0:
+                    parsed.append((d, v, h.get("band", "?")))
+            except Exception:
+                continue
+        if not parsed:
+            return ""
+        parsed.sort(key=lambda t: t[0])
+
+        # Pick the point closest to 90 days ago, at least 14 days back
+        min_days_back = 14
+        today = _date.today()
+        candidates = [(d, v, b) for d, v, b in parsed
+                      if (today - d).days >= min_days_back]
+        if not candidates:
+            return ""
+
+        # Closest to 90 days ago
+        ref_date, ref_tokens, ref_band = min(
+            candidates, key=lambda t: abs((t[0] - target_date).days)
+        )
+        delta_tokens = current_tokens - ref_tokens
+        delta_pct = delta_tokens / ref_tokens * 100 if ref_tokens else 0
+        days_back = (today - ref_date).days
+
+        if abs(delta_pct) < 2:
+            trend_phrase = "broadly flat"
+        elif delta_pct > 0:
+            trend_phrase = f"up <strong>{delta_pct:+.0f}%</strong>"
+        else:
+            trend_phrase = f"down <strong>{delta_pct:+.0f}%</strong>"
+
+        ref_str = f"{ref_tokens/1000:.0f}K" if ref_tokens < 1_000_000 else f"{ref_tokens/1_000_000:.2f}M"
+        cur_str = f"{current_tokens/1000:.0f}K" if current_tokens < 1_000_000 else f"{current_tokens/1_000_000:.2f}M"
+        period_label = "quarter" if days_back >= 60 else f"{days_back}-day period"
+
+        return (
+            f"<strong>Operative context trend:</strong> over the last {period_label}, "
+            f"operative context has moved {trend_phrase} "
+            f"({html.escape(ref_str)} {html.escape(ref_band)} → "
+            f"{html.escape(cur_str)} {html.escape(current_band)}). "
+            f"Enterprise volume share and context window expansion are the primary drivers "
+            f"to watch — when enterprise contribution alone crosses ~200K tokens the "
+            f"X-axis shifts from C2 to C3."
+        )
+    except Exception:
+        return ""
+
+
+def _build_context_volume_proposal_diagnostic(dhcr: dict) -> str:
+    """v3.4.14 — Render pending volume-share proposal in the DHCR diagnostic block.
+
+    Returns empty string if no pending proposal.
+    """
+    proposal = dhcr.get("context_volume_proposal")
+    if not proposal or not isinstance(proposal, dict):
+        return ""
+    proposed = proposal.get("proposed") or {}
+    committed = proposal.get("committed") or {}
+    created = proposal.get("created", "")
+    evidence = proposal.get("evidence") or []
+    if not proposed or not committed:
+        return ""
+
+    rows = []
+    for cat, new_share in sorted(proposed.items()):
+        old_share = committed.get(cat, 0)
+        delta = new_share - old_share
+        if abs(delta) < 0.5:
+            continue
+        sign = "▲" if delta > 0 else "▼"
+        color = "#B91C1C" if delta < 0 else "#15803D"
+        rows.append(
+            f"<tr>"
+            f"<td style='padding:2px 8px;font-size:11px'>{html.escape(cat)}</td>"
+            f"<td style='padding:2px 8px;font-size:11px'>{old_share:.1f}%</td>"
+            f"<td style='padding:2px 8px;font-size:11px;color:{color}'>"
+            f"{sign} {new_share:.1f}%</td>"
+            f"</tr>"
+        )
+    if not rows:
+        return ""
+
+    evidence_html = ""
+    if evidence:
+        ev_items = "".join(
+            f"<li style='font-size:11px'>{html.escape(str(e))}</li>"
+            for e in evidence[:3]
+        )
+        evidence_html = f"<ul style='margin:4px 0 0 16px;padding:0'>{ev_items}</ul>"
+
+    table_rows = "".join(rows)
+    return (
+        f"<div style='margin:8px 0;padding:8px;background:#FFF7ED;"
+        f"border-left:3px solid #D97706;border-radius:3px'>"
+        f"<strong style='font-size:12px;color:#92400E'>"
+        f"⚠ Context volume-share update pending — {html.escape(created)}</strong><br/>"
+        f"<table style='margin-top:4px;border-collapse:collapse'>"
+        f"<tr style='background:#F5F5F5'>"
+        f"<th style='padding:2px 8px;font-size:11px;text-align:left'>Category</th>"
+        f"<th style='padding:2px 8px;font-size:11px;text-align:left'>Current</th>"
+        f"<th style='padding:2px 8px;font-size:11px;text-align:left'>Proposed</th>"
+        f"</tr>"
+        f"{table_rows}"
+        f"</table>"
+        f"<p style='font-size:11px;margin:4px 0 0 0'>Evidence:{evidence_html}</p>"
+        f"<p style='font-size:11px;margin:4px 0 0 0;color:#92400E'>"
+        f"Auto-commits when max delta ≤ 10pp and ≥ 5 signals accumulated. "
+        f"To manually commit: set <code>volume_shares.proposal_status = \"none\"</code> "
+        f"and copy proposed values to committed in "
+        f"<code>state/context_length_state.json</code>.</p>"
+        f"</div>"
     )
 
 
@@ -2932,5 +3085,58 @@ def _build_eps_revisions_section(verdict: dict) -> str:
                 f"</tr>"
             )
         parts.append("</tbody></table>")
+
+    # v3.5.0 — dedup stats (informational footer)
+    dedup = verdict.get("dedup_stats") or {}
+    if dedup.get("echoes_suppressed", 0) > 0:
+        parts.append(
+            f"<p style='font-size:11px;color:#888;margin-top:6px'>"
+            f"Event dedup (v3.5.0): {dedup.get('total_new_actions',0)} raw actions → "
+            f"{dedup.get('actions_scored',0)} scored, "
+            f"<strong>{dedup.get('echoes_suppressed',0)} echoes suppressed</strong> "
+            f"(same earnings event, multiple sources counted once)."
+            f"</p>"
+        )
+
+    # v3.5.0 — divergent events (signal-quality warning when sources disagree)
+    divergent = verdict.get("divergent_events") or []
+    if divergent:
+        div_rows = ""
+        for ev in divergent[:5]:
+            ekey = ev.get("event_key", "?")
+            primary = ev.get("primary_verdict", "?")
+            n_obs = ev.get("n_observations", 1)
+            n_div = sum(1 for o in ev.get("observations", [])
+                        if o.get("verdict") and o.get("verdict") != primary)
+            first_src = ev.get("first_observation_source", "?")
+            div_rows += (
+                f"<tr>"
+                f"<td style='padding:3px 8px;font-size:11px'>{html.escape(ekey)}</td>"
+                f"<td style='padding:3px 8px;font-size:11px'>{html.escape(primary)}</td>"
+                f"<td style='padding:3px 8px;font-size:11px'>{n_obs} sources, {n_div} diverge</td>"
+                f"<td style='padding:3px 8px;font-size:11px;color:#888'>{html.escape(first_src)}</td>"
+                f"</tr>"
+            )
+        parts.append(
+            f"<div style='margin-top:12px;padding:8px;background:#FFF7ED;"
+            f"border-left:3px solid #D97706;border-radius:3px'>"
+            f"<strong style='font-size:12px;color:#92400E'>"
+            f"⚠ Divergent event coverage — sources disagree on outcome</strong>"
+            f"<p style='font-size:11px;margin:4px 0'>One or more earnings events have been "
+            f"covered with contradictory verdicts across sources (e.g. one broker PDF says "
+            f"beat, another says miss). The primary verdict (first observed) was used for "
+            f"scoring. Divergent sources were suppressed from the rolling sum but may "
+            f"indicate data quality issues or a genuinely contested result — investigate.</p>"
+            f"<table style='width:100%;border-collapse:collapse'>"
+            f"<tr style='background:#F5F5F5'>"
+            f"<th style='padding:3px 8px;font-size:11px;text-align:left'>Event</th>"
+            f"<th style='padding:3px 8px;font-size:11px;text-align:left'>Primary verdict</th>"
+            f"<th style='padding:3px 8px;font-size:11px;text-align:left'>Coverage</th>"
+            f"<th style='padding:3px 8px;font-size:11px;text-align:left'>First source</th>"
+            f"</tr>"
+            f"{div_rows}"
+            f"</table>"
+            f"</div>"
+        )
 
     return "\n".join(parts)

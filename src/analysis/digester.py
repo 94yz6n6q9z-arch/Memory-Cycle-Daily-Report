@@ -217,6 +217,24 @@ do not infer or speculate. Use null for unknown.
       "source_quote": "<earnings quote>"
     }},
 
+    // v3.4.14 — Context volume-share signals.  Extracted when the source
+    // EXPLICITLY discusses which AI workload category (consumer chat vs.
+    // coding agents vs. enterprise verticals) is growing or shrinking as
+    // a share of total inference token consumption.  Do NOT infer or
+    // extrapolate; null unless management explicitly addresses workload mix.
+    // Source examples: MSFT Copilot enterprise seat growth commentary;
+    // OpenAI "enterprise is now X% of revenue"; Google "consumer search
+    // accounts for Y% of AI compute"; Anthropic investor commentary on
+    // enterprise share; any AI-lab or hyperscaler exec statement about
+    // which workload segment is the fastest-growing.
+    "context_volume_signals": null or {{
+      "category": "consumer_chat" | "coding_agents" | "enterprise_vertical_agents" | "developer_raw_api" | "other_creative_rag",
+      "signal_type": "volume_share_commentary" | "token_mix_disclosure" | "workload_shift_commentary" | "segment_growth_disclosure",
+      "direction": "growing" | "shrinking" | "stable",
+      "magnitude_hint": "<short quote or descriptor — e.g. 'enterprise token volume tripled QoQ' or 'rapidly accelerating'>",
+      "source_company": "microsoft" | "openai" | "google" | "amazon" | "meta" | "anthropic" | "<other>"
+    }},
+
     // Free-text catch for anything material that doesn't fit above
     "architecture_freetext": null or "<one-sentence summary of the material architectural point>"
   }},

@@ -152,6 +152,9 @@ def _gather_evidence_for_signal(
                 ticker: td["rolling_30d"]["top_impact_actions"]
                 for ticker, td in scoring_verdict.get("per_ticker", {}).items()
             }
+            # v3.5.0 — surface dedup stats and divergent events for template rendering
+            signal_specific["dedup_stats"] = scoring_verdict.get("dedup_stats", {})
+            signal_specific["divergent_events"] = scoring_verdict.get("divergent_events", [])
         except Exception as e:
             logger.warning(f"Weighted scoring engine failed for t2_eps_revisions: {e}")
             # Fall back to raw passthrough
