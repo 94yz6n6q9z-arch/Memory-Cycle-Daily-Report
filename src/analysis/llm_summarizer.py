@@ -285,14 +285,28 @@ def _build_case_scenario(d: dict | None) -> CaseScenario:
 
 
 def _enforce_scenario_invariants(
-    base: CaseScenario, bull: CaseScenario, bear: CaseScenario
+    base: CaseScenario, bull: CaseScenario, bear: CaseScenario,
+    current_phase: int = 4,
 ) -> tuple[CaseScenario, CaseScenario, CaseScenario]:
     """Apply hard invariants to the three scenarios:
       1. Probabilities are integers in [1, 98] summing to exactly 100.
       2. base.probability_pct is the strict maximum (> bear, > bull).
-      3. base.return_to_peak_pct >= 0 (base never assumes peak is past).
-      4. bull.return_to_peak_pct > base.return_to_peak_pct.
-      5. bear.return_to_peak_pct <= base.return_to_peak_pct.
+      3a. PHASE 4: base.return_to_peak_pct >= 0 (peak ahead of us).
+      3b. PHASE 5: base.return_to_peak_pct <= 0 (decline ahead of us;
+          the field is reinterpreted as 'return to trough', signed).
+      4. PHASE 4: bull.return_to_peak_pct > base.return_to_peak_pct
+         (higher upside in bull).
+         PHASE 5: bull.return_to_peak_pct > base.return_to_peak_pct
+         (shallower decline in bull — i.e., closer to zero / less negative).
+      5. PHASE 4: bear.return_to_peak_pct <= base.return_to_peak_pct
+         (lower upside / negative downside in bear).
+         PHASE 5: bear.return_to_peak_pct < base.return_to_peak_pct
+         (deeper trough in bear — more negative).
+
+    v3.4.11 — Phase 4 and Phase 5 share the same monotonicity (bull > base
+    > bear in signed return). What flips is the sign of base: Phase 4
+    base >= 0, Phase 5 base <= 0. The bull-above-base, bear-below-base
+    ordering is preserved in both phases.
 
     Algorithm (probabilities):
       a. Floor each at 1, then proportionally normalize sum to 100.
@@ -352,18 +366,33 @@ def _enforce_scenario_invariants(
         br_i += 1
         b_i -= 1
 
-    # --- Return-to-peak invariants ---
+    # --- Return-to-peak/trough invariants ---
     base_r = float(base.return_to_peak_pct)
     bull_r = float(bull.return_to_peak_pct)
     bear_r = float(bear.return_to_peak_pct)
-    # Base never assumes peak is past
-    base_r = max(0.0, base_r)
-    # Bull strictly above base (always positive upside)
-    if bull_r <= base_r:
-        bull_r = base_r + 5.0
-    # Bear no higher than base (can be negative when peak is in)
-    if bear_r > base_r:
-        bear_r = base_r
+
+    if int(current_phase) >= 5:
+        # PHASE 5 — "return_to_peak_pct" is reinterpreted as
+        # "return_to_trough_pct". Base case projects a decline (≤ 0).
+        # Bull = shallower decline (closer to zero / less negative).
+        # Bear = deeper decline (more negative).
+        base_r = min(0.0, base_r)
+        # Bull is shallower (less negative / more positive) than base
+        if bull_r <= base_r:
+            bull_r = base_r + 5.0
+        # Bear is deeper (more negative) than base
+        if bear_r >= base_r:
+            bear_r = base_r - 5.0
+    else:
+        # PHASE 4 (default) — original invariants.
+        # Base never assumes peak is past
+        base_r = max(0.0, base_r)
+        # Bull strictly above base (always positive upside)
+        if bull_r <= base_r:
+            bull_r = base_r + 5.0
+        # Bear no higher than base (can be negative when peak is in)
+        if bear_r > base_r:
+            bear_r = base_r
 
     return (
         CaseScenario(
@@ -651,6 +680,8 @@ def build_sonnet_analysis_prompt(
     signal_reasonings: Optional[list] = None,
     computed_metrics: Optional[dict] = None,
     news_items: Optional[list[NewsItem]] = None,
+    phase_state: Optional[dict] = None,
+    transcript_diffs: Optional[list[dict]] = None,
 ) -> str:
     """Construct the Sonnet analysis prompt using Haiku-triaged data.
 
@@ -1106,16 +1137,152 @@ def build_sonnet_analysis_prompt(
     else:
         layer2_text += "  (signal_reasonings not threaded — running in legacy mode)\n"
 
-    prompt = f"""You are a senior memory/semiconductor cycle analyst preparing a daily institutional briefing. Use the Haiku-pre-processed news + market data + indicator framework below to produce a comprehensive structured analysis.
+    # v3.4.12 — QoQ TRANSCRIPT DIFFS BLOCK. For each company-quarter that
+    # has a cached Haiku diff vs prior quarter, Sonnet sees the structured
+    # change set (indicator deltas, language dropped/added, metric moves,
+    # overall tone shift). The most cycle-relevant signal is LANGUAGE DROPPED
+    # — when a CFO stops using a prior commitment ("sold out through 2027"),
+    # that's the canonical cycle-turn signal that the framework would
+    # otherwise miss by reacting to each call in isolation.
+    #
+    # Use this block when narrating where_we_stand for transcript-driven
+    # indicators. Quote verbatim from the diff's prior/current quote pairs
+    # when calling out specific shifts.
+    qoq_text = "\nQoQ TRANSCRIPT DIFFS (v3.4.12 — Haiku-computed changes vs prior quarter for each company):\n"
+    if transcript_diffs:
+        # Lazy import — keep module-level deps minimal
+        try:
+            from src.analysis.transcript_diff import render_diff_for_sonnet_prompt
+            qoq_text += (
+                f"({len(transcript_diffs)} active diff(s). Pay particular attention to\n"
+                "LANGUAGE DROPPED — when a CFO STOPS using prior cycle-affirming\n"
+                "commitments, that's a Phase-4-to-5 transition signal. Reference\n"
+                "these explicitly in where_we_stand for transcript-driven indicators\n"
+                "and in executive_brief when they shift the overall tone.)\n\n"
+            )
+            for d in transcript_diffs:
+                # transcript_diffs entries are quarter_record dicts — extract the diff
+                diff_payload = d.get("diff_with_prior") if isinstance(d, dict) else None
+                if diff_payload:
+                    qoq_text += render_diff_for_sonnet_prompt(diff_payload)
+        except Exception as e:
+            qoq_text += f"  (diff render failed: {e})\n"
+    else:
+        qoq_text += "  (no active QoQ diffs — either first run, or no companies yet have 2 consecutive quarters of digests)\n"
 
-ANALYTICAL FRAMEWORK CONTEXT:
+    # v3.4.11 — Phase context block. The deterministic phase detector runs
+    # in fast_tier BEFORE this prompt builder; its verdict is passed in via
+    # `phase_state`. If phase=5, swap the framework context and JSON example
+    # so Sonnet stops emitting Phase 4 boilerplate and writes Phase 5
+    # ("return to trough") semantics. If phase=4 or phase_state is None,
+    # preserve the original Phase 4 prompt verbatim.
+    detected_phase = 4
+    detected_phase_label = 'Boom / Euphoria (late stage)'
+    phase_5_detected_date = None
+    cycle_peak_price = None
+    if phase_state and isinstance(phase_state, dict):
+        detected_phase = int(phase_state.get('current_phase', 4))
+        detected_phase_label = phase_state.get(
+            'current_phase_label', detected_phase_label,
+        )
+        phase_5_detected_date = phase_state.get('phase_5_detected_date_iso')
+        cycle_peak_price = phase_state.get('cycle_peak_price_at_detection')
+
+    if detected_phase >= 5:
+        # PHASE 5 ACTIVE — the deterministic detector has flipped us to Decline.
+        # Override the Phase 4 framework context, scenario framing,
+        # invariants, and JSON example with their Phase 5 counterparts.
+        framework_context_block = f"""ANALYTICAL FRAMEWORK CONTEXT (v3.4.11 — PHASE 5 ACTIVE):
+- The deterministic phase detector has flipped to Phase 5 ("Decline"). Detection date: {phase_5_detected_date or '(not recorded)'}; cycle peak price at detection: {('%.0f' % cycle_peak_price) if cycle_peak_price else '(not recorded)'} KRW.
+- We are NO LONGER ascending to a peak. The peak is BEHIND US. Forward expectation is a decline to the cycle trough.
+- Per memory_supercycle_analysis.docx Part 1, Phase 5 (Decline) typically lasts 12-18 months. Stocks decline 40-60% in Year 1, ASPs -40 to -65%; Year 2 EPS goes negative.
+- Per Part 2, six prior memory cycles saw memory pure-plays decline 50-65% peak-to-trough.
+- The case-scenario semantics flip: `return_to_peak_pct` is reinterpreted as `return_to_trough_pct` (still signed). Base case = expected decline (negative). Bull case = shallower decline (closer to zero / less negative). Bear case = deeper decline (more negative).
+- The peak window fields (`peak_window_start` / `peak_window_end`) become TROUGH window fields semantically. Project when the cycle trough is most likely to occur.
+- Tier framework still applies but is mostly for tracking depth of decline: T3 (concurrent) and T4 (lagging) indicators firing confirm the decline; T1/T2 unfiring would suggest reversion potential.
+- The DEFAULT trough anchors (used as Sonnet's starting prior, then adjusted by signal evidence): base around -40% from cycle peak, bear around -60%, bull around -25%."""
+
+        scenario_framing_block = """SCENARIO FRAMING — PHASE 5 (v3.4.11):
+The three scenarios are signal-conditional projections for the depth and timing of the cycle TROUGH. The peak is behind us; the question is how deep the decline goes and when the trough lands.
+
+• base_case = the EXPECTED scenario given Phase 5 unfolding at its current pace. Most probable scenario by invariant. `return_to_peak_pct` ≤ 0 (it's the expected DECLINE from current price to the trough). As T3/T4 signals fire more aggressively, base TRIMS DEEPER (more negative); as T1/T2 signals unfire, base RESTORES TOWARD ZERO.
+
+• bull_case = scenario where decline is SHALLOWER than expected (soft landing, resilience surprise). Probability GROWS as positive surprises appear (Tier 2 unfires, T1 unfires). `return_to_peak_pct` is closer to zero / less negative than base — always above base.
+
+• bear_case = scenario where decline ACCELERATES beyond current trajectory. Probability GROWS as more T3/T4 indicators fire or T2 deepens. `return_to_peak_pct` is more negative than base. Bear can reach historical -55 to -65% magnitude per the 2017-18 and 2020-22 references.
+
+HARD INVARIANTS (Phase 5 — enforced post-output):
+  1. probability_pct sums to EXACTLY 100 across the three scenarios.
+  2. base_case.probability_pct > bear_case.probability_pct.
+  3. base_case.probability_pct > bull_case.probability_pct.
+  4. base_case.return_to_peak_pct <= 0 (Phase 5: decline ahead — base never assumes peak is in front of us).
+  5. bull_case.return_to_peak_pct > base_case.return_to_peak_pct (Phase 5: bull = shallower decline = closer to zero).
+  6. bear_case.return_to_peak_pct < base_case.return_to_peak_pct (Phase 5: bear = deeper decline = more negative).
+
+Phase 5 signal-conditional updates:
+  - Additional T3/T4 firing → bear DEEPER (more negative), base modestly deeper, bull SHRINKS.
+  - T2 unfiring → potential re-acceleration signal, bull probability +2-4pp.
+  - New T1 signals firing → typically already priced; small bear shift.
+"""
+
+        json_example_phase_line = f'    "current_phase": {detected_phase},'
+        json_example_phase_label = f'    "current_phase_label": "{detected_phase_label}",'
+        # Phase 5 JSON example — base/bull/bear all negative or zero, base ≤ 0
+        json_example_case_block = (
+            '    "base_case": {{"probability_pct": 50, "peak_months_away": 9, "peak_window_start": "Q1 2027", "peak_window_end": "Q3 2027", "return_to_peak_pct": -40}},\n'
+            '    "bull_case": {{"probability_pct": 22, "peak_months_away": 15, "peak_window_start": "Q4 2027", "peak_window_end": "Q2 2028", "return_to_peak_pct": -25}},\n'
+            '    "bear_case": {{"probability_pct": 28, "peak_months_away": 6, "peak_window_start": "Q4 2026", "peak_window_end": "Q2 2027", "return_to_peak_pct": -60}},'
+        )
+    else:
+        # PHASE 4 (default) — original framework context preserved verbatim.
+        framework_context_block = """ANALYTICAL FRAMEWORK CONTEXT:
 - Memory cycle has 5 phases. Currently late Phase 4 ("Boom / Euphoria").
 - Stock peak typically leads fundamental peak (peak EPS) by 3-6 months.
 - Tier 1 signals lead stock peak by 3-6 months.
 - Tier 2 signals lead stock peak by 2-4 months.
 - Tier 3 signals are concurrent with stock peak.
 - Tier 4 signals lag stock peak.
-- Most likely peak window per current evidence: Q3 2026 - Q1 2027.
+- Most likely peak window per current evidence: Q3 2026 - Q1 2027."""
+
+        scenario_framing_block = """SCENARIO FRAMING — READ CAREFULLY:
+The three scenarios are signal-CONDITIONAL probabilities for the length-to-peak
+and price-to-peak in SK Hynix stock. They are NOT three symmetric outcomes.
+
+• base_case = the EXPECTED scenario given signals continuing at their current
+  pace. By definition the most probable scenario. As Tier 2/3/4 signals fire,
+  update base case's PARAMETERS (peak_months_away SHORTENS, return_to_peak_pct
+  TRIMS) — do NOT let bear probability exceed base.
+
+• bull_case = scenario where signals UN-FIRE (those that fired reverse) or
+  fire much later than expected. Requires abnormal positive surprise. Always
+  has positive return_to_peak_pct. Probability SHRINKS as more signals fire
+  (becomes less plausible).
+
+• bear_case = scenario where degradation accelerates BEYOND current signal
+  trajectory. Requires abnormal negative surprise. Peak shortens to 0; the
+  return_to_peak_pct can be NEGATIVE (peak already in → downside from here).
+  Probability GROWS as more signals fire — but capped strictly below base.
+
+HARD INVARIANTS (enforced post-output; produce values that already satisfy):
+  1. probability_pct sums to EXACTLY 100 across the three scenarios.
+  2. base_case.probability_pct > bear_case.probability_pct.
+  3. base_case.probability_pct > bull_case.probability_pct.
+  4. base_case.return_to_peak_pct >= 0 (positive — base never assumes peak passed).
+  5. bull_case.return_to_peak_pct > base_case.return_to_peak_pct (always higher upside).
+  6. bear_case.return_to_peak_pct <= base_case.return_to_peak_pct (lower; can be negative).
+"""
+
+        json_example_phase_line = '    "current_phase": 4,'
+        json_example_phase_label = '    "current_phase_label": "Boom / Euphoria (late stage)",'
+        json_example_case_block = (
+            '    "base_case": {{"probability_pct": 50, "peak_months_away": 4, "peak_window_start": "August 2026", "peak_window_end": "October 2026", "return_to_peak_pct": 18}},\n'
+            '    "bull_case": {{"probability_pct": 22, "peak_months_away": 12, "peak_window_start": "Q1 2027", "peak_window_end": "Q2 2027", "return_to_peak_pct": 55}},\n'
+            '    "bear_case": {{"probability_pct": 28, "peak_months_away": 0, "peak_window_start": "May 2026", "peak_window_end": "May 2026", "return_to_peak_pct": -8}},'
+        )
+
+    prompt = f"""You are a senior memory/semiconductor cycle analyst preparing a daily institutional briefing. Use the Haiku-pre-processed news + market data + indicator framework below to produce a comprehensive structured analysis.
+
+{framework_context_block}
 
 YOUR JOB:
 1. Build the EXECUTIVE SUMMARY in the structured format below — including the consolidated `executive_brief` paragraph that anchors the brief (see detailed spec in section EXECUTIVE BRIEF SPECIFICATION below).
@@ -1209,16 +1376,14 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
 
 {{
   "executive_summary": {{
-    "current_phase": 4,
-    "current_phase_label": "Boom / Euphoria (late stage)",
+{json_example_phase_line}
+{json_example_phase_label}
     "tier_status_summary": "T1: X/6 fired | T2: Y/7 fired | T3: Z/5 fired | T4: W/4 fired",
     "new_triggers_today": [
       {{"tier": 2, "indicator_id": "...", "indicator_name": "...", "description": "..."}}
     ],
     "executive_brief": "5-8 sentence consolidated paragraph per EXECUTIVE BRIEF SPECIFICATION above. Cover all 4 themes (signal changes, big news with directional-signal prioritization, big movers, macro). Use anchor links of the form [→§N] for cross-references.",
-    "base_case": {{"probability_pct": 50, "peak_months_away": 4, "peak_window_start": "August 2026", "peak_window_end": "October 2026", "return_to_peak_pct": 18}},
-    "bull_case": {{"probability_pct": 22, "peak_months_away": 12, "peak_window_start": "Q1 2027", "peak_window_end": "Q2 2027", "return_to_peak_pct": 55}},
-    "bear_case": {{"probability_pct": 28, "peak_months_away": 0, "peak_window_start": "May 2026", "peak_window_end": "May 2026", "return_to_peak_pct": -8}},
+{json_example_case_block}
     "delta_from_prior_text": "Legacy field (v3.39.7.5: no longer rendered, but keep emitting for back-compat / observability). Short description of probability/peak-window shifts vs prior brief."
   }},
   "indicator_assessments": [
@@ -1251,32 +1416,7 @@ and triggering output truncation):
   t1_spot_decline, t2_capex_parabolic, t2_eps_revisions,
   t3_supplier_inventory_rebuild, t3_relative_strength
 
-SCENARIO FRAMING — READ CAREFULLY:
-The three scenarios are signal-CONDITIONAL probabilities for the length-to-peak
-and price-to-peak in SK Hynix stock. They are NOT three symmetric outcomes.
-
-• base_case = the EXPECTED scenario given signals continuing at their current
-  pace. By definition the most probable scenario. As Tier 2/3/4 signals fire,
-  update base case's PARAMETERS (peak_months_away SHORTENS, return_to_peak_pct
-  TRIMS) — do NOT let bear probability exceed base.
-
-• bull_case = scenario where signals UN-FIRE (those that fired reverse) or
-  fire much later than expected. Requires abnormal positive surprise. Always
-  has positive return_to_peak_pct. Probability SHRINKS as more signals fire
-  (becomes less plausible).
-
-• bear_case = scenario where degradation accelerates BEYOND current signal
-  trajectory. Requires abnormal negative surprise. Peak shortens to 0; the
-  return_to_peak_pct can be NEGATIVE (peak already in → downside from here).
-  Probability GROWS as more signals fire — but capped strictly below base.
-
-HARD INVARIANTS (enforced post-output; produce values that already satisfy):
-  1. probability_pct sums to EXACTLY 100 across the three scenarios.
-  2. base_case.probability_pct > bear_case.probability_pct.
-  3. base_case.probability_pct > bull_case.probability_pct.
-  4. base_case.return_to_peak_pct >= 0 (positive — base never assumes peak passed).
-  5. bull_case.return_to_peak_pct > base_case.return_to_peak_pct (always higher upside).
-  6. bear_case.return_to_peak_pct <= base_case.return_to_peak_pct (lower; can be negative).
+{scenario_framing_block}
 
 PROBABILITY UPDATE RULES (signal-conditional):
 
@@ -1474,6 +1614,7 @@ NOW THE DATA:
 {digest_text}
 {computed_text}
 {layer2_text}
+{qoq_text}
 {triage_text}
 """
     return prompt
@@ -1491,6 +1632,8 @@ def sonnet_analyze(
     signal_reasonings: Optional[list] = None,
     computed_metrics: Optional[dict] = None,
     news_items: Optional[list[NewsItem]] = None,
+    phase_state: Optional[dict] = None,
+    transcript_diffs: Optional[list[dict]] = None,
 ) -> Optional[BriefAnalysis]:
     """Run Sonnet to produce the full analysis with exec summary.
 
@@ -1503,6 +1646,14 @@ def sonnet_analyze(
     `build_sonnet_analysis_prompt` so triage items in the Sonnet prompt
     carry their published timestamps — required for the RECENCY ON
     CONTRADICTING EVENTS prompt rule to be actionable.
+    v3.4.11: Accepts `phase_state` (deterministic phase detector output).
+    Threaded into the prompt so Sonnet swaps to Phase 5 framework
+    semantics ('return to trough', negative base case) when the detector
+    has flipped us into Phase 5.
+    v3.4.12: Accepts `transcript_diffs` (Haiku QoQ diffs vs prior quarter
+    per company). Threaded into the prompt so Sonnet narrates language
+    shifts and CFO commitment drops as cycle-relevant signals rather than
+    reacting to each call in isolation.
     """
     if not api_key:
         if collector is not None:
@@ -1520,6 +1671,8 @@ def sonnet_analyze(
         signal_reasonings=signal_reasonings,
         computed_metrics=computed_metrics,
         news_items=news_items,
+        phase_state=phase_state,
+        transcript_diffs=transcript_diffs,
     )
 
     # v3.39: switch from messages.create to messages.stream. Two motivations:
@@ -1706,8 +1859,14 @@ def sonnet_analyze(
     base_raw = _build_case_scenario(exec_data.get("base_case"))
     bull_raw = _build_case_scenario(exec_data.get("bull_case"))
     bear_raw = _build_case_scenario(exec_data.get("bear_case"))
+    # v3.4.11 — invariant enforcer is now phase-conditional. Sonnet may emit
+    # current_phase=5 once the prompt receives PHASE_5_ACTIVE context (set
+    # by the deterministic detector upstream in fast_tier). In Phase 5,
+    # base.return_to_peak_pct can go negative; the field is reinterpreted
+    # as 'return to trough'.
+    parsed_phase = int(exec_data.get("current_phase", 4))
     base_fixed, bull_fixed, bear_fixed = _enforce_scenario_invariants(
-        base_raw, bull_raw, bear_raw
+        base_raw, bull_raw, bear_raw, current_phase=parsed_phase,
     )
     # Log any non-trivial correction so it's visible during debugging.
     if (
@@ -1811,6 +1970,8 @@ def analyze_with_llm(
     digests: Optional[list[dict]] = None,
     signal_reasonings: Optional[list] = None,
     computed_metrics: Optional[dict] = None,
+    phase_state: Optional[dict] = None,
+    transcript_diffs: Optional[list[dict]] = None,
 ) -> Optional[BriefAnalysis]:
     """Two-stage LLM pipeline: Haiku triage -> Sonnet analysis.
 
@@ -1824,6 +1985,15 @@ def analyze_with_llm(
     brief's t3_relative_strength prose that speculated "almost certainly
     past -10% threshold" from news headlines when the actual computed
     spread was below threshold.
+    v3.4.11: New `phase_state` (output of phase_detector.evaluate_phase_for_run
+    serialized via result_to_state_dict). Threaded into Sonnet's prompt
+    so when current_phase == 5 the framework context + scenario framing +
+    invariants flip to Decline semantics.
+    v3.4.12: New `transcript_diffs` (Haiku QoQ diffs vs prior quarter per
+    company, computed in the deep-tier digester and persisted to
+    state/transcripts/{ticker}/{YYYY-QN}.json). Threaded into Sonnet's
+    prompt so the model narrates language shifts (dropped commitments,
+    new caveats, metric moves) as cycle-relevant signals.
     """
     if not api_key:
         logger.warning("No ANTHROPIC_API_KEY set; falling back to deterministic synthesis")
@@ -1854,10 +2024,16 @@ def analyze_with_llm(
 
     n_digests = len(digests) if digests else 0
     n_reasonings = len(signal_reasonings) if signal_reasonings else 0
+    n_diffs = len(transcript_diffs) if transcript_diffs else 0
     has_cm = "yes" if computed_metrics else "no"
+    phase_info = (
+        f" | phase={phase_state.get('current_phase', '?')}"
+        if phase_state else " | phase=?"
+    )
     logger.info(
         f"Stage 2: Sonnet analysis (digests={n_digests} | "
-        f"layer2_verdicts={n_reasonings} | computed_metrics={has_cm})..."
+        f"layer2_verdicts={n_reasonings} | computed_metrics={has_cm} | "
+        f"qoq_diffs={n_diffs}{phase_info})..."
     )
     analysis = sonnet_analyze(
         api_key, triage, performance_data, estimates_data, big_movers, prior_state,
@@ -1866,6 +2042,8 @@ def analyze_with_llm(
         signal_reasonings=signal_reasonings,
         computed_metrics=computed_metrics,
         news_items=news_items,
+        phase_state=phase_state,
+        transcript_diffs=transcript_diffs,
     )
     return analysis
 

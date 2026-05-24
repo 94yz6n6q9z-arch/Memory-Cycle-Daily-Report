@@ -6,6 +6,96 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.4.12 — Transcript memory + quarter-over-quarter diff
+
+### What this fixes
+
+The brief reacted to each earnings call IN ISOLATION. The signal that matters is *change* — what the CFO says today vs what the CFO said last quarter. The pre-v3.4.12 pipeline had no transcript memory, so a CFO dropping prior cycle-affirming language ("HBM3E sold out through Q1 2027") for the first time looked identical to a call where they just didn't mention it. Concrete failure mode at the projected peak window (Q3 2026 - Q1 2027): SK Hynix Q3 2026 prints late October. If the CFO drops the "sold out" commitment, that's the single most important T2 signal in the cycle and the pre-v3.4.12 framework would have seen the price move before recognizing the language shift that should have preceded it.
+
+### Three layers of fix
+
+**1. Per-quarter store (`src/state.py` extensions).** New persistence path `state/transcripts/{ticker_safe}/{YYYY-QN}.json`. Each file holds the canonical earnings-call digest for that company-quarter PLUS a placeholder for the QoQ-diff results (filled in when Q+1 lands). Sole writer is the digester. Atomic write via tmp + rename. Five new helpers: `quarter_key_from_event_date()`, `get_prior_quarter_key()` (handles year rollover: 2026-Q1 → 2025-Q4), `load_quarter_digest()`, `save_quarter_digest()`, `list_recent_quarter_diffs()`.
+
+**2. Haiku diff trigger (`src/analysis/transcript_diff.py`, NEW; `src/analysis/digester.py` hook).** When a new quarter file lands AND a prior quarter (Q−1) file exists AND no diff has been computed yet for THIS digest version, the digester triggers ONE Haiku call comparing today's digest against the prior. Output is structured in indicator vocabulary: per-indicator deltas (strengthening / weakening / unchanged / new / dropped) with prior/current quote pairs, named metric movements (up/down/unchanged/new/dropped), language dropped (prior said, current did NOT — the cycle-turn signal), language added (new caveats), overall tone shift. Result is cached inline in the same quarter file. Re-runs that see the cached diff skip the Haiku call. Re-invalidation only happens when a NEW transcript for the same quarter arrives (rare — e.g., 10-Q filed after the call).
+
+**3. Sonnet prompt threading (`src/analysis/llm_summarizer.py`).** New optional `transcript_diffs` parameter threaded through `build_sonnet_analysis_prompt`, `sonnet_analyze`, `analyze_with_llm`. When provided, the prompt gains a "QoQ TRANSCRIPT DIFFS" block right after the LAYER 2 PER-SIGNAL VERDICTS block (so Sonnet sees per-indicator change context next to per-indicator verdicts). The block instructs Sonnet to pay particular attention to LANGUAGE DROPPED and to reference shifts explicitly in `where_we_stand` for transcript-driven indicators. Fast-tier loads active diffs via `list_recent_quarter_diffs()` after the existing read_digests_in_window pass and passes them through.
+
+### Cost analysis
+
+The expensive part — the original digest — is already paid by the v3.39.x Layer 1 digester (runs once per transcript via the deep-tier pipeline, persists to `state/digests/`, caches via `state/cache/transcripts_seen.json`). The QoQ diff is pure savings on top.
+
+- One extra Haiku call per NEW earnings transcript (not per fast-tier run)
+- ~10 companies × 4 quarters/year = 40 diff calls/year
+- Haiku 4.5 input + output ≈ 5K tokens total per call × ~$0.001/Ktok ≈ $0.005 per call
+- **Total: ~$0.20/year.** Effectively free.
+
+### Plus
+
+- **Safe-failing throughout.** Missing ticker, missing event_date, Haiku timeout, JSON parse failure, exception in the diff render — every failure mode degrades gracefully. Diff with `.error` set is still renderable (shows "diff unavailable (haiku_error: ...)" in the prompt) so a broken diff doesn't break the brief.
+- **Quarter derivation uses calendar quarters** (Jan-Mar = Q1, Apr-Jun = Q2, etc.). Fiscal-calendar companies (Oracle, Micron, NVIDIA) get keyed by the calendar quarter their event lands in. Since QoQ lookup walks back ONE quarter at a time per company, the keying just needs to be consistent per company — which calendar quarters guarantee. We accept the imprecision that Oracle's "Q1 fiscal" might land in our 2026-Q3 calendar bucket; lookups still work because they're company-local.
+- **The per-quarter store is supplemental** to the existing `state/digests/YYYY-MM-DD/` persistence — its purpose is QoQ comparison, not to replace day-of digest storage.
+- **Workflow already commits `state/transcripts/`** because `.github/workflows/fast_tier.yml` uses `git add -A state/` (v3.4.9 lock). No workflow change needed.
+
+### Expected next-run effect
+
+On the post-deploy run today (2026-05-23), the pipeline starts seeding per-quarter records as new transcripts arrive. No diffs fire on the first transcript per company (no prior to compare). After two consecutive earnings cycles per company (~6 months), the first diffs become available and start informing Sonnet's where_we_stand narration. Effective coverage builds through SK Hynix Q3 2026 (late October), squarely in the projected peak window. The QoQ language shift, if it happens, will be visible in the brief.
+
+### Tests
+
+763 tests passing (683 baseline including v3.4.11 + 40 new in `tests/test_v3_4_12_transcript_diff.py` across 10 classes: quarter key derivation, prior quarter computation across year boundary, ticker safe-naming, per-quarter store load/save roundtrip, list_recent_quarter_diffs scope and filtering, compute_diff_with_prior with mocked Haiku covering parse success / parse failure / markdown fences / exception path, render_diff_for_sonnet_prompt section coverage, Sonnet prompt integration via build_sonnet_analysis_prompt, digester hook short-circuit + first-quarter-no-diff + second-quarter-triggers-diff + rerun-skips-Haiku, signature acceptance for transcript_diffs kwarg on all three Sonnet entry points, fast_tier import smoke). Pre-existing 27 baseline failures unchanged (state-file-dependent tests that fail on any fresh checkout without `state/` artifacts).
+
+### Files
+
+`src/analysis/transcript_diff.py` (NEW — IndicatorDelta/MetricDelta/TranscriptDiff dataclasses, DIFF_SYSTEM_PROMPT + DIFF_USER_TEMPLATE, compute_diff_with_prior, render_diff_for_sonnet_prompt), `src/state.py` (per-quarter store API: PER_QUARTER_TRANSCRIPTS_DIR, _ticker_safe, quarter_key_from_event_date, get_prior_quarter_key, quarter_digest_path, load_quarter_digest, save_quarter_digest, list_recent_quarter_diffs; + `re` import), `src/analysis/digester.py` (transcript_diff imports, _persist_and_maybe_diff_quarter helper, hook called after write_digest in both full_transcript and materials_only branches), `src/analysis/llm_summarizer.py` (transcript_diffs param threaded through build_sonnet_analysis_prompt / sonnet_analyze / analyze_with_llm; QoQ TRANSCRIPT DIFFS block added to prompt assembly between layer2_text and triage_text), `src/fast_tier.py` (list_recent_quarter_diffs import + active-diff load before Sonnet call + pass-through to analyze_with_llm), `tests/test_v3_4_12_transcript_diff.py` (NEW), `ROADMAP.md` (v3.5 Entry 1 marked SHIPPED), `CLAUDE.md` (locked decision #10 added).
+
+---
+
+## v3.4.11 — Phase 5 detection + negative base case unlock
+
+### What this fixes
+
+The exec summary's case-scenario logic (base / bull / bear) was designed exclusively for Phase 4 (pre-peak). Two coupled defects made it incoherent at the peak and structurally broken in Phase 5:
+
+1. **Hard invariant clamped base case ≥ 0** in `_enforce_scenario_invariants` (`llm_summarizer.py:360`). Base case could NEVER project a decline. Even if every indicator fired tomorrow and SK Hynix dropped 20%, base case would remain pinned at "flat to peak" — the most-probable scenario forced to a number that no longer made sense.
+
+2. **No phase-transition detector existed.** `CYCLE_BASELINE["current_phase"] = 4` was hardcoded in `config.py`; Sonnet emitted the phase number freely with no rule to advance from 4 to 5; the only prompt guidance was a single line saying "Currently late Phase 4". Grep for any transition rule returned nothing. The framework would keep rendering "Boom / Euphoria" forever, regardless of price action or signal firing.
+
+### Three layers of fix
+
+**1. Deterministic Phase 4 → Phase 5 detector (`src/analysis/phase_detector.py`, NEW).** Three composite OR-conditions, each independent:
+
+  - **A (Concurrent + price):** ≥ 2 of 5 T3 indicators Fired AND SK Hynix ≥ 10% below trailing 90-day high AND both held ≥ 5 calendar days.
+  - **B (Lagging confirmation):** ≥ 1 of 4 T4 indicators Fired AND `t2_eps_revisions` Fired AND ≥ 3 T2 indicators Fired total AND SK Hynix ≥ 15% below trailing high.
+  - **C (Decisive price action):** SK Hynix ≥ 20% below trailing high AND high is ≥ 45 days old AND `t2_eps_revisions` Fired.
+
+Anti-flicker: ≥ 2 consecutive runs before phase actually flips. Asymmetric reversion (Phase 5 → Phase 4) requires both a new 90-day high AND < 2 T3 indicators still Fired. Wired into `fast_tier.py` between Layer 2 (signal_reasonings provide per-indicator status) and Layer 3 (Sonnet prompt receives the verdict). State persisted to `state/phase_state.json` via atomic write.
+
+**2. Phase-conditional invariant enforcer (`llm_summarizer.py`).** `_enforce_scenario_invariants` now takes `current_phase`. Phase 4: `base ≥ 0`, bull > base, bear ≤ base (original logic preserved verbatim). Phase 5: `base ≤ 0`, bull > base (shallower decline = closer to zero), bear < base (deeper decline = more negative). Field name `return_to_peak_pct` stays for back-compat; semantics flip to "return_to_trough_pct" in Phase 5.
+
+**3. Phase-conditional Sonnet prompt (`llm_summarizer.py`).** When `phase_state.current_phase == 5`, the framework context block swaps to "PHASE 5 ACTIVE" language, the SCENARIO FRAMING section reframes base/bull/bear as expected/shallow/deep decline to trough, the HARD INVARIANTS block flips signs, and the JSON example shows negative values. Phase 4 prompt is preserved verbatim when the detector hasn't flipped yet. `phase_state` threaded through `build_sonnet_analysis_prompt → sonnet_analyze → analyze_with_llm`.
+
+### Plus
+
+- **Trough anchors** (`config.PHASE_5_TROUGH_ANCHORS`): base -40%, bear -60%, bull -25% from cycle peak. Derived from memory_supercycle_analysis.docx Part 1 (50-65% historical pure-play peak-to-trough). Sonnet uses these as starting priors, signal-conditional rules then shift them.
+- **Calibration parameters** all centralized in `config.PHASE_5_DETECTION` (11 tunable knobs). Adjusting thresholds doesn't require a code change.
+- **Chart anchor fix** (`chart_generator.py`): Phase 4 keeps the `peak_date ≤ today → today + 30d` clamp; Phase 5 drops it and anchors Phase 4 END to the historical peak (`series.idxmax()`), letting Phase 5 extend forward as the decline timeline.
+- **Template label flip** (`template.py`): Phase 4 reads "peak in N months, upside/downside X%"; Phase 5 reads "trough in N months, downside X%". Field name `return_to_peak_pct` unchanged; only labels and anchor noun change.
+- **Deterministic phase override**: after Sonnet returns, `fast_tier` overrides `analysis.executive_summary.current_phase` with the detector's verdict (same pattern as v3.39.6 computed-metric override + v3.39.7.1 cycle matrix verdict override). Sonnet can't write Phase 5 prematurely; detector can't be ignored.
+
+### Expected next-run effect
+
+On the post-deploy run today (2026-05-23), per the diagnostic context: T3 fires < 2, drawdown is modest, condition C drawdown threshold (-20%) not met. Detector should evaluate to Phase 4 with the summary line "Phase 4 — no conditions met". Exec summary continues to render "We are currently in Phase 4 (Boom / Euphoria)". No visible change to the brief. The unlock is structural: if signals fire over the coming weeks, the detector flips us into Phase 5 and the base case is finally free to project a decline. No more "0% upside, 0 months to peak" incoherent corner state.
+
+### Tests
+
+710 tests passing (658 baseline + 52 new in `tests/test_v3_4_11_phase5_detection.py` across 14 classes: helper functions, each condition in isolation, cross-condition independence, cascade integration, anti-flicker, reversion, boundary sensitivity, phase-conditional invariants, prompt content, state persistence, serialization, template label flip, chart anchor, fast_tier integration). Pre-existing 27 baseline failures unchanged (state-file-dependent tests that fail on any fresh checkout without `state/` artifacts).
+
+### Files
+
+`src/analysis/phase_detector.py` (NEW), `src/state.py` (+load_phase_state, +save_phase_state), `src/config.py` (+PHASE_5_DETECTION, +PHASE_5_TROUGH_ANCHORS), `src/analysis/llm_summarizer.py` (phase-conditional invariant + prompt blocks + phase_state threading), `src/fast_tier.py` (detector wired in between Layer 2 and Layer 3, deterministic override after Sonnet), `src/analysis/chart_generator.py` (phase-conditional anchor), `src/email_module/template.py` (peak ↔ trough label flip), `tests/test_v3_4_11_phase5_detection.py` (NEW), `ROADMAP.md` (Phase 5 detection marked done), `CLAUDE.md` (locked decision added).
+
+---
+
 ## v3.4.10 — Yahoo earnings-window cascade + Bright Data probe + dead RSS cleanup + DHCR 50/50 split
 
 ### Why this exists

@@ -408,13 +408,40 @@ def generate_supercycle_chart(
         logger.warning("Supercycle chart: no base_case in executive_summary")
         return None
 
+    # v3.4.11 — phase-conditional anchor.
+    # In Phase 4 we anchor Phase 4 END to base.peak_window_start (the
+    # expected cycle peak ahead of us). In Phase 5 the peak is BEHIND us,
+    # so we anchor it to (today - days_into_phase_5) and let
+    # base.peak_window_start carry the TROUGH window — phase 5 END
+    # extends forward from there.
+    current_phase = int(getattr(executive_summary, "current_phase", 4) or 4)
+
     base_peak_date = _parse_peak_window_start(
         getattr(base_case, "peak_window_start", ""),
         getattr(base_case, "peak_months_away", 4),
     )
-    # Sanity check: peak must be in the future. If not, shift to today + 1m.
-    if base_peak_date <= today:
-        base_peak_date = today + timedelta(days=30)
+
+    if current_phase >= 5:
+        # PHASE 5 — base.peak_window_start is reinterpreted as TROUGH window.
+        # The cycle peak is in the past; we don't try to recover its exact
+        # date here (the detector has the recorded cycle_peak_price but not
+        # the cycle_peak_date — best-effort: use the historical maximum of
+        # the series as the peak date for chart anchoring).
+        try:
+            peak_idx = series.idxmax()
+            historical_peak_date = peak_idx.date() if hasattr(peak_idx, "date") else today
+        except Exception:
+            historical_peak_date = today - timedelta(days=30)
+        # Anchor Phase 4 END to the historical peak date (not the projected
+        # future date). Phase 5 extends forward from there.
+        base_peak_date = historical_peak_date
+        # If base.peak_window_start parsed to a future date, treat it as the
+        # trough projection (informational only — phase shading still anchors
+        # Phase 4 END at the historical peak).
+    else:
+        # PHASE 4 — original sanity check: peak must be in the future.
+        if base_peak_date <= today:
+            base_peak_date = today + timedelta(days=30)
 
     bull_peak_date = _parse_peak_window_start(
         getattr(bull_case, "peak_window_start", "") if bull_case else "",

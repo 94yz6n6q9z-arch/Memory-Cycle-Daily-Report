@@ -414,6 +414,103 @@ with the v3.38.3 Chrome UA because Cloudflare additionally fingerprints
 TLS handshake (JA3/JA4) + HTTP/2. If production confirms this after
 v3.4.6 deploy, `curl-cffi` integration unlocks them.
 
+### 9. Phase advance is deterministic, not Sonnet-discretion (v3.4.11 lock)
+
+**Architectural principle established 2026-05-23.**
+
+Pre-v3.4.11 the cycle phase number (`current_phase`, e.g. 4 vs 5) was
+either hardcoded in `CYCLE_BASELINE` or freely emitted by Sonnet with no
+codified transition rule. The framework shipped without a Phase 5 path
+at all — every assumption baked in assumed peak is ahead.
+
+The rule: **phase advance is computed by `src/analysis/phase_detector.py`
+and overrides whatever Sonnet emits.** Three composite OR-conditions
+(detailed in `ROADMAP.md` v3.4.11 entry and `CHANGES.md` v3.4.11 entry).
+Anti-flicker requires ≥ 2 consecutive fast-tier runs before the phase
+actually flips. Asymmetric reversion (Phase 5 → Phase 4 requires both a
+new 90-day high AND < 2 T3 indicators still Fired). State persisted to
+`state/phase_state.json` via atomic write; survives runner shutdowns
+via the `git add -A state/` workflow step (v3.4.9 lock).
+
+**What's downstream of the detector:**
+- `_enforce_scenario_invariants` in `llm_summarizer.py` takes
+  `current_phase`. Phase 4: base ≥ 0. Phase 5: base ≤ 0.
+- Sonnet prompt's framework context, scenario framing, hard invariants,
+  and JSON example all swap based on `phase_state.current_phase`.
+- After Sonnet returns, `fast_tier` overrides
+  `analysis.executive_summary.current_phase` with the detector's verdict
+  (same override pattern as v3.39.6 computed metrics + v3.39.7.1 cycle
+  matrix verdict).
+- `chart_generator.py` drops the `peak_date ≤ today → today + 30d`
+  forced-future clamp in Phase 5; anchors Phase 4 END at the historical
+  series maximum.
+- `email_module/template.py` flips "peak" → "trough" in the exec
+  summary case-block labels.
+
+**Calibration parameters** are centralized in `config.PHASE_5_DETECTION`
+(11 tunable knobs) and `config.PHASE_5_TROUGH_ANCHORS` (3 anchor
+defaults: base -40%, bear -60%, bull -25%). Adjusting thresholds does
+NOT require a code change — config edit + redeploy is enough.
+
+**Manual override path:** setting `CYCLE_BASELINE["current_phase"] = 5`
+in config still works as a forced-Phase-5 path (the detector and the
+override compose by `or`-ing on the result). For a forced-Phase-4 path
+during a false-positive Phase 5 detection, raise the relevant threshold
+in `PHASE_5_DETECTION` (e.g. drawdown 10% → 15%) and let the detector
+revert naturally on next run.
+
+### 10. Per-quarter transcript store + QoQ diff cache (v3.4.12 lock)
+
+**Architectural principle established 2026-05-23.**
+
+For any analysis that depends on COMPARING what was said in one quarter
+vs the prior quarter (cycle-turn language shifts, dropped commitments,
+metric trajectory), the source of truth is the per-quarter store at
+`state/transcripts/{ticker_safe}/{YYYY-QN}.json`, NOT the day-of digests
+in `state/digests/YYYY-MM-DD/`. The two coexist intentionally:
+
+- `state/digests/` — append-only daily archive of every digest produced
+  (broker notes, transcripts, materials releases, news articles). Sole
+  consumer pattern: `read_digests_in_window(days_back=2)` for the
+  current-day Sonnet context.
+- `state/transcripts/{ticker}/{YYYY-QN}.json` — sparse, one file per
+  company-quarter. Sole writer: digester via
+  `_persist_and_maybe_diff_quarter()`. Contains the canonical digest for
+  that quarter PLUS the cached Haiku diff vs the prior quarter (filled in
+  when Q+1 arrives). Sole consumer pattern:
+  `list_recent_quarter_diffs(max_quarters_back=1)` for the QoQ block in
+  Sonnet's prompt.
+
+**The diff is for the GENERAL digest** (`key_metrics`, `signal_relevance`,
+`fired_status_evidence`) — NOT the `architecture_signals` 18-field sub-object
+which is v3.4 DHCR feedstock. Those are separate extraction layers serving
+separate questions (QoQ language shifts vs frontier-architecture tracking).
+
+**Quarter derivation uses calendar quarters** (Jan-Mar = Q1, Apr-Jun = Q2,
+etc.). Fiscal-calendar companies (Oracle, Micron, NVIDIA) get keyed by the
+calendar quarter their event lands in. The QoQ lookup walks back ONE
+quarter at a time per company, so as long as keying is consistent
+PER COMPANY (which calendar quarters guarantee), the lookup chain works.
+Documented imprecision: Oracle's "Q1 fiscal" earnings might land in our
+2026-Q3 calendar bucket; this is fine because we're comparing Oracle's
+2026-Q3 against Oracle's 2026-Q2, both calendar-bucketed the same way.
+
+**Cost-efficient design**: process once, cache, diff only on new content.
+The expensive part — the original digest — is already paid by the v3.39.x
+Layer 1 digester. One extra Haiku call per NEW earnings transcript
+(not per fast-tier run). ~$0.20/year for the full company set.
+Re-runs that find a cached diff for the same digest version skip the
+Haiku call entirely (matched on `digested_at_iso`).
+
+**Re-invalidation only on new transcript for same quarter** — e.g. 10-Q
+filed weeks after the earnings call. Rare. The cached diff is otherwise
+permanent until naturally aged out by Q+2 landing (which makes the Q+1
+diff the "active" one and Q the older reference).
+
+**Safe-failing throughout**: missing ticker, missing event_date, Haiku
+timeout, JSON parse failure — every failure mode degrades to "no diff
+this quarter" without breaking the brief.
+
 ---
 
 ## v3.1 → v3.39.3 — what's already built

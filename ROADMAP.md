@@ -1,8 +1,21 @@
 # v3.4 ROADMAP — Captive-Ratio Indicator (DHCR)
 
-## v3.4 shipped releases (2026-05-21 / 22)
+## v3.4 shipped releases (2026-05-21 / 23)
 
 The v3.4 series consists of three shipped releases plus a v3.4.3 quick-wins candidate. The actual shipped path diverged substantially from the original ROADMAP plan — what was planned as "ship the indicator in v3.4.0, then activate trigger gates in v3.4.1" became "ship a delta-number direction monitor in v3.4.0, redesign the entire framework around a 2-axis matrix in v3.4.2 after the May 22 design session with Raul." The original v3.4.1+ plan (lines documented in the historical section below) is superseded by what actually shipped.
+
+### ✅ v3.4.12 (2026-05-23) — Transcript memory + quarter-over-quarter diff (was v3.5 Entry 1)
+
+Closes the pre-v3.4.12 framework's inability to detect language shifts across consecutive earnings calls. Three layers: (1) per-quarter store at `state/transcripts/{ticker}/{YYYY-QN}.json` with atomic writes; (2) Haiku diff trigger in the digester — when Q+1 lands and Q exists and no diff cached yet, ONE Haiku call produces an indicator-vocabulary diff (per-indicator deltas with prior/current quotes, metric movements, language dropped/added, overall tone shift), cached inline; (3) Sonnet prompt threading — new `transcript_diffs` parameter through `build_sonnet_analysis_prompt → sonnet_analyze → analyze_with_llm`, prompt block placed between LAYER 2 PER-SIGNAL VERDICTS and triage_text. Cost: ~$0.20/year (one Haiku call per new transcript, not per fast-tier run). Safe-failing throughout. 723 tests passing (683 baseline including v3.4.11 + 40 new). Effective coverage builds through SK Hynix Q3 2026 print (late October, peak window).
+
+### ✅ v3.4.11 (2026-05-23) — Phase 5 detection + negative base case unlock
+
+Closes the case-scenario framework's pre-v3.4.11 inability to project a decline. Two coupled defects fixed together: (1) hard invariant `base.return_to_peak_pct >= 0` removed in Phase 5 — base case is now allowed to project the expected decline to cycle trough; (2) deterministic Phase 4 → Phase 5 detector added (`src/analysis/phase_detector.py`) with three composite OR-conditions:
+- **A** ≥ 2 of 5 T3 indicators Fired + SK Hynix ≥ 10% below trailing 90-day high (both held ≥ 5 days)
+- **B** ≥ 1 of 4 T4 indicators Fired + `t2_eps_revisions` Fired + ≥ 3 T2 fires total + ≥ 15% drawdown
+- **C** ≥ 20% drawdown + 90d high ≥ 45 days old + `t2_eps_revisions` Fired
+
+Anti-flicker (≥ 2 consecutive runs before flip), asymmetric reversion (Phase 5 → Phase 4 requires both a new 90-day high AND < 2 T3 indicators still Fired). Detector wired between Layer 2 and Layer 3 in fast_tier; verdict overrides Sonnet's emitted phase number. Phase-conditional invariant enforcer, phase-conditional Sonnet prompt (PHASE 5 ACTIVE block + reframed scenario framing + flipped JSON example), phase-conditional chart anchor (drops forced-future clamp in Phase 5), phase-conditional template labels ("peak" ↔ "trough"). State persisted to `state/phase_state.json` via atomic write. 710 tests passing (658 baseline + 52 new). Calibration parameters all centralized in `config.PHASE_5_DETECTION`; trough anchors (-40% base, -60% bear, -25% bull) in `config.PHASE_5_TROUGH_ANCHORS`. CLAUDE.md locked decision #7 added: phase advance is deterministic, not Sonnet-discretion.
 
 ### ✅ v3.4.4.1 (2026-05-22) — Full automation: Layer 1 extraction → aggregator → state file
 
@@ -46,11 +59,9 @@ Section 4 card order locked per Raul: top-5 → DHCR (6) → Competitor (7) → 
 
 542 tests passing. v3.4.8 candidate: restore Damnang Substack + Investing.com x4 (dropped v3.38.4 for TLS fingerprint) once production confirms curl-cffi works on GHA runner.
 
-### 📋 v3.4.8 (candidate) — Restore Cloudflare-blocked feeds + DeepSeek/Qwen scrapers
+### 📋 v3.4.8 (candidate) — DROPPED 2026-05-23
 
-Pending production confirmation of v3.4.7's curl-cffi behavior on the GHA runner:
-1. Restore Damnang Substack + Investing.com x4 (`Investing.com MU / NVDA / AMAT / ASML`) to RSS_FEEDS. These were dropped in v3.38.4 specifically because requests' TLS fingerprint failed Cloudflare; if curl-cffi chrome120 impersonation works in production, these should come back online without additional changes.
-2. Add HTML scrapers for DeepSeek + Qwen if their blog structures stabilize.
+Per Raul's direction 2026-05-23: drop this candidate. v3.4.10 already dropped Mistral + SemiAnalysis from RSS_FEEDS rather than restore Damnang + Investing.com x4. DeepSeek + Qwen HTML scrapers not pursued.
 
 ## v3.4 shipped releases (2026-05-21 / 22)
 
@@ -245,25 +256,33 @@ Primary tracking source: **SEC EDGAR F-1 filings — beats Korean press by 1-3 d
 
 ---
 
-## v3.4.3+ candidates — Pending items carried over from original v3.4 design
+## v3.4.3+ candidates — Status as of 2026-05-23 review session
 
-These are the items from the original ROADMAP that never got built because v3.4.1 and v3.4.2 went a different direction. Still relevant; no urgency unless something changes.
+Reviewed with Raul 2026-05-23. Each item below was re-scoped for feasibility + value; the four originally carried over from the v3.4 design got individual disposition.
 
-### LPDDR-specific TrendForce contract scrape
+### ✅ LPDDR-specific TrendForce contract scrape — APPROVED for build
 
-Pipeline tracks DRAM + HBM but not LPDDR pricing separately. Most relevant now for the DHCR sanity check (if LPDDR pricing rolls over alongside HBM, that's substitution evidence — feeds into the calibration flag logic). Also relevant for any future LPDDR-specific Tier 2 indicator. Source: TrendForce LPDDR contract reports.
+Pipeline tracks DDR4/DDR5 but not LPDDR. Web research 2026-05-23 confirmed TrendForce publishes LPDDR contract direction + magnitude in their FREE press releases (e.g., 1Q26 "+90% QoQ for LPDDR4X and LPDDR5X", 2Q26 "narrowed price hike forecasts"). Numerical ASP dollar levels are in paid `RP*` reports, but direction + QoQ % is free.
 
-### Auto-extract closed-model KV via cost-per-token gradient analysis
+**Build plan:**
+- New `scrape_trendforce_lpddr_contract()` in `src/data/news.py` parallel to existing TrendForce DRAM scrapers
+- New `data/lpddr_contract_history.csv` for the time series
+- Feed DHCR sanity-check signal #3 (HBM spot/contract price trend) — LPDDR rolling alongside HBM is substitution evidence
+- ~1 day build effort
 
-GPT-5 / Claude Opus 4.x / Gemini 2.5 currently carry hand-curated `kv_kb_per_token_range` confidence bands in `inference_arch_reference.yaml` because their architecture is private. Long-context cost-per-token data from provider APIs could derive these mechanically — KV scaling shows up as a non-linear cost gradient at long context. Would reduce hand-curation burden and improve frontier KV accuracy at the closed-model upper bound.
+**Why originally missing:** The original v3.4.0 plan was about LPDDR datacenter RAMP (custom-silicon design wins), not LPDDR PRICES. v3.4.0 collapsed three indicators into DHCR and the LPDDR-prices piece fell off. The free data has been there the whole time.
 
-### Artificial Analysis tokens-$ trend structured extraction
+### ❌ Auto-extract closed-model KV via cost-per-token gradient — DROPPED 2026-05-23
 
-Already in the RSS pipeline as a feed (v3.2), but no structured extraction. Would feed the Y-axis as a derived efficiency metric. Specifically: parse the headline tokens/$ trends and track them as a time series — could either confirm or contradict the open-model frontier KV reads.
+Doable but low-value. v3.4.0 already EXCLUDES closed-model KV from frontier-KV computation (frontier reads only open models — Llama, DeepSeek, Qwen). Even with perfect closed-model measurement, downstream DHCR math wouldn't change. Build cost (~$60-100/quarter API costs + careful experimental methodology to control for prompt caching / batching noise) exceeds value.
 
-### HotChips / MICRO / ISCA proceedings scrape
+### ❌ Artificial Analysis tokens-$ trend structured extraction — DROPPED 2026-05-23
 
-Caught loosely via Google News today; proceedings themselves aren't fetched. Architecture-leak signals are time-sensitive (24-hour window after talks). Would improve Y-axis recency for the KV efficiency signal — proceedings often disclose architectures before papers hit arXiv.
+Per Raul's 2026-05-23 review.
+
+### ❌ HotChips / MICRO / ISCA proceedings scrape — DROPPED 2026-05-23
+
+Per Raul's 2026-05-23 review. Google News fallback path catches conference-disclosed architectures eventually; the 1-2 day latency reduction during conference seasons doesn't warrant the build.
 
 ---
 
@@ -397,78 +416,33 @@ Below is the original three-indicator design from before the May 21 reframe. Kep
 
 ---
 
-# v3.5 — Parking lot (opportunistic fixes)
+# v3.5 — Parking lot (BOTH ENTRIES APPROVED 2026-05-23)
 
-**Status as of 2026-05-22**: both entries NOT STARTED. Sequenced after v3.4 calibration window. Entry 2 (event deduplication) is architecturally more central — sits underneath multiple scoring paths — and probably should go first when this batch is picked up.
+**Status as of 2026-05-23 review session**: both entries APPROVED for build. Sequencing: Entry 2 (event dedup) first because it protects the v3.4.11 Phase 5 detector (`t2_eps_revisions` gates conditions B and C; false-positive cascade from coverage echo would mistrigger Phase 5). Entry 1 (transcript memory + QoQ diff) second, but lands in time for the SK Hynix Q3 2026 earnings print (late October — squarely in the projected peak window Q3 2026 - Q1 2027).
 
-**Status**: not a planned feature version — a catch-all for small/medium items
-surfaced during v3.3–v3.4 work. Build opportunistically; some entries may get
-picked off mid-stream rather than in a dedicated session. Sequenced **after**
-v3.4 so the digester edits don't land mid-stream against v3.4's calibration
-window.
+## ✅ Entry 1 — Transcript memory + QoQ diff (SHIPPED 2026-05-23 as v3.4.12)
 
-## Entry 1 — Transcript memory + quarter-over-quarter diff
+Shipped as v3.4.12 in the same session as the v3.4.11 Phase 5 detector. See `CHANGES.md` v3.4.12 entry for the full design rationale and cost analysis. Effective coverage builds through SK Hynix Q3 2026 print (late October, peak window).
 
-**Why**: the brief reacts to each earnings call in isolation. The signal that
-matters is *change* — what a call says vs. what the last call said. The
-pipeline has no transcript memory, so it can't see deltas.
+## ✅ Entry 2 — Event deduplication (APPROVED 2026-05-23, build first)
 
-**Closed spec** (decided in design discussion, May 2026):
-1. Persist each transcript's digest per `(company, quarter)` — **plus the raw
-   transcript text** (raw text means any later schema change is backfillable;
-   keep the raw archive *outside* the git-committed `state/` for size/copyright
-   reasons).
-2. A delta pass: on each new call, compare against the stored prior, expressed
-   in the **vocabulary of the indicators** (`signal_relevance` /
-   `fired_status_evidence` / the named numeric `key_metrics` moving) — not a
-   generic field-diff. There's a working precedent: `INVENTORY_WEEKS_TRAJECTORY_SEED`
-   in `config.py` already does this for one metric (inventory weeks); v3.5
-   generalises that pattern.
-3. `key_quotes` carries **one quote per indicator the call was tagged against**,
-   not one total — so a fired trigger can surface the exact quote it fired on.
-4. Per-indicator **transcript-admissibility flag** (primary / contributing /
-   context-only) on the `Indicator` dataclass — for the ~13 transcript-driven
-   indicators a transcript is admissible evidence; for the price-feed /
-   regulatory-filing indicators a transcript tag is context-only and capped at
-   `neutral` `fired_status_evidence`. (Note: `t2_eps_revisions` should be
-   added as transcript-admissible — the CFO's guidance language *is* the
-   EPS-relevant event; the analyst note hours/days later is its derivative.
-   But it feeds as a **parallel evidence stream**, not through the broker-
-   authority scorer, which scores broker *actions*.)
-5. **No shadow mode** — goes straight to live scoring, consistent with how
-   every other data source was added. The safeguard instead: every
-   transcript-fed trigger must surface its `key_quote` + `source_url` in the
-   brief, so a fired trigger is auditable in 30 seconds. Bad extraction →
-   user feedback → fix. The quote + link is the safety mechanism.
+**Why**: one earnings event is observed repeatedly — the call, analyst notes (D-0 to D+1), the Yahoo transcript (D+1 to D+2), Korean broker PDF echoes (D+1 to D+3), news rehashes. Potentially 8-10 ingested items per event. Today `t2_eps_revisions` scores each arrival independently, so coverage volume compounds into a false-positive fire on ECHO not evidence. **This matters acutely after v3.4.11**: `t2_eps_revisions` GATES Phase 5 detection conditions B AND C. A false-positive on `t2_eps_revisions` mistriggers Phase 5 — the framework we just shipped.
 
-**Files**: `config.py` (admissibility flag), `digester.py` (the high-risk one —
-`DIGEST_SYSTEM_PROMPT` + `Digest` schema for per-indicator quotes; re-validate
-`test_architecture_extraction.py`), a new transcript-diff / quarter-store module,
-`state.py` (per-quarter retrieval + raw archive path), `signal_reasoner.py`
-(parallel EPS evidence stream), `template.py` (surface deltas + quote + link).
+**Closed design** (Raul's framing 2026-05-23):
 
-**The 18 `architecture_signals` fields are NOT this.** They are v3.4 feedstock —
-they map to Indicators 23/24/25, not the 22-board. The transcript-diff runs on
-the general digest (`key_metrics` / `signal_relevance` / `fired_status_evidence`),
-a separate extraction layer.
+1. **Event identity key**: `(ticker, event_type, event_window)`:
+   - `event_type` ∈ `{earnings_call, broker_action, regulatory_filing, news_event, transcript_release, analyst_note}`
+   - `event_window`: earnings_call ± 3 days, broker_action ± 1 day, filing exact date.
+2. **Event log**: new `state/event_log.json` (small file, append + prune > 180 days). Per event: `first_observed`, `first_observation_source`, `primary_verdict`, `observations[]` array, `divergence_flagged`, `n_observations`.
+3. **Hook in existing scoring paths**: before scoring any item, compute event_identity_key and consult event_log:
+   - First observation: score it, log it, becomes primary verdict
+   - Subsequent observations: DO NOT re-score. Append to observations[]. Update confidence. If observation contradicts primary verdict, set `divergence_flagged: true`.
+   - `t2_eps_revisions` rolling sum reads from event_log primary verdicts, not from individual ingested items.
+4. **Divergence detection** as a separate signal type: "Divergent event" surfaced in the brief when CFO/analyst observations contradict for the same event.
 
-## Entry 2 — Event deduplication
+**Files to touch**: `state.py` (EventLog dataclass + persistence + helpers), `news.py` filter (consult before scoring), `signal_reasoner.py` (consult before scoring), `signal_scoring.py` / Indicator 3 broker path (same), `template.py` (render divergence flag).
 
-**Why**: one earnings event is observed repeatedly — the call, analyst notes
-(D-0 to D+1), the Yahoo transcript (D+1 to D+2), Korean broker PDF echoes
-(D+1 to D+3), news rehashes. That's potentially 8-10 ingested items for **one
-event**. If `t2_eps_revisions` scores each arrival independently, a single
-guidance cut compounds across coverage volume and the rolling sum fires on
-echo, not evidence.
-
-**Needs**: an **event-identity key** — probably `(ticker, event_type,
-event_window)` — so observations match to one event; and a **corroboration-vs-
-compounding rule**: first observation scores, later observations adjust
-confidence (and can flag divergence — "CFO sounded fine, analysts cut anyway")
-but **cannot re-fire**. Indicator 3's existing scoring dedups *broker actions*
-but has no event identity that spans source types — that's the gap. This sits
-*underneath* Indicator 3's scoring and the news filter, so it's more
-architecturally central than a bolt-on.
+**Build effort**: ~3 days. Architecturally central — touches multiple scoring paths.
 
 ---
 
@@ -522,56 +496,24 @@ architecturally central than a bolt-on.
 - No regression in other 21 indicators or in the v3.39.6 Layer 2 + computed_metrics flow.
 
 
-## Part 6 — Backtest harness against 2017-18 and 2022 cycle peaks
+## Part 6 — Backtest harness — DROPPED 2026-05-23
 
-**Status as of 2026-05-22**: NOT STARTED. Recommended priority RAISED — the framework's expected cycle peak window is Q3 2026 - Q1 2027, which is now 4-8 months out. The matrix weights `{tone: 0.4, supplier: 0.4, spot_lead: 0.2}` and the R1-R5/C1-C5 band cutoffs were specified ex ante and have never been validated against historical turns. If the matrix lags or whipsaws in backtest, better to discover it now than miss the peak. Currently 6 indicators are fired or partially fired with untested band thresholds — the more signals fire near the peak, the more matrix accuracy matters.
-
-**Blocked on**: user decision about historical data sourcing — see "What to ask the user" section below. Decision affects build time by 2-4 hours.
-
-**Why**: the matrix weights `{"tone": 0.4, "supplier": 0.4, "spot_lead": 0.2}` and the cell semantics (R1-R5/C1-C5 thresholds) were specified ex ante in Part 1. They have not been validated against historical cycle turns. The framework's underlying logic — that spot drawdown leads contract direction by 6-10 weeks — is empirically grounded (2018 cycle spot peaked ~2 months before contract turned; 2022 cycle DDR4 spot rolled ~6 months ahead per the audit xlsx) but the specific weight choices and band cutoffs are not.
-
-**Closed spec**:
-
-1. Assemble a backtest dataset covering 2017Q1-2018Q4 and 2021Q2-2023Q1 (two cycle tops + the troughs around them):
-   - Historical DDR4 16Gb 2Gx8 1600/2133 spot session_avg, weekly resolution (DDRexchange/DRAMeXchange archive, or paid TrendForce snapshot if free fails).
-   - Historical TrendForce quarterly contract forecasts (need to scrape Press Center archive; 2017-18 may require paywalled access — surface this as a question to the user at build time).
-   - Historical SK Hynix close price (yfinance — straightforward).
-2. Implement `scripts/backtest_cycle_matrix.py` that walks the backtest dates week-by-week, calling `evaluate_matrix()` with `as_of=<historical-date>`. Emits a CSV with `date, cell, contract_row, spot_col, synthetic_central_pct, drawdown_pct, sk_hynix_close, sk_hynix_drawdown_from_peak_pct`.
-3. Plot the backtest: SK Hynix close (left Y) + matrix cell color (background) over time. Goal is to visualize whether the matrix flipped to WARN/FIRE in the 4-8 weeks before SK Hynix made its all-time high in each cycle.
-4. Compute summary statistics:
-   - Did matrix reach WARN before SK Hynix's cycle peak? How many weeks ahead?
-   - Did matrix reach FIRE before SK Hynix's cycle peak? How many weeks ahead?
-   - Any false positives (FIRE that wasn't followed by an SK Hynix decline within N weeks)?
-   - Any false negatives (SK Hynix decline of >X% with matrix still in HOLD)?
-5. If false positive/negative counts are unacceptable, tune the weights. Specifically: if matrix lags (false negative), increase `spot_lead` weight (currently 0.2); if it whipsaws (false positive), tighten the spot drawdown bands (e.g., C2 boundary from -5% to -3%).
-
-**Acceptance criteria**:
-
-- Matrix reaches WARN at least 4 weeks before the cycle peak in both 2018 and 2022 backtests.
-- Matrix reaches FIRE at most 2 weeks after the cycle peak in both backtests (otherwise the signal is too late).
-- False positive count: at most 1 FIRE in a non-peak window across both backtests.
-- If acceptance criteria fail, document the tuning iteration in CHANGES.md and re-run.
-
-**Data sourcing risk**: historical TrendForce quarterly forecasts may be paywalled in archive. Fallback: use Korean broker PDFs (Mirae archive goes back to 2018) or manually transcribe from the brief's existing source citations in audit xlsx Tier 1. Surface to user at build time.
-
-**Files**: `scripts/backtest_cycle_matrix.py` (new), `tests/test_cycle_matrix.py` extended with backtest-pin cases for the 2018 and 2022 peak dates, `CHANGES.md` (record any tuning), `CLAUDE.md` (update locked decisions if weights changed).
+Per Raul's direction 2026-05-23: drop this part. The cycle matrix weights and band cutoffs will remain ex-ante; empirical validation against 2017-18 / 2022 cycle peaks is not pursued.
 
 ---
 
-## What to ask the user before starting Parts 5 and 6
+## What to ask the user before starting Parts 5 and 6 — OBSOLETE
 
-- Part 5a: confirm "OK to override the LLM's t1_spot_decline assessment in the signal_reasonings list, not just in the email indicator card" (this is the design choice that closes the Sonnet drift risk)
-- Part 5b: confirm GHA token has write access to the repo's main branch from the fast_tier workflow (default is yes; user may have repo settings that disable it)
-- Part 6: confirm historical data sourcing strategy — paid TrendForce archive vs Korean broker PDF reconstruction vs manual transcription. Decision affects time-to-build by 2-4 hours.
-- Sequencing: build Part 5 first (1-2 days, modest scope) and run for 2-3 weeks to accumulate real history before Part 6 backtest. Build Part 6 in parallel if a backtest dataset can be assembled without waiting on production accumulation.
+Section retained as historical context only. Part 5 was shipped (v3.39.7+); Part 6 was dropped 2026-05-23.
 
 ---
 
-## What's explicitly NOT in Parts 5 and 6 (candidates for Part 7+)
+## v3.40 candidates — Status as of 2026-05-23 review
 
-- **HBM contract modeling**: open gap. SK Hynix is your primary position and HBM is its highest-margin product line; the cycle matrix currently models commodity DRAM only. Adding HBM would mean an HBM-specific anchor source (HBM forecast disclosures are gated; SK Hynix earnings commentary is the most reliable free source), an HBM-specific spot column proxy (spot prices for HBM don't exist meaningfully — HBM is contract-only), and likely a separate matrix grid (HBM cycle dynamics differ from commodity DRAM). Big enough to be its own version (v3.40 HBM cycle matrix), not a Part 7.
-- **LPDDR pricing integration**: gap #1 in the existing v3.4 roadmap above. Would inform Indicator 25 (LPDDR Datacenter Ramp) more than t1_spot_decline directly. Keep sequenced with v3.4.
-- **Real-time priority_alerter integration**: matrix verdict could feed `priority_alerter.py` for an off-cycle email when the cell flips Hold→Warn or Warn→Fire mid-day. Defer until Part 5 verifies the verdict is stable across runs.
+- **HBM contract modeling — ⏸ PAUSED 2026-05-23.** Reviewed with Raul; free data is available (TrendForce press releases publish per-stack ASP magnitudes — HBM3 ~$200, HBM3E ~$300, HBM4 ~$500/stack — plus QoQ direction commentary; SK Hynix earnings calls carry HBM ASP commentary every 90 days; Silicon Analysts dashboard claims a free JSON API at `siliconanalysts.com/api/v1/hbm`, reliability unverified). Sparser than DRAM (quarterly cadence, qualitative X-axis) but matrix is feasible. Build effort: ~1 week. Paused for now — not dropped — likely revisit as HBM revenue share grows past 50% (forecast 2027).
+- **LPDDR pricing integration — ✅ moved to v3.4.3+ APPROVED queue (see above).** Free data confirmed from TrendForce press releases; build effort ~1 day.
+- **Real-time priority_alerter integration — ❌ DROPPED 2026-05-23.** 12-hour notification latency between fast-tier runs is acceptable for cycle inflection events.
+
 ---
 
 # v3.39.7.3 follow-ups — Persistent evidence store
@@ -582,59 +524,13 @@ architecturally central than a bolt-on.
 
 ---
 
-## Part 7a — Tune persistence categories from real data
+## Parts 7a / 7b / 7c — DROPPED 2026-05-23
 
-**Status as of 2026-05-22**: NOT STARTED. Data-accumulation-gated. v3.39.7.3 shipped May 20 — only ~3 days of GHA-accumulated `state/indicator_evidence.json` diff history exist. Wait minimum 4-8 weeks before attempting tuning.
+Per Raul's direction 2026-05-23: drop all three follow-up parts.
 
-**Why**: the bootstrap categorization assigned each indicator's persistence based on a priori judgment about how its underlying data behaves (CapEx = quarterly, TurboQuant = permanent, P/E = live, LTAs = durable_contract). After 4-8 weeks of GHA runs, we'll have a track record of how often each indicator's evidence is genuinely refreshed vs preserved-by-default. Some categorizations may need correction.
-
-**Data source**: `state/indicator_evidence.json` evolves across GHA commits. Look at the diff between consecutive runs:
-- How often does Layer 2 PRESERVE status because today's evidence didn't match reversal_condition? (expected: most days)
-- How often does Layer 2 REVERSE a fired status? (expected: rare — once every few months per indicator)
-- For each indicator: was the reversal triggered by a genuine data print, or did the LLM misjudge?
-
-**Possible adjustments**:
-- Indicators currently `quarterly` that prove to refresh more frequently (e.g., TrendForce weekly prints) — re-categorize to `live` or add an explicit `next_check_due` date.
-- Indicators currently `permanent` with aging logic (e.g., insider sales 12mo window) — verify the 12mo window is right empirically; some sales should age out faster, some slower.
-- Indicators currently `durable_contract` that need expiry-date awareness (LTAs do expire — HBM3E 2026 sold-out expires end-2026).
-
-**Acceptance**: after 4-8 weeks, audit `state/indicator_evidence.json` diff history. If any indicator's category is producing wrong-direction errors (preserving when it should reverse, or vice versa), update its bootstrap entry. Schema is stable; only the data changes.
-
-**Files**: `state/indicator_evidence.json` (data updates only); audit script could be added to `scripts/` to summarize evidence store evolution.
-
----
-
-## Part 7b — Schema migrations + versioning
-
-**Status as of 2026-05-22**: NOT STARTED. Sequenced after Part 7a — schema changes are best driven by empirical findings from 7a (which categorizations need adjusting, which fields need expiry-date awareness, etc.) rather than speculatively. Build after 7a tuning is done.
-
-**Why**: the bootstrap was written with `_metadata.schema_version: "1.0"`. Future schema changes (new fields, new persistence categories, structural reorganization) need a migration path.
-
-**Likely v1.1 additions**:
-- `aging_window_days: int` field per evidence entry — make insider sales 12mo and event_window 35d explicit per-entry instead of hardcoded in `active_evidence()`.
-- `confidence: "high" | "medium" | "low"` per evidence entry — record how strong the evidence was when first logged.
-- `expiry_date: ISO date` for durable_contract entries — LTAs do have expiries.
-- `transition_log: list[dict]` — separate from evidence_log, just the status transitions for clean audit.
-
-**Acceptance**: `load_indicator_evidence_store()` recognizes `schema_version` and applies migrations idempotently. Bootstrap stays v1.0; new fields are additive.
-
-**Files**: `src/state.py` (migration logic in load function), `state/indicator_evidence.json` (schema upgrade after migration is written).
-
----
-
-## Part 7c — Layer 2 prompt observability
-
-**Status as of 2026-05-22**: RECOMMENDED FOR v3.4.3 BUNDLE. NOT data-accumulation-gated. Especially useful given the May 22 529 incidents — better diagnostics for understanding which signals get under-attested when LLM calls fail. Low risk, small change. See v3.4.3 — Quick-wins candidate section at the top of this file.
-
-**Why**: the v3.39.7.3 prompt is long (DECISION RULES BY PERSISTENCE CATEGORY + INVALID DOWNGRADES + evidence_log block per indicator). Haiku may follow some rules better than others. Need to track which rules are being applied correctly.
-
-**Plan**: log Layer 2's reasoning per indicator, comparing `evidence_for_change_vs_yesterday` against the evidence_log's persistence category. Specifically:
-- If status preserved (Fired → Fired) AND today's evidence was empty → confirm the persistence category was the right reason (not just lazy preservation).
-- If status changed (Fired → Not fired) → verify the reversal_condition was actually matched in today's evidence, not invented by Haiku.
-
-**Output**: a weekly digest summarizing Layer 2 decisions per indicator: # of preserves vs reverses vs new fires, with sample reasoning quotes.
-
-**Files**: probably a new script in `scripts/` consuming the GHA-committed `state/indicator_evidence.json` history via `git log`.
+- **Part 7a** (Tune persistence categories from real data) — dropped. v3.39.7.3 categorizations stay as-is unless empirical evidence forces adjustment.
+- **Part 7b** (Schema migrations + versioning) — dropped. Schema v1.0 stays.
+- **Part 7c** (Layer 2 prompt observability) — already shipped as v3.4.3 Fix 3a (`state/layer2_audit_*.jsonl` + `scripts/audit_layer2.py`). No further work.
 
 ---
 

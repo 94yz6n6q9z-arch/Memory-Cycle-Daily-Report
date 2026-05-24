@@ -2471,6 +2471,65 @@ CYCLE_BASELINE = {
 
 
 # ============================================================
+# v3.4.11 — Phase 5 detector parameters
+# ============================================================
+# Tunable thresholds for the deterministic Phase 4 → Phase 5 transition
+# detector (src/analysis/phase_detector.py). All numbers centralized here
+# so they can be tuned without code changes.
+#
+# Phase 5 is entered when ANY of three composite conditions trips on
+# >= anti_flicker_consecutive_runs consecutive fast-tier runs:
+#
+#   A — Concurrent + price: >= t3_fire_count_threshold T3 indicators
+#       Fired AND SK Hynix close <= -drawdown_threshold_a_pct% off the
+#       trailing-90-day high, BOTH held for anti_whipsaw_days_a days.
+#
+#   B — Lagging confirmation: >= t4_fire_count_threshold T4 indicators
+#       Fired AND t2_eps_revisions Fired AND >= t2_total_fire_count_threshold
+#       T2 indicators Fired total AND SK Hynix close <= -drawdown_threshold_b_pct%.
+#
+#   C — Decisive price: SK Hynix close <= -drawdown_threshold_c_pct%
+#       AND the 90d high is >= stale_high_min_days_c days old
+#       AND t2_eps_revisions Fired.
+#
+# Reversion (Phase 5 → Phase 4) is asymmetric: requires BOTH a new
+# 90-day high AND < t3_fire_count_threshold T3 indicators still Fired.
+# By design only one reversion path exists — entry has three, exit one —
+# because false-positive Phase 5 retention is cheaper than false-positive
+# reversion.
+
+PHASE_5_DETECTION = {
+    # Condition A — concurrent + price
+    "t3_fire_count_threshold": 2,           # >= N of 5 T3 indicators Fired
+    "drawdown_threshold_a_pct": 10.0,       # >= 10% below trailing high
+    "anti_whipsaw_days_a": 5,               # both conditions held >= 5 days
+    # Condition B — lagging confirmation
+    "t4_fire_count_threshold": 1,           # >= N of 4 T4 indicators Fired
+    "t2_total_fire_count_threshold": 3,     # >= N of 7 T2 indicators Fired (incl. t2_eps_revisions)
+    "drawdown_threshold_b_pct": 15.0,       # >= 15% below trailing high
+    # Condition C — decisive price action
+    "drawdown_threshold_c_pct": 20.0,       # >= 20% below trailing high
+    "stale_high_min_days_c": 45,            # 90d high must be >= 45 days old
+    # Universal across A/B/C
+    "trailing_high_window_days": 90,        # rolling-high lookback
+    "anti_flicker_consecutive_runs": 2,     # need 2 consecutive runs before flip
+}
+
+
+# v3.4.11 — Default trough anchors used by Sonnet when in Phase 5.
+# Anchors derived from memory_supercycle_analysis.docx Part 1 + Part 2:
+# six historical cycles, memory pure-plays declined 50-65% peak-to-trough.
+# Phase 5 base case = expected decline (mid of range); bull = shallow
+# decline (resilience surprise); bear = full historical magnitude.
+# These anchor Sonnet's reasoning; signal-conditional rules shift them.
+PHASE_5_TROUGH_ANCHORS = {
+    "base_return_to_trough_pct": -40.0,   # mid of historical 50-65% range
+    "bear_return_to_trough_pct": -60.0,   # top of historical range
+    "bull_return_to_trough_pct": -25.0,   # soft landing scenario
+}
+
+
+# ============================================================
 # Supercycle chart constants (v3.39.2)
 # ============================================================
 # The "Where we stand in the cycle" chart in the email overlays the

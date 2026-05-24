@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
@@ -910,3 +911,246 @@ def save_dhcr_state(snapshot_dict: dict) -> None:
     with open(DHCR_STATE_FILE, "w") as f:
         json.dump(payload, f, indent=2, default=str)
     logger.info(f"DHCR snapshot persisted to {DHCR_STATE_FILE}")
+
+
+# ============================================================
+# v3.4.11 — Phase detector state (Phase 4 → Phase 5 transition)
+# ============================================================
+# The phase detector evaluates indicator status + SK Hynix price every
+# fast-tier run and persists its verdict so anti-flicker hysteresis
+# survives across runs. State file schema:
+#   {
+#     "current_phase": 4 | 5,
+#     "current_phase_label": str,
+#     "phase_5_detected_date_iso": str | null,
+#     "cycle_peak_price_at_detection": float | null,
+#     "anti_flicker_pending_condition": str | null,
+#     "anti_flicker_pending_first_seen_iso": str | null,
+#     "condition_a_first_seen_iso": str | null,
+#     "last_evaluated_iso": str,
+#     "last_summary_line": str
+#   }
+# First-run default: empty dict; the detector treats prior_phase=4 as
+# implicit when current_phase is missing.
+
+PHASE_STATE_FILE = Path("state/phase_state.json")
+
+
+def load_phase_state() -> dict:
+    """Load the v3.4.11 phase detector state.
+
+    Returns {} on missing file or parse error (first-run / fresh-deploy
+    semantics). The detector treats missing fields defensively.
+    """
+    if not PHASE_STATE_FILE.exists():
+        return {}
+    try:
+        with open(PHASE_STATE_FILE) as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            logger.warning(
+                f"{PHASE_STATE_FILE} root is not a dict (got {type(data).__name__}); "
+                f"treating as empty"
+            )
+            return {}
+        return data
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning(f"Could not load phase state: {e}")
+        return {}
+
+
+def save_phase_state(state: dict) -> None:
+    """Persist the v3.4.11 phase detector state.
+
+    Writes atomically via tmp + rename to survive concurrent fast-tier
+    crons safely. The state file is committed by the workflow's git
+    step so phase memory persists across GHA runner shutdowns.
+    """
+    PHASE_STATE_FILE.parent.mkdir(exist_ok=True)
+    tmp_path = PHASE_STATE_FILE.with_suffix(".json.tmp")
+    try:
+        with open(tmp_path, "w") as f:
+            json.dump(state, f, indent=2, default=str)
+        tmp_path.replace(PHASE_STATE_FILE)
+        logger.info(f"Phase state persisted to {PHASE_STATE_FILE} (phase={state.get('current_phase')})")
+    except OSError as e:
+        logger.warning(f"Could not write {PHASE_STATE_FILE}: {e}")
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+# ============================================================================
+# v3.4.12 — Per-quarter transcript digest store + QoQ diff cache
+# ============================================================================
+#
+# Each company-quarter gets one file at PER_QUARTER_TRANSCRIPTS_DIR/{ticker_safe}/{YYYY-QN}.json
+# holding the canonical digest + (after Q+1 lands) the cached QoQ diff.
+# Sole writer: the digester via _persist_and_maybe_diff_quarter() in
+# src/analysis/digester.py. The fast tier reads active diffs and threads
+# them into the Sonnet prompt.
+#
+# Quarter key derivation uses calendar quarters from the event_date_iso.
+# A handful of companies (Oracle, Micron, NVIDIA) report on fiscal calendars
+# that don't align — we accept this imprecision since the diff is between
+# the SAME company's consecutive reports, so as long as the keying is
+# consistent per company, the lookup works.
+
+PER_QUARTER_TRANSCRIPTS_DIR = STATE_DIR / "transcripts"
+
+
+def _ticker_safe(ticker: str) -> str:
+    """Make a ticker safe to use as a directory name.
+
+    Matches the pattern korean_brokers + digester use for filename
+    sanitization. E.g. "000660.KS" -> "000660.KS", "BRK.B" -> "BRK.B",
+    "weird ticker / 5" -> "weird_ticker___5".
+    """
+    return re.sub(r"[^A-Za-z0-9._-]", "_", ticker or "unknown")
+
+
+def quarter_key_from_event_date(event_date_iso: str) -> Optional[str]:
+    """Derive "YYYY-QN" from an ISO date string.
+
+    Q1 = Jan-Mar, Q2 = Apr-Jun, Q3 = Jul-Sep, Q4 = Oct-Dec.
+
+    Returns None if the date can't be parsed — caller decides what to do.
+    Fiscal-calendar companies (Oracle, Micron, NVIDIA) get keyed by the
+    calendar quarter their event lands in; as long as keying is consistent
+    per company, the QoQ lookup chain still works because diff lookups
+    walk back ONE quarter at a time.
+    """
+    if not event_date_iso:
+        return None
+    try:
+        d = datetime.fromisoformat(event_date_iso[:10]).date()
+    except (ValueError, TypeError):
+        return None
+    quarter = (d.month - 1) // 3 + 1
+    return f"{d.year}-Q{quarter}"
+
+
+def get_prior_quarter_key(quarter_key: str) -> Optional[str]:
+    """Compute the immediately preceding quarter key. Handles year boundary.
+
+    "2026-Q2" -> "2026-Q1"
+    "2026-Q1" -> "2025-Q4"
+    """
+    if not quarter_key or not re.match(r"^\d{4}-Q[1-4]$", quarter_key):
+        return None
+    year = int(quarter_key[:4])
+    q = int(quarter_key[6])
+    if q == 1:
+        return f"{year - 1}-Q4"
+    return f"{year}-Q{q - 1}"
+
+
+def quarter_digest_path(ticker: str, quarter_key: str) -> Path:
+    """Resolve the per-quarter file path for a ticker+quarter."""
+    return PER_QUARTER_TRANSCRIPTS_DIR / _ticker_safe(ticker) / f"{quarter_key}.json"
+
+
+def load_quarter_digest(ticker: str, quarter_key: str) -> Optional[dict]:
+    """Load the per-quarter digest record. Returns None on missing/corrupt.
+
+    Record shape:
+      {
+        "ticker": "000660.KS",
+        "company": "SK Hynix",
+        "quarter_key": "2026-Q2",
+        "digest": {...},                  # the underlying Digest dict
+        "diff_with_prior": {...} | null,  # cached TranscriptDiff dict (after Q+1 lands)
+        "saved_at_iso": "...",
+      }
+    """
+    path = quarter_digest_path(ticker, quarter_key)
+    if not path.exists():
+        return None
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            logger.warning(f"{path} root is not a dict; treating as missing")
+            return None
+        return data
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning(f"Could not load quarter digest {path}: {e}")
+        return None
+
+
+def save_quarter_digest(
+    ticker: str,
+    company: str,
+    quarter_key: str,
+    digest: dict,
+    diff_with_prior: Optional[dict] = None,
+) -> Path:
+    """Persist a per-quarter digest record. Atomic via tmp + rename.
+
+    If diff_with_prior is provided it's stored inline; otherwise the slot
+    is null and gets filled in on a later run when the Q+1 file triggers
+    the Haiku diff call.
+    """
+    path = quarter_digest_path(ticker, quarter_key)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "ticker": ticker,
+        "company": company,
+        "quarter_key": quarter_key,
+        "digest": digest,
+        "diff_with_prior": diff_with_prior,
+        "saved_at_iso": datetime.utcnow().isoformat(),
+    }
+    tmp_path = path.with_suffix(".json.tmp")
+    try:
+        with open(tmp_path, "w") as f:
+            json.dump(record, f, indent=2, default=str)
+        tmp_path.replace(path)
+        logger.info(
+            f"Per-quarter digest saved: {ticker} {quarter_key} "
+            f"(diff_cached={diff_with_prior is not None})"
+        )
+    except OSError as e:
+        logger.warning(f"Could not write {path}: {e}")
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+    return path
+
+
+def list_recent_quarter_diffs(max_quarters_back: int = 1) -> list[dict]:
+    """Return active QoQ transcript diffs for fast-tier consumption.
+
+    Walks PER_QUARTER_TRANSCRIPTS_DIR, returns the latest N quarter records
+    per company that have a cached diff_with_prior. Skips records without
+    a diff (most recent quarter has no diff until Q+1 lands).
+
+    The fast tier passes these into analyze_with_llm so Sonnet sees the
+    QoQ language shifts when narrating where_we_stand for transcript-driven
+    indicators.
+    """
+    if not PER_QUARTER_TRANSCRIPTS_DIR.exists():
+        return []
+    out: list[dict] = []
+    for ticker_dir in sorted(PER_QUARTER_TRANSCRIPTS_DIR.iterdir()):
+        if not ticker_dir.is_dir():
+            continue
+        # Collect this ticker's quarter files sorted by quarter_key descending
+        files = sorted(ticker_dir.glob("*.json"), reverse=True)
+        kept = 0
+        for f in files:
+            if kept >= max_quarters_back:
+                break
+            try:
+                with open(f) as fh:
+                    record = json.load(fh)
+                if not isinstance(record, dict):
+                    continue
+                if record.get("diff_with_prior"):
+                    out.append(record)
+                    kept += 1
+            except (json.JSONDecodeError, OSError) as e:
+                logger.warning(f"Could not load quarter digest {f}: {e}")
+    return out

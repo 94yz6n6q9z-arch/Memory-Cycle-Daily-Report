@@ -85,6 +85,8 @@ from src.config import (
     CYCLE_MATRIX_SIGNALS_CSV,
     CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN,
     CYCLE_MATRIX_STATUS_MAP,
+    # v3.4.11 — phase detector params
+    PHASE_5_DETECTION,
 )
 from src.state import (
     has_brief_been_sent_today,
@@ -98,6 +100,8 @@ from src.state import (
     load_indicator_evidence_store,
     save_indicator_evidence_store,
     update_evidence_after_layer2,
+    # v3.4.12 — QoQ transcript diffs
+    list_recent_quarter_diffs,
 )
 from src.diagnostics import (
     DiagnosticsCollector, SourceFetchStatus,
@@ -131,6 +135,12 @@ from src.analysis.llm_summarizer import (
     extract_dram_signal_from_article,
     extract_dram_forecasts_from_press_release,
 )
+# v3.4.11 — deterministic Phase 4 → Phase 5 detector
+from src.analysis.phase_detector import (
+    evaluate_phase_for_run,
+    result_to_state_dict,
+)
+from src.state import load_phase_state, save_phase_state
 from src.analysis.chart_generator import (
     generate_performance_chart, generate_supercycle_chart,
     # v3.39.7 — cycle matrix charts
@@ -842,6 +852,63 @@ def run_fast_tier() -> int:
                 f"Could not inject matrix verdict into signal_reasonings: {e}"
             )
 
+    # ----- v3.4.11 — Phase 4 → Phase 5 detector (BETWEEN Layer 2 and Layer 3) -----
+    # Runs after Layer 2 so signal_reasonings carry per-indicator status
+    # verdicts (the detector's primary input), and before Sonnet so the
+    # detector's verdict (current_phase + cycle_peak_price) is in the prompt
+    # — Sonnet flips to Phase 5 framework semantics when phase=5.
+    #
+    # Safe-failing: if anything goes wrong here, the detector returns None
+    # downstream, phase_state stays empty, Sonnet defaults to Phase 4
+    # prompt, and the brief ships normally with Phase 4 semantics.
+    phase_state_for_sonnet: Optional[dict] = None
+    try:
+        # Build pseudo-IndicatorAssessment objects from signal_reasonings.
+        # The detector reads .id, .tier, .current_status — that's it. We
+        # construct a SimpleNamespace adapter rather than importing
+        # IndicatorAssessment (avoids a heavier coupling). Layer 2's
+        # fired_status_evidence vocabulary ("Fired"/"Partially fired"/"Not fired")
+        # matches IndicatorAssessment.current_status verbatim.
+        from types import SimpleNamespace
+        layer2_assessments = []
+        for r in signal_reasonings:
+            rd = r.to_dict() if hasattr(r, "to_dict") else r
+            layer2_assessments.append(SimpleNamespace(
+                id=rd.get("signal_id", ""),
+                tier=rd.get("tier", 0),
+                current_status=rd.get("fired_status", "Not fired"),
+            ))
+
+        # SK Hynix history must be available; fall back to None if not
+        sk_history = None
+        if SUPERCYCLE_CHART_TICKER_NAME in price_history.columns:
+            sk_history = price_history[SUPERCYCLE_CHART_TICKER_NAME]
+
+        prior_phase_state = load_phase_state()
+        detection_result = evaluate_phase_for_run(
+            assessments=layer2_assessments,
+            sk_hynix_history=sk_history,
+            prior_phase_state=prior_phase_state,
+            params=PHASE_5_DETECTION,
+        )
+        phase_state_for_sonnet = result_to_state_dict(
+            detection_result, prior_state=prior_phase_state,
+        )
+
+        logger.info(f"Phase detector: {detection_result.summary_line}")
+        if detection_result.flipped_this_run:
+            logger.warning(
+                f"PHASE TRANSITION: → Phase {detection_result.current_phase} "
+                f"({detection_result.current_phase_label})"
+            )
+
+        # Persist now so anti-flicker pending state survives even if
+        # Sonnet crashes downstream.
+        save_phase_state(phase_state_for_sonnet)
+    except Exception as e:
+        logger.error(f"Phase detector failed (safe-failing): {e}", exc_info=True)
+        phase_state_for_sonnet = None
+
     # ----- Step 5: Layer 3 (Sonnet) synthesis -----
     # v3.39 NOTE: Earlier code constructed a `layer3_input` dict and passed it
     # as `layer2_input=` to analyze_with_llm. That kwarg has never existed on
@@ -872,6 +939,19 @@ def run_fast_tier() -> int:
     # Sonnet's input cleanly — distinct from the verdicts which are
     # already terse). And the new data sources (KIND/KRX, Samsung IR
     # audit, DART widening).
+    # v3.4.12 — load active QoQ transcript diffs (Haiku diffs computed in
+    # the deep-tier digester between consecutive quarter digests for the
+    # same company). Each active diff is a quarter_record dict with
+    # `diff_with_prior` populated. Safe-failing — empty list on error.
+    transcript_diffs_active = []
+    try:
+        transcript_diffs_active = list_recent_quarter_diffs(max_quarters_back=1)
+        logger.info(
+            f"QoQ transcript diffs loaded: {len(transcript_diffs_active)} active"
+        )
+    except Exception as e:
+        logger.warning(f"Could not load transcript diffs (safe-failing): {e}")
+
     logger.info("Running Layer 3 (Sonnet) synthesis...")
     analysis = analyze_with_llm(
         api_key=ANTHROPIC_API_KEY,
@@ -884,6 +964,8 @@ def run_fast_tier() -> int:
         digests=digests,
         signal_reasonings=signal_reasonings,
         computed_metrics=computed_metrics,
+        phase_state=phase_state_for_sonnet,
+        transcript_diffs=transcript_diffs_active,
     )
     if analysis is None:
         logger.error("Layer 3 (Sonnet) returned None; using fallback analysis")
@@ -898,6 +980,30 @@ def run_fast_tier() -> int:
             news_items=news_items,
             big_movers=big_movers,
         )
+
+    # v3.4.11 — Deterministic Phase 4 → Phase 5 override.
+    # The detector's verdict is authoritative for current_phase /
+    # current_phase_label. Sonnet may emit its own number (and is
+    # instructed to emit the same one because the prompt sees
+    # phase_state), but if there's any divergence the detector wins.
+    # Same pattern as the v3.39.6 computed-metric override and the
+    # v3.39.7.1 cycle matrix verdict override.
+    if phase_state_for_sonnet:
+        try:
+            target_phase = int(phase_state_for_sonnet.get("current_phase", 4))
+            target_label = phase_state_for_sonnet.get(
+                "current_phase_label", "Boom / Euphoria (late stage)"
+            )
+            sonnet_phase = int(analysis.executive_summary.current_phase or 4)
+            if sonnet_phase != target_phase:
+                logger.warning(
+                    f"Phase detector override: Sonnet emitted {sonnet_phase}, "
+                    f"detector verdict is {target_phase}; using detector."
+                )
+            analysis.executive_summary.current_phase = target_phase
+            analysis.executive_summary.current_phase_label = target_label
+        except Exception as e:
+            logger.warning(f"Could not apply phase override: {e}")
 
     # v3.39.7.5 — 24h ephemeral trigger event window.
     #

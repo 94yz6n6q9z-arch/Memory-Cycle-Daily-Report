@@ -475,14 +475,23 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
     def _ret_label(r: float) -> str:
         return "downside" if r < 0 else "upside"
 
+    # v3.4.11 — phase-conditional anchor noun.
+    # Phase 4: every case is framed against the cycle PEAK ahead of us.
+    # Phase 5: the peak is behind us; every case is framed against the
+    # TROUGH ahead of us. The return field stays signed; only the labels
+    # and anchor noun change.
+    is_phase_5 = int(getattr(es, "current_phase", 4) or 4) >= 5
+    anchor_noun = "trough" if is_phase_5 else "peak"
+    anchor_noun_cap = "Trough" if is_phase_5 else "Peak"
+
     peak_line = (
         f"<div class='exec-line' style='margin-top:14px'>"
         f"Based on latest information, our <strong>base case "
-        f"(prob {base.probability_pct:.0f}%)</strong> estimates the peak is "
+        f"(prob {base.probability_pct:.0f}%)</strong> estimates the {anchor_noun} is "
         f"<strong>{base.peak_months_away:.0f} months away</strong>, "
         f"placing it between <strong>{html.escape(base.peak_window_start)}</strong> "
         f"and <strong>{html.escape(base.peak_window_end)}</strong>. "
-        f"On our base case the {_ret_label(base.return_to_peak_pct)} to peak is estimated at "
+        f"On our base case the {_ret_label(base.return_to_peak_pct)} to {anchor_noun} is estimated at "
         f"<strong>{base.return_to_peak_pct:+.0f}%</strong>."
         f"</div>"
     )
@@ -490,13 +499,13 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
     cases_line = (
         f"<div class='exec-line'>"
         f"<span class='case-block case-bear'>Bear case ({bear.probability_pct:.0f}%): "
-        f"peak in {bear.peak_months_away:.0f}mo, "
+        f"{anchor_noun} in {bear.peak_months_away:.0f}mo, "
         f"{_ret_label(bear.return_to_peak_pct)} {bear.return_to_peak_pct:+.0f}%</span>"
         f"<span class='case-block case-base'>Base case ({base.probability_pct:.0f}%): "
-        f"peak in {base.peak_months_away:.0f}mo, "
+        f"{anchor_noun} in {base.peak_months_away:.0f}mo, "
         f"{_ret_label(base.return_to_peak_pct)} {base.return_to_peak_pct:+.0f}%</span>"
         f"<span class='case-block case-bull'>Bull case ({bull.probability_pct:.0f}%): "
-        f"peak in {bull.peak_months_away:.0f}mo, "
+        f"{anchor_noun} in {bull.peak_months_away:.0f}mo, "
         f"{_ret_label(bull.return_to_peak_pct)} {bull.return_to_peak_pct:+.0f}%</span>"
         f"</div>"
     )

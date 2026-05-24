@@ -44,7 +44,14 @@ from typing import Any, Optional
 from anthropic import Anthropic
 
 from src.config import INDICATORS, COMPANY_SPECIFIC_INDICATORS, HAIKU_MODEL, LLM_TEMPERATURE
-from src.state import write_digest, fetch_with_retry, Criticality
+from src.state import (
+    write_digest, fetch_with_retry, Criticality,
+    # v3.4.12 — per-quarter store + diff cache
+    quarter_key_from_event_date, get_prior_quarter_key,
+    load_quarter_digest, save_quarter_digest,
+)
+# v3.4.12 — Haiku QoQ diff between consecutive transcripts
+from src.analysis.transcript_diff import compute_diff_with_prior
 
 logger = logging.getLogger("memory_cycle_brief.digester")
 
@@ -693,6 +700,106 @@ def digest_quartr_transcripts(quartr_payload: dict) -> list[Digest]:
     return digests
 
 
+def _persist_and_maybe_diff_quarter(
+    digest: Digest,
+    ticker: str,
+    company: str,
+    event_date: str,
+) -> None:
+    """v3.4.12 — Write per-quarter digest record and, if prior quarter exists,
+    trigger ONE Haiku diff call between today's digest and the prior.
+
+    Safe-failing: any exception is logged and the calling transcript flow
+    continues normally. The per-quarter store is supplemental to the existing
+    state/digests/ persistence — its purpose is to enable QoQ comparison,
+    not to replace day-of digest storage.
+
+    The diff cache lives in the same per-quarter file (diff_with_prior slot).
+    Re-runs that find diff_with_prior already populated skip the Haiku call
+    entirely (this is the cost-efficiency design — process once, cache).
+
+    Sole caller: digest_transcript_results() after each successful
+    write_digest(). Both full_transcript and materials_only branches hook in.
+    """
+    if not ticker or not event_date:
+        logger.debug(
+            f"Per-quarter store skipped: missing ticker ({ticker!r}) or "
+            f"event_date ({event_date!r})"
+        )
+        return
+
+    current_quarter = quarter_key_from_event_date(event_date)
+    if not current_quarter:
+        logger.debug(f"Per-quarter store skipped: could not derive quarter from {event_date!r}")
+        return
+
+    try:
+        # Check if THIS quarter's record already exists with a cached diff —
+        # if so, this is a re-run on the same transcript and we don't need
+        # to do anything (digest is already current; diff is already cached).
+        existing = load_quarter_digest(ticker, current_quarter)
+        already_cached_diff = (
+            existing is not None
+            and existing.get("diff_with_prior") is not None
+            and existing.get("digest", {}).get("digested_at_iso") == digest.digested_at_iso
+        )
+        if already_cached_diff:
+            logger.debug(
+                f"Per-quarter diff cache hit for {ticker} {current_quarter} — skipping Haiku"
+            )
+            return
+
+        # Look up prior quarter
+        prior_quarter = get_prior_quarter_key(current_quarter)
+        prior_record = load_quarter_digest(ticker, prior_quarter) if prior_quarter else None
+
+        diff_payload = None
+        if prior_record is not None and prior_record.get("digest"):
+            # Compute the QoQ diff via Haiku
+            try:
+                diff_obj = compute_diff_with_prior(
+                    current_digest=digest.to_dict(),
+                    prior_digest=prior_record["digest"],
+                    ticker=ticker,
+                    company=company,
+                    current_quarter=current_quarter,
+                    prior_quarter=prior_quarter,
+                    anthropic_api_key=ANTHROPIC_API_KEY,
+                    haiku_model=HAIKU_MODEL,
+                )
+                if diff_obj is not None:
+                    diff_payload = diff_obj.to_dict()
+                    logger.info(
+                        f"QoQ diff computed: {company} ({ticker}) "
+                        f"{prior_quarter} → {current_quarter} | "
+                        f"tone={diff_payload.get('overall_tone_shift')} | "
+                        f"indicator_deltas={len(diff_payload.get('indicator_deltas', []))} | "
+                        f"dropped={len(diff_payload.get('language_dropped', []))} | "
+                        f"added={len(diff_payload.get('language_added', []))}"
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"Diff Haiku call failed for {ticker} {current_quarter} (safe-failing): {e}"
+                )
+        else:
+            logger.info(
+                f"Per-quarter digest saved without diff: {ticker} {current_quarter} "
+                f"(no prior quarter found at {prior_quarter})"
+            )
+
+        save_quarter_digest(
+            ticker=ticker,
+            company=company,
+            quarter_key=current_quarter,
+            digest=digest.to_dict(),
+            diff_with_prior=diff_payload,
+        )
+    except Exception as e:
+        logger.warning(
+            f"Per-quarter persist failed for {ticker} {current_quarter} (safe-failing): {e}"
+        )
+
+
 def digest_transcript_results(transcript_payload: dict) -> list[Digest]:
     """v3.31 — digest the transcript_sources payload (IR scrapers + Motley Fool).
 
@@ -745,6 +852,8 @@ def digest_transcript_results(transcript_payload: dict) -> list[Digest]:
                     name=f"transcript_{company.replace(' ', '_')}_{event_date}",
                     payload=d.to_dict(),
                 )
+                # v3.4.12 — per-quarter store + QoQ diff cache (safe-failing)
+                _persist_and_maybe_diff_quarter(d, ticker, company, event_date)
 
         elif availability == "materials_only":
             # Digest the materials we DO have (release / slides often carry
@@ -767,6 +876,12 @@ def digest_transcript_results(transcript_payload: dict) -> list[Digest]:
                     name=f"transcript_{company.replace(' ', '_')}_{event_date}_materials",
                     payload=d.to_dict(),
                 )
+                # v3.4.12 — per-quarter store + QoQ diff cache (safe-failing).
+                # Materials-only digests are still useful for diffing because
+                # they capture numeric data from releases/slides; the diff will
+                # naturally flag the call commentary as "language dropped" vs
+                # a prior full transcript.
+                _persist_and_maybe_diff_quarter(d, ticker, company, event_date)
             else:
                 # digest call itself failed — still record the gap
                 digests.append(_placeholder_gap_digest(
