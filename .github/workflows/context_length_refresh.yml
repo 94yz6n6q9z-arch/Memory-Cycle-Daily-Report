@@ -1,0 +1,104 @@
+# context_length_refresh.yml
+#
+# Monthly job that runs context_length_scraper.py against provider product-doc
+# pages and commits the updated state/context_length_state.json to main.
+#
+# Schedule: 1st of every month at 06:00 UTC (well before the daily fast-tier
+# run at 11:13 UTC, so the updated context lengths feed into the same day's
+# brief).
+#
+# Also wired to workflow_dispatch for ad-hoc re-runs (e.g. after a major
+# provider announces a context-window increase mid-month).
+#
+# CHANGELOG:
+#   v3.4.14 (2026-05-24) — initial release.
+
+name: Context Length Monthly Refresh
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"    # 06:00 UTC on the 1st of every month
+  workflow_dispatch: {}    # manual trigger via GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    name: Scrape provider context-window specs
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure git identity
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
+      - name: Run context-length scraper
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m src.data.context_length_scraper
+          echo "Scraper finished."
+
+      - name: Commit updated context_length_state.json
+        run: |
+          git add state/context_length_state.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No context-length changes to commit."
+            exit 0
+          fi
+          git commit -m "Context length refresh $(date -u +%Y-%m-%d)"
+          # Pull + rebase before push to handle concurrent workflow runs
+          if ! git pull --rebase origin main; then
+            echo "::error::git pull --rebase failed before push"
+            exit 1
+          fi
+          if git push; then
+            echo "Push succeeded."
+          else
+            echo "First push failed; retrying after 10s..."
+            sleep 10
+            if ! git pull --rebase origin main; then
+              echo "::error::git pull --rebase failed on retry"
+              exit 1
+            fi
+            if ! git push; then
+              echo "::error::git push failed on retry — context_length_state.json NOT persisted."
+              exit 1
+            fi
+            echo "Push succeeded on retry."
+          fi
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: "Context-length scraper failed — " + new Date().toISOString().slice(0,10),
+              body: "The monthly context_length_refresh workflow failed.\n\n" +
+                    "Check the [workflow run](" + context.serverUrl + "/" +
+                    context.repo.owner + "/" + context.repo.repo +
+                    "/actions/runs/" + context.runId + ") for details.\n\n" +
+                    "If this is a `parser_no_match` failure, the regex patterns in " +
+                    "`src/data/context_length_scraper.py` need updating for the " +
+                    "provider's new page structure."
+            })
