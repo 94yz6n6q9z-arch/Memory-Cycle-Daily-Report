@@ -4,6 +4,10 @@
 
 The v3.4 series consists of three shipped releases plus a v3.4.3 quick-wins candidate. The actual shipped path diverged substantially from the original ROADMAP plan — what was planned as "ship the indicator in v3.4.0, then activate trigger gates in v3.4.1" became "ship a delta-number direction monitor in v3.4.0, redesign the entire framework around a 2-axis matrix in v3.4.2 after the May 22 design session with Raul." The original v3.4.1+ plan (lines documented in the historical section below) is superseded by what actually shipped.
 
+### ✅ v3.4.13 (2026-05-23) — LPDDR contract direction scraper + observable status taxonomy (was v3.4.3+ Item 1)
+
+Adds LPDDR direction signal to the pipeline — TrendForce publishes QoQ % direction in free press releases (1Q26 "+90% QoQ", 2Q26 "narrowing"); v3.4.13 extracts it into `data/lpddr_contract_history.csv` and surfaces in DHCR sanity-check output as informational signal. Critical architectural decision: explicit 4-status taxonomy on `LpddrScrapeResult` (`data_extracted` / `no_lpddr_content_in_releases` / `parser_no_match` / `fetch_failed`) so "no data" is distinguishable from "scraper broken" in diagnostics. 3-consecutive-parser_no_match sentinel at `state/lpddr_scraper_consecutive_parser_no_match.json` escalates the diagnostic from ⚠️ to ❌ after 3 runs (~36 hours), ensuring regex bugs don't sit at warning indefinitely. Regex evaluation order is flat → falling → rising (specific → general) so "narrowing growth" resolves to FLAT not RISING. LPDDR direction is informational only for v1 — does NOT affect DHCR confirms/contradicts math (needs 2-3 quarters of data before calibration). Three unit tests pin this invariant. 755 tests passing (723 baseline + 32 new). Zero regressions.
+
 ### ✅ v3.4.12 (2026-05-23) — Transcript memory + quarter-over-quarter diff (was v3.5 Entry 1)
 
 Closes the pre-v3.4.12 framework's inability to detect language shifts across consecutive earnings calls. Three layers: (1) per-quarter store at `state/transcripts/{ticker}/{YYYY-QN}.json` with atomic writes; (2) Haiku diff trigger in the digester — when Q+1 lands and Q exists and no diff cached yet, ONE Haiku call produces an indicator-vocabulary diff (per-indicator deltas with prior/current quotes, metric movements, language dropped/added, overall tone shift), cached inline; (3) Sonnet prompt threading — new `transcript_diffs` parameter through `build_sonnet_analysis_prompt → sonnet_analyze → analyze_with_llm`, prompt block placed between LAYER 2 PER-SIGNAL VERDICTS and triage_text. Cost: ~$0.20/year (one Haiku call per new transcript, not per fast-tier run). Safe-failing throughout. 723 tests passing (683 baseline including v3.4.11 + 40 new). Effective coverage builds through SK Hynix Q3 2026 print (late October, peak window).
@@ -260,17 +264,9 @@ Primary tracking source: **SEC EDGAR F-1 filings — beats Korean press by 1-3 d
 
 Reviewed with Raul 2026-05-23. Each item below was re-scoped for feasibility + value; the four originally carried over from the v3.4 design got individual disposition.
 
-### ✅ LPDDR-specific TrendForce contract scrape — APPROVED for build
+### ✅ LPDDR-specific TrendForce contract scrape — SHIPPED 2026-05-23 as v3.4.13
 
-Pipeline tracks DDR4/DDR5 but not LPDDR. Web research 2026-05-23 confirmed TrendForce publishes LPDDR contract direction + magnitude in their FREE press releases (e.g., 1Q26 "+90% QoQ for LPDDR4X and LPDDR5X", 2Q26 "narrowed price hike forecasts"). Numerical ASP dollar levels are in paid `RP*` reports, but direction + QoQ % is free.
-
-**Build plan:**
-- New `scrape_trendforce_lpddr_contract()` in `src/data/news.py` parallel to existing TrendForce DRAM scrapers
-- New `data/lpddr_contract_history.csv` for the time series
-- Feed DHCR sanity-check signal #3 (HBM spot/contract price trend) — LPDDR rolling alongside HBM is substitution evidence
-- ~1 day build effort
-
-**Why originally missing:** The original v3.4.0 plan was about LPDDR datacenter RAMP (custom-silicon design wins), not LPDDR PRICES. v3.4.0 collapsed three indicators into DHCR and the LPDDR-prices piece fell off. The free data has been there the whole time.
+Shipped 2026-05-23 with explicit 4-status observability taxonomy (`data_extracted` / `no_lpddr_content_in_releases` / `parser_no_match` / `fetch_failed`) so "no data" is distinguishable from "scraper broken." 3-consecutive-parser_no_match sentinel escalates the diagnostic from ⚠️ to ❌. LPDDR direction surfaces in DHCR sanity-check output as informational signal (does NOT yet affect confirms/contradicts math — needs 2-3 quarters of accumulated data before being calibrated into the matrix verdict logic). See CHANGES.md v3.4.13 entry for the full design rationale.
 
 ### ❌ Auto-extract closed-model KV via cost-per-token gradient — DROPPED 2026-05-23
 

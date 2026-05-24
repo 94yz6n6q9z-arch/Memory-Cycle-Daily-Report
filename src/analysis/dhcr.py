@@ -178,6 +178,8 @@ class DHCRSnapshot:
     sanity_signal_substitution_threshold: int = 5
     sanity_signal_hyperscaler_decode_mentions: int = 0
     sanity_signal_hbm_price_trend: str = "rising"
+    # v3.4.13 — LPDDR contract direction (informational, not yet in math)
+    sanity_signal_lpddr_contract_direction: str = "no_data"
     sanity_check_confirms: int = 0
     sanity_check_contradicts: int = 0
     calibration_flag: bool = False
@@ -454,6 +456,7 @@ def compute_sanity_check(
     hbm_yaml: dict,
     extraction_log_signals: Optional[list[dict]] = None,
     hbm_price_trend: str = "rising",
+    lpddr_contract_direction: Optional[str] = None,
 ) -> dict:
     score_is_bullish_hbm = score >= 65
     score_is_bearish_hbm = score < 30
@@ -498,6 +501,15 @@ def compute_sanity_check(
         "confirms": confirms,
         "contradicts": contradicts,
         "calibration_flag": flag,
+        # v3.4.13 — LPDDR contract direction is INFORMATIONAL for v1.
+        # Surfaced in the snapshot but does NOT yet enter the
+        # confirms/contradicts math — needs 2-3 quarters of data
+        # to calibrate how it should interact (a single quarter of
+        # LPDDR direction with no prior baseline isn't enough to
+        # justify changing the matrix verdict). Future versions will
+        # adopt the rule: "LPDDR rolling over alongside HBM is
+        # substitution evidence → contradicts HBM moat".
+        "lpddr_contract_direction": lpddr_contract_direction or "no_data",
     }
 
 
@@ -621,8 +633,16 @@ def compute_dhcr_snapshot(
     as_of_date: Optional[date] = None,
     extraction_log_signals: Optional[list[dict]] = None,
     hbm_price_trend: str = "rising",
+    lpddr_contract_direction: Optional[str] = None,
 ) -> DHCRSnapshot:
-    """Compute the full DHCR snapshot. Main entry point."""
+    """Compute the full DHCR snapshot. Main entry point.
+
+    v3.4.13: New optional `lpddr_contract_direction` parameter — one of
+    "rising" / "flat" / "falling" / None. Surfaced in the snapshot output
+    as `sanity_signal_lpddr_contract_direction` for diagnostic visibility.
+    Does NOT affect the confirms/contradicts math (informational only
+    until 2-3 quarters of LPDDR data accumulate for calibration).
+    """
     if as_of_date is None:
         as_of_date = date.today()
     data = load_dhcr_data(data_dir=data_dir)
@@ -660,6 +680,7 @@ def compute_dhcr_snapshot(
         score=score, hbm_yaml=data["hbm"],
         extraction_log_signals=extraction_log_signals,
         hbm_price_trend=hbm_price_trend,
+        lpddr_contract_direction=lpddr_contract_direction,
     )
 
     # Status
@@ -712,6 +733,8 @@ def compute_dhcr_snapshot(
         "sanity_signal_substitution_threshold": sanity["substitution_threshold"],
         "sanity_signal_hyperscaler_decode_mentions": sanity["hyperscaler_decode_mentions"],
         "sanity_signal_hbm_price_trend": sanity["hbm_price_trend"],
+        # v3.4.13 — LPDDR contract direction (informational; not yet in math)
+        "sanity_signal_lpddr_contract_direction": sanity.get("lpddr_contract_direction", "no_data"),
         "sanity_check_confirms": sanity["confirms"],
         "sanity_check_contradicts": sanity["contradicts"],
         "calibration_flag": sanity["calibration_flag"],

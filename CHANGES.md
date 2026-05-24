@@ -6,6 +6,76 @@ This release consolidates v3.1 through v3.37 plus v3.38 (bug fixes + comprehensi
 
 ---
 
+## v3.4.13 — LPDDR contract direction scraper + observable status taxonomy
+
+### What this fixes
+
+The DHCR sanity-check (signal #3 — "HBM spot/contract price trend") was driven solely by DDR5/HBM commentary; LPDDR was not in the pipeline. This left two gaps:
+
+1. **LPDDR rolling over alongside HBM is substitution evidence.** If commodity LPDDR price moves diverge from HBM (e.g., LPDDR continues rising while HBM rolls over), that's HBM-specific weakness. If both roll over together, it's broad-cycle. The pre-v3.4.13 framework couldn't see this dimension at all.
+2. **TrendForce publishes LPDDR direction commentary in their free press releases** (1Q26 release: "LPDDR4X and LPDDR5X expected to grow approximately 90% QoQ"; 2Q26: "narrowing price hike forecasts"). The data was always there; we just weren't extracting it.
+
+### Architectural decision: observable status taxonomy
+
+The new scraper distinguishes "no data" from "scraper broken" via an explicit four-status enum on `LpddrScrapeResult`:
+
+- `data_extracted` — normal success. Diagnostic shows the signal count + latest direction.
+- `no_lpddr_content_in_releases` — TrendForce simply didn't publish LPDDR commentary in the articles checked. Quiet success.
+- `parser_no_match` — **THE BUG MODE.** LPDDR keyword found in body but no direction pattern matched. `sample_text_when_unparsed` captures the first 300 chars around the LPDDR mention for fast debug.
+- `fetch_failed` — HTTP/Cloudflare error. Distinct from parser issues.
+
+Each status maps cleanly to action: success ships, no-content is quietly accepted, `parser_no_match` triggers a regex fix, `fetch_failed` triggers an HTTP investigation. The pre-v3.4.13 alternative — returning `None` on any failure — collapsed all three failure modes into a single "scraper returned nothing" diagnostic, indistinguishable from "no data this run." Three weeks of silent regex failure would have looked identical to three weeks of TrendForce not publishing LPDDR commentary.
+
+### Hard sentinel: 3-consecutive-parser_no_match escalation
+
+A persistent counter at `state/lpddr_scraper_consecutive_parser_no_match.json` tracks consecutive `parser_no_match` runs. After 3 in a row, the scraper RAISES an exception from inside `collector.track()`, which flips the diagnostic row from ⚠️ (warning) to ❌ (error). This ensures a regex bug doesn't sit at warning severity indefinitely; it escalates to error after 3 runs (~36 hours given the twice-daily cadence) and forces a fix. The counter resets to 0 on any non-`parser_no_match` outcome (successful extraction OR genuine "no LPDDR" both indicate the scraper is healthy).
+
+### Pipeline integration
+
+**`src/data/news.py`** — new public surface: `LpddrSignal` dataclass (one direction extraction with quote + magnitude + release date + source), `LpddrScrapeResult` dataclass with status + observability fields + `latest_signal` property, `scrape_trendforce_lpddr_contract()` (reuses the v3.39.3 category-page path + v3.39.7 `fetch_article_body()` helper), `persist_lpddr_contract_to_history()` (idempotent CSV upsert on `(release_date, source_url)` key).
+
+**`src/fast_tier.py`** — LPDDR scrape inserted as step 2a in `_run_cycle_matrix_step()`, right after the existing TrendForce contract scrape (which already fetches the same category page). Result is stashed on the collector via `_lpddr_scrape_result` attribute so the DHCR computation downstream can read the latest direction without changing more function signatures.
+
+**`src/analysis/dhcr.py`** — `compute_sanity_check()` and `compute_dhcr_snapshot()` gained an optional `lpddr_contract_direction` parameter. `DHCRSnapshot` dataclass gained `sanity_signal_lpddr_contract_direction: str = "no_data"`. The new field surfaces in the snapshot output so it persists, logs, and renders. **The math is unchanged** for v1 — `confirms`, `contradicts`, and `calibration_flag` are bit-identical to v3.4.12. LPDDR direction is informational only until 2-3 quarters of LPDDR direction data accumulate, at which point future versions can adopt the rule "LPDDR rolling over alongside HBM is substitution evidence → contradicts HBM moat." Three unit tests pin this invariant: `with_lpddr_rising`, `with_lpddr_falling`, and `without_lpddr` must produce identical `confirms`/`contradicts`/`calibration_flag` triples.
+
+### Regex evaluation order: specific → general
+
+The direction-extraction regexes evaluate FLAT → FALLING → RISING (not the other order). Flat patterns (`narrowing`, `stable`, `moderating`) are the most specific — they always indicate decelerating-but-positive momentum, never absolute decline or growth. Putting them first ensures "narrowing growth" resolves to FLAT, not RISING. Falling patterns (`decline`, `drop`, `correction`, `roll-over`) next — specific negative-direction keywords trump generic "growth" mentions. Rising patterns (`grow`, `rise`, `surge`) last — most generic vocabulary that can appear in non-direction contexts.
+
+### Tests
+
+**755 passing** (723 baseline including v3.4.12 + 32 new in `tests/test_v3_4_13_lpddr_scraper.py` across 9 classes). Coverage:
+- Direction regex extraction (rising / falling / flat patterns + magnitude parsing + directional-only)
+- Quote-around-match (verbatim, ≤ 30 words)
+- Release-date extraction from `/news/YYYY/MM/DD/slug/` URL pattern
+- Status taxonomy: all 4 statuses (`data_extracted` / `no_lpddr_content_in_releases` / `parser_no_match` / `fetch_failed`) covered end-to-end with network mocking
+- Parser-bug-mode sample text captured on the keyword-present-but-no-match path
+- Sentinel state file: load/save roundtrip; corrupt-file safe-fail; default 0 on missing
+- `LpddrScrapeResult.latest_signal` sorts by release_date
+- CSV persistence idempotent on `(release_date, source_url)`
+- DHCR integration: field surfaces in sanity output, default `no_data`, **invariant test pinning that LPDDR direction does NOT affect confirms/contradicts/calibration_flag**
+- DHCRSnapshot dataclass field present with `no_data` default (via `dataclasses.fields()` introspection)
+- fast_tier integration source contains the v3.4.13 wiring
+
+Pre-existing 27 baseline failures unchanged (state-file-dependent tests).
+
+### Files
+
+- `src/data/news.py` — `LpddrSignal`, `LpddrScrapeResult` dataclasses; 3 regex pattern lists (flat, falling, rising); `_extract_lpddr_signal_from_body`, `_extract_quote_around_match_v3413`, `_extract_release_date_from_url_v3413` helpers; `_load_lpddr_sentinel_v3413`, `_save_lpddr_sentinel_v3413` sentinel I/O; `scrape_trendforce_lpddr_contract` public scraper with `collector.track()` integration + sentinel escalation; `persist_lpddr_contract_to_history` idempotent CSV upsert
+- `src/fast_tier.py` — step 2a LPDDR scrape in `_run_cycle_matrix_step` + collector stash; DHCR call site reads stashed LPDDR direction + passes into `compute_dhcr_snapshot`; log line shows `lpddr_dir=`
+- `src/analysis/dhcr.py` — `compute_sanity_check` + `compute_dhcr_snapshot` accept `lpddr_contract_direction`; `DHCRSnapshot` gains `sanity_signal_lpddr_contract_direction` field; snap_dict carries the new field
+- `tests/test_v3_4_13_lpddr_scraper.py` (NEW)
+- `ROADMAP.md` — v3.4.3+ LPDDR item marked ✅ SHIPPED
+- `CLAUDE.md` — Locked Decision #11 added (4-status observability taxonomy for unattended scrapers)
+
+### Deploy notes
+
+- `data/lpddr_contract_history.csv` is created on first successful scrape — no migration needed.
+- `state/lpddr_scraper_consecutive_parser_no_match.json` is created on first `parser_no_match` run. Committed by the existing `git add -A state/` workflow step (v3.4.9 lock).
+- **First post-deploy run behavior:** depends entirely on what TrendForce published in the most recent ~20 articles. If recent press releases mention LPDDR with quarterly direction commentary (common pattern at quarter boundaries), `data_extracted` fires and direction surfaces in the DHCR snapshot. If they don't, `no_lpddr_content_in_releases` is the expected quiet outcome. If `parser_no_match` fires twice but content looks parseable, check the diagnostic detail string + sample text + adjust the regex patterns.
+
+---
+
 ## v3.4.12 — Transcript memory + quarter-over-quarter diff
 
 ### What this fixes

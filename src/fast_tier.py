@@ -647,9 +647,26 @@ def run_fast_tier() -> int:
         # v3.4.3 — pass extraction_log_signals for substitution-evidence
         # signal #1, and the now-auto-derived hbm_price_trend for signal #3
         extraction_log_signals = computed_metrics.get("extraction_log_signals_last_90d", [])
+
+        # v3.4.13 — pull latest LPDDR contract direction from the cycle
+        # matrix step (stashed on the collector by _run_cycle_matrix_step).
+        # Informational signal only for v1 — surfaces in the DHCR snapshot
+        # but does NOT affect the confirms/contradicts math until
+        # 2-3 quarters of LPDDR direction data accumulate.
+        lpddr_direction = None
+        try:
+            lpddr_result = getattr(collector, "_lpddr_scrape_result", None)
+            if lpddr_result is not None and lpddr_result.signals:
+                latest = lpddr_result.latest_signal
+                if latest:
+                    lpddr_direction = latest.direction
+        except Exception as _lpddr_err:
+            logger.warning(f"could not read lpddr direction from collector: {_lpddr_err}")
+
         dhcr_snapshot = compute_dhcr_snapshot(
             extraction_log_signals=extraction_log_signals,
             hbm_price_trend=hbm_price_trend,
+            lpddr_contract_direction=lpddr_direction,
         )
         dhcr_dict = asdict(dhcr_snapshot)
         computed_metrics["dhcr_snapshot"] = dhcr_dict
@@ -674,6 +691,7 @@ def run_fast_tier() -> int:
             f"vol_idx={dhcr_snapshot.volume_index:.0f} "
             f"hbm_demand={dhcr_snapshot.hbm_bit_demand_index:.0f} "
             f"sanity={dhcr_snapshot.sanity_check_confirms}/{dhcr_snapshot.sanity_check_confirms + dhcr_snapshot.sanity_check_contradicts} confirms "
+            f"lpddr_dir={dhcr_dict.get('sanity_signal_lpddr_contract_direction', 'no_data')} "
             f"calibration_flag={dhcr_snapshot.calibration_flag}"
         )
     except FileNotFoundError as e:
@@ -1499,6 +1517,38 @@ def _run_cycle_matrix_step(
         collector.record(SourceFetchStatus(
             "TrendForce contract", "scrape", False, 0, 1, detail=f"error: {e}",
         ))
+
+    # 2a. v3.4.13 — LPDDR contract direction scrape.
+    # Reuses the same TrendForce news category page that step 1 of this
+    # cycle matrix flow already touches (different selector / different
+    # downstream consumer). Result is persisted to lpddr_contract_history.csv
+    # and the latest direction is stashed on the collector for DHCR's
+    # sanity-check rendering. Status is explicit (data_extracted /
+    # no_lpddr_content_in_releases / parser_no_match / fetch_failed) so
+    # "no data" is distinguishable from "scraper broken" in diagnostics.
+    try:
+        from src.data.news import (
+            scrape_trendforce_lpddr_contract,
+            persist_lpddr_contract_to_history,
+        )
+        lpddr_result = scrape_trendforce_lpddr_contract(collector=collector)
+        if lpddr_result.signals:
+            n_persisted = persist_lpddr_contract_to_history(lpddr_result)
+            logger.info(
+                f"  LPDDR: {lpddr_result.rows_extracted} signal(s) extracted, "
+                f"{n_persisted} row(s) persisted, "
+                f"latest direction={lpddr_result.latest_signal.direction if lpddr_result.latest_signal else 'n/a'}"
+            )
+        else:
+            logger.info(
+                f"  LPDDR: no signals extracted "
+                f"(status={lpddr_result.status}, pages_checked={lpddr_result.pages_checked})"
+            )
+        # Stash result for DHCR rendering downstream.
+        # Stored on the collector so it doesn't require changing more sigs.
+        setattr(collector, "_lpddr_scrape_result", lpddr_result)
+    except Exception as e:
+        logger.error(f"  LPDDR scrape failed (safe-failing): {e}")
 
     # 3. Haiku extraction over DRAM-relevant news (cost-capped)
     if anthropic_client is not None and news_items:

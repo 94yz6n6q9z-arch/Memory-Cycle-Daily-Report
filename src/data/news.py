@@ -1687,3 +1687,472 @@ def upsert_contract_signals(signal_rows: list[dict], csv_path: _Path_v3397) -> i
     return _upsert_csv_v3397(
         new_df, csv_path, key_cols=["date", "source_url"],
     )
+
+
+# ============================================================
+# v3.4.13 — LPDDR contract direction scraper
+# ============================================================
+#
+# TrendForce publishes LPDDR contract DIRECTION + magnitude in their free
+# press releases (numerical $/GB ASP levels are in paid RP* reports, but
+# QoQ % moves and direction commentary are free). Example past releases:
+#   - 1Q26: "LPDDR4X and LPDDR5X expected to grow ~90% QoQ"
+#   - 2Q26: "Narrowed price hike forecasts for LPDDR"
+#
+# This module fetches the same news category page that scrape_trendforce()
+# uses, then for each recent article fetches the body and regex-extracts
+# LPDDR commentary. Latest extracted direction wins (most recent release).
+#
+# Critical observability design: the scrape returns ONE of four statuses
+# so "no relevant data" is distinguishable from "the scraper broke":
+#
+#   "data_extracted"                  → normal success path
+#   "no_lpddr_content_in_releases"    → genuinely no LPDDR commentary today
+#   "parser_no_match"                 → THE BUG MODE — keyword found but
+#                                       regex didn't match. Sample text
+#                                       captured for fast fix.
+#   "fetch_failed"                    → HTTP/Cloudflare error
+#
+# A hard sentinel tracks consecutive "parser_no_match" runs in
+# state/lpddr_scraper_consecutive_parser_no_match.json. After 3 in a row,
+# the diagnostic row escalates from ⚠️ to ❌ so a regex bug doesn't sit
+# at "warning" indefinitely.
+
+
+@dataclass
+class LpddrSignal:
+    """A single LPDDR direction extraction from one press release."""
+    release_date: Optional[str]       # ISO date if extractable from URL/page
+    direction: str                    # "rising" | "flat" | "falling"
+    pct_qoq: Optional[float]          # signed % if specified, else None
+    quote: str                        # verbatim snippet (<= 30 words)
+    source_url: str
+    source_title: str
+
+
+@dataclass
+class LpddrScrapeResult:
+    """Outcome of one LPDDR scrape with explicit observability status.
+
+    Caller distinguishes "no data" from "broken scraper" via .status.
+    """
+    status: str  # see module docstring for the four allowed values
+    pages_checked: int
+    pages_with_lpddr_keywords: int
+    rows_extracted: int
+    signals: list[LpddrSignal]
+    sample_text_when_unparsed: str    # first 300 chars of LPDDR-mentioning
+                                       # text the parser couldn't match — for
+                                       # fast debug after a structure change
+    error: Optional[str] = None
+
+    @property
+    def latest_signal(self) -> Optional[LpddrSignal]:
+        """Most recent LpddrSignal by release_date (None if no signals)."""
+        if not self.signals:
+            return None
+        with_date = [s for s in self.signals if s.release_date]
+        if with_date:
+            return sorted(with_date, key=lambda s: s.release_date, reverse=True)[0]
+        return self.signals[0]
+
+
+# Regex patterns for direction extraction. Order matters: try most-specific
+# patterns first (with explicit numeric magnitude), then directional
+# keywords. The patterns are designed to be tolerant of TrendForce's prose
+# style, where LPDDR mentions are interspersed with DDR4/DDR5 in the same
+# paragraph.
+LPDDR_KEYWORD_RE_v3413 = re.compile(r"\bLPDDR\d?[A-Z]*\b", re.IGNORECASE)
+
+# Rising patterns — "grow X%", "rise X%", "surge X%", "expected to grow",
+# "QoQ increase", "price hike of X%"
+LPDDR_RISING_PATTERNS_v3413 = [
+    re.compile(
+        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:expected to\s+)?(?:grow|rise|surge|increase|climb|jump|hike|up)\s+(?:by\s+)?(?:approximately\s+|around\s+|~\s*)?(\d+(?:\.\d+)?)\s*%",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:price\s+hike|price\s+increase|QoQ\s+(?:growth|rise|increase))\s+(?:of\s+|by\s+|approximately\s+|~\s*)?(\d+(?:\.\d+)?)\s*%[^.]{0,50}?LPDDR",
+        re.IGNORECASE,
+    ),
+    # Directional only ("expected to grow") with no magnitude — assign None
+    re.compile(
+        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:expected to\s+)?(?:grow|rise|surge|increase|climb|jump)",
+        re.IGNORECASE,
+    ),
+]
+
+# Falling patterns — "decline X%", "drop X%", "fall X%", "correction",
+# "roll over", "weakness"
+LPDDR_FALLING_PATTERNS_v3413 = [
+    re.compile(
+        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:expected to\s+)?(?:decline|fall|drop|correct|decrease|down|slip)\s+(?:by\s+)?(?:approximately\s+|around\s+|~\s*)?(\d+(?:\.\d+)?)\s*%",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:roll(?:ing)?\s+over|correction|weakness|softening)",
+        re.IGNORECASE,
+    ),
+]
+
+# Flat / narrowing patterns
+LPDDR_FLAT_PATTERNS_v3413 = [
+    re.compile(
+        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:narrow|stable|flat|unchanged|level off|level\s+out|plateau)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:narrow|narrowing|moderating|moderated)\s+(?:[\w,]+\s+){0,5}?(?:LPDDR|price hike)",
+        re.IGNORECASE,
+    ),
+]
+
+
+def _extract_lpddr_signal_from_body(
+    body_text: str, source_url: str, source_title: str, release_date: Optional[str] = None,
+) -> tuple[Optional[LpddrSignal], Optional[str]]:
+    """Try to extract LPDDR direction from a press-release body.
+
+    Returns (LpddrSignal, None) on success; (None, sample_text) when the
+    LPDDR keyword IS present but no direction pattern matched (the bug
+    mode — sample_text shows what we missed); (None, None) when LPDDR
+    isn't mentioned in the body at all.
+    """
+    if not body_text:
+        return None, None
+
+    # Quick keyword check first — avoid regex passes on irrelevant articles
+    if not LPDDR_KEYWORD_RE_v3413.search(body_text):
+        return None, None
+
+    # Evaluation order matters: try MOST SPECIFIC first, FALL THROUGH to
+    # the most generic. "Narrowing growth" should resolve to FLAT, not
+    # RISING. So order is: flat → falling → rising.
+    #
+    # Flat patterns (narrow/stable/moderating) are the most specific:
+    # they always indicate decelerating-but-positive momentum, never
+    # absolute decline or growth. Try these first.
+    for pat in LPDDR_FLAT_PATTERNS_v3413:
+        m = pat.search(body_text)
+        if m:
+            quote = _extract_quote_around_match_v3413(body_text, m)
+            return LpddrSignal(
+                release_date=release_date,
+                direction="flat",
+                pct_qoq=None,
+                quote=quote,
+                source_url=source_url,
+                source_title=source_title,
+            ), None
+
+    # Falling patterns next (decline/drop/correction/roll-over). Specific
+    # negative-direction keywords that trump generic "growth" mentions.
+    for pat in LPDDR_FALLING_PATTERNS_v3413:
+        m = pat.search(body_text)
+        if m:
+            pct = None
+            try:
+                pct = -abs(float(m.group(1)))
+            except (IndexError, ValueError):
+                pct = None
+            quote = _extract_quote_around_match_v3413(body_text, m)
+            return LpddrSignal(
+                release_date=release_date,
+                direction="falling",
+                pct_qoq=pct,
+                quote=quote,
+                source_url=source_url,
+                source_title=source_title,
+            ), None
+
+    # Rising patterns last — these have the most generic vocabulary
+    # ("grow", "rise") that can appear in non-direction contexts.
+    for pat in LPDDR_RISING_PATTERNS_v3413:
+        m = pat.search(body_text)
+        if m:
+            pct = None
+            try:
+                pct = float(m.group(1))
+            except (IndexError, ValueError):
+                pct = None
+            quote = _extract_quote_around_match_v3413(body_text, m)
+            return LpddrSignal(
+                release_date=release_date,
+                direction="rising",
+                pct_qoq=pct,
+                quote=quote,
+                source_url=source_url,
+                source_title=source_title,
+            ), None
+
+    # LPDDR keyword present but no direction pattern matched — bug mode.
+    # Capture sample text around the first LPDDR mention for debug.
+    keyword_m = LPDDR_KEYWORD_RE_v3413.search(body_text)
+    if keyword_m:
+        start = max(0, keyword_m.start() - 100)
+        end = min(len(body_text), keyword_m.end() + 200)
+        sample = body_text[start:end].replace("\n", " ").strip()
+        return None, sample[:300]
+
+    return None, None
+
+
+def _extract_quote_around_match_v3413(body_text: str, match) -> str:
+    """Build a verbatim quote (<= 30 words) centred on the regex match."""
+    start = max(0, match.start() - 50)
+    end = min(len(body_text), match.end() + 100)
+    snippet = body_text[start:end].replace("\n", " ").strip()
+    words = snippet.split()
+    if len(words) > 30:
+        # Try to centre on the match
+        # Find word index closest to match midpoint
+        match_mid_char = (match.start() + match.end()) // 2
+        running = 0
+        match_word_idx = 0
+        for i, w in enumerate(words):
+            running += len(w) + 1
+            if start + running >= match_mid_char:
+                match_word_idx = i
+                break
+        left = max(0, match_word_idx - 15)
+        right = min(len(words), left + 30)
+        words = words[left:right]
+    return " ".join(words)
+
+
+def _extract_release_date_from_url_v3413(url: str) -> Optional[str]:
+    """TrendForce URLs follow /news/YYYY/MM/DD/<slug>/. Extract the date.
+
+    Falls back to None on any URL that doesn't match — caller treats None
+    as "use article fetch time".
+    """
+    m = re.search(r"/(\d{4})/(\d{1,2})/(\d{1,2})/", url)
+    if not m:
+        return None
+    try:
+        return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+    except (ValueError, TypeError):
+        return None
+
+
+LPDDR_PARSER_NO_MATCH_SENTINEL_FILE = "state/lpddr_scraper_consecutive_parser_no_match.json"
+LPDDR_PARSER_NO_MATCH_SENTINEL_THRESHOLD = 3
+
+
+def _load_lpddr_sentinel_v3413() -> int:
+    """Load the running count of consecutive parser_no_match runs."""
+    import json as _json
+    from pathlib import Path as _Path
+    p = _Path(LPDDR_PARSER_NO_MATCH_SENTINEL_FILE)
+    if not p.exists():
+        return 0
+    try:
+        with open(p) as f:
+            data = _json.load(f)
+        return int(data.get("consecutive_parser_no_match", 0)) if isinstance(data, dict) else 0
+    except (OSError, ValueError):
+        return 0
+
+
+def _save_lpddr_sentinel_v3413(count: int) -> None:
+    """Persist the running count. Atomic via tmp + rename."""
+    import json as _json
+    from pathlib import Path as _Path
+    p = _Path(LPDDR_PARSER_NO_MATCH_SENTINEL_FILE)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(".json.tmp")
+    try:
+        with open(tmp, "w") as f:
+            _json.dump({"consecutive_parser_no_match": int(count)}, f)
+        tmp.replace(p)
+    except OSError as e:
+        logger.warning(f"Could not write {p}: {e}")
+        try:
+            tmp.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
+def scrape_trendforce_lpddr_contract(
+    max_articles: int = 20,
+    collector: Optional[DiagnosticsCollector] = None,
+) -> LpddrScrapeResult:
+    """Scrape recent TrendForce press releases for LPDDR direction commentary.
+
+    Reuses the v3.39.3 article-list path (/news/category/semiconductors/dram/)
+    and the v3.39.7 fetch_article_body() helper. Returns a single
+    LpddrScrapeResult with the structured status the caller uses to
+    distinguish "no LPDDR commentary this run" from "scraper broke".
+
+    The sentinel for consecutive parser_no_match runs is updated as a side
+    effect. After LPDDR_PARSER_NO_MATCH_SENTINEL_THRESHOLD consecutive
+    parser_no_match runs, the diagnostic detail string escalates to "BUG
+    SUSPECTED" so the run summary surfaces it as an error not a warning.
+    """
+    result = LpddrScrapeResult(
+        status="no_lpddr_content_in_releases",
+        pages_checked=0,
+        pages_with_lpddr_keywords=0,
+        rows_extracted=0,
+        signals=[],
+        sample_text_when_unparsed="",
+    )
+
+    def _do() -> LpddrScrapeResult:
+        # Step 1: get the article list from the category page
+        try:
+            resp = requests.get(
+                "https://www.trendforce.com/news/category/semiconductors/dram/",
+                headers=HEADERS, timeout=15,
+            )
+            resp.raise_for_status()
+        except Exception as e:
+            result.status = "fetch_failed"
+            result.error = f"category page: {e}"
+            return result
+
+        soup = BeautifulSoup(resp.text, "html.parser")
+        anchors = soup.select("a[href*='/news/']")
+        seen_urls: set[str] = set()
+        article_urls: list[tuple[str, str]] = []  # (url, title)
+        for link in anchors:
+            href = link.get("href", "")
+            title = link.get_text(strip=True)
+            if not title or len(title) < 20 or not href:
+                continue
+            if href.rstrip("/").endswith("/news") or "/category/" in href:
+                continue
+            full_url = href if href.startswith("http") else f"https://www.trendforce.com{href}"
+            if full_url in seen_urls:
+                continue
+            seen_urls.add(full_url)
+            article_urls.append((full_url, title))
+            if len(article_urls) >= max_articles:
+                break
+
+        result.pages_checked = len(article_urls)
+        if not article_urls:
+            result.status = "fetch_failed"
+            result.error = "category page returned 0 article links"
+            return result
+
+        # Step 2: fetch each article body and extract LPDDR signal
+        first_unparsed_sample: Optional[str] = None
+        for url, title in article_urls:
+            body = fetch_article_body(url)
+            if not body:
+                continue
+            release_date = _extract_release_date_from_url_v3413(url)
+            signal, unparsed_sample = _extract_lpddr_signal_from_body(
+                body, url, title, release_date=release_date,
+            )
+            if signal:
+                result.pages_with_lpddr_keywords += 1
+                result.signals.append(signal)
+            elif unparsed_sample:
+                # Keyword present but no direction matched
+                result.pages_with_lpddr_keywords += 1
+                if first_unparsed_sample is None:
+                    first_unparsed_sample = unparsed_sample
+
+        result.rows_extracted = len(result.signals)
+
+        # Determine overall status
+        if result.signals:
+            result.status = "data_extracted"
+        elif result.pages_with_lpddr_keywords > 0:
+            result.status = "parser_no_match"
+            result.sample_text_when_unparsed = first_unparsed_sample or ""
+        else:
+            result.status = "no_lpddr_content_in_releases"
+
+        return result
+
+    # Wrap in collector context if provided (gives the diagnostics row)
+    try:
+        if collector is not None:
+            with collector.track("TrendForce LPDDR contract", "scraper") as t:
+                r = _do()
+                t.items_returned = r.rows_extracted
+                # Diagnostic detail string varies by status (informational only —
+                # the run still completes; downstream consumers read .status)
+                if r.status == "data_extracted":
+                    latest = r.latest_signal
+                    if latest:
+                        t.detail = (
+                            f"{r.rows_extracted} signal(s), latest: "
+                            f"{latest.direction}"
+                            + (f" {latest.pct_qoq:+.0f}%" if latest.pct_qoq is not None else "")
+                        )
+                elif r.status == "no_lpddr_content_in_releases":
+                    t.detail = f"{r.pages_checked} pages checked, 0 mentioned LPDDR"
+                elif r.status == "parser_no_match":
+                    sentinel_count = _load_lpddr_sentinel_v3413() + 1
+                    _save_lpddr_sentinel_v3413(sentinel_count)
+                    if sentinel_count >= LPDDR_PARSER_NO_MATCH_SENTINEL_THRESHOLD:
+                        t.detail = (
+                            f"BUG SUSPECTED: {sentinel_count} consecutive parser_no_match runs. "
+                            f"{r.pages_with_lpddr_keywords}/{r.pages_checked} pages "
+                            f"mention LPDDR but regex didn't match. Sample: '{r.sample_text_when_unparsed[:120]}...'"
+                        )
+                        # Re-raise as warning at error-equivalent severity
+                        # so the collector marks the row as ERROR not OK
+                        raise RuntimeError(
+                            f"LPDDR scraper: {sentinel_count} consecutive parser_no_match "
+                            f"runs — regex likely needs update. Last sample: {r.sample_text_when_unparsed[:200]}"
+                        )
+                    else:
+                        t.detail = (
+                            f"parser_no_match ({sentinel_count}/{LPDDR_PARSER_NO_MATCH_SENTINEL_THRESHOLD}): "
+                            f"{r.pages_with_lpddr_keywords}/{r.pages_checked} pages mention LPDDR "
+                            f"but regex didn't match. Sample: '{r.sample_text_when_unparsed[:120]}...'"
+                        )
+                elif r.status == "fetch_failed":
+                    t.detail = f"fetch_failed: {r.error or 'unknown'}"
+                    raise RuntimeError(t.detail)
+                # Reset sentinel on any non-no-match outcome (successful
+                # extraction OR genuine "no LPDDR" both indicate the scraper
+                # is working)
+                if r.status in ("data_extracted", "no_lpddr_content_in_releases"):
+                    if _load_lpddr_sentinel_v3413() > 0:
+                        _save_lpddr_sentinel_v3413(0)
+            return r
+        else:
+            return _do()
+    except Exception as e:
+        logger.warning(f"LPDDR scrape failed: {e}", exc_info=True)
+        result.status = result.status if result.status != "no_lpddr_content_in_releases" else "fetch_failed"
+        if result.error is None:
+            result.error = str(e)[:200]
+        return result
+
+
+# Persistence — append-only CSV, idempotent on (release_date, source_url) key
+LPDDR_CONTRACT_CSV = _Path_v3397("data/lpddr_contract_history.csv")
+
+
+def persist_lpddr_contract_to_history(result: LpddrScrapeResult) -> int:
+    """Persist LpddrScrapeResult signals to data/lpddr_contract_history.csv.
+
+    Idempotent: same release_date + source_url replaces existing row rather
+    than appending duplicates. Returns count of rows persisted.
+    """
+    if not result.signals:
+        return 0
+    import pandas as pd
+    today_iso = _date_v3397.today().isoformat()
+    rows = []
+    for sig in result.signals:
+        rows.append({
+            "release_date": sig.release_date or today_iso,
+            "extracted_at": today_iso,
+            "direction": sig.direction,
+            "pct_qoq": sig.pct_qoq if sig.pct_qoq is not None else "",
+            "source_url": sig.source_url,
+            "source_title": sig.source_title,
+            "quote": sig.quote,
+        })
+    new_df = pd.DataFrame(rows)
+    return _upsert_csv_v3397(
+        new_df, LPDDR_CONTRACT_CSV, key_cols=["release_date", "source_url"],
+    )

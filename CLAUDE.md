@@ -511,6 +511,56 @@ diff the "active" one and Q the older reference).
 timeout, JSON parse failure — every failure mode degrades to "no diff
 this quarter" without breaking the brief.
 
+### 11. 4-status observability taxonomy for unattended scrapers (v3.4.13 lock)
+
+**Architectural principle established 2026-05-23.**
+
+For any scraper that runs unattended on a cron schedule and extracts
+DOMAIN-SPECIFIC content from broader pages (where "the data isn't there
+today" is a legitimate outcome distinct from "the parser broke"), the
+scraper MUST return an explicit status enum, not just data-or-None.
+
+The minimum taxonomy is four statuses:
+
+1. **`data_extracted`** — normal success. Diagnostic detail shows count
+   + summary of what was extracted.
+2. **`no_<content>_in_<source>`** — domain content genuinely absent.
+   Quiet success. Diagnostic detail shows what was checked (e.g., pages
+   inspected) to make absence visible vs silent.
+3. **`parser_no_match`** — THE BUG MODE. Domain keyword/structure
+   present in source but extraction failed. The scraper MUST capture
+   a sample of the unparsed source text (≥ 200 chars around the
+   first keyword match) and surface it in the diagnostic detail string
+   so a regex/selector fix can be made fast.
+4. **`fetch_failed`** — HTTP error / Cloudflare block / network issue.
+   Distinct from parser issues (the bug is in the network, not the
+   parser).
+
+This taxonomy is what makes "data quality is degrading" visible BEFORE
+3 weeks pass and we realize nothing has been captured. The pre-v3.4.13
+alternative (return `None` on any failure) collapses all three failure
+modes into a single "scraper returned nothing" diagnostic, which is
+indistinguishable from "no data this run."
+
+**Hard sentinel pattern for `parser_no_match`:**
+
+A persistent counter at `state/<scraper>_consecutive_parser_no_match.json`
+tracks consecutive `parser_no_match` runs. After N consecutive (default 3,
+~36 hours given the twice-daily cadence), the scraper RAISES an exception
+from inside `collector.track()`, which flips the diagnostic row from
+⚠️ to ❌. This forces escalation if a regex/selector fix isn't made
+promptly. The counter MUST reset to 0 on any non-`parser_no_match`
+outcome — both successful extraction AND genuine "no content" indicate
+the scraper is healthy.
+
+**Reference implementation: `src/data/news.py::scrape_trendforce_lpddr_contract`.**
+
+Future scrapers added in this codebase (broker note PDF parsers, new
+TrendForce surfaces, additional sanity-check sources for DHCR) should
+follow this pattern. The cost is small (a couple dozen lines for the
+status enum + sentinel I/O) and the cost-of-going-without is large
+(silent failures that look identical to legitimate quiet days).
+
 ---
 
 ## v3.1 → v3.39.3 — what's already built
