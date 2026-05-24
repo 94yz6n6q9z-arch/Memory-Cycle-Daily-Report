@@ -702,8 +702,15 @@ def run_fast_tier() -> int:
                         "operative_context_tokens": dhcr_snapshot.operative_context_tokens,
                         "band": _ctx_band,
                     })
-                    # Prune to last 24 months (keep history lean)
-                    _hist = sorted(_hist, key=lambda h: h.get("date", ""))[-24:]
+                    # v3.5.1 — was [-24:] which kept only 24 daily entries (~24 days).
+                    # The "over the last quarter" trend prose needs ≥90 days of
+                    # history, so prune by date instead: keep entries from the
+                    # last 18 months (matches DHCR quarterly trajectory window).
+                    _cutoff = (_dt.date.today() - _dt.timedelta(days=540)).isoformat()
+                    _hist = sorted(
+                        [h for h in _hist if h.get("date", "") >= _cutoff],
+                        key=lambda h: h.get("date", "")
+                    )
                     _cl_state["operative_context_history"] = _hist
                     # Atomic write
                     _cl_tmp = _cl_state_path.with_suffix(".json.tmp")

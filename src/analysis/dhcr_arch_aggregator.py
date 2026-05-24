@@ -53,7 +53,7 @@ def _iter_extraction_log_entries(lookback_days: int) -> list[dict]:
                     e = json.loads(line)
                 except Exception:
                     continue
-                ts_str = e.get("date") or e.get("extracted_at") or e.get("timestamp")
+                ts_str = (e.get("extracted_at_iso") or e.get("published_date_iso") or e.get("date") or e.get("extracted_at") or e.get("timestamp"))
                 if not ts_str:
                     continue
                 try:
@@ -111,7 +111,9 @@ def aggregate_arch_extractions(lookback_days: Optional[int] = None) -> dict:
         # Group by (name, release_date) and keep highest-tier source
         by_key: dict[tuple, tuple[int, dict, dict]] = {}
         for e in entries:
-            arch_sigs = e.get("architecture_signals") or {}
+            # v3.5.1 — extraction_log writer puts arch signals under "signals" key (see digester._log_architecture_signals);
+            # the "architecture_signals" fallback covers any legacy entries.
+            arch_sigs = e.get("signals") or e.get("architecture_signals") or {}
             release = arch_sigs.get("new_frontier_model_release")
             if not release or not isinstance(release, dict):
                 continue

@@ -543,10 +543,17 @@ def actions_from_broker_pdf_digests(digests: list[dict]) -> list[BrokerAction]:
         # A PDF digest is earnings-related when it carries explicit EPS revision
         # or revenue beat/miss fields — meaning the broker was responding to a
         # specific earnings event, not issuing an independent sector note.
-        _is_earnings = any(
-            km.get(k) is not None
-            for k in ("fy27_eps_revision_pct", "fy27_eps_change_pct", "fy27_eps_pct_change",
-                      "fy27_eps_new", "eps_beat_miss_direction", "eps_surprise_pct")
+        #
+        # v3.5.1 — pattern-match any fyXX_eps_* field rather than hardcoding
+        # fy27. As the canonical "next FY" rolls forward each year (fy27 in
+        # 2026, fy28 in 2027, fy29 in 2028...), the detection should not need
+        # an annual code change.
+        import re as _re
+        _EARNINGS_FIELD_RE = _re.compile(r"^fy\d{2}_eps_")
+        _is_earnings = (
+            any(_EARNINGS_FIELD_RE.match(k) and km.get(k) is not None for k in km)
+            or any(km.get(k) is not None
+                   for k in ("eps_beat_miss_direction", "eps_surprise_pct"))
         )
 
         scored = score_action(

@@ -1,5 +1,39 @@
 # Memory Cycle Brief — Changelog
 
+## v3.5.2 (2026-05-24) — Bundle cleanup
+
+No code changes from v3.5.1. Strips 4 obsolete workflows from the deploy bundle so they stop appearing in extracted folders:
+- `priority_alerts.yml` — real-time mobile push feature was dropped (cron lines were commented out, never ran)
+- `diagnose_mirae_listing.yml` — v3.39.3 one-time selector-discovery diagnostic, served its purpose
+- `dry_run_mirae_v3_39_4.yml` — v3.39.4 pre-deployment validation harness, shipped
+- `probe_bright_data.yml` — v3.4.10 one-time Bright Data probe, served its purpose
+
+All four were manual-trigger only (`workflow_dispatch` with no `cron`), so they never auto-ran. `deploy_from_release.yml` already excludes `.github/workflows/` from rsync regardless of bundle contents, so this change has zero production impact — purely bundle hygiene.
+
+Bundle now contains exactly the 4 workflows that actually run: `deploy_from_release.yml`, `fast_tier.yml`, `deep_tier.yml`, `context_length_refresh.yml`.
+
+
+## v3.5.1 (2026-05-24) — Audit bug fixes for v3.4.14 + v3.5.0
+
+Patch release fixing six bugs surfaced by a post-ship audit. No new features. All fixes have regression tests; the most important — an end-to-end integration test for the extraction_log → aggregator chain — would have caught the headline bug at v3.4.5 had it existed then.
+
+**Fix 1 (CRITICAL — pre-existing v3.4.5 bug): extraction_log key mismatch in all four aggregators.** `src/analysis/digester.py:_log_architecture_signals()` writes records with arch fields nested under `record["signals"]` and the timestamp under `record["extracted_at_iso"]`. But `dhcr_arch_aggregator.py`, `dhcr_revenue_aggregator.py`, `dhcr_accelerator_aggregator.py`, AND the new `context_length_aggregator.py` (which inherited the pattern) all read `e.get("architecture_signals")` and `e.get("date") or e.get("extracted_at")`. The keys never matched. All four aggregators silently returned zero signals every run since v3.4.5 — the state files (`inference_arch_state.json` etc.) have likely never grown beyond their YAML bootstrap values. Fix: aggregators now read `e.get("signals") or e.get("architecture_signals")` (legacy fallback) and accept `extracted_at_iso` / `published_date_iso` timestamp keys. Recommend verifying the four state files in production for entries dated after their bootstrap.
+
+**Fix 2: scraper mislabels 100%-fallback runs as `data_extracted`.** In `_compute_category_result()`, when a provider's scrape failed the fallback `known_value` was added to the weighted sum at full weight. If ALL providers failed but every one had a `known_value`, the result was labeled `data_extracted` despite containing no scraped data. Fix: gate `data_extracted` on the `any_data` flag (already tracked but unused). When all values come from fallbacks, status is now `parser_no_match` / `no_context_spec_found` / `fetch_failed` depending on what providers actually returned. Also: `run_context_length_scraper()` now skips history-write for `no_context_spec_found` (previously only `parser_no_match` and `fetch_failed` were skipped).
+
+**Fix 3: operative_context_history pruned to 24 days instead of 24 months.** In `fast_tier.py`, `_hist = sorted(_hist, ...)[-24:]` with daily dedup-by-date meant 24 entries = ~24 days of history. The "over the last quarter" trend prose needs ≥ 90 days to find a reference point. Fix: date-based prune keeping entries from the last 540 days (~18 months, matches DHCR quarterly trajectory window).
+
+**Fix 4: `data/context_length_signals.yaml` header still documented the manual refresh procedure.** Users following the header would edit the YAML and have their changes silently overridden by `state/context_length_state.json` on the next `load_dhcr_data()` call. Fix: SCHEMA-ONLY banner at the top of the YAML, refresh-procedure section replaced with a pointer to the automated writers.
+
+**Fix 5: hardcoded "C2 to C3" prose in trend phrase.** `_build_operative_context_trend()` ended with "when enterprise contribution alone crosses ~200K tokens the X-axis shifts from C2 to C3" regardless of the matrix's actual current band. Once the matrix moved to C3, the prose became incorrect. Fix: lookup table mapping current_band → (next_band, threshold), prose conditionally renders correct band transition for C1, C2, C3, C4; C5 renders a "top band, no further shift" note.
+
+**Fix 6: earnings detection hardcoded to `fy27_*` field names.** `actions_from_broker_pdf_digests()` checked `fy27_eps_revision_pct`, `fy27_eps_new`, etc. As the canonical "next FY" rolls forward (`fy28` in 2027, `fy29` in 2028), detection would silently stop firing each year. Fix: regex `^fy\d{2}_eps_` matches any forward-year EPS field. The non-fyXX earnings fields (`eps_beat_miss_direction`, `eps_surprise_pct`) still fire detection as before.
+
+**21 new tests** in `tests/test_v3_5_1_bug_fixes.py` across 7 classes. **859 passing** (838 baseline + 21 new). Zero regressions. 27 pre-existing baseline failures unchanged.
+
+**Deploy note on the monthly workflow file:** `.github/workflows/deploy_from_release.yml` explicitly excludes `.github/workflows/` from rsync (defensive — workflows shouldn't overwrite themselves). The new `context_length_refresh.yml` is IN the v3.5.1 bundle but the deploy workflow will not push it to main. One-time manual add required: download the workflow file from the release zip and commit it directly to `.github/workflows/context_length_refresh.yml` via the GitHub UI ("Add file" → "Create new file") or via local git. After that one commit, the file lives in the repo and subsequent releases work normally.
+
+
 ## v3.5.0 (2026-05-24) — Event deduplication
 
 Closes the coverage-echo false-positive risk that has existed since v3.4.11 shipped Phase 5 detection. A single earnings event (e.g. SK Hynix Q2 2026) can generate 8-10 ingested items from different sources — the call wire, Yahoo Finance transcript, Naver Finance, Korean broker PDFs, Reuters, Korea Herald, analyst note echoes. Previously each of these scored independently against `t2_eps_revisions`, compounding the rolling bearish/bullish sum by the number of sources rather than the number of events. Since `t2_eps_revisions` gates Phase 5 conditions B and C, a coverage-echo false-positive could mistrigger Phase 5 on noise.

@@ -1,6 +1,29 @@
 # Context length triangulation signals for the Decode HBM Captive Ratio
 # (DHCR) X-axis computation, v3.4.2.
 #
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║  ⚠️  SCHEMA-ONLY AS OF v3.4.14  —  DO NOT MANUALLY EDIT LIVE VALUES  ⚠️  ║
+# ║                                                                          ║
+# ║  Live `typical_context_tokens` and `volume_share_pct` are now sourced    ║
+# ║  from state/context_length_state.json, which is the SOLE WRITER for      ║
+# ║  these fields. Two automated writers maintain it:                        ║
+# ║                                                                          ║
+# ║    1. src/data/context_length_scraper.py — monthly product-doc scrape    ║
+# ║       (.github/workflows/context_length_refresh.yml, 1st of each month)  ║
+# ║    2. src/analysis/context_length_aggregator.py — daily volume-share     ║
+# ║       proposals from Layer 1 earnings-transcript extraction              ║
+# ║                                                                          ║
+# ║  dhcr.py:load_dhcr_data() reads state and OVERRIDES the values below.    ║
+# ║  Any edits you make to typical_context_tokens or volume_share_pct in     ║
+# ║  THIS file will be silently ignored — edit state/context_length_state    ║
+# ║  .json directly if you need to override (and run the monthly workflow    ║
+# ║  to regenerate from sources).                                            ║
+# ║                                                                          ║
+# ║  Schema fields below (labels, descriptions, bands, confidence,           ║
+# ║  refresh_evidence) ARE still read from YAML — those parts are            ║
+# ║  documentation / config, not live data.                                  ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
 # DUAL-INPUT FRAMEWORK (locked May 22 2026):
 #   Each category carries TWO independently-refreshed inputs:
 #     (a) typical_context_tokens — average context length per session
@@ -29,18 +52,11 @@
 #   from C2 → C3 → C4. If enterprise stalls, we land in LPDDR/hetero
 #   regardless of how much efficiency improves.
 #
-# REFRESH CADENCE: monthly.
-#
-# REFRESH PROCESS:
-#   1. Review product documentation for each category's flagship products
-#      (consumer chat: ChatGPT/Claude/Gemini defaults; coding: Cursor/
-#      Devin/Claude Code; enterprise: Hebbia/Harvey/MS Copilot Enterprise
-#      case studies; etc.)
-#   2. Review hyperscaler earnings transcripts (already digested) for
-#      volume share signals
-#   3. Update typical_context_tokens and volume_share_pct
-#   4. Append a refresh_evidence entry with date + notes
-#   5. Sum volume_share_pct should total 100; rebalance if needed
+# REFRESH CADENCE: automated.
+#   - typical_context_tokens: monthly via context_length_refresh.yml
+#   - volume_share_pct: daily via fast_tier (proposals auto-commit when
+#     max delta ≤ 10pp and ≥ 5 signals; otherwise written as
+#     pending_confirmation and surfaced as an amber box in the DHCR card)
 #
 # CONFIDENCE NOTES:
 #   - Consumer chat: high confidence on context (published) + medium on
@@ -48,8 +64,8 @@
 #   - Coding agents: high on context (published) + medium on share
 #   - Enterprise vertical: LOW on both — case studies are anecdotal,
 #     volume share is estimated as residual. This is the deliberately
-#     uncertain category. The refresh process should pay closest attention
-#     here because this is where the framework outcome is most sensitive.
+#     uncertain category. The aggregator pays closest attention here
+#     because this is where the framework outcome is most sensitive.
 
 schema_version: 1
 last_refreshed: "2026-05-22"

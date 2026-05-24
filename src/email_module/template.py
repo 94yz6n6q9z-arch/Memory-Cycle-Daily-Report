@@ -1794,14 +1794,35 @@ def _build_operative_context_trend(dhcr: dict) -> str:
         cur_str = f"{current_tokens/1000:.0f}K" if current_tokens < 1_000_000 else f"{current_tokens/1_000_000:.2f}M"
         period_label = "quarter" if days_back >= 60 else f"{days_back}-day period"
 
+        # v3.5.1 — derive the next-band watch threshold from current_band
+        # rather than hardcoding "C2 to C3". Renders correct prose whether
+        # the matrix is currently in C1, C2, C3, etc.
+        _band_to_next = {
+            "C1": ("C2", "32K"),
+            "C2": ("C3", "200K"),
+            "C3": ("C4", "1M"),
+            "C4": ("C5", "10M"),
+            "C5": (None, None),
+        }
+        _next_band, _next_threshold = _band_to_next.get(current_band, (None, None))
+        if _next_band:
+            watch_clause = (
+                f" Enterprise volume share and context window expansion are the "
+                f"primary drivers to watch — when operative context crosses "
+                f"~{_next_threshold} the X-axis shifts from {current_band} to {_next_band}."
+            )
+        else:
+            watch_clause = (
+                " Operative context is already in the top band (C5); further "
+                "expansion no longer shifts the X-axis."
+            )
+
         return (
             f"<strong>Operative context trend:</strong> over the last {period_label}, "
             f"operative context has moved {trend_phrase} "
             f"({html.escape(ref_str)} {html.escape(ref_band)} → "
-            f"{html.escape(cur_str)} {html.escape(current_band)}). "
-            f"Enterprise volume share and context window expansion are the primary drivers "
-            f"to watch — when enterprise contribution alone crosses ~200K tokens the "
-            f"X-axis shifts from C2 to C3."
+            f"{html.escape(cur_str)} {html.escape(current_band)})."
+            + watch_clause
         )
     except Exception:
         return ""

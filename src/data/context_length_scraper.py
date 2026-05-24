@@ -386,9 +386,21 @@ def _compute_category_result(
                 weight_total += weight
             result.providers_failed.append(f"{name}:no_spec")
 
-    if weight_total > 0:
+    if any_data:
+        # At least one provider returned a real scraped value.
         result.context_tokens = int(round(weighted_sum / weight_total))
         result.status = "data_extracted"
+    elif weight_total > 0:
+        # All providers fell back to known_value. We DO have a number, but it's
+        # entirely from hardcoded fallbacks — flag the status accordingly so the
+        # diagnostic doesn't pretend the scrape succeeded.
+        result.context_tokens = int(round(weighted_sum / weight_total))
+        if any_parser_no_match:
+            result.status = "parser_no_match"
+            result.detail = "100% fallback values; some providers had parser_no_match"
+        else:
+            result.status = "no_context_spec_found"
+            result.detail = "100% fallback values; pages loaded without recognizable context spec"
     elif any_parser_no_match:
         result.status = "parser_no_match"
         result.detail = "All providers failed; some had parser_no_match"
@@ -509,7 +521,12 @@ def run_context_length_scraper() -> dict:
             )
             continue
 
-        if cat_result.status in ("fetch_failed",):
+        # v3.5.1 — fetch_failed AND no_context_spec_found both mean every
+        # provider in the category was unable to return real data. Even if
+        # context_tokens is set (computed from fallback known_value), we
+        # MUST NOT write it as history — that would silently freeze stale
+        # values into the state file under a "scraper" source label.
+        if cat_result.status in ("fetch_failed", "no_context_spec_found"):
             categories_failed.append(category)
             logger.warning(
                 f"Context scraper [{category}]: {cat_result.status} — "
