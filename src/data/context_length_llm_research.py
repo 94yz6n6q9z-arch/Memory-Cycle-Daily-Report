@@ -39,10 +39,13 @@ logger = logging.getLogger(__name__)
 
 CONTEXT_STATE_FILE = Path("state/context_length_state.json")
 
-# v3.6.0 — Opus 4.7 for bi-monthly research. Reuses the same Anthropic API key
-# (ANTHROPIC_API_KEY) that fast_tier and deep_tier already use daily. Opus over
-# Sonnet because this is open-ended triangulation where deeper reasoning matters
-# more than latency. Cost: ~$0.10/call × 6 calls × 6 runs/year = ~$3.60/year.
+# v3.6.2 — Sonnet 4.6 for bi-monthly research (downgraded from Opus 4.7 in
+# v3.6.0). Sonnet is faster (~15-30s vs ~40-90s per call), produces more
+# consistent JSON output (better-tuned for structured responses with tool use),
+# and is the same model fast_tier uses daily for reasoning. Cost: ~$0.03/call
+# × 6 calls × 6 runs/year = ~$1.10/year.
+#
+# Reuses the same ANTHROPIC_API_KEY secret that fast_tier and deep_tier use.
 
 # Sanity-check thresholds
 MAX_DELTA_FRACTION_CONTEXT = 0.50    # typical_context_tokens: reject >50% change
@@ -249,11 +252,11 @@ def _call_claude_with_search(prompt: str, max_tokens: int = 4096) -> dict:
         )
 
     # Import lazily so tests don't require config.py side-effects
-    from src.config import OPUS_MODEL
+    from src.config import SONNET_MODEL
 
     client = anthropic.Anthropic()
     response = client.messages.create(
-        model=OPUS_MODEL,
+        model=SONNET_MODEL,
         max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
         tools=[{
@@ -262,9 +265,11 @@ def _call_claude_with_search(prompt: str, max_tokens: int = 4096) -> dict:
         }]
     )
 
-    # Concatenate text blocks (the model may have interleaved tool_use blocks
-    # which Anthropic's API handles server-side; we only see text + tool_use
-    # results in the final response content)
+    # Concatenate text blocks. When web_search is enabled, Claude often
+    # produces multiple text blocks interleaved with server-side tool_use /
+    # tool_result blocks — typically reasoning prose first ("Let me search
+    # for..."), then the final JSON. We need to find the JSON within the
+    # concatenated stream rather than assuming it starts at char 0.
     final_text_parts = []
     for block in response.content:
         if hasattr(block, "text") and block.text:
@@ -274,8 +279,87 @@ def _call_claude_with_search(prompt: str, max_tokens: int = 4096) -> dict:
     if not final_text.strip():
         raise ValueError("Empty response from Claude")
 
-    cleaned = _strip_markdown_fences(final_text)
-    return json.loads(cleaned)
+    # v3.6.2 — brace-matching JSON extractor.
+    # The prior implementation called json.loads() on the entire response,
+    # which failed when Claude emitted reasoning prose before/after the JSON
+    # (which it does ~100% of the time with web_search enabled). The fix:
+    # locate the first `{`, walk forward counting brace depth (string-aware,
+    # escape-aware), and extract just the JSON substring.
+    try:
+        return _extract_json_from_text(final_text)
+    except (json.JSONDecodeError, ValueError) as e:
+        # Diagnostic: log the first 500 chars of what Claude returned so we
+        # can debug prompt/parser mismatches without re-running the workflow.
+        preview = final_text[:500].replace("\n", "\\n")
+        logger.error(
+            f"JSON extraction failed. First 500 chars of response: {preview}"
+        )
+        raise
+
+
+def _extract_json_from_text(text: str) -> dict:
+    """Extract the first complete top-level JSON object from a text string.
+
+    Walks the text once, tracking brace depth (skipping over braces inside
+    string literals, accounting for escape characters). Returns the parsed
+    dict, or raises json.JSONDecodeError if no balanced JSON object found.
+
+    This is intentionally more permissive than json.loads() — it tolerates:
+      - Reasoning prose before the JSON ("Based on my research, ...")
+      - Markdown code fences (```json ... ```)
+      - Trailing prose after the JSON
+      - Multiple JSON objects (returns only the first)
+    """
+    # First try stripping markdown fences and parsing directly — fastest path
+    # when Claude returns clean JSON.
+    stripped = _strip_markdown_fences(text)
+    if stripped.startswith("{"):
+        try:
+            return json.loads(stripped)
+        except json.JSONDecodeError:
+            pass    # fall through to brace-matching
+
+    # Find the first `{`
+    start = text.find("{")
+    if start == -1:
+        raise json.JSONDecodeError("No opening brace found in response", text, 0)
+
+    # Walk forward counting braces, tracking string state
+    depth = 0
+    in_string = False
+    escape_next = False
+    end = -1
+
+    for i in range(start, len(text)):
+        ch = text[i]
+        if escape_next:
+            escape_next = False
+            continue
+        if in_string:
+            if ch == "\\":
+                escape_next = True
+            elif ch == '"':
+                in_string = False
+            continue
+        # Not in string
+        if ch == '"':
+            in_string = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+
+    if end == -1:
+        raise json.JSONDecodeError(
+            "Unbalanced braces — no matching `}` for first `{`",
+            text, start
+        )
+
+    json_substring = text[start:end + 1]
+    return json.loads(json_substring)
 
 
 # ── Sanity checks ─────────────────────────────────────────────────────────────

@@ -1,5 +1,24 @@
 # Memory Cycle Brief — Changelog
 
+## v3.6.2 (2026-05-25) — Fix JSON extraction + revert to Sonnet
+
+First production run of v3.6.0 (2026-05-25 06:09 UTC) failed on all 6 LLM calls with identical `Expecting value: line 1 column 1 (char 0)` errors. All 6 HTTP calls returned 200; the failure was downstream in response parsing.
+
+**Root cause.** When the web_search tool is enabled, Claude produces multiple text blocks interleaved with server-side tool_use blocks — typically reasoning prose first ("Let me search for X..."), then more prose ("Based on my research..."), then the final JSON. My v3.6.0 code concatenated all text blocks and called `json.loads()` on the result, which fails because the string doesn't start with `{`. Six different prompts produced six identical parse failures — a structural bug in response handling, not flaky prompts.
+
+**Fix #1: brace-matching JSON extractor.** New `_extract_json_from_text()` in `src/data/context_length_llm_research.py` walks the concatenated text once, finds the first `{`, then tracks brace depth (string-aware, escape-aware) to extract the matching JSON substring. Tolerates reasoning prose before/after the JSON, markdown code fences, and braces inside string literals. The fast path still tries `json.loads()` on the stripped text first; brace-matching is only the fallback when that fails.
+
+**Fix #2: diagnostic logging on parse failure.** When extraction can't find balanced JSON, the worker now logs the first 500 chars of Claude's actual response. If future runs fail in a way the parser doesn't handle, the log shows exactly what Claude returned — no more opaque failures requiring a re-run to diagnose.
+
+**Fix #3: revert from Opus 4.7 to Sonnet 4.6.** v3.6.0 used Opus on the theory that "research triangulation benefits from deeper reasoning." Production data invalidates that theory: Opus calls took 40-91 seconds each (vs Sonnet's expected 15-30s), and Opus is no better at producing well-structured JSON when web_search is enabled — both models emit reasoning prose around the JSON. Sonnet is faster, cheaper (~$0.03/call vs ~$0.10/call), and is the same model fast_tier uses daily for structured reasoning tasks. Annual cost drops from ~$3.60/year to ~$1.10/year. `config.SONNET_MODEL` is reused; `OPUS_MODEL` constant remains in config.py for any future need.
+
+**No prompt changes, no workflow changes.** The system prompts, sanity checks, and bi-monthly cron remain identical to v3.6.0. Only the response-handling path is fixed.
+
+**Tests.** 15 new tests in `tests/test_v3_6_2_json_extraction.py`: 12 cover `_extract_json_from_text` edge cases (clean JSON, prose-before, prose-after, markdown fences, nested objects, braces-inside-strings, escaped quotes, unbalanced-brace handling, realistic LLM response shapes); 2 confirm the Sonnet revert; 1 confirms the diagnostic logging fires on parse failure. **865 total passing** (850 baseline + 15 new). Zero new regressions; 27 pre-existing failures unchanged.
+
+**Deploy.** Publish release `v3.6.2` with the attached zip — `deploy_from_release.yml` handles the sync. No workflow file changes needed (the existing `context_length_research.yml` from v3.6.0 already references `python -m src.data.context_length_llm_research` which now has the fix). No secret changes needed. After deploy, manually trigger the workflow via Actions tab → "Context Length Research" → "Run workflow" to verify. Expected runtime: ~3-5 minutes (faster than the failed v3.6.0 run because Sonnet is quicker than Opus). Expected outcome: 6 categories researched, values committed or rejected based on sanity checks, state file updated.
+
+
 ## v3.6.0 (2026-05-24) — LLM-driven context length research
 
 Replaces the v3.4.14 scraper + aggregator with a single Claude API call (web search enabled) that runs bi-monthly and triangulates context length values from current public sources. The principle from `TRIANGULATION_METHODOLOGY.md` ("approximately right with public proxy data > elaborately wrong from broken scraping") is now implemented in code, not just documented.
