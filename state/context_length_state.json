@@ -15,12 +15,24 @@
         "worker_cited_source": "State of AI: An Empirical 100 Trillion Token Study with OpenRouter (OpenRouter + a16z)",
         "worker_cited_url": "https://openrouter.ai/state-of-ai",
         "worker_confidence": "medium"
+      },
+      {
+        "date": "2026-05-25",
+        "calibration_status": "passed",
+        "worker_derived_value": 6000,
+        "target_value": 6000,
+        "tolerance_fraction": 0.4,
+        "actual_deviation_fraction": 0.0,
+        "worker_cited_source": "State of AI: An Empirical 100 Trillion Token Study with OpenRouter (a16z + OpenRouter)",
+        "worker_cited_url": "https://arxiv.org/abs/2601.10088",
+        "worker_confidence": "high"
       }
     ],
-    "last_run_at": "2026-05-25T08:21:34.820015+00:00",
+    "last_run_at": "2026-05-25T10:35:56.487516+00:00",
     "last_run_summary": {
-      "committed_count": 0,
-      "divergent_count": 6,
+      "status": "completed_success",
+      "committed_count": 6,
+      "floor_bound_count": 5,
       "error_count": 0
     }
   },
@@ -63,6 +75,155 @@
               "method": "empirical_third_party",
               "confidence": "medium",
               "category_adjustment_reasoning": "Multiple adjustments required: (1) OpenRouter's cross-category average of ~6,000 tokens (late 2025) is dominated by programming/agentic workloads which average 3\u20134x the token length of general-purpose prompts per the same study; backing out programming's outsized weight implies general-purpose prompts on OpenRouter are roughly ~1,500\u20132,000 tokens. (2) OpenRouter traffic is entirely developer API traffic with zero true consumer chat (ChatGPT.com, Claude.ai, Gemini app); consumer sessions have shorter system prompts, no RAG, and shorter turn histories. (3) WildChat and LMSYS-Chat-1M measure raw user message tokens (~70\u2013296 tokens per turn), not total context loaded into the model. Total context must add: system prompt (~750\u20131,500 tokens for consumer chat products), accumulated prior turns (~800\u20131,500 tokens by turn 2\u20133 of a median session), and the current user message (~200\u2013300 tokens). (4) The median consumer session is short: WildChat shows ~2.5 turns/conversation; by the median request across all turns in a session, accumulated history is modest. Synthesizing these: system prompt ~1,000 + history ~700 + current message ~300 \u2248 2,000 tokens total context for a typical production consumer chat request. This is consistent with the Epoch AI framing of a 'standard consumer chat query' as a short typed input plus modest session state, and with the LMSYS lower bound. Confidence is medium because no study directly measures total context window fill (system prompt + history) for ChatGPT.com / Claude.ai / Gemini app consumer traffic specifically \u2014 all available studies either measure raw user message length only (WildChat, LMSYS) or aggregate developer API traffic skewed by programming/agentic use (OpenRouter)."
+            }
+          }
+        },
+        {
+          "date": "2026-05-25",
+          "value": 8500,
+          "source": "llm_research_v3_7_2",
+          "synthesis_rule": "max(path_B_economic, mean(filtered_paths)) floored at seed",
+          "path_values": {
+            "a": 4200,
+            "b": 4500,
+            "c": 2700
+          },
+          "dropped_paths": [],
+          "mean_of_paths": 3800,
+          "candidate": 4500,
+          "candidate_source": "max(path_B_economic, mean_of_paths)",
+          "seed_floor": 8500,
+          "binding_rule": "floor",
+          "spread_pct": 47.4,
+          "previous_value": 8500,
+          "delta_pct": 0.0,
+          "paths_provenance": {
+            "a": {
+              "value": 4200,
+              "method": "vendor_disclosures",
+              "confidence": "low",
+              "weighted_calculation": "0.60 * 3600 + 0.12 * 5700 + 0.22 * 3450 + 0.06 * 3950 = 2160 + 684 + 759 + 237 = 3840; rounded to 4200 to account for upward skew from memory injection, grounding snippets, and longer-session requests that are underrepresented in turn-1 estimates but material in aggregate token consumption",
+              "products_analyzed": [
+                {
+                  "name": "ChatGPT (OpenAI)",
+                  "share_weight": 0.6,
+                  "system_prompt_tokens": 850,
+                  "typical_retrieval_or_loaded_content_tokens": 400,
+                  "typical_history_tokens": 2200,
+                  "typical_user_message_tokens": 150,
+                  "total_typical_context": 3600,
+                  "evidence_quote": "ChatGPT always reserves a portion\u2014typically 750 to 900 tokens\u2014for system instructions, routing, and safety logic.",
+                  "source_url": "https://www.datastudios.org/post/chatgpt-context-window-token-limits-memory-models-features-settings-etc"
+                },
+                {
+                  "name": "Claude.ai (Anthropic)",
+                  "share_weight": 0.12,
+                  "system_prompt_tokens": 1500,
+                  "typical_retrieval_or_loaded_content_tokens": 500,
+                  "typical_history_tokens": 3500,
+                  "typical_user_message_tokens": 200,
+                  "total_typical_context": 5700,
+                  "evidence_quote": "Message 5: Your prompt is 200 tokens, but Claude is now processing ~3,000 tokens (your 200 + all previous messages + all previous responses).",
+                  "source_url": "https://levelup.gitconnected.com/stop-burning-tokens-a-developers-guide-to-claude-ai-token-optimization-4c70c7c52ffb"
+                },
+                {
+                  "name": "Gemini app (Google)",
+                  "share_weight": 0.22,
+                  "system_prompt_tokens": 1000,
+                  "typical_retrieval_or_loaded_content_tokens": 300,
+                  "typical_history_tokens": 2000,
+                  "typical_user_message_tokens": 150,
+                  "total_typical_context": 3450,
+                  "evidence_quote": "On Gemini Apps (the consumer-facing version available via web and mobile), users on the free tier are limited to a smaller context window, estimated around 32,000 tokens.",
+                  "source_url": "https://www.datastudios.org/post/google-gemini-context-window-token-limits-memory-policy-and-2025-rules"
+                },
+                {
+                  "name": "Microsoft Copilot consumer",
+                  "share_weight": 0.06,
+                  "system_prompt_tokens": 1200,
+                  "typical_retrieval_or_loaded_content_tokens": 800,
+                  "typical_history_tokens": 1800,
+                  "typical_user_message_tokens": 150,
+                  "total_typical_context": 3950,
+                  "evidence_quote": "In the consumer-facing Copilot web and mobile apps, Microsoft does not publish specific token window numbers.",
+                  "source_url": "https://www.datastudios.org/post/microsoft-copilot-context-window-token-limits-and-memory"
+                }
+              ]
+            },
+            "b": {
+              "value": 4500,
+              "method": "economic_triangulation",
+              "confidence": "medium",
+              "math_steps": [
+                {
+                  "step": "annual revenue (consumer_chat scope)",
+                  "value": "~$10B annualized",
+                  "source_url": "https://www.businessofapps.com/data/chatgpt-statistics/",
+                  "notes": "ChatGPT consumer product generated ~$8B in 2025 (66% of OpenAI's ~$12B 2025 revenue per BusinessOfApps). Adding Gemini app and Claude.ai consumer fractions (~$1-2B combined) yields ~$10B for the consumer_chat category. OpenAI total ARR ~$24B in April 2026 (SaaStr); enterprise >40% of mix (Sacra/OpenAI); consumer subscriptions (Plus, Pro, free-tier ad-equivalent) ~$10-12B. Using $10B as conservative floor."
+                },
+                {
+                  "step": "blended input price for consumer_chat inference",
+                  "value": "$1.00 per 1M tokens (blended internal inference cost equivalent)",
+                  "source_url": "https://sacra.com/c/openai/",
+                  "notes": "OpenAI's inference costs were $8.4B in 2025 serving all traffic (Sacra). GPT-5.4 API list price is $2.50/M input (pricepertoken.com); GPT-5.4 Mini ~$0.75/M; free-tier nano ~$0.20/M. The vast majority of 900M WAU are free users routed to mini/nano models. Paying subscribers (~50M) get premium models. Weighted-average internal cost for consumer chat blends to ~$1/M input tokens. Consumer chat is ~50% of total inference load \u2192 ~$4-5B of $8.4B total inference cost attributed to consumer chat."
+                },
+                {
+                  "step": "implied total input tokens/year (consumer_chat)",
+                  "value": "4,500,000,000,000 (4.5 trillion)",
+                  "calc": "$4.5B inference cost / ($1.00 per 1M tokens) = 4.5T input tokens/year",
+                  "notes": "Using $4.5B as midpoint of the $4-5B consumer-chat share of OpenAI's $8.4B 2025 inference cost (Sacra). OpenAI dominates category (~80% share), so gross category input tokens ~5.6T. Using OpenAI alone for the primary calculation to stay grounded in disclosed figures."
+                },
+                {
+                  "step": "annual request count (consumer_chat)",
+                  "value": "912,500,000,000 (912.5 billion)",
+                  "source_url": "https://www.demandsage.com/chatgpt-statistics/",
+                  "calc": "2.5B prompts/day (ChatGPT, confirmed by multiple sources including OpenAI directly) \u00d7 365 days = 912.5B requests/year for ChatGPT alone. Adding Gemini app and Claude.ai consumer at ~20% of ChatGPT volume gives ~1.1T category-wide. Using 1.0T as round category total.",
+                  "notes": "Sources: DemandSage ('Over 2 billion daily queries are processed on ChatGPT'), TechnologyChecker ('ChatGPT receives approximately 2.5 billion prompts per day'), FatJoe ('ChatGPT also handles an estimated 2.5 billion prompts per day'). Cross-check: 900M WAU \u00d7 ~25.7 messages/user/week (NBER paper cited by GetPanto) = 23.1B messages/week = 3.3B/day, somewhat higher than 2.5B/day, suggesting the 2.5B figure may already be slightly stale or conservative. Using 2.5B/day (= 912.5B/year) as the more conservative and more-cited direct figure."
+                },
+                {
+                  "step": "implied tokens per request",
+                  "value": "4,500",
+                  "calc": "4.5T input tokens / 1.0T requests = ~4,500 tokens per request",
+                  "notes": "Cross-check via subscription revenue route: $10B consumer revenue / 1T requests = $0.01/request. At $1/M blended input cost, $0.01 buys 10,000 input tokens \u2014 but subscription pricing is a revenue figure not a cost figure; gross margin ~33% means cost per request is ~$0.0033, implying ~3,300 tokens at $1/M. That alternative route gives ~3,000-3,300 tokens. The inference-cost route gives ~4,500. Averaging the two approaches suggests a range of 3,000-5,000 tokens, with 4,500 as the central estimate. Structural composition check: system prompt (~800 tokens) + memory/personalization layer (~500 tokens) + average 3-turn history at ~500 tokens/turn (~1,500 tokens) + current user message (~200 tokens) = ~3,000 tokens baseline for turn 4. Many sessions are early-turn (turn 1-2), pulling the average down; heavier users and multi-turn sessions pull it up. The ~4,000-5,000 range is consistent with a population-weighted average that includes short single-turn queries (system+message ~1,000 tokens) from the large free-tier base and longer multi-turn conversations from paying subscribers."
+                }
+              ],
+              "sanity_check": "The implied 4,500 tokens/request is plausible and internally consistent. Structural decomposition: system prompt (~800T) + personalization/memory (~400T) + average chat history across all turns in a session (~2,500T weighted for turn distribution) + current user message (~200T) + occasional web search snippets for free-tier search queries (~600T weighted) \u2248 4,500T. The number is well above a bare single-message call (~1,000T) and well below the context window ceiling (400K-1M tokens for current GPT-5.x models). The free-tier mass (880M of 900M WAU) skews toward shorter early-turn conversations on lighter models, but the paid subscribers generate disproportionate token volume per session. A blended population average of ~4,000-5,000 tokens is consistent with (a) developer forum reports of 3,000-4,000 tokens per API call for basic chatbots with system prompts, (b) OpenAI's own web search integration adding 8,000 token blocks per search call (diluted by the fraction of queries using search), and (c) the session-length data showing average 12.5 minutes per web session, implying multiple back-and-forth turns. Confidence is medium rather than high because OpenAI does not publicly disclose per-request token counts, the revenue/cost split between consumer and enterprise is estimated, and model routing (which determines actual cost per token) is not publicly specified."
+            },
+            "c": {
+              "value": 2700,
+              "method": "empirical_third_party",
+              "confidence": "medium",
+              "studies_cited": [
+                {
+                  "study_name": "State of AI: An Empirical 100 Trillion Token Study with OpenRouter (a16z / OpenRouter)",
+                  "publication_date": "2025-12",
+                  "what_it_measured": "Average prompt tokens per request across 100 trillion tokens of real API traffic on OpenRouter (Nov 2024\u2013Nov 2025), finding the cross-category mean grew from ~1,500 to ~6,000 tokens, with coding workloads exceeding 20K tokens and pulling the average up substantially.",
+                  "raw_measured_value": 6000,
+                  "url": "https://openrouter.ai/state-of-ai"
+                },
+                {
+                  "study_name": "WildChat: 1M ChatGPT Interaction Logs in the Wild (Zhao et al., ICLR 2024)",
+                  "publication_date": "2024-05",
+                  "what_it_measured": "Token statistics from 1 million real user\u2013ChatGPT conversations (GPT-3.5-Turbo and GPT-4), finding average user prompt token count of 295.58 tokens per turn and mean of 2.52 turns per conversation.",
+                  "raw_measured_value": 296,
+                  "url": "https://arxiv.org/abs/2405.01470"
+                },
+                {
+                  "study_name": "LMSYS-Chat-1M: A Large-Scale Real-World LLM Conversation Dataset (Zheng et al., ICLR 2024)",
+                  "publication_date": "2024-01",
+                  "what_it_measured": "Token statistics from 1 million real chatbot arena conversations across 25 LLMs, finding average user prompt of 69.5 tokens and average 2.0 turns per conversation (Llama-2 tokenizer).",
+                  "raw_measured_value": 70,
+                  "url": "https://arxiv.org/abs/2309.11998"
+                },
+                {
+                  "study_name": "How People Use ChatGPT (Chatterji et al., OpenAI / NBER Working Paper)",
+                  "publication_date": "2025-09",
+                  "what_it_measured": "Analysis of ~1.1 million randomly sampled consumer ChatGPT conversations (May 2024\u2013June 2025), characterizing usage by topic: ~77% of messages fall into Practical Guidance, Seeking Information, and Writing \u2014 lightweight conversational tasks; non-work messages exceed 70% of all consumer messages.",
+                  "raw_measured_value": 0,
+                  "url": "https://cdn.openai.com/pdf/a253471f-8260-40c6-a2cc-aa93fe9f142e/economic-research-chatgpt-usage-paper.pdf"
+                }
+              ],
+              "category_adjustment_reasoning": "The OpenRouter 100T-token study reports a cross-category average of ~6,000 prompt tokens (late 2025), but this is heavily weighted by coding/agentic workloads that average 20K+ tokens (per the study's own note that 'programming drives most of this complexity, often requiring inputs exceeding 20,000 tokens'). OpenRouter also has no direct consumer chat traffic \u2014 it is a developer API aggregator. The OpenAI 'How People Use ChatGPT' study confirms that consumer ChatGPT is dominated by lightweight tasks (practical guidance, information seeking, writing), not coding or agentic workflows, so the 6K average does not apply. The WildChat dataset (296 tokens avg per user turn, 2.52 turns) and LMSYS-Chat-1M (70 tokens avg per user turn, 2.0 turns) provide direct measurements of real consumer chat message lengths, though both predate 2025 system prompt inflation and modern memory layers. To compute total context loaded at inference for a typical mid-session consumer_chat request: user message ~200 tokens (splitting WildChat 296 and LMSYS 70, skewing toward WildChat as more realistic) + system prompt ~1,000 tokens (typical for ChatGPT/Claude.ai/Gemini app, conservative estimate for consumer apps) + prior conversation history at avg turn 2 (~2 prior exchanges \u00d7 ~500 tokens each = ~1,000 tokens) + memory/personalization layer in modern consumer apps ~300 tokens = ~2,500 tokens. Adding modest growth in prompt complexity since 2023-2024 datasets, rounding to ~2,700 tokens as the median production context at a typical mid-session turn. This is well below the 6K cross-platform API average (which is pulled up by coding) and consistent with the OpenRouter early-2024 baseline of ~1,500 for simpler developer requests, adjusted upward for system prompt and history accumulation present in consumer apps but absent in raw API calls."
             }
           }
         }
@@ -108,6 +269,200 @@
               "category_adjustment_reasoning": "The 'coding_agents' category is internally bimodal: (A) inline autocomplete (GitHub Copilot inline, Cursor Tab), where context is a small window of surrounding code \u2014 typically 1,000\u20133,000 tokens of file context plus system prompt, yielding ~2,000\u20134,000 tokens per request; and (B) agentic/chat sessions (Claude Code multi-file edits, Devin autonomous tasks, Cursor Agent mode, Replit Agent, Lovable/Bolt scaffolding), where loaded files + tool outputs + session history accumulate to 20K\u2013200K tokens per model call. The OpenRouter 100T-token study directly measured programming-category prompts as 'routinely exceeding 20K input tokens' in production (mid-2025 data), and the smol.ai summary of the same study reports the average for coding workloads on Claude (which owns ~60% of coding traffic) is 'over 20K tokens.' The Claude Code vs. Cursor benchmark found 33K tokens for an efficient agent and 188K for a less-efficient one on an identical real task \u2014 bracketing the agent sub-segment. The SWE-Pruner paper provides a complementary view: across all turns of a multi-step agent task, read operations alone consume ~2.89M tokens total, implying individual mid-task context windows in the 30K\u201380K range (with compaction). For a weighted typical production request across the full product portfolio \u2014 blending the large volume of lightweight autocomplete calls (~3K tokens each) with the smaller volume but token-dominant agentic calls (30K\u2013100K) \u2014 the mix yields an average context of roughly 25,000\u201330,000 tokens per request. This is consistent with the OpenRouter >20K floor for the programming category and the 33K lower bound from the efficient-agent benchmark. The $0.30/day GitHub Copilot chat example (10 questions \u00d7 10K context each) also anchors the chat sub-mode at ~10K, below full agentic sessions. Midpoint of ~28K is the best defensible estimate. Confidence is medium because: (1) the OpenRouter study reports a floor ('>20K') not a precise mean for this sub-category; (2) the 33K/188K benchmark covers one task type and two specific agents; (3) inline autocomplete volume vs. agentic volume split is not published; and (4) the category spans products with very different architectures (Lovable/Bolt full-stack scaffolding vs. Copilot inline)."
             }
           }
+        },
+        {
+          "date": "2026-05-25",
+          "value": 100000,
+          "source": "llm_research_v3_7_2",
+          "synthesis_rule": "max(path_B_economic, mean(filtered_paths)) floored at seed",
+          "path_values": {
+            "a": 28000,
+            "b": 35000,
+            "c": 60000
+          },
+          "dropped_paths": [],
+          "mean_of_paths": 41000,
+          "candidate": 41000,
+          "candidate_source": "max(path_B_economic, mean_of_paths)",
+          "seed_floor": 100000,
+          "binding_rule": "floor",
+          "spread_pct": 78.0,
+          "previous_value": 100000,
+          "delta_pct": 0.0,
+          "paths_provenance": {
+            "a": {
+              "value": 28000,
+              "method": "vendor_disclosures",
+              "confidence": "low",
+              "weighted_calculation": "0.22*2050 + 0.13*25300 + 0.25*28300 + 0.20*43300 + 0.08*24300 + 0.05*20300 + 0.04*60500 + 0.03*30300 = 451 + 3289 + 7075 + 8660 + 1944 + 1015 + 2420 + 909 = 25763 \u2248 28000 (rounded up to account for session growth beyond first turn, as the question targets a typical mid-session production request rather than turn-1 only)",
+              "products_analyzed": [
+                {
+                  "name": "GitHub Copilot (inline autocomplete)",
+                  "share_weight": 0.22,
+                  "system_prompt_tokens": 500,
+                  "typical_retrieval_or_loaded_content_tokens": 1500,
+                  "typical_history_tokens": 0,
+                  "typical_user_message_tokens": 50,
+                  "total_typical_context": 2050,
+                  "evidence_quote": "Inline suggestions use only nearby lines as context, so token usage stays low",
+                  "source_url": "https://medium.com/simform-engineering/github-copilot-token-usage-explained-with-practical-cost-control-03062b15ecb0"
+                },
+                {
+                  "name": "GitHub Copilot Chat / Agent (IDE + CLI)",
+                  "share_weight": 0.13,
+                  "system_prompt_tokens": 8000,
+                  "typical_retrieval_or_loaded_content_tokens": 12000,
+                  "typical_history_tokens": 5000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 25300,
+                  "evidence_quote": "system instructions and tool definitions take up 30-40% even with a simple message like 'hi'",
+                  "source_url": "https://github.com/orgs/community/discussions/188691"
+                },
+                {
+                  "name": "Cursor (Chat + Agent mode, blended)",
+                  "share_weight": 0.25,
+                  "system_prompt_tokens": 2000,
+                  "typical_retrieval_or_loaded_content_tokens": 18000,
+                  "typical_history_tokens": 8000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 28300,
+                  "evidence_quote": "Message 1 in a fresh chat might cost 30K tokens",
+                  "source_url": "https://medium.com/@grvharariya/cursor-token-optimization-a-data-driven-investigation-176ae06bb247"
+                },
+                {
+                  "name": "Claude Code",
+                  "share_weight": 0.2,
+                  "system_prompt_tokens": 3000,
+                  "typical_retrieval_or_loaded_content_tokens": 25000,
+                  "typical_history_tokens": 15000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 43300,
+                  "evidence_quote": "51k/200k tokens (26%) \u2014 System prompt: 2.6k, System tools: 17.6k, Messages: 30.5k",
+                  "source_url": "https://wmedia.es/en/tips/claude-code-context-command-token-usage"
+                },
+                {
+                  "name": "Lovable",
+                  "share_weight": 0.08,
+                  "system_prompt_tokens": 4000,
+                  "typical_retrieval_or_loaded_content_tokens": 15000,
+                  "typical_history_tokens": 5000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 24300,
+                  "evidence_quote": "If a file is not in your context, you must read the file before writing to it",
+                  "source_url": "https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools/blob/main/Lovable/Agent%20Prompt.txt"
+                },
+                {
+                  "name": "Bolt (StackBlitz)",
+                  "share_weight": 0.05,
+                  "system_prompt_tokens": 4000,
+                  "typical_retrieval_or_loaded_content_tokens": 12000,
+                  "typical_history_tokens": 4000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 20300,
+                  "evidence_quote": "Token-based pricing is unpredictable and can explode during debugging; Bolt.new users burned 2+ million tokens fixing bugs",
+                  "source_url": "https://medium.com/@aftab001x/the-2026-ai-coding-platform-wars-replit-vs-windsurf-vs-bolt-new-f908b9f76325"
+                },
+                {
+                  "name": "Devin (Cognition)",
+                  "share_weight": 0.04,
+                  "system_prompt_tokens": 5000,
+                  "typical_retrieval_or_loaded_content_tokens": 35000,
+                  "typical_history_tokens": 20000,
+                  "typical_user_message_tokens": 500,
+                  "total_typical_context": 60500,
+                  "evidence_quote": "its ability to reason about a codebase is bounded by what it can load into its context window during a given session",
+                  "source_url": "https://www.sitepoint.com/devin-ai-engineers-production-realities/"
+                },
+                {
+                  "name": "Replit Agent",
+                  "share_weight": 0.03,
+                  "system_prompt_tokens": 4000,
+                  "typical_retrieval_or_loaded_content_tokens": 18000,
+                  "typical_history_tokens": 8000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 30300,
+                  "evidence_quote": "Agent's system prompt optimization made it 2-3 seconds faster per action",
+                  "source_url": "https://blog.replit.com/2025-replit-in-review"
+                }
+              ]
+            },
+            "b": {
+              "value": 35000,
+              "method": "economic_triangulation",
+              "confidence": "medium",
+              "math_steps": [
+                {
+                  "step": "annual revenue",
+                  "value": "$7.3B blended category ARR (Claude Code ~$3B, Cursor ~$2.5B, GitHub Copilot ~$1B, Lovable ~$0.4B, Replit ~$0.2B, Devin/Cognition ~$0.175B, Bolt ~$0.07B); API-priced subset (excluding Copilot flat-sub) = ~$6.3B",
+                  "source_url": "https://sacra.com/c/anthropic/"
+                },
+                {
+                  "step": "blended input price",
+                  "value": "$3.21 per 1M tokens (revenue-weighted across API-priced subset: Claude Code at $4/M Sonnet-4.6/Opus-4.7 blended; Cursor at $2.5/M routing across Anthropic+OpenAI+proprietary Composer; Replit/Lovable/Bolt at $2.5/M mostly Sonnet-class)",
+                  "source_url": "https://sacra.com/c/anthropic/"
+                },
+                {
+                  "step": "implied total input tokens/year",
+                  "value": "1960000000000000",
+                  "calc": "$6.3B / ($3.21 / 1M) = 1.96T input tokens/year across API-priced coding agent products"
+                },
+                {
+                  "step": "annual request count",
+                  "value": "56000000000",
+                  "source_url": "https://www.faros.ai/blog/claude-code-token-limits"
+                },
+                {
+                  "step": "implied tokens per request",
+                  "value": "35000",
+                  "calc": "1.96T tokens / 56B LLM API calls = 35K tokens/call; 56B calls derived from 2M active users \u00d7 250 workdays \u00d7 ~112 LLM calls/user/day (consistent with 5-10 agentic sessions/day each requiring 10-20 LLM calls, corroborated by observed Claude Code /context breakdowns showing 51K-76K tokens at mid-session with 20K fixed overhead + 10-30K accumulated messages; revenue-weighted across tiers: Claude Code 40% rev at ~60K, Cursor agent 25% at ~30K, Copilot chat 8% at ~8K, Copilot autocomplete 8% at ~2.5K, Devin 2% at ~80K, Replit/Lovable/Bolt 9% at ~15K, yielding weighted average of ~36K rounded to 35K)"
+                }
+              ],
+              "sanity_check": "35K tokens is plausible for a category blending heavy terminal agents (Claude Code mid-session: system ~3K + tools ~17K + memory ~3K + accumulated tool outputs + messages = 40-70K observed via /context command) with IDE chat agents (Cursor: system + open files + RAG retrieval + history = 20-40K) and vibe-coding builders (10-20K per generation call). The category skews high relative to consumer chat because (1) code files are token-dense, (2) tool-call outputs from file reads accumulate in context, and (3) multi-file editing requires loading multiple files simultaneously. GitHub's own shift to token-based billing confirms that agent/chat requests regularly exceed plan pricing caps, consistent with 10K-100K token contexts. The implied 112 LLM API calls per active user per workday is high but consistent with background multi-agent parallelism (Cursor Background Agents, Claude Code /fleet, 3-agent teams each burning their own budget) that became standard in 2026. Claude Code Pro users get ~44K tokens per 5-hour window allocation, implying a single heavy session consumes that entire budget across ~10-20 LLM calls at ~2K-5K tokens each early in session, growing to ~40-70K tokens per call late in session \u2014 a session average consistent with ~35K/call."
+            },
+            "c": {
+              "value": 60000,
+              "method": "empirical_third_party",
+              "confidence": "medium",
+              "studies_cited": [
+                {
+                  "study_name": "State of AI: An Empirical 100 Trillion Token Study with OpenRouter (a16z/OpenRouter)",
+                  "publication_date": "2025-12",
+                  "what_it_measured": "Average prompt token lengths by category across >100 trillion real-world LLM API calls on the OpenRouter platform, Nov 2024\u2013Nov 2025, with category-level breakdowns available from May 2025 onward.",
+                  "raw_measured_value": 20000,
+                  "url": "https://openrouter.ai/state-of-ai"
+                },
+                {
+                  "study_name": "The Coding Agent Economy \u2014 Requesty LLM Gateway Empirical Study",
+                  "publication_date": "2026-05",
+                  "what_it_measured": "Average input tokens per API call across 9 AI coding tools (Claude Code, Roo Code, Cline, and others) measured via production LLM gateway traffic, May 2025\u2013April 2026.",
+                  "raw_measured_value": 50000,
+                  "url": "https://www.requesty.ai/coding-agent-economy"
+                },
+                {
+                  "study_name": "How Do AI Agents Spend Your Money? Analyzing and Predicting Token Consumption in Agentic Coding Tasks (Bai et al., Stanford/MIT/Microsoft/DeepMind)",
+                  "publication_date": "2026-04",
+                  "what_it_measured": "Systematic empirical study of token consumption trajectories from 8 frontier LLMs on 500 SWE-bench Verified tasks using the OpenHands agent, measuring input/output token splits and variability per API call and per task.",
+                  "raw_measured_value": 153,
+                  "url": "https://arxiv.org/abs/2604.22750"
+                },
+                {
+                  "study_name": "The Hidden Cost Driver in Agentic Coding Sessions \u2014 Vantage.sh",
+                  "publication_date": "2026-04",
+                  "what_it_measured": "Turn-by-turn empirical analysis of input token accumulation in production agentic coding sessions (Cursor, Claude Code), showing per-call context sizes at different session depths.",
+                  "raw_measured_value": 30000,
+                  "url": "https://www.vantage.sh/blog/agentic-coding-costs"
+                },
+                {
+                  "study_name": "Tokenomics: Quantifying Where Tokens Are Used in Agentic Software Engineering (Salim et al.)",
+                  "publication_date": "2026-01",
+                  "what_it_measured": "Token consumption patterns across distinct SDLC stages in a multi-agent software engineering framework (ChatDev/GPT-5), measuring input vs. output token shares and stage-level distributions across 30 tasks.",
+                  "raw_measured_value": 54,
+                  "url": "https://arxiv.org/abs/2601.14470"
+                }
+              ],
+              "category_adjustment_reasoning": "The raw data points span a wide range that must be reconciled by tool type and measurement unit. (1) OpenRouter reports programming queries 'routinely exceed 20K input tokens' and 'Claude owns ~60% of coding workloads with average prompts over 20K tokens' \u2014 this is a floor anchored to mid-2025. (2) Requesty's production gateway data (the most directly relevant source: real coding agent API calls, not benchmarks) shows average input tokens per call rising from ~50K (May 2025) to ~200K (April 2026) across tools like Claude Code, Roo Code, and Cline \u2014 tools that are fully agentic and session-heavy. (3) Vantage's turn-by-turn model shows that a mid-session call (turn ~30) carries 25K\u201335K tokens, while a late-session call (turn ~50) approaches 100K\u2013200K. (4) The Bai et al. paper confirms that input tokens dominate agentic coding at a 153:1 input:output ratio, and that total task consumption is orders of magnitude above chat \u2014 but that study measures full multi-step trajectories, not a single API call. The 'typical_context_tokens' definition specifies what is loaded for a TYPICAL SINGLE production API call (what fills the KV cache). The category is a composite: GitHub Copilot inline autocomplete is very low context (~2K\u20135K per request) and represents high request volume but low KV cache pressure per call; Cursor Composer/agent mode, Claude Code, and Devin/Replit Agent are heavy agentic tools with 25K\u2013200K per call. Weighting: Copilot inline autocomplete likely represents the majority of raw request count but a minority of KV-cache-hours (since agents generate many more calls). For a typical request in aggregate across the named tools (Copilot chat + inline, Cursor agent, Claude Code, Devin, Replit, Lovable, Bolt), a reasonable production-weighted midpoint is ~60K tokens per API call as of mid-2026. This is consistent with the Requesty trajectory (started at 50K in May 2025, now trending toward 200K \u2014 a mid-2025-to-mid-2026 weighted average of roughly 80K for heavy agent tools, blended down to ~60K when including lower-context Copilot inline and simple chat-mode requests). Variance is high: simple autocomplete calls may be 2K\u20135K; a late-stage full-context Devin or Claude Code call may be 150K\u2013200K. The 60K estimate targets the production-weighted median across the full named product set."
+            }
+          }
         }
       ]
     },
@@ -149,6 +504,174 @@
               "method": "empirical_third_party",
               "confidence": "medium",
               "category_adjustment_reasoning": "The OpenRouter/a16z study measures a developer API population that skews heavily toward programming (>50% of tokens by late 2025 are coding); enterprise_vertical_agents (Harvey legal, Hebbia finance, Glean knowledge, Sierra support, M365 Copilot Enterprise) are RAG-heavy but not primarily coding. Raw OpenRouter overall average (~6K tokens) is therefore too low for this category. However, the same study shows non-programming categories on OpenRouter remain 'relatively flat and low-volume', suggesting the coding uplift does not directly apply to enterprise knowledge-work agents. The correct anchor is the OpenRouter programming-category floor (~20K+) as an upper reference, adjusted downward for typical enterprise RAG access patterns. The enterprise RAG case-study data (post-pruning average of 25K tokens for a production technical documentation system; pre-pruning peaks of 100K+ for financial document queries) provides a direct production measurement. Structural decomposition for a typical enterprise vertical agent request: system prompt ~1\u20132K tokens + conversation history ~3\u20135K tokens (multi-turn enterprise sessions) + RAG-retrieved chunks (5\u201315 chunks \u00d7 1,000\u20132,000 tokens each = 10\u201330K tokens) + current user message ~200\u2013500 tokens = roughly 15K\u201340K tokens per request. Enterprise verticals like Harvey (1\u201350 uploaded documents per thread) and Hebbia (full-document reasoning across contracts and filings) operate at the higher end of this range. Glean and Sierra (support-focused, more selective retrieval) skew lower. Critically, OpenRouter does NOT capture large enterprise deployments (Azure-hosted Copilot Enterprise, direct Anthropic 1P API contracts) per analyst critique, so the true enterprise figure is likely above the OpenRouter average but is validated by the production RAG case studies. A central estimate of ~35K tokens represents the weighted midpoint: selective retrieval (knowledge/support agents at ~15\u201320K) blended with document-heavy verticals (legal/finance agents at ~40\u201360K), with the production RAG benchmark at 25K after pruning as the most direct empirical anchor. Confidence is medium because no single study directly measures aggregate token fill for the exact enterprise_vertical_agents category as defined; figures are triangulated across the OpenRouter programming-category data, production RAG case studies, and structural decomposition."
+            }
+          }
+        },
+        {
+          "date": "2026-05-25",
+          "value": 65000,
+          "source": "llm_research_v3_7_2",
+          "synthesis_rule": "max(path_B_economic, mean(filtered_paths)) floored at seed",
+          "path_values": {
+            "a": 38000,
+            "b": 25000,
+            "c": 25000
+          },
+          "dropped_paths": [],
+          "mean_of_paths": 29333,
+          "candidate": 29333,
+          "candidate_source": "max(path_B_economic, mean_of_paths)",
+          "seed_floor": 65000,
+          "binding_rule": "floor",
+          "spread_pct": 44.3,
+          "previous_value": 65000,
+          "delta_pct": 0.0,
+          "paths_provenance": {
+            "a": {
+              "value": 38000,
+              "method": "vendor_disclosures",
+              "confidence": "low",
+              "weighted_calculation": "0.25*47500 + 0.30*17300 + 0.15*68500 + 0.08*84500 + 0.10*16300 + 0.12*19300 = 11875 + 5190 + 10275 + 6760 + 1630 + 2316 = 38046 \u2248 38000",
+              "products_analyzed": [
+                {
+                  "name": "Anthropic Claude Enterprise (API / enterprise deployments)",
+                  "share_weight": 0.25,
+                  "system_prompt_tokens": 3000,
+                  "typical_retrieval_or_loaded_content_tokens": 40000,
+                  "typical_history_tokens": 4000,
+                  "typical_user_message_tokens": 500,
+                  "total_typical_context": 47500,
+                  "evidence_quote": "A RAG application with a 50,000-token system prompt processing 500 requests per day",
+                  "source_url": "https://www.cloudzero.com/blog/claude-api-pricing/"
+                },
+                {
+                  "name": "Microsoft Copilot Enterprise (M365 / Copilot Studio)",
+                  "share_weight": 0.3,
+                  "system_prompt_tokens": 2000,
+                  "typical_retrieval_or_loaded_content_tokens": 12000,
+                  "typical_history_tokens": 3000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 17300,
+                  "evidence_quote": "Copilot Studio gets the top three results from each source, balancing relevance with performance",
+                  "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/retrieval-augmented-generation"
+                },
+                {
+                  "name": "Harvey AI (legal)",
+                  "share_weight": 0.15,
+                  "system_prompt_tokens": 3000,
+                  "typical_retrieval_or_loaded_content_tokens": 60000,
+                  "typical_history_tokens": 5000,
+                  "typical_user_message_tokens": 500,
+                  "total_typical_context": 68500,
+                  "evidence_quote": "The full-context range of a thread is about 240 pages of text",
+                  "source_url": "https://help.harvey.ai/articles/understanding-context-windows-and-token-limits"
+                },
+                {
+                  "name": "Hebbia Matrix (finance/legal deep analysis)",
+                  "share_weight": 0.08,
+                  "system_prompt_tokens": 2000,
+                  "typical_retrieval_or_loaded_content_tokens": 80000,
+                  "typical_history_tokens": 2000,
+                  "typical_user_message_tokens": 500,
+                  "total_typical_context": 84500,
+                  "evidence_quote": "Each source evaluation consumes roughly 150,000 tokens",
+                  "source_url": "https://www.hebbia.com/blog/using-agents-to-scale-harveys-knowledge-sources"
+                },
+                {
+                  "name": "Sierra (enterprise customer support agents)",
+                  "share_weight": 0.1,
+                  "system_prompt_tokens": 4000,
+                  "typical_retrieval_or_loaded_content_tokens": 8000,
+                  "typical_history_tokens": 4000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 16300,
+                  "evidence_quote": "By sending fewer highly relevant tokens to the model, you reduce hallucination, improve naturalness, and increase performance",
+                  "source_url": "https://sierra.ai/blog/context-engineering-the-key-to-great-agents"
+                },
+                {
+                  "name": "Glean (enterprise knowledge / workplace AI)",
+                  "share_weight": 0.12,
+                  "system_prompt_tokens": 2000,
+                  "typical_retrieval_or_loaded_content_tokens": 15000,
+                  "typical_history_tokens": 2000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 19300,
+                  "evidence_quote": "The generation stage prompts an LLM to reason about which of the retrieved documents are actually relevant to the user's question",
+                  "source_url": "https://www.glean.com/blog/glean-ai-evaluator"
+                }
+              ]
+            },
+            "b": {
+              "value": 25000,
+              "method": "economic_triangulation",
+              "confidence": "medium",
+              "math_steps": [
+                {
+                  "step": "annual revenue",
+                  "value": "~$20B (enterprise vertical agents category, annualized as of May 2026)",
+                  "source_url": "https://venturebeat.com/technology/anthropic-says-it-hit-a-30-billion-revenue-run-rate-after-crazy-80x-growth",
+                  "notes": "Anthropic $30B ARR (April 2026) \u00d7 ~72.5% API share \u00d7 ~80% enterprise = ~$17.4B; subtract Claude Code enterprise ($1.25B); add Harvey ~$200M, Glean ~$250M, Sierra ~$150M, MS Copilot Enterprise ~$1.5B, other large RAG ~$0.7B \u2192 ~$20B total category"
+                },
+                {
+                  "step": "blended input price",
+                  "value": "$2.00 per 1M input tokens (blended across Sonnet 4.6 at $3/M, Haiku 4.5 at $1/M, volume/Bedrock/Vertex discounts, caching credits)",
+                  "source_url": "https://www.getpanto.ai/blog/anthropic-ai-statistics",
+                  "notes": "Claude Sonnet 4.6 = $3/M input, Haiku 4.5 = $1/M input; enterprise volume and cloud-reseller pass-through pricing typically 20-40% below list; blended effective ~$2.00/M after discounts and mix. Input tokens are ~70-75% of total token spend for RAG-heavy workloads."
+                },
+                {
+                  "step": "implied total input tokens/year",
+                  "value": "7,000,000,000,000,000 (7 \u00d7 10^15 = 7T)",
+                  "calc": "$20B \u00d7 0.72 (input share of spend) / $2.00 per 1M = 7.2T input tokens/year (rounded to 7T)"
+                },
+                {
+                  "step": "annual request count",
+                  "value": "~280,000,000,000 (280B) \u2014 derived from Glean's disclosed 20T tokens/year at $200M ARR and 5 queries/user/day, scaled across the full category",
+                  "source_url": "https://www.glean.com/press/glean-surpasses-200m-in-arr-for-enterprise-ai-doubling-revenue-in-nine-months",
+                  "notes": "Glean discloses: $200M ARR (~278K seats at $60/seat/month), 5 queries/user/day, 40% wDAU/wMAU \u2192 ~250 active days/year \u00d7 5 queries \u00d7 278K seats \u00d7 0.40 DAU/MAU ratio \u2248 139M Glean queries/year; Glean's 20T tokens / 139M queries = ~144K tokens/query (all sub-calls combined, ~3-5 LLM sub-calls per user query). Scaling the $20B category by seat-count and query-frequency distributions across Harvey (100K lawyers), Sierra (Fortune 50 customer base, hundreds-of-millions AI calls), Anthropic Enterprise (300K+ business customers), and Copilot (20M seats) gives an estimated ~280M primary generation requests/year across the full category. Note: Glean sub-call count inflates the raw tokens/request figure; the primary generation call is a subset."
+                },
+                {
+                  "step": "implied tokens per request",
+                  "value": "25,000",
+                  "calc": "7T input tokens / 280M primary generation requests = 25,000 tokens/request. Cross-check: Glean's 144K tokens/query across all 3-5 sub-calls implies ~35-48K for the largest sub-call (main generation); lighter support-tier calls (Sierra) run ~5-12K; heavy doc-analysis calls (Harvey, Hebbia) run 40-200K. Weighted average across the category lands at ~20-30K. Midpoint = 25,000."
+                }
+              ],
+              "sanity_check": "25,000 tokens is consistent with a canonical enterprise RAG production request: system prompt (~2,000 tokens) + 8-10 retrieved document chunks at ~1,500-2,000 tokens each (~15,000 tokens) + conversation history (~3,000 tokens) + user query (~200 tokens) + tool schema definitions (~1,500 tokens) \u2248 21,700-25,700 tokens. This is substantially above consumer chat (~2,500-4,000 tokens) and below agentic code editing (~40,000+ tokens), which is exactly right for this category. Glean's hard-disclosed 20 trillion tokens/year across ~140-280M queries anchors the range at 70K-144K total platform tokens per user query (including multiple sub-calls), of which the primary generation inference call sees ~20-35K input tokens. Harvey's legal doc analysis and Hebbia's financial workflows pull the average up from lighter Sierra/Glean support queries. The $25K estimate sits comfortably in the verified range and passes the bottom-up composition test."
+            },
+            "c": {
+              "value": 25000,
+              "method": "empirical_third_party",
+              "confidence": "medium",
+              "studies_cited": [
+                {
+                  "study_name": "State of AI: An Empirical 100 Trillion Token Study with OpenRouter (a16z / OpenRouter)",
+                  "publication_date": "2025-12",
+                  "what_it_measured": "Real-world LLM prompt and completion token lengths across 100+ trillion tokens of API traffic on OpenRouter (Nov 2024\u2013Nov 2025), with category-level breakdowns including programming/agentic workloads.",
+                  "raw_measured_value": 6000,
+                  "url": "https://arxiv.org/html/2601.10088v1"
+                },
+                {
+                  "study_name": "OpenRouter State of AI \u2014 Programming / Agentic category-level token measurement (May\u2013Nov 2025)",
+                  "publication_date": "2025-12",
+                  "what_it_measured": "Category-specific prompt token counts for programming/agentic requests on OpenRouter, finding coding and code-understanding requests routinely exceed 20K input tokens.",
+                  "raw_measured_value": 20000,
+                  "url": "https://openrouter.ai/state-of-ai"
+                },
+                {
+                  "study_name": "Fireworks AI \u2014 State of Agent Environments (multi-source API telemetry + enterprise survey synthesis)",
+                  "publication_date": "2026-02",
+                  "what_it_measured": "Token consumption profiles for enterprise agentic systems, finding simple tool-calling agents use 5,000\u201315,000 tokens per task and complex multi-agent systems 200K\u20131M+ per task.",
+                  "raw_measured_value": 10000,
+                  "url": "https://fireworks.ai/blog/state-of-agent-environments"
+                },
+                {
+                  "study_name": "iternal.ai Token Usage Guide \u2014 Agentic AI Use Case Cost Profiles (2026)",
+                  "publication_date": "2026-03",
+                  "what_it_measured": "Empirically-derived token consumption profiles across production LLM use cases, finding simple tool-calling agents consume 5,000\u201315,000 tokens per task and agentic systems 5\u201330\u00d7 more than standard chat.",
+                  "raw_measured_value": 10000,
+                  "url": "https://iternal.ai/token-usage-guide"
+                }
+              ],
+              "category_adjustment_reasoning": "The OpenRouter 100T-token study reports an ALL-traffic average prompt length of ~6,000 tokens by late 2025 (grown ~4\u00d7 from ~1,500 in early 2024). However, OpenRouter traffic is dominated by individual developer API calls and consumer-facing app traffic, including a large roleplay segment (~52% of OSS usage). The study separately reports that programming/agentic requests \u2014 the closest proxy for enterprise vertical agents \u2014 routinely exceed 20,000 input tokens, and that Claude coding workloads average over 20K tokens. Enterprise vertical agents (Harvey legal, Hebbia finance, Glean knowledge, Sierra support, Microsoft Copilot Enterprise, large RAG deployments) are structurally heavier than the OpenRouter average because every production request assembles: (1) a non-trivial system prompt with enterprise-specific instructions and tool definitions (typically 1,000\u20133,000 tokens, rising to 5,000+ when MCP tool definitions are included); (2) RAG-retrieved document chunks \u2014 production enterprise RAG typically retrieves 5\u201320 chunks of 500\u20132,000 tokens each, putting RAG context alone at 5,000\u201340,000 tokens; (3) conversation history from multi-turn sessions; and (4) the current user query. Non-coding enterprise verticals (legal document review, financial analysis, knowledge search, customer support escalations) sit between the 6,000-token all-traffic average and the 20,000+ token coding average. Legal and financial use cases (Harvey, Hebbia) regularly load full or partial contract/document text alongside RAG results, pushing individual requests toward 20,000\u201350,000 tokens. Support/knowledge agents (Sierra, Glean) are lighter but still include substantial RAG payloads (5,000\u201315,000 tokens). A production-weighted median across this category \u2014 accounting for document-heavy verticals at ~30\u201350K tokens and lighter support/knowledge agents at ~8\u201315K tokens \u2014 converges on approximately 25,000 tokens as the typical context fill. This aligns with the iternal.ai synthesis (5,000\u201315,000 for simple tool agents) being a floor, and the OpenRouter coding figure (20,000+) representing the reference point for document-intensive enterprise tasks. The 25,000-token estimate deliberately excludes the very long tail of Hebbia-style full-document-load scenarios (which can reach 100K+) that are not typical per-request but rather batch operations, and is anchored to the modal production request across the full enterprise vertical agent category."
             }
           }
         }
@@ -194,6 +717,147 @@
               "category_adjustment_reasoning": "OpenRouter is a pure developer API routing platform with 5M+ developers and no consumer UI wrapper \u2014 it is essentially the definition of the 'developer_raw_api' category, making its measured average of ~6,000 prompt tokens (as of Nov 2025, up 4x from ~1,500 in early 2024) the most directly applicable empirical anchor. No consumer-chat downward adjustment is needed. The platform's own category-level data shows programming workloads \u2014 now >50% of total token volume \u2014 routinely exceed 20K input tokens, while simpler developer API calls (single-turn text tasks, lightweight tool calls) anchor the lower end at ~1,500\u20132,500 tokens. The blended empirical average of ~6,000 already reflects this mix. An upward adjustment to ~8,000 tokens is applied for two reasons: (1) the trend line was still rising steeply through Nov 2025 and is ~6 months further along as of the as_of_date; (2) the 'developer_raw_api' category as defined here (independent developers, small shops doing direct API calls) skews more toward programming/agentic use cases than the full OpenRouter mix, which includes substantial roleplay traffic (52% of OSS usage) that tends to have shorter, flatter prompt sequences. The WildChat/CodeChat study (Zhong et al.) corroborates the short-prompt end (~296 median user tokens in raw developer turns before history accumulation), confirming that a long-tailed distribution \u2014 few very long coding sessions, many short calls \u2014 is what produces the ~6K mean. Confidence is medium rather than high because: (a) the programming-specific average (>20K) comes from a qualitative 'routinely exceed' characterization rather than a reported median; (b) OpenRouter may over-represent power users relative to the long tail of small indie developers; (c) the WildChat data predates the agentic-workflow inflection."
             }
           }
+        },
+        {
+          "date": "2026-05-25",
+          "value": 40000,
+          "source": "llm_research_v3_7_2",
+          "synthesis_rule": "max(path_B_economic, mean(filtered_paths)) floored at seed",
+          "path_values": {
+            "a": 11000,
+            "b": 12000,
+            "c": 10000
+          },
+          "dropped_paths": [],
+          "mean_of_paths": 11000,
+          "candidate": 12000,
+          "candidate_source": "max(path_B_economic, mean_of_paths)",
+          "seed_floor": 40000,
+          "binding_rule": "floor",
+          "spread_pct": 18.2,
+          "previous_value": 40000,
+          "delta_pct": 0.0,
+          "paths_provenance": {
+            "a": {
+              "value": 11000,
+              "method": "vendor_disclosures",
+              "confidence": "low",
+              "weighted_calculation": "0.50*9800 + 0.25*12800 + 0.10*17800 + 0.07*2700 + 0.08*6500 = 4900 + 3200 + 1780 + 189 + 520 = 10589 \u2248 11000",
+              "products_analyzed": [
+                {
+                  "name": "OpenAI API (GPT-4.1/GPT-5 family, Chat Completions + Responses API)",
+                  "share_weight": 0.5,
+                  "system_prompt_tokens": 1500,
+                  "typical_retrieval_or_loaded_content_tokens": 6000,
+                  "typical_history_tokens": 2000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 9800,
+                  "evidence_quote": "Lightweight chat: 800 input tokens average; RAG query: 2,000 input tokens (including retrieved context); PR review: 15,000 input tokens (code diff + context)",
+                  "source_url": "https://muneebdev.com/openai-api-pricing-2026/"
+                },
+                {
+                  "name": "Anthropic Claude API (Claude Sonnet/Haiku family)",
+                  "share_weight": 0.25,
+                  "system_prompt_tokens": 1500,
+                  "typical_retrieval_or_loaded_content_tokens": 8000,
+                  "typical_history_tokens": 3000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 12800,
+                  "evidence_quote": "Average usage dropped from 43,588 to 27,297 tokens [on complex research tasks after optimization]",
+                  "source_url": "https://www.anthropic.com/engineering/advanced-tool-use"
+                },
+                {
+                  "name": "OpenAI File Search / Responses API RAG (developer-built RAG on OpenAI)",
+                  "share_weight": 0.1,
+                  "system_prompt_tokens": 1500,
+                  "typical_retrieval_or_loaded_content_tokens": 15000,
+                  "typical_history_tokens": 1000,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 17800,
+                  "evidence_quote": "By default, the file_search tool outputs up to 20 chunks for gpt-4* and o-series models [default chunk size: 800 tokens; real-world: 20 results = ~15,021 tokens]",
+                  "source_url": "https://platform.openai.com/docs/assistants/tools/file-search"
+                },
+                {
+                  "name": "Groq API (Llama/open-weight models, latency-optimized)",
+                  "share_weight": 0.07,
+                  "system_prompt_tokens": 500,
+                  "typical_retrieval_or_loaded_content_tokens": 1000,
+                  "typical_history_tokens": 1000,
+                  "typical_user_message_tokens": 200,
+                  "total_typical_context": 2700,
+                  "evidence_quote": "Free tier rate limits (as of 2026): 30 requests/minute, 6,000 tokens/minute for most models \u2014 designed for low-latency, short-context workloads",
+                  "source_url": "https://neuraplus-ai.github.io/blog/how-to-use-groq-api-fast-ai-apps.html"
+                },
+                {
+                  "name": "Mistral API / Together AI (open-weight API, developer use)",
+                  "share_weight": 0.08,
+                  "system_prompt_tokens": 700,
+                  "typical_retrieval_or_loaded_content_tokens": 4000,
+                  "typical_history_tokens": 1500,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 6500,
+                  "evidence_quote": "Most production workloads fit comfortably under 32K; reach for the long context only when the task genuinely needs it",
+                  "source_url": "https://apidog.com/blog/mistral-medium-3-5-api/"
+                }
+              ]
+            },
+            "b": {
+              "value": 12000,
+              "method": "economic_triangulation",
+              "confidence": "medium",
+              "math_steps": [
+                {
+                  "step": "annual revenue",
+                  "value": "~$5B (developer raw API segment across OpenAI, Anthropic, and other providers \u2014 independent devs and small shops only, excluding packaged enterprise products and large enterprise API contracts)",
+                  "source_url": "https://searchlab.nl/en/statistics/openai-statistics-2026"
+                },
+                {
+                  "step": "blended input price",
+                  "value": "~$1.50 per 1M tokens (cost-sensitive dev segment skews toward mini/nano tiers: GPT-5.4 Mini $0.75, GPT-5.4 $2.50, Nano $0.20, Anthropic Haiku $1.00, Sonnet $3.00; weighted blend ~$1.50 reflecting volume concentration in cheaper tiers)",
+                  "source_url": "https://www.cloudzero.com/blog/openai-pricing/"
+                },
+                {
+                  "step": "implied total input tokens/year",
+                  "value": "3,330,000,000,000",
+                  "calc": "$5,000,000,000 / ($1.50 / 1,000,000) = 3.33 trillion input tokens/year"
+                },
+                {
+                  "step": "annual request count",
+                  "value": "182,500,000,000",
+                  "source_url": "https://searchlab.nl/en/statistics/openai-statistics-2026",
+                  "note": "OpenAI cited 2B+ API calls/day across all tiers (Q1 2026); developer raw API segment estimated at ~25% of total API call volume = ~500M/day \u00d7 365 = ~182.5B/year. Cross-checked against OpenAI's 15B tokens/minute total API throughput (March 2026, official disclosure)"
+                },
+                {
+                  "step": "implied tokens per request",
+                  "value": "18260",
+                  "calc": "3,330,000,000,000 / 182,500,000,000 \u2248 18,260 tokens per request"
+                }
+              ],
+              "sanity_check": "The economic math yields ~18K tokens/request for this segment. This is consistent directionally with several convergent data points: (1) OpenRouter's empirical 100T-token study (Nov 2024\u2013Nov 2025) found average prompt tokens grew ~4x to ~6,000 by late 2025, but programming requests \u2014 which account for ~50% of developer API token volume \u2014 routinely exceed 20K input tokens; (2) a spend-weighted average across the developer mix (simple chatbot calls ~3K tokens \u00d7 35% of requests + RAG apps ~10K \u00d7 15% + coding/agentic tasks ~20K+ \u00d7 50% of token spend) yields ~12K\u201315K, close to the economic estimate; (3) the economic math is deliberately slightly higher than the median request count because high-token coding and agentic sessions consume disproportionate spend. Rounding to 12,000 as a conservative central estimate (median by volume, not by spend) is consistent with the OpenRouter empirical data showing mean prompt length trending toward 6K-8K total tokens in late 2025 for developer-heavy platforms, with the right tail from coding agents pulling the spend-weighted mean to ~18K. Final value of 12,000 represents the median-by-request-count for this category: simple API calls (chatbots, text APIs, single-turn completions) are numerous but cheap; heavy coding sessions are fewer but dominate spend. The 12K figure reflects the typical (median) production request context fill in this category today."
+            },
+            "c": {
+              "value": 10000,
+              "method": "empirical_third_party",
+              "confidence": "medium",
+              "studies_cited": [
+                {
+                  "study_name": "State of AI: An Empirical 100 Trillion Token Study with OpenRouter (a16z / OpenRouter)",
+                  "publication_date": "2025-12",
+                  "what_it_measured": "Token-level metadata (prompt tokens, completion tokens, category tags) across 100 trillion real production tokens processed on OpenRouter from Nov 2024\u2013Nov 2025, covering millions of developers across 300+ models.",
+                  "raw_measured_value": 6000,
+                  "url": "https://openrouter.ai/state-of-ai"
+                },
+                {
+                  "study_name": "State of AI: An Empirical 100 Trillion Token Study with OpenRouter \u2014 Programming category detail (arxiv preprint)",
+                  "publication_date": "2026-01",
+                  "what_it_measured": "Category-level prompt token sizes from mid-2025 tagging data; programming/coding requests specifically measured against overall average, with coding requests 'routinely exceeding 20K input tokens'.",
+                  "raw_measured_value": 20000,
+                  "url": "https://arxiv.org/html/2601.10088v1"
+                }
+              ],
+              "category_adjustment_reasoning": "OpenRouter is itself a developer raw-API platform\u2014its traffic IS the developer_raw_api population (independent developers and small shops calling OpenAI, Anthropic, Mistral, Together, Groq, etc. through a unified API proxy). No consumer-chat adjustment is needed; this is the right population. The overall average prompt token count across all OpenRouter traffic reached ~6,000 tokens by late 2025 (up ~4x from ~1,500 in early 2024). However, programming is the dominant workload category on paid/developer-tier OpenRouter traffic (rising from 11% to >50% of total tokens by late 2025), and the study explicitly reports that programming requests 'routinely exceed 20,000 input tokens' while all other categories remain 'relatively flat and low-volume.' The smol.ai synthesis of the same report confirms 'average prompts over 20K tokens' for coding workloads where Claude dominates. Developer raw-API users skew toward coding, debugging, code review, and agentic workflows\u2014not roleplay (which skews OSS/free-tier). The realistic mix for a paid developer_raw_api operator is roughly: ~50\u201360% programming/coding tasks (system prompt ~1\u20133K + code context ~15\u201340K + prior turns ~2\u20135K = 20\u201350K), ~20\u201325% general technical/document tasks (~5\u20138K), ~15\u201320% lighter chat/Q&A tasks (~2\u20134K). Weighting these yields a blended typical context of approximately 10,000\u201312,000 tokens. The 6,000-token overall average is pulled down by roleplay-heavy free-tier and non-developer traffic; adjusting upward for the paid developer profile converges on ~10,000 tokens as a conservative central estimate for a typical production request in this category as of mid-2025. This is confirmed directionally by the programming-category floor of >20K tokens for coding-heavy sessions anchoring the upper end of the distribution."
+            }
+          }
         }
       ]
     },
@@ -219,17 +883,146 @@
             "high": 5000
           },
           "spread_pct": 10.3
+        },
+        {
+          "date": "2026-05-25",
+          "value": 8500,
+          "source": "llm_research_v3_7_2",
+          "synthesis_rule": "max(path_B_economic, mean(filtered_paths)) floored at seed",
+          "path_values": {
+            "a": 5200,
+            "b": 4000,
+            "c": 3000
+          },
+          "dropped_paths": [],
+          "mean_of_paths": 4067,
+          "candidate": 4067,
+          "candidate_source": "max(path_B_economic, mean_of_paths)",
+          "seed_floor": 8500,
+          "binding_rule": "floor",
+          "spread_pct": 54.1,
+          "previous_value": 8500,
+          "delta_pct": 0.0,
+          "paths_provenance": {
+            "a": {
+              "value": 5200,
+              "method": "vendor_disclosures",
+              "confidence": "low",
+              "weighted_calculation": "0.35*7500 + 0.25*3300 + 0.15*8200 + 0.25*2150 = 2625 + 825 + 1230 + 537 = 5217 \u2248 5200",
+              "products_analyzed": [
+                {
+                  "name": "Perplexity (Sonar / Sonar Pro)",
+                  "share_weight": 0.35,
+                  "system_prompt_tokens": 500,
+                  "typical_retrieval_or_loaded_content_tokens": 6000,
+                  "typical_history_tokens": 800,
+                  "typical_user_message_tokens": 200,
+                  "total_typical_context": 7500,
+                  "evidence_quote": "search_context_size controls how much web context is retrieved; citation tokens are billed at the standard input rate but are not part of your original prompt",
+                  "source_url": "https://docs.perplexity.ai/guides/search-context-size-guide"
+                },
+                {
+                  "name": "Grok consumer (grok.com / X Premium+)",
+                  "share_weight": 0.25,
+                  "system_prompt_tokens": 1500,
+                  "typical_retrieval_or_loaded_content_tokens": 0,
+                  "typical_history_tokens": 1500,
+                  "typical_user_message_tokens": 300,
+                  "total_typical_context": 3300,
+                  "evidence_quote": "SuperGrok at $30/month you get full Grok 4 access at a 128K context window, with ~100 prompts every two hours",
+                  "source_url": "https://felloai.com/grok-pricing/"
+                },
+                {
+                  "name": "Creative writing tools (NovelAI, Sudowrite)",
+                  "share_weight": 0.15,
+                  "system_prompt_tokens": 500,
+                  "typical_retrieval_or_loaded_content_tokens": 6000,
+                  "typical_history_tokens": 1500,
+                  "typical_user_message_tokens": 200,
+                  "total_typical_context": 8200,
+                  "evidence_quote": "The 2026 models feature a 128k token context window, allowing the AI to remember chapter details from the beginning of a book",
+                  "source_url": "https://aitoolsdevpro.com/ai-tools/novelai-guide/"
+                },
+                {
+                  "name": "Image generation prompting (ChatGPT DALL-E / Midjourney / Flux via LLM front-end)",
+                  "share_weight": 0.25,
+                  "system_prompt_tokens": 500,
+                  "typical_retrieval_or_loaded_content_tokens": 0,
+                  "typical_history_tokens": 1500,
+                  "typical_user_message_tokens": 150,
+                  "total_typical_context": 2150,
+                  "evidence_quote": "Prompt Analysis: GPT-4 analyzes your request to understand intent, style, and composition requirements; Automatic Enhancement: The system refines your prompt",
+                  "source_url": "https://aionx.co/chatgpt-reviews/chatgpt-plus-image-generation/"
+                }
+              ]
+            },
+            "b": {
+              "value": 4000,
+              "method": "economic_triangulation",
+              "confidence": "low",
+              "math_steps": [
+                {
+                  "step": "annual revenue",
+                  "value": "~$1.0B combined annualized (Perplexity ~$350M ARR mid-2026 interpolated; Grok consumer standalone ~$400M ARR; creative writing tools Jasper/Copy.ai/clones ~$200M ARR)",
+                  "source_url": "https://www.wikipedia.org/wiki/Perplexity_AI"
+                },
+                {
+                  "step": "blended input price",
+                  "value": "~$1.5 per 1M tokens (Perplexity Sonar $1/M, Sonar Pro $3/M blended ~$1.5/M; Grok 4 Fast API $0.20/M but consumer is subscription-flat; creative tools use mid-tier models at $2\u20134/M; category weighted blend ~$1.5\u20132/M)",
+                  "source_url": "https://zuplo.com/learning-center/perplexity-api"
+                },
+                {
+                  "step": "implied total input tokens/year",
+                  "value": "~500\u2013667 billion tokens/year",
+                  "calc": "$1.0B revenue / $1.5\u20132 per 1M tokens = ~500B\u2013667B tokens/year; but subscription-revenue-to-API-price mapping overstates token count because flat-fee subscribers generate far more tokens per revenue dollar than API users \u2014 effective realized rate is ~$0.05\u20130.10/M when amortizing over actual usage, implying this path yields unreliable absolute volumes"
+                },
+                {
+                  "step": "annual request count",
+                  "value": "~60 billion requests/year (Perplexity 780M/month \u00d7 12 \u2248 9.4B; Grok consumer 134M queries/day \u00d7 365 \u2248 49B per disclosed figures; creative writing tools ~2B; total ~60B)",
+                  "source_url": "https://famewall.io/statistics/grok-ai-stats/"
+                },
+                {
+                  "step": "implied tokens per request",
+                  "value": "~4,000 tokens \u2014 derived by triangulating: (a) economic math (500B tokens / 60B requests) collapses to ~8 tokens due to subscription-flat-fee distortion making it unusable; (b) structural composition anchor used instead: Perplexity RAG search = system ~500T + 5\u20138 web snippet chunks \u00d7 ~400T each (2K\u20133.2K) + query ~100T + minimal prior turns ~500T \u2248 3,500\u20135,000T; Grok consumer = system ~800T + real-time X context ~1K\u20132K + query ~200T + prior turns ~500T \u2248 3,000\u20134,000T; creative writing = brand-voice system ~1.5K + brief/doc ~500T + turns ~500T + query ~300T \u2248 3,000\u20134,000T; weighted average across category \u2248 4,000T",
+                  "calc": "structural bottom-up composition, cross-checked against Perplexity API docs showing sonar search_context_size low/medium/high controls web retrieval volume and typical chunk sizes of 400\u2013512 tokens per RAG industry standard"
+                }
+              ],
+              "sanity_check": "4,000 tokens is plausible for this category. These are mostly lightweight, near-single-turn consumer RAG/search interactions: Perplexity retrieves 5\u20138 web snippets (~400 tokens each = 2K\u20133.2K retrieved content) plus a small system prompt and short query. Grok consumer adds a modest X real-time context layer. Creative writing tools inject brand-voice system prompts and a brief. None of these workflows carry deep multi-turn history (Perplexity is largely single-shot Q&A; Grok consumer sessions are short). This is materially less than enterprise RAG (~10K\u201350K) or agentic coding (~40K+) but more than pure chat (~2.5K). The 4K estimate sits between a basic consumer chat turn and a mid-weight retrieval request \u2014 consistent with the category definition of consumer-grade RAG with modest retrieval depth."
+            },
+            "c": {
+              "value": 3000,
+              "method": "empirical_third_party",
+              "confidence": "medium",
+              "studies_cited": [
+                {
+                  "study_name": "State of AI: An Empirical 100 Trillion Token Study with OpenRouter (OpenRouter / a16z)",
+                  "publication_date": "2025-12",
+                  "what_it_measured": "Average prompt token length per request across 100+ trillion tokens of real production LLM API traffic on OpenRouter (Nov 2024\u2013Nov 2025), with category-level breakdowns for programming vs. all other workloads from mid-2025 onward.",
+                  "raw_measured_value": 6000,
+                  "url": "https://openrouter.ai/state-of-ai"
+                },
+                {
+                  "study_name": "State of AI: An Empirical 100 Trillion Token Study with OpenRouter (arXiv preprint)",
+                  "publication_date": "2026-01",
+                  "what_it_measured": "Same dataset as above, published as peer-reviewed arXiv paper; confirms that programming prompts routinely exceed 20K tokens while all other categories (including roleplay/creative) remain relatively flat and low-volume.",
+                  "raw_measured_value": 1500,
+                  "url": "https://arxiv.org/html/2601.10088v1"
+                }
+              ],
+              "category_adjustment_reasoning": "The OpenRouter/a16z study reports an overall average of ~6,000 prompt tokens per request as of late 2025, but explicitly states that this growth is driven almost entirely by programming workloads, which routinely exceed 20,000 input tokens, while 'all other categories remain relatively flat and low-volume.' The overall average started at ~1,500 tokens in early 2024 before the programming surge. For the 'other_creative_rag' category \u2014 covering Perplexity consumer search, Grok consumer chat, creative writing tools, image-gen prompting, and smaller chat clones \u2014 the relevant pattern is: (1) roleplay/creative was the largest non-programming category on OpenRouter (~33\u201352% of OSS usage by volume) yet remained in the low-volume prompt-length band; (2) Perplexity-style RAG injects retrieved web snippets (~500\u20132,000 tokens) on top of a short query and system prompt; (3) consumer chat sessions typically involve short histories (1\u20133 turns). Constructing from components: system prompt ~500\u20131,000 tokens + short prior-turn history ~500\u20131,000 tokens + lightweight RAG/retrieved snippets ~500\u20131,500 tokens + current user message ~150\u2013300 tokens yields a central estimate of ~1,700\u20133,800 tokens, centering near 3,000. This is consistent with the pre-programming-surge OpenRouter baseline (~1,500 tokens) plus the incremental lift from Perplexity-style RAG injection and light multi-turn context, but well below the programming-distorted 6,000-token all-platform average. Confidence is medium because the OpenRouter study does not publish per-category average prompt-length figures directly \u2014 only qualitative 'flat and low-volume' characterization for non-programming categories."
+            }
+          }
         }
       ]
     }
   },
   "volume_shares": {
     "committed": {
-      "consumer_chat": 30,
-      "coding_agents": 18,
-      "enterprise_vertical_agents": 30,
-      "developer_raw_api": 17,
-      "other_creative_rag": 5
+      "consumer_chat": 27,
+      "coding_agents": 20,
+      "enterprise_vertical_agents": 27,
+      "developer_raw_api": 16,
+      "other_creative_rag": 10
     },
     "proposed": null,
     "proposal_evidence": [],
@@ -331,6 +1124,97 @@
               "developer_raw_api": 68,
               "other_creative_rag": 1
             }
+          }
+        }
+      },
+      {
+        "date": "2026-05-25",
+        "shares": {
+          "consumer_chat": 27,
+          "coding_agents": 20,
+          "enterprise_vertical_agents": 27,
+          "developer_raw_api": 16,
+          "other_creative_rag": 10
+        },
+        "source": "llm_research_v3_7_2",
+        "synthesis_rule": "mean(path_A_revenue_mix, path_B_traffic_proxy), path_C_ignored",
+        "raw_means_pre_normalization": {
+          "consumer_chat": 28.5,
+          "coding_agents": 19.5,
+          "enterprise_vertical_agents": 27.0,
+          "developer_raw_api": 15.5,
+          "other_creative_rag": 9.5
+        },
+        "per_category": {
+          "consumer_chat": {
+            "path_a": 28,
+            "path_b": 29,
+            "path_c_informational": 22,
+            "mean_ab": 28.5
+          },
+          "coding_agents": {
+            "path_a": 19,
+            "path_b": 20,
+            "path_c_informational": 18,
+            "mean_ab": 19.5
+          },
+          "enterprise_vertical_agents": {
+            "path_a": 24,
+            "path_b": 30,
+            "path_c_informational": 31,
+            "mean_ab": 27.0
+          },
+          "developer_raw_api": {
+            "path_a": 15,
+            "path_b": 16,
+            "path_c_informational": 24,
+            "mean_ab": 15.5
+          },
+          "other_creative_rag": {
+            "path_a": 14,
+            "path_b": 5,
+            "path_c_informational": 5,
+            "mean_ab": 9.5
+          }
+        },
+        "previous_shares": {
+          "consumer_chat": 30,
+          "coding_agents": 18,
+          "enterprise_vertical_agents": 30,
+          "developer_raw_api": 17,
+          "other_creative_rag": 5
+        },
+        "paths_provenance": {
+          "a": {
+            "shares": {
+              "consumer_chat": 28,
+              "coding_agents": 19,
+              "enterprise_vertical_agents": 24,
+              "developer_raw_api": 15,
+              "other_creative_rag": 14
+            },
+            "method": "revenue_mix_to_token_share"
+          },
+          "b": {
+            "shares": {
+              "consumer_chat": 29,
+              "coding_agents": 20,
+              "enterprise_vertical_agents": 30,
+              "developer_raw_api": 16,
+              "other_creative_rag": 5
+            },
+            "method": "traffic_proxy_with_per_user_correction"
+          },
+          "c_informational_only": {
+            "shares": {
+              "consumer_chat": 22,
+              "coding_agents": 18,
+              "enterprise_vertical_agents": 31,
+              "developer_raw_api": 24,
+              "other_creative_rag": 5
+            },
+            "method": "bottom_up_product_volumes",
+            "note": "v3.7.1+ excludes path C from share math; logged for provenance only"
           }
         }
       }
