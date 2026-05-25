@@ -1,0 +1,132 @@
+# context_length_research.yml
+#
+# Bi-monthly LLM-driven context length research worker (v3.6.0).
+#
+# Replaces the v3.4.14 scraper + aggregator with a single Claude API call
+# that uses web search to triangulate current context length and volume
+# share data from public sources (earnings disclosures, vendor product
+# pages, SimilarWeb / Sacra reports, news coverage).
+#
+# Cadence: 1st of every odd month at 06:00 UTC
+#   - Jan 1, Mar 1, May 1, Jul 1, Sep 1, Nov 1
+#   - 6 runs/year
+#   - Bi-monthly gives time for both axes to move materially before
+#     re-measuring
+#
+# Cost: ~$0.50/run × 6 = ~$3/year (Anthropic API + web search tool use)
+#
+# Safety:
+#   - Sanity-checks reject implausible changes (>50% per typical_context,
+#     >15pp per share, sums-to-100 enforced)
+#   - Rejected values keep previous state — never silently corrupts
+#   - Workflow failure opens a GitHub Issue automatically
+#
+# Manual trigger: workflow_dispatch is enabled for ad-hoc re-runs.
+
+name: Context Length Research (LLM-driven, bi-monthly)
+
+on:
+  schedule:
+    # Bi-monthly: 06:00 UTC on the 1st of Jan/Mar/May/Jul/Sep/Nov
+    - cron: "0 6 1 1,3,5,7,9,11 *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write    # for opening issues on failure
+
+jobs:
+  research:
+    name: LLM-driven research worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 45    # v3.7.0 — 19 LLM calls per run (was 6 in v3.6.x);
+                           # each call takes 30-90s with web_search enabled,
+                           # so worst case is ~28 minutes of LLM time + setup.
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure git identity
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
+      - name: Run LLM research worker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONPATH: .
+        run: |
+          echo "════════════════════════════════════════════════════════════════"
+          echo " CONTEXT LENGTH LLM RESEARCH — $(date -u +%Y-%m-%d)"
+          echo "════════════════════════════════════════════════════════════════"
+          python -m src.data.context_length_llm_research
+
+      - name: Commit state changes
+        if: always()    # commit even if research exited non-zero (some values may have updated)
+        run: |
+          git add state/context_length_state.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No context-length changes to commit."
+            exit 0
+          fi
+          git commit -m "Context length LLM research $(date -u +%Y-%m-%d) (v3.6.0)"
+          # Pull + rebase before push to handle concurrent workflow runs
+          if ! git pull --rebase origin main; then
+            echo "::error::git pull --rebase failed before push"
+            exit 1
+          fi
+          if git push; then
+            echo "Push succeeded."
+          else
+            echo "First push failed; retrying after 10s..."
+            sleep 10
+            if ! git pull --rebase origin main; then
+              echo "::error::git pull --rebase failed on retry"
+              exit 1
+            fi
+            if ! git push; then
+              echo "::error::git push failed on retry — state NOT persisted"
+              exit 1
+            fi
+            echo "Push succeeded on retry."
+          fi
+
+      - name: Open issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toISOString().slice(0, 10);
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Context length LLM research failed — ${today}`,
+              body: [
+                `The bi-monthly context length research workflow failed.`,
+                ``,
+                `**Workflow run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                ``,
+                `**What to check:**`,
+                `- Was the ANTHROPIC_API_KEY secret set correctly?`,
+                `- Did the LLM return malformed JSON?`,
+                `- Were proposed values rejected by sanity checks?`,
+                ``,
+                `**State impact:** If some values were updated before the failure,`,
+                `they will have been committed. The remaining values retain their previous`,
+                `state. You can manually re-trigger via workflow_dispatch when ready.`,
+                ``,
+                `_Auto-generated by context_length_research.yml._`,
+              ].join("\n"),
+              labels: ["automation-failure", "context-length-framework"]
+            })
