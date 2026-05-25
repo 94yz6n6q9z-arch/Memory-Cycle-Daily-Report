@@ -1,5 +1,135 @@
 # Memory Cycle Brief — Changelog
 
+## v3.7.3 (2026-05-25) — DHCR card silent-vanish hotfix + section-4 loud-failure rendering
+
+The fast-tier brief sent on 2026-05-25 11:29 UTC dropped indicator 6 (DHCR) entirely — the email jumped from indicator 5 (Memory pure-plays underperform SOX) directly to indicator 7 (Competitor dynamics). Two compounding bugs produced this silent failure.
+
+### Root cause: orphaned function call
+
+`src/fast_tier.py:675` was calling `build_narrative_summary(snap_dict)` with both symbols undefined in that scope:
+
+```python
+dhcr_snapshot = compute_dhcr_snapshot(...)
+snap_dict["narrative_summary"] = build_narrative_summary(snap_dict)    # ← LINE 675
+dhcr_dict = asdict(dhcr_snapshot)
+```
+
+`build_narrative_summary` lives at `src/analysis/dhcr.py:610` and is never imported into `fast_tier.py`. `snap_dict` is a local variable inside `compute_dhcr_snapshot()` and doesn't exist in `fast_tier.py` scope at all. Python evaluates the right-hand side first, so the call raised `NameError: name 'build_narrative_summary' is not defined` on every fast-tier run.
+
+The 11:01 UTC workflow log shows it directly:
+
+```
+11:06:44 [ERROR] DHCR computation failed: name 'build_narrative_summary' is not defined
+Traceback (most recent call last):
+  File ".../src/fast_tier.py", line 675, in run_fast_tier
+    snap_dict["narrative_summary"] = build_narrative_summary(snap_dict)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'build_narrative_summary' is not defined
+```
+
+The call is also redundant. `compute_dhcr_snapshot()` already populates `narrative_summary` internally at `dhcr.py:793`:
+
+```python
+snap_dict["narrative_summary"] = build_narrative_summary(snap_dict)
+snap_dict["bull_case_summary"] = build_bull_case(snap_dict)
+snap_dict["bear_case_summary"] = build_bear_case(snap_dict)
+return DHCRSnapshot(**snap_dict)
+```
+
+And `DHCRSnapshot` declares `narrative_summary: str = ""` as a dataclass field at `dhcr.py:191`. So by the time `dhcr_snapshot` returned to fast_tier, the narrative was already in it. Line 675 was a copy-paste leftover that crashed immediately and accomplished nothing even when it didn't crash. v3.7.3 deletes the line.
+
+### Why nobody noticed: three silent-skip layers stacked
+
+The `NameError` produced a chain of "silent fallback" behaviors, each individually defensible but together catastrophic:
+
+1. `fast_tier.py:763` bare `except Exception` caught the NameError, set `computed_metrics["dhcr_snapshot"] = None`, logged at ERROR level only — the workflow still exited with code 0 because the email itself was generated successfully.
+
+2. `template.py:308` checked `if dhcr_snapshot: parts.append(_build_dhcr_section4_card(...))`. `None` is falsy → card never appended. Section 4's HTML emitted indicator 5, then indicator 7, with no gap announcement.
+
+3. `template.py:1561` (defense-in-depth inside the card builder itself) checked `if not dhcr: return ""` — would have silently absorbed too, except step 2 already short-circuited.
+
+The operator saw a successful workflow run, a successful email send, and a brief that just happened to skip from 5 to 7 with no error pill, no banner, no nothing. The failure only existed in the GitHub Actions log, which nobody reads when the workflow turns green.
+
+The same pattern existed for indicator 7 (Competitor) at `template.py:319` and indicator 8 (ADR) at `template.py:329`. Both would have silently vanished the same way under their own future NameErrors.
+
+### Fix
+
+**1. Delete the orphaned line.** One-line diff at `fast_tier.py:675`. DHCR compute now completes and returns its snapshot normally.
+
+**2. Always-render section-4 deep-dive cards.** New helper `_build_section4_card_or_placeholder(snapshot, indicator_number, indicator_title, error_message, normal_card_builder)` replaces all three `if snapshot: append(...)` guards. The card slot is always emitted. If the snapshot is present and the normal builder succeeds, the real card renders. Otherwise a placeholder card renders with:
+
+- Red "Computation failed" status badge using the same `.status-badge` styling as cards 1-5
+- Body section labeled "What we're looking for:" naming the indicator slot ("Indicator 6 of 8 — DHCR")
+- "Where we stand:" stating the compute failed and the brief otherwise renders normally
+- "Underlying error:" showing the actual exception text from `fast_tier`'s except handler in a `<code>` block
+- "Next step:" naming the workflow log keyword to grep ("DHCR computation failed" / "Indicator 7 computation failed" / "Indicator 8 computation failed")
+
+The helper also catches exceptions raised by the normal card builder itself — if a builder bug crashes mid-render (e.g., AttributeError on a missing snapshot field), the placeholder fires instead with the builder's traceback as the error context. Three lines deep, no silent failure mode remains.
+
+**3. Capture error messages at the failure site.** `fast_tier.py`'s three section-4 try/except blocks (DHCR around line 759, Competitor around line 808, ADR around line 851) now record the actual exception string into `computed_metrics["dhcr_error_message"]`, `computed_metrics["competitor_error_message"]`, and `computed_metrics["adr_error_message"]`. `fast_tier.py` threads these through to `build_email_html()` as new optional kwargs. The placeholder reads from there.
+
+Old DHCR except handler:
+```python
+except Exception as e:
+    logger.error(f"DHCR computation failed: {e}", exc_info=True)
+    computed_metrics["dhcr_snapshot"] = None
+    computed_metrics["dhcr_trajectory"] = []
+```
+
+New:
+```python
+except Exception as e:
+    msg = f"DHCR computation raised {type(e).__name__}: {e}"
+    logger.error(f"DHCR computation failed: {e}", exc_info=True)
+    computed_metrics["dhcr_snapshot"] = None
+    computed_metrics["dhcr_trajectory"] = []
+    computed_metrics["dhcr_error_message"] = msg
+```
+
+Same shape for Competitor and ADR.
+
+**4. HTML-escape error messages.** Error strings come from raw exception messages and might contain `<`, `>`, or `&` characters. The placeholder escapes them with the standard three replacements before injecting into the HTML body.
+
+### What this means downstream
+
+When the next fast-tier run executes:
+
+- DHCR compute will complete normally (the NameError is gone) and indicator 6 renders as the full deep-dive card with matrix chart, spectrum bar, status pill, etc.
+- The Layer 2 reasoner's `t1_decode_hbm_captive_ratio` signal (which returned None on 2026-05-25 because Layer 2 had no DHCR snapshot to reason about) will produce a proper verdict.
+- The narrative_summary field on the DHCR snapshot continues to be populated by `compute_dhcr_snapshot()` itself — we didn't lose any functionality.
+- The same defensive pattern protects all three section-4 deep-dives. If a future regression breaks Competitor or ADR compute, the brief still renders with a placeholder in card 7 or card 8 — operator sees the error on the email itself, not buried in a workflow log.
+
+### Tests
+
+25 new tests in `tests/test_v3_7_3_section4_placeholders.py` across 5 classes:
+
+- `TestNoOrphanedSymbols` (3) — regression guard: `fast_tier.py` must not reference `build_narrative_summary` or `snap_dict[` in executable code; `dhcr.py` continues to populate `narrative_summary` internally.
+- `TestSection4PlaceholderHelper` (7) — placeholder renders for None snapshot; normal builder used when snapshot present; builder-exception fallback; empty-string-return fallback; HTML escaping of error messages; log-keyword exposure; default message when no error captured.
+- `TestBuildEmailHtmlAcceptsErrorMessages` (4) — signature accepts new kwargs, defaults to None for backward compatibility.
+- `TestSilentSkipRemoved` (4) — verbatim legacy `if dhcr_snapshot:` / `if competitor_snapshot:` / `if adr_snapshot:` patterns no longer exist in the template; helper invoked exactly 3 times.
+- `TestFastTierErrorCapture` (4) — `computed_metrics["{indicator}_error_message"]` writes in all three except blocks; threaded to template via kwargs.
+- `TestSection4IndicatorNumbering` (3) — placeholder explicitly says "Indicator N of 8" for N in {6, 7, 8} so the operator immediately sees the structural slot.
+
+**710 total passing** in clean regression. Test runtime unchanged.
+
+### What's not in this release
+
+- The LLM worker (v3.7.2) is untouched and continues to operate as deployed.
+- The DHCR computation logic itself (`src/analysis/dhcr.py`) is untouched — it was never the problem; the orphaned line in fast_tier was.
+- Other sections of the brief (sections 1-3, 5, 6, 7) aren't audited for similar silent-skip patterns. Section 4's three deep-dive cards are the highest-stakes structural slots; extending the same protection elsewhere can come later if needed.
+- The workflow commit-message string "(v3.6.0)" remains stale — cosmetic only, requires manual workflow edit, not worth a separate release.
+
+### Deploy
+
+Code-only change. State and workflows unchanged.
+
+1. **Publish release `v3.7.3` with the zip attached** (the v3.7.1 deploy attempt's first failure was caused by missing the attach step — drag `memory_cycle_brief_v3_7_3.zip` into the assets area **before** clicking Publish).
+2. The next scheduled fast-tier run picks up the fix automatically. To verify immediately, manually trigger via Actions → "Fast Tier" → "Run workflow".
+
+Expected outcome: section 4 renders cards 1-5 (top Sonnet picks) → card 6 (DHCR, full deep-dive with matrix chart) → card 7 (Competitor) → card 8 (ADR). No gap. If a future regression breaks any section-4 indicator, the placeholder fires with the specific error message visible on the brief, and the operator can find the traceback by grepping the workflow log for the named keyword.
+
+
+
 ## v3.7.2 (2026-05-25) — Reliability hardening
 
 v3.7.1's first production run started cleanly. Calibration passed at exactly 6,000 (0% deviation). `consumer_chat` floor-bound at 8,500. `coding_agents` floor-bound at 100,000. Then on `enterprise_vertical_agents`, path A's response failed JSON extraction — Sonnet wrote ~4,200 characters of prose preamble (`"I'll research vendor disclosures... Now I have sufficient data... **Key vendor disclosures gathered:** - **Anthropic Claude Enterprise**: CloudZero cites a 'RAG application with a 50,000-token system prompt'..."`) before the JSON itself began, and at `max_tokens=8192` the JSON got truncated mid-object. The brace-matcher correctly identified `Unbalanced braces — no matching ` for first `{`: line 41 column 1 (char 4219)`.

@@ -86,10 +86,12 @@ def build_email_html(
     spot_contract_chart_b64: Optional[str] = None,
     # v3.4.0: DHCR direction-monitor data. snapshot is a dict (from
     # asdict(DHCRSnapshot)) carrying all computed fields. chart_b64 is the
-    # trajectory chart rendered by chart_generator. When both are None
-    # (DHCR YAML missing or computation failed), the indicator simply
-    # renders Sonnet's fallback prose like any other indicator — the
-    # framework degrades gracefully.
+    # trajectory chart rendered by chart_generator.
+    # v3.7.3 — when snapshot is None (DHCR YAML/state missing or computation
+    # failed), section 4 now ALWAYS emits card 6 — either the real DHCR
+    # card or a "Computation failed" placeholder with the actual error
+    # text from dhcr_error_message. Section 4 never silently skips
+    # numbering; cards always render in slots 6/7/8.
     dhcr_snapshot: Optional[dict] = None,
     dhcr_chart_b64: Optional[str] = None,
     # v3.4.2 — DHCR matrix chart (5x5 with memory-zone color coding).
@@ -98,13 +100,23 @@ def build_email_html(
     # v3.4.4 — Indicator 7 (Competitor dynamics) composite snapshot. Dict
     # form of CompetitorSnapshot from src/analysis/competitor_scoring.py.
     # Renders as section 4 deep-dive card with 4 sub-cards + dual-threat
-    # callout. None → card skipped.
+    # callout. v3.7.3 — None now renders the placeholder, not silent skip.
     competitor_snapshot: Optional[dict] = None,
     # v3.4.4 — Indicator 8 (US ADR / SPO event) composite snapshot. Dict
     # form of ADREventSnapshot from src/analysis/adr_event_tracking.py.
     # Renders as section 4 deep-dive card with 4 sub-cards + calendar +
-    # academic-calibration prose. None → card skipped.
+    # academic-calibration prose. v3.7.3 — None renders placeholder.
     adr_snapshot: Optional[dict] = None,
+    # v3.7.3 — Error messages from fast_tier's compute try/except blocks.
+    # When the corresponding snapshot is None, these strings are rendered
+    # in the placeholder card's body so the operator sees the diagnosis on
+    # the brief itself ("NameError: name 'build_narrative_summary' is not
+    # defined", "FileNotFoundError: state/inference_arch_state.json", etc.)
+    # rather than only in the buried workflow log. When the snapshot
+    # rendered successfully these are None and the field is unused.
+    dhcr_error_message: Optional[str] = None,
+    competitor_error_message: Optional[str] = None,
+    adr_error_message: Optional[str] = None,
     # v3.4.1 Fix 5b: Layer 2 per-signal reasonings indexed by signal_id.
     # Used as defensive fallback in _build_indicators_section when Sonnet's
     # where_we_stand field comes back empty (hit max_tokens mid-output).
@@ -302,22 +314,41 @@ def build_email_html(
     # check 3 signals, bull/bear case context boxes, framework primer footer).
     # v3.4.4 enhancement: spectrum bar visualization (vertical 0-100 bar
     # with memory-architecture segments + SK Hynix moat-strength labels).
+    # v3.7.3 — Section 4 cards 6/7/8 are now ALWAYS emitted, even when their
+    # snapshot is None due to a computation failure upstream. The placeholder
+    # cards (rendered by _build_section4_placeholder_card) preserve the card
+    # slot in section 4 — operator sees on the brief itself that the indicator
+    # is broken (with the actual error message from fast_tier's except handler)
+    # rather than a silent jump in numbering. Production bug 2026-05-25
+    # showed DHCR's silent absence after a NameError crashed compute; the
+    # brief jumped 5 → 7 with no indication on the email.
+    #
     # v3.4.7 placement: card 6 (first after top-5). DHCR is structurally
     # Tier 1 but renders in section 4 ONLY — never in the section 3 tier
     # indicator row table.
-    if dhcr_snapshot:
-        parts.append(_build_dhcr_section4_card(
-            dhcr_snapshot,
+    parts.append(_build_section4_card_or_placeholder(
+        snapshot=dhcr_snapshot,
+        indicator_number=6,
+        indicator_title="Decode HBM Captive Ratio (DHCR)",
+        error_message=dhcr_error_message,
+        normal_card_builder=lambda snap: _build_dhcr_section4_card(
+            snap,
             matrix_chart_b64=dhcr_matrix_chart_b64,
             trajectory_chart_b64=dhcr_chart_b64,
-        ))
+        ),
+    ))
 
     # Card 7: Indicator 7 — Competitor dynamics deep-dive card.
     # 4 sub-cards (7A CXMT, 7B Samsung HBM4/4E, 7C Micron, 7D HBF) +
     # composite status + dual-threat scenario callout. Status calibrated
     # to estimated SK Hynix EPS impact (price × volume), not share %.
-    if competitor_snapshot:
-        parts.append(_build_competitor_section4_card(competitor_snapshot))
+    parts.append(_build_section4_card_or_placeholder(
+        snapshot=competitor_snapshot,
+        indicator_number=7,
+        indicator_title="Competitor dynamics",
+        error_message=competitor_error_message,
+        normal_card_builder=_build_competitor_section4_card,
+    ))
 
     # Card 8 (last): Indicator 8 — US ADR / SPO event deep-dive card.
     # 4 sub-cards (8A F-1 watch, 8B roadshow, 8C pricing day, 8D insider
@@ -325,8 +356,13 @@ def build_email_html(
     # calibration prose. Pre-event state renders as "Awaiting F-1" framing.
     # Peak-coincidence signal per Part 11 — last position emphasises that
     # the ADR event is the closer of the section, the macro-peak warning.
-    if adr_snapshot:
-        parts.append(_build_adr_section4_card(adr_snapshot))
+    parts.append(_build_section4_card_or_placeholder(
+        snapshot=adr_snapshot,
+        indicator_number=8,
+        indicator_title="US ADR / SPO event",
+        error_message=adr_error_message,
+        normal_card_builder=_build_adr_section4_card,
+    ))
 
     # 7. Latest news
     parts.append("<h2 id='section-5'>5. Latest news from the memory & semi market</h2>")
@@ -1525,6 +1561,134 @@ def _build_dhcr_spectrum_bar(score: int, market_zone: str = "") -> str:
     parts.append("</tr></table>")
     parts.append("</div>")
     return "\n".join(parts)
+
+
+def _build_section4_card_or_placeholder(
+    snapshot: Optional[dict],
+    indicator_number: int,
+    indicator_title: str,
+    error_message: Optional[str],
+    normal_card_builder,
+) -> str:
+    """v3.7.3 — Always emit a section-4 deep-dive card.
+
+    Before v3.7.3, section 4 contained three `if snapshot: append(builder())`
+    guards. When any of the three snapshots was None due to a computation
+    failure (e.g., the 2026-05-25 NameError on a stale `build_narrative_summary`
+    call that crashed DHCR compute), the corresponding card silently vanished
+    from the brief. The brief jumped from indicator 5 to indicator 7 with
+    no error visible to the operator — the failure only surfaced in the
+    GitHub Actions workflow log.
+
+    This wrapper makes the section-4 cards self-diagnosing. The card slot
+    is ALWAYS present. If the snapshot is present, the normal card builder
+    renders. If not, a placeholder card renders with:
+      - The same header structure as the normal cards (h3 + status badge)
+      - A red "Computation failed" status badge
+      - Body text naming the actual error message from fast_tier's except
+        handler (NameError, FileNotFoundError, etc.)
+      - "Indicator N of 8" framing so the operator sees that the card is
+        intended to be here and section 4 numbering is preserved
+
+    Args:
+        snapshot: The computed snapshot dict (DHCR / Competitor / ADR), or
+            None if compute failed upstream.
+        indicator_number: 6 / 7 / 8 — used for the placeholder's "N of 8" prose.
+        indicator_title: Display name, e.g., "Decode HBM Captive Ratio (DHCR)".
+        error_message: The actual exception string captured by fast_tier's
+            try/except for this indicator. None means we don't know why the
+            snapshot is missing (defensive fallback: show generic message).
+        normal_card_builder: Callable that takes the snapshot and returns the
+            normal card HTML. Only invoked if snapshot is truthy.
+
+    Returns:
+        HTML string for either the normal card or the placeholder.
+    """
+    if snapshot:
+        # Defensive: even if snapshot is present, the normal builder might
+        # raise on a corrupt field. Wrap so a builder bug doesn't crash the
+        # whole email render — instead the placeholder fires with the
+        # builder's own traceback as error context.
+        try:
+            rendered = normal_card_builder(snapshot)
+            if rendered:    # builders return "" for falsy snapshots historically
+                return rendered
+            # Builder returned empty — treat as failure so placeholder fires
+            internal_error = (
+                f"_build_section4_card_or_placeholder: normal card builder "
+                f"for Indicator {indicator_number} returned empty string "
+                f"despite snapshot being present"
+            )
+        except Exception as e:
+            internal_error = (
+                f"Normal card builder for Indicator {indicator_number} "
+                f"raised {type(e).__name__}: {e}"
+            )
+        # Fall through to placeholder with internal error message
+        effective_error = error_message or internal_error
+    else:
+        effective_error = error_message or (
+            f"Snapshot is None and no specific error message was captured "
+            f"(check fast_tier workflow log for the underlying exception)"
+        )
+
+    # Render the placeholder
+    parts = []
+    parts.append(
+        f"<h3>{indicator_title} "
+        f"<span class='status-badge' style='background-color: #dc3545; "
+        f"color: #ffffff; padding: 2px 8px; border-radius: 4px; "
+        f"font-size: 0.85em; font-weight: 600;'>Computation failed</span>"
+        f"</h3>"
+    )
+    parts.append(
+        f"<p><strong>What we're looking for:</strong> Indicator "
+        f"{indicator_number} of 8 — {indicator_title}. The full deep-dive "
+        f"card normally renders here. Section 4 cards 6, 7, and 8 are the "
+        f"three structural indicators (DHCR / Competitor / ADR); they "
+        f"render in order regardless of compute success, so an operator "
+        f"can immediately see when one is broken.</p>"
+    )
+    parts.append(
+        f"<p><strong>Where we stand:</strong> The compute step for this "
+        f"indicator raised an exception during today's fast-tier run. "
+        f"The snapshot could not be produced, so the normal card content "
+        f"is unavailable. Other indicators on the brief continue to "
+        f"render normally — this is a card-level failure, not a brief-"
+        f"wide one.</p>"
+    )
+    # Escape the error message for HTML safety
+    safe_error = (
+        (effective_error or "(no error message)")
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+    parts.append(
+        f"<p><strong>Underlying error:</strong> "
+        f"<code style='background:#f4f4f4; padding:2px 6px; "
+        f"border-radius:3px; font-family:monospace; font-size:0.9em;'>"
+        f"{safe_error}</code></p>"
+    )
+    parts.append(
+        f"<p><strong>Next step:</strong> Inspect the GitHub Actions workflow "
+        f"log for the most recent fast-tier run and locate the "
+        f"<code>{_indicator_log_keyword(indicator_number)}</code> log line. "
+        f"The traceback there pinpoints the source file and line. Cards "
+        f"6/7/8 are version-locked; this placeholder is a deliberate signal, "
+        f"not the brief failing gracefully into nothing.</p>"
+    )
+    return "".join(parts)
+
+
+def _indicator_log_keyword(indicator_number: int) -> str:
+    """Map section-4 indicator number to the substring an operator would
+    grep for in the workflow log."""
+    return {
+        6: "DHCR computation failed",
+        7: "Indicator 7 computation failed",
+        8: "Indicator 8 computation failed",
+    }.get(indicator_number, "computation failed")
 
 
 def _build_dhcr_section4_card(

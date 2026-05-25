@@ -672,7 +672,17 @@ def run_fast_tier() -> int:
             hbm_price_trend=hbm_price_trend,
             lpddr_contract_direction=lpddr_direction,
         )
-        snap_dict["narrative_summary"] = build_narrative_summary(snap_dict)
+        # v3.7.3 — removed orphaned `snap_dict["narrative_summary"] = build_narrative_summary(snap_dict)`
+        # line that referenced two symbols not in scope (build_narrative_summary
+        # is not imported here, snap_dict is a local variable inside
+        # compute_dhcr_snapshot). The call was redundant: compute_dhcr_snapshot
+        # already populates narrative_summary internally at dhcr.py:793 and the
+        # DHCRSnapshot dataclass declares it as a field at dhcr.py:191. The
+        # NameError was crashing DHCR computation on every fast-tier run, which
+        # the bare `except Exception` swallowed into `dhcr_snapshot = None`,
+        # which template.py:308's `if dhcr_snapshot:` silently skipped — so
+        # the brief jumped from indicator 5 to indicator 7 with no error visible
+        # to the operator. Production observed 2026-05-25.
         dhcr_dict = asdict(dhcr_snapshot)
 
         # v3.4.14 — attach operative context history from context_length_state.json
@@ -757,13 +767,17 @@ def run_fast_tier() -> int:
             f"calibration_flag={dhcr_snapshot.calibration_flag}"
         )
     except FileNotFoundError as e:
-        logger.warning(f"DHCR YAML missing — skipping DHCR computation: {e}")
+        msg = f"DHCR data/state file missing: {e}"
+        logger.warning(msg)
         computed_metrics["dhcr_snapshot"] = None
         computed_metrics["dhcr_trajectory"] = []
+        computed_metrics["dhcr_error_message"] = msg
     except Exception as e:
+        msg = f"DHCR computation raised {type(e).__name__}: {e}"
         logger.error(f"DHCR computation failed: {e}", exc_info=True)
         computed_metrics["dhcr_snapshot"] = None
         computed_metrics["dhcr_trajectory"] = []
+        computed_metrics["dhcr_error_message"] = msg
 
     # v3.4.4 — Indicator 7 (Competitor dynamics) composite snapshot.
     # v3.4.4.1: aggregator step added — reads accumulated Layer 1 extraction
@@ -791,11 +805,15 @@ def run_fast_tier() -> int:
         else:
             computed_metrics["competitor_snapshot"] = None
     except FileNotFoundError as e:
-        logger.warning(f"competitor_thresholds.yaml missing — skipping Indicator 7: {e}")
+        msg = f"competitor_thresholds.yaml missing: {e}"
+        logger.warning(f"{msg} — skipping Indicator 7")
         computed_metrics["competitor_snapshot"] = None
+        computed_metrics["competitor_error_message"] = msg
     except Exception as e:
+        msg = f"Competitor computation raised {type(e).__name__}: {e}"
         logger.error(f"Indicator 7 computation failed: {e}", exc_info=True)
         computed_metrics["competitor_snapshot"] = None
+        computed_metrics["competitor_error_message"] = msg
 
     # v3.4.4 — Indicator 8 (US ADR / SPO event) composite snapshot.
     # v3.4.4.1: aggregator step added — reads accumulated Layer 1 extraction
@@ -834,11 +852,15 @@ def run_fast_tier() -> int:
         else:
             computed_metrics["adr_snapshot"] = None
     except FileNotFoundError as e:
-        logger.warning(f"adr_event_tracking.yaml missing — skipping Indicator 8: {e}")
+        msg = f"adr_event_tracking.yaml missing: {e}"
+        logger.warning(f"{msg} — skipping Indicator 8")
         computed_metrics["adr_snapshot"] = None
+        computed_metrics["adr_error_message"] = msg
     except Exception as e:
+        msg = f"ADR computation raised {type(e).__name__}: {e}"
         logger.error(f"Indicator 8 computation failed: {e}", exc_info=True)
         computed_metrics["adr_snapshot"] = None
+        computed_metrics["adr_error_message"] = msg
 
     # ----- Step 4: Layer 2 per-signal reasoning -----
     prior_state = load_prior_state()
@@ -1291,6 +1313,15 @@ def run_fast_tier() -> int:
         # v3.4.4 — Indicator 7 (Competitor) + Indicator 8 (ADR) section 4 cards
         competitor_snapshot=computed_metrics.get("competitor_snapshot"),
         adr_snapshot=computed_metrics.get("adr_snapshot"),
+        # v3.7.3 — when any section-4 deep-dive snapshot is None, the
+        # template renders a "Computation failed" placeholder card instead
+        # of silently skipping. These error_message kwargs surface the
+        # actual exception text so the placeholder body shows the diagnosis
+        # ("NameError: ...", "FileNotFoundError: ...") to the operator on
+        # the email itself rather than only in a buried workflow log.
+        dhcr_error_message=computed_metrics.get("dhcr_error_message"),
+        competitor_error_message=computed_metrics.get("competitor_error_message"),
+        adr_error_message=computed_metrics.get("adr_error_message"),
         # v3.4.1 Fix 5b — Layer 2 fallback for empty where_we_stand
         signal_reasonings_by_id=signal_reasonings_by_id,
     )
