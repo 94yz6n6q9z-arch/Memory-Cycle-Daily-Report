@@ -1,271 +1,283 @@
 {
-  "run_at": "2026-05-25T12:35:30.260789+00:00",
+  "run_at": "2026-05-25T13:42:23.553857+00:00",
   "min_score": 3,
-  "dropped_count": 206,
+  "dropped_count": 211,
   "dropped_items": [
     {
       "title": "Samsung Electronics leads smartphone markets in S. America, Middle East, Southeast Asia in Q1",
       "source": "Korea Times Business",
       "score": 1,
-      "reason": "Samsung smartphone market share \u2014 consumer electronics only, no memory cycle or AI capex signal"
+      "reason": "Samsung smartphone market share \u2014 consumer/mobile only, no memory cycle or AI capex implication"
     },
     {
       "title": "Chipmakers\u2019 record bonuses to fuel demand for houses, luxury cars",
       "source": "Korea Times Business",
       "score": 2,
-      "reason": "Chipmaker bonuses affecting consumer spending \u2014 macro noise, no memory supply/demand or cycle indicator"
+      "reason": "Chipmaker bonuses as macro consumer demand signal \u2014 too indirect, no memory-cycle specificity"
     },
     {
-      "title": "Samsung Electronics Bonus Vote Hits 88% as Affiliates Demand Better Pay - Seoul Economic Daily",
-      "source": "Google News (SK Hynix labor union)",
+      "title": "LG Energy Solution leads battery industry\u2019s shift to AI-driven manufacturing",
+      "source": "Korea Times Business",
       "score": 2,
-      "reason": "Samsung bonus vote / affiliate pay \u2014 Korean labor/macro news but does not name Samsung Electronics' memory division (DRAM/NAND/HBM production), no direct production impact signal"
+      "reason": "LG battery AI manufacturing \u2014 unrelated to memory makers or chip designers in AI/datacenter context"
+    },
+    {
+      "title": "Star Citizen reaches $1 billion in lifetime funding, 14 years after the project was first announced \u2014 game still in early access with no release window, including 'Squadron 42' campaign",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "Star Citizen gaming funding \u2014 gaming-only, no AI or memory demand tie-in"
+    },
+    {
+      "title": "Huawei claims sanctions-busting breakthrough with 1.4nm-class chips by 2031, claims 55% higher transistor density \u2014 firm claims new LogicFolding chip architecture can bypass EUV restrictions, introduces 'Tau Scaling Law' to replace Moore's Law",
+      "source": "Tom's Hardware RAM",
+      "score": 1,
+      "reason": "Huawei logic-chip sanctions workaround \u2014 unrelated to memory makers (DRAM/HBM/NAND), no memory cycle signal"
     },
     {
       "title": "Best AI Stocks",
       "source": "Benzinga Analyst Ratings",
-      "score": 0,
-      "reason": "Generic 'Best AI Stocks' list \u2014 no memory cycle, pricing, supply, capex, or architectural detail; headline-only noise"
+      "score": 2,
+      "reason": "Listicle without substance: Generic 'Best AI Stocks' rankings lack analyst upgrade/downgrade detail, PT changes, or EPS revisions on named memory makers"
     },
     {
       "title": "Best Aluminum Stocks",
       "source": "Benzinga Analyst Ratings",
       "score": 0,
-      "reason": "Aluminum stocks \u2014 no semiconductor memory relevance"
+      "reason": "Not relevant: Aluminum stocks; zero connection to memory semiconductor cycle"
+    },
+    {
+      "title": "Tech Super IPO Wave Hits US Market: Nearly 20 Companies Queue to Go Public, Including SpaceX, OpenAI, and Anthropic - Bitget",
+      "source": "Google News (OpenAI public listing)",
+      "score": 2,
+      "reason": "Tier C pre-IPO speculation: OpenAI/Anthropic IPO timing prediction lacks capex commitment or infrastructure build-out detail; no memory demand signal"
     },
     {
       "title": "TSMC Workers Push for Union, Strike Over Bonus Cuts Despite Record Profits - Seoul Economic Daily",
       "source": "Google News (Samsung union strike)",
       "score": 1,
-      "reason": "TSMC worker unionization \u2014 labor news but for foundry, not memory maker. Zero relevance to SK Hynix/Micron/Samsung memory cycle."
+      "reason": "TSMC union strike \u2014 not a memory maker (TSMC is foundry/packaging). No direct read-through to SK Hynix/Micron/Samsung memory cycle."
     },
     {
       "title": "Anthony Scaramucci Says The 'Holy Trinity' Of SpaceX, OpenAI And Anthropic IPOs Could Become A Dangerous - Benzinga",
       "source": "Google News (OpenAI public listing)",
       "score": 2,
-      "reason": "OpenAI/SpaceX/Anthropic IPO speculation \u2014 TIER C adjacent but pure financial rumor. No capex commitment, infrastructure detail, or AI lab funding quantum stated. Noise."
+      "reason": "OpenAI IPO speculation \u2014 no infrastructure capex commitment, no memory/chip-supply detail. Pure financial news without cycle implication."
     },
     {
       "title": "SpaceX, OpenAI Anthropic: To the Mars? [Video] - FXStreet",
       "source": "Google News (Anthropic IPO)",
       "score": 1,
-      "reason": "Anthropic IPO valuation speculation unrelated to infrastructure capex or memory demand signals. Noise."
+      "reason": "Anthropic IPO speculation \u2014 no capex commitment, no infrastructure or memory demand detail. Pure financial news."
     },
     {
       "title": "SpaceX, OpenAI, Anthropic: The AI Mega\u2011IPO Trio Set to Reshape the S&P 500 - AOL.com",
       "source": "Google News (Anthropic IPO)",
-      "score": 1,
-      "reason": "Anthropic IPO valuation speculation with no memory, capex, or infrastructure implication. Noise."
+      "score": 2,
+      "reason": "Anthropic IPO speculation (duplicate frame) \u2014 no capex or infrastructure signal. Financial event without cycle implication."
     },
     {
       "title": "Anthropic To Become More Valuable Than Today's AMD, Sk Hynix And Micron? Crypto Prediction Market Is Full - Benzinga",
       "source": "Google News (Anthropic IPO)",
-      "score": 0,
-      "reason": "Anthropic IPO valuation prediction market. No memory, capex, or infrastructure signal. Noise."
-    },
-    {
-      "title": "SoftBank shares hit record high amid returns from OpenAI investment - Business Post",
-      "source": "Google News (OpenAI public listing)",
       "score": 2,
-      "reason": "Tier D tangential: SoftBank OpenAI investment return is financial/portfolio news, not memory demand or infrastructure capex commitment; no direct cycle implication"
+      "reason": "Anthropic valuation speculation in crypto prediction market. No infrastructure capex commitment, memory demand signal, or cycle indicator. Noise."
     },
     {
       "title": "OpenAI may be days away from filing IPO paperwork, report says - MSN",
       "source": "Google News (OpenAI IPO filing)",
-      "score": 1,
-      "reason": "OpenAI IPO filing \u2014 no direct memory demand or capex commitment detail; speculative news absent infrastructure investment announcement"
+      "score": 2,
+      "reason": "OpenAI IPO speculation \u2014 repeated valuation noise without infrastructure or memory demand implication"
     },
     {
       "title": "SoftBank Shares Hit Record High With Lift From OpenAI IPO Hopes - Bloomberg.com",
       "source": "Google News (OpenAI IPO filing)",
       "score": 1,
-      "reason": "SoftBank stock price move tied to OpenAI IPO hopes \u2014 no memory cycle or capex commitment signal; financial sentiment only"
+      "reason": "SoftBank valuation noise tied to OpenAI IPO \u2014 no memory cycle relevance"
     },
     {
       "title": "Veteran Zerg champion defends title at ASL Season 21",
       "source": "Korea Herald Business",
       "score": 0,
-      "reason": "Starcraft esports news \u2014 unrelated to semiconductors or memory"
+      "reason": "StarCraft esports \u2014 entirely unrelated to semiconductor memory cycle"
     },
     {
-      "title": "Sam Altman\u2019s OpenAI reportedly preparing to file for blockbuster IPO soon - AOL.com",
-      "source": "Google News (OpenAI public listing)",
-      "score": 1,
-      "reason": "OpenAI IPO filing narrative \u2014 no infrastructure capex commitment or memory demand signal; speculative financial news"
+      "title": "Samsung wage deal nears approval as internal backlash grows",
+      "source": "Korea Herald Business",
+      "score": 2,
+      "reason": "Samsung wage negotiation news with no memory-cycle, production-capacity, or supply-signal implication"
+    },
+    {
+      "title": "Samsung Electronics avoided a strike, but politics got involved... Ruling and opposition parties clash over the Yellow Envelope Law - \ub9e4\uc77c\uacbd\uc81c",
+      "source": "Google News (Samsung union strike)",
+      "score": 2,
+      "reason": "Korean political commentary on Samsung labor law; no memory cycle or production impact"
     },
     {
       "title": "Regulators warn of risks ahead of leveraged Samsung Electronics, SK Hynix products listing - \ub514\uc9c0\ud138\ud22c\ub370\uc774",
       "source": "Google News (SK Hynix target price)",
       "score": 2,
-      "reason": "Regulatory warning on Samsung/SK Hynix leverage is macro-governance noise, not memory cycle relevant. No pricing, supply, capex, or cycle signal."
+      "reason": "Regulator warning on Samsung/SK Hynix leverage is macro-financial commentary; no memory cycle, pricing, supply, or demand signal"
     },
     {
       "title": "Samsung tops emerging smartphone markets in Q1",
       "source": "Korea Herald Business",
       "score": 0,
-      "reason": "Smartphone market share in emerging markets. No memory cycle, HBM demand, or AI capex implication."
+      "reason": "Smartphone market share news; unrelated to memory cycle, HBM, DRAM pricing, or datacenter AI capex"
     },
     {
       "title": "Samsung Electronics employees now score \u2018almost like lawyers' in Korea's marriage market - The Korea Times",
       "source": "Google News (SK Hynix labor union)",
       "score": 1,
-      "reason": "Cultural/social commentary on Samsung employee status in marriage market. No production, labor dispute, capacity, or cycle impact."
+      "reason": "Social/cultural commentary on Samsung wage levels; no memory industry relevance"
     },
     {
       "title": "Foreign minister highlights Africa\u2019s growing strategic importance at Africa Day event",
       "source": "Korea Herald National",
       "score": 0,
-      "reason": "Africa geopolitical strategy. Unrelated to semiconductors or memory."
+      "reason": "African geopolitics; unrelated to semiconductors or memory cycle"
+    },
+    {
+      "title": "Kospi rally goes beyond Samsung, SK hynix: JP Morgan",
+      "source": "Korea Herald Business",
+      "score": 1,
+      "reason": "Kospi rally note naming Samsung and SK Hynix but without memory-specific thesis, capex, pricing, or supply commentary; pure equity index observation"
     },
     {
       "title": "57% of Voters Believe AI Risks Outweigh the Benefits. What Does That Mean for the OpenAI and Anthropic IPOs? - AOL.com",
       "source": "Google News (Anthropic IPO)",
       "score": 2,
-      "reason": "Anthropic IPO sentiment poll on AI risks. No capex commitment, infrastructure spend, or memory demand signal. Governance/regulatory noise."
+      "reason": "Anthropic IPO public sentiment \u2014 no memory demand, capex commitment, or infrastructure detail; Tier C news but lacks quantified AI capex implication"
     },
     {
       "title": "Herald CEO invokes Ubuntu in call for stronger Korea-Africa ties",
       "source": "Korea Herald National",
       "score": 0,
-      "reason": "Korea-Africa diplomatic ties. Unrelated to semiconductors or memory."
+      "reason": "Korea-Africa policy commentary unrelated to semiconductors or memory cycle"
     },
     {
       "title": "LLAMA LIMA: A Living Meta-Analysis on the Effects of Generative AI on Learning Mathematics",
       "source": "arxiv cs.LG (filtered)",
-      "score": 0,
-      "reason": "Pure ML research on mathematics education\u2014no memory/semiconductor cycle implication"
+      "score": 1,
+      "reason": "Academic paper on AI + math learning; no memory architecture, inference efficiency, or demand signal"
     },
     {
       "title": "Knowledge Distillation for Low-Resource Open-source Text-to-SQL Model",
       "source": "arxiv cs.CL (filtered)",
-      "score": 0,
-      "reason": "NLP research on text-to-SQL models\u2014no memory maker/chip designer/capex signal"
+      "score": 2,
+      "reason": "Incremental research on text-to-SQL efficiency; no memory demand or architectural shift impact on HBM captive ratio"
     },
     {
       "title": "Benchmarking Google Embeddings 2 against Open-Source Models for Multilingual Dense Retrieval and RAG Systems",
       "source": "arxiv cs.CL (filtered)",
-      "score": 0,
-      "reason": "Benchmarking study on embeddings\u2014no memory cycle or semiconductor supply/demand signal"
+      "score": 2,
+      "reason": "Benchmarking paper on embeddings; no memory cycle, pricing, or hyperscaler capex signal"
     },
     {
-      "title": "Foreign Demand for K-ETFs Expands Beyond Samsung, SK hynix to KOSPI 200 - Seoul Economic Daily",
-      "source": "Google News (SK Hynix US listing pricing)",
-      "score": 1,
-      "reason": "K-ETF foreign demand expansion\u2014financial market commentary unrelated to memory semiconductor supply/demand/cycle dynamics"
+      "title": "BofA warns AI IPO wave could push tech to bubble levels - MSN",
+      "source": "Google News (OpenAI IPO filing)",
+      "score": 2,
+      "reason": "TIER D adjacent: Broad AI IPO bubble warning; no memory maker or memory demand specificity"
     },
     {
       "title": "Should Investors Buy the SpaceX, OpenAI IPO? - Baystreet.ca",
       "source": "Google News (OpenAI public listing)",
-      "score": 2,
-      "reason": "SpaceX/OpenAI IPO speculation \u2014 general AI/tech news without memory, chip-supply, or capex-commitment specifics. No infrastructure detail or compute-demand signal tied to memory cycle."
-    },
-    {
-      "title": "DXYZ, VCX stocks catch IPO fever: Traders chase SpaceX, OpenAI and Anthropic for valuations rivaling TSLA, META - MSN",
-      "source": "Google News (Anthropic IPO)",
       "score": 1,
-      "reason": "IPO valuation speculation unrelated to memory cycle, capex commitments, or chip supply."
-    },
-    {
-      "title": "Tech Super IPO Wave Hits US Market: Nearly 20 Companies Queue to Go Public, Including SpaceX, OpenAI, and Anthropic - Bitget",
-      "source": "Google News (OpenAI IPO filing)",
-      "score": 1,
-      "reason": "IPO speculation noise \u2014 no memory cycle, capex, or chip supply relevance."
+      "reason": "ADJACENT: OpenAI IPO speculation is macro/valuation noise. No memory demand, capex commitment, or chip-supply detail. Not a Tier C capex signal."
     },
     {
       "title": "Will SpaceX, OpenAI, Anthropic mega IPOs break the bull market? \u2018Big Short\u2019 investor Michael Burry doesn\u2019t think so - MSN",
       "source": "Google News (Anthropic public listing)",
-      "score": 1,
-      "reason": "IPO macro speculation unrelated to memory cycle, capex, or supply/demand."
+      "score": 2,
+      "reason": "TIER C noise: Anthropic IPO speculation without capex commitment detail or memory/chip supply implication; speculative financial news"
     },
     {
-      "title": "How Vibe Slop And Fragile Economics could impact Mega IPO for OpenAI and Anthropic - The American Bazaar",
-      "source": "Google News (Anthropic IPO)",
+      "title": "As SpaceX and OpenAI Prepare for Public Debuts, What Recent IPO History Signals - The Information",
+      "source": "Google News (OpenAI public listing)",
       "score": 2,
-      "reason": "Anthropic IPO speculation \u2014 Tier C but forward-looking; no capex commitment, funding round detail, or infrastructure expansion announcement; pure valuation noise"
+      "reason": "TIER C speculative noise: OpenAI IPO timing signal lacks any capex commitment, memory demand, or chip-supply commentary; general tech event without infrastructure implication"
     },
     {
       "title": "Morgan Stanley Portfolio Manager: \u2018I Don\u2019t Think We\u2019re Close\u2019 to a Dot-Com Bubble - 24/7 Wall St.",
       "source": "Google News (Morgan Stanley memory semiconductor)",
-      "score": 1,
-      "reason": "General market sentiment commentary; no memory semiconductor specifics or cycle implication"
+      "score": 2,
+      "reason": "TIER D adjacent/noise: Morgan Stanley portfolio manager bubble commentary \u2014 no memory maker, designer, hyperscaler, or equipment company named; macro sentiment without semiconductor cycle input"
     },
     {
       "title": "Morgan Stanley Portfolio Manager: \u2018I Don\u2019t Think We\u2019re Close\u2019 to a Dot-Com Bubble - AOL.com",
       "source": "Google News (Morgan Stanley memory semiconductor)",
-      "score": 1,
-      "reason": "Duplicate of headline 1; general market sentiment without memory cycle relevance"
-    },
-    {
-      "title": "Meta Cuts Workforce Despite $83.2 Billion Profit - \uc870\uc120\uc77c\ubcf4",
-      "source": "Google News (SK Hynix earnings)",
       "score": 2,
-      "reason": "Meta workforce reduction is unrelated to memory cycle; headline attribution appears mismatched (SK Hynix label)"
-    },
-    {
-      "title": "SoftBank\u2019s $61 Billion Weekend Whipped Up by OpenAI\u2019s $1 Trillion IPO Dream - AD HOC NEWS",
-      "source": "Google News (OpenAI IPO filing)",
-      "score": 2,
-      "reason": "OpenAI IPO speculation is forward-looking corporate event; lacks quantified capex commitment or infrastructure detail that would drive memory demand"
+      "reason": "Duplicate of Headline 6 \u2014 same Morgan Stanley commentary, same score"
     },
     {
       "title": "We tested Advanced Shader Delivery on the RX 9070 XT in six games \u2014 up to 95% improvement in load times and 33 percent faster 1% Low FPS",
       "source": "Tom's Hardware RAM",
       "score": 1,
-      "reason": "GPU gaming performance optimization (shader delivery); no memory semiconductor cycle, HBM demand, or architectural shift implication"
+      "reason": "Gaming GPU optimization (RX 9070 XT) with no AI/datacenter/memory-demand tie-in; shader delivery is gaming-only optimization, not relevant to memory cycle"
+    },
+    {
+      "title": "Samsung Chairman Lee Jae-yong Visits MediaTek Headquarters, Meets CEO Rick Tsai - thelec.net",
+      "source": "Google News (Samsung memory HBM)",
+      "score": 2,
+      "reason": "Samsung exec visit to MediaTek is corporate/relationship news with no production, supply, pricing, or memory-demand implication"
     },
     {
       "title": "Weekly: Musk Lost the OpenAI Lawsuit, SpaceX Filed for an IPO, Google Unveiled New AI Features - incrypted",
       "source": "Google News (OpenAI IPO filing)",
       "score": 2,
-      "reason": "Musk lawsuit + SpaceX IPO + Google AI features are noise; no memory, chip-supply, or HBM demand implication"
+      "reason": "Aggregate news roundup (OpenAI lawsuit/SpaceX/Google AI features) with no memory, chip supply, or quantified capex specifics; noise"
     },
     {
       "title": "New video of melted Bambu Lab A1 sparks debate about whether the 3D printer is still a fire hazard \u2014 critics push for recall while redditors suspect external factors",
       "source": "Tom's Hardware RAM",
       "score": 0,
-      "reason": "3D printer fire hazard is unrelated noise; zero relevance to semiconductor memory cycle"
+      "reason": "ADJACENT: 3D printer fire safety debate \u2014 no memory semiconductor relevance"
     },
     {
       "title": "Commercial satellite supplying intel to Ukraine is cornered by four Russian spacecraft \u2014 US Space Force can only watch as Russia threatens 'quasi-civilian' targets",
       "source": "Tom's Hardware RAM",
       "score": 0,
-      "reason": "Geopolitical/military satellite news; no memory semiconductor or chip designer relevance"
+      "reason": "ADJACENT: Ukraine-Russia satellite conflict \u2014 no memory semiconductor relevance"
     },
     {
-      "title": "JPMorgan Just Hiked Hewlett Packard Enterprise Price Target to $37: Memory Reversal Powers IT Hardware Rally - AOL.com",
-      "source": "Google News (SK Hynix target price)",
+      "title": "SpaceX, Nvidia, OpenAI, Anthropic: We just got the latest harbinger from the 4 horsemen of the AI age - Business Insider",
+      "source": "Google News (Anthropic IPO)",
       "score": 2,
-      "reason": "HPE PT raise is hyperscaler-adjacent infrastructure but headline conflates with 'memory reversal' without quantified HBM demand or SK Hynix-specific commentary"
+      "reason": "ADJACENT: Anthropic IPO is generic venture-stage funding news; no capex commitment, infrastructure build-out detail, or memory demand signal articulated"
     },
     {
       "title": "OpenAI filed its listing documents today; could it go public as early as September? Altman: Timing of the IPO remains uncertain. - \u5bcc\u9014\u725b\u725b",
       "source": "Google News (OpenAI IPO filing)",
       "score": 2,
-      "reason": "OpenAI IPO filing news; no explicit capex guidance, memory infrastructure commitment, or chip-supply commentary attached"
+      "reason": "ADJACENT: OpenAI IPO filing news is corporate action without capex/infrastructure/memory demand signal; timing uncertainty weakens forward signal"
+    },
+    {
+      "title": "Samsung and SK Hynix employees are frantically buying luxury cars - Bitget",
+      "source": "Google News (Korea memory chip industry)",
+      "score": 2,
+      "reason": "ADJACENT: Luxury car purchases are consumption proxy; no direct production capacity, yield, or memory-cycle signal; cultural commentary without data"
+    },
+    {
+      "title": "SpaceX, OpenAI, Anthropic IPOs to topple \u2018Magnificent Seven\u2019 grip - Financial Mirror",
+      "source": "Google News (Anthropic public listing)",
+      "score": 2,
+      "reason": "ADJACENT: Anthropic IPO thematic grouping lacks capex/infrastructure/memory demand signal; generic venture event noise"
     },
     {
       "title": "From sports day to matchmaking, Seoul\u2019s luxury towers form their own league",
       "source": "Korea Herald National",
       "score": 0,
-      "reason": "Seoul luxury real estate news \u2014 no memory/semiconductor relevance; noise."
-    },
-    {
-      "title": "Anthropic's shadow IPO market is already flashing trillion-dollar prices - AOL.com",
-      "source": "Google News (Anthropic public listing)",
-      "score": 2,
-      "reason": "Anthropic valuation noise; shadow IPO pricing without capex commitment or infrastructure build-out detail \u2014 no forward memory demand signal."
+      "reason": "Unrelated to memory semiconductors; luxury real estate in Seoul"
     },
     {
       "title": "MLCC Prices Are Expected to Rebound Due to Rising Demand from High-End Applications and Increased Channel Stocking Activities for Consumer-Grade Components, Says TrendForce",
       "source": "DRAMeXchange Weekly Research",
-      "score": 1,
-      "reason": "MLCC (capacitor) pricing unrelated to DRAM/HBM/NAND memory cycle \u2014 noise"
+      "score": 2,
+      "reason": "Equipment (MLCC) \u2014 unrelated to memory semiconductor cycle; passive components commodity noise"
     },
     {
       "title": "[News] Huawei Takes Early Lead in Horizontal Foldable Race vs Samsung and Apple, Eyes April Pura X Max Launch",
       "source": "TrendForce",
       "score": 1,
-      "reason": "Huawei foldable smartphone race vs. Samsung/Apple \u2014 consumer hardware, no memory/HBM/AI infrastructure implication"
+      "reason": "ADJACENT/NOT RELEVANT: Foldable smartphone race. No memory cycle, HBM demand, or chip designer / hyperscaler AI capex implication."
     },
     {
       "title": "Hyundai Motor Group creates dedicated units for software-defined factory, robot components",
@@ -304,6 +316,12 @@
       "reason": "no keyword match"
     },
     {
+      "title": "From Electrons to Photons: CPO Test Interfaces Become the Next AI Infrastructure Battleground - semivision",
+      "source": "Google News (HBM AI bottleneck)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
       "title": "Singapore foreign minister to visit Seoul after stops in China, N. Korea",
       "source": "Korea Herald National",
       "score": 0,
@@ -317,6 +335,12 @@
     },
     {
       "title": "Kioxia (KXIAY) Rockets 460% as U.S. Exchange Listing Looms on Horizon - parameter.io",
+      "source": "Google News (SK Hynix US listing pricing)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Kioxia (KXIAY) Stock Rockets 460% in 2026 as U.S. Exchange Listing Looms - MoneyCheck",
       "source": "Google News (SK Hynix US listing pricing)",
       "score": 0,
       "reason": "no keyword match"
@@ -348,6 +372,12 @@
     {
       "title": "Hyundai creates dedicated units for software-defined factory, robot components",
       "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Buying or Building a PC in the RAM Crisis? Here's How to Avoid Paying the 'AI Tax' - PCMag",
+      "source": "Google News (DDR5 spot price)",
       "score": 0,
       "reason": "no keyword match"
     },
@@ -442,6 +472,12 @@
       "reason": "no keyword match"
     },
     {
+      "title": "SpaceX IPO Documents Reveal: Musk\u2019s Company Doubles Bitcoin Holdings, Becoming World\u2019s Seventh-Largest Holder - \u6df1\u6f6eTechFlow",
+      "source": "Google News (Anthropic public listing)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
       "title": "Top 5 exporters account for 43.5% of total exports in Q1, indicates worsening 'K-shaped' divide - Korea JoongAng Daily",
       "source": "Google News (Korea memory chip industry)",
       "score": 0,
@@ -468,12 +504,6 @@
     {
       "title": "LG Electronics OLED TVs top consumer reviews in 14 countries",
       "source": "Korea Herald Business",
-      "score": 0,
-      "reason": "no keyword match"
-    },
-    {
-      "title": "Hyundai Motor Targets 20% Cost Cut with Suppliers - Seoul Economic Daily",
-      "source": "Google News (SK Hynix target price)",
       "score": 0,
       "reason": "no keyword match"
     },
@@ -508,12 +538,6 @@
       "reason": "no keyword match"
     },
     {
-      "title": "Buying or Building a PC in the RAM Crisis? Here's How to Avoid Paying the 'AI Tax' - PCMag",
-      "source": "Google News (DDR5 spot price)",
-      "score": 0,
-      "reason": "no keyword match"
-    },
-    {
       "title": "[Photo News] CJ doubles down on US expansion",
       "source": "Korea Herald Business",
       "score": 0,
@@ -534,12 +558,6 @@
     {
       "title": "\"Is that all a professional can do?\" It's not a sound from a professional baseball stadium. This is - \ub9e4\uc77c\uacbd\uc81c",
       "source": "Google News (Samsung memory HBM)",
-      "score": 0,
-      "reason": "no keyword match"
-    },
-    {
-      "title": "Rosenblatt Sets a $1,000 Seagate Price Target: Is This the Most Bullish HDD Call of 2026? - AOL.com",
-      "source": "Google News (SK Hynix target price)",
       "score": 0,
       "reason": "no keyword match"
     },
@@ -640,14 +658,8 @@
       "reason": "no keyword match"
     },
     {
-      "title": "Inside Chris Hohn\u2019s Top Hedge Fund - Financial Times",
-      "source": "Google News (Anthropic public listing)",
-      "score": 0,
-      "reason": "no keyword match"
-    },
-    {
       "title": "Beware the boom and bust cycle of memory stocks, investors warn amid AI excitement - CNBC",
-      "source": "Google News (SK Hynix target price)",
+      "source": "Google News (Samsung memory HBM)",
       "score": 0,
       "reason": "no keyword match"
     },
@@ -671,7 +683,7 @@
     },
     {
       "title": "SpaceX IPO fuels AI boom hype amid bubble warnings - MSN",
-      "source": "Google News (Anthropic IPO)",
+      "source": "Google News (OpenAI IPO filing)",
       "score": 0,
       "reason": "no keyword match"
     },
@@ -738,6 +750,12 @@
     {
       "title": "China accelerates semiconductor ecosystem push, courting South Korean SMEs - aju press",
       "source": "Google News (Korea memory chip industry)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "ALAB Q1 2026 Earnings: Strong EPS Beat Signals Robust Demand for AI Connectivity Solutions - Newser",
+      "source": "Google News (Astera Labs CXL revenue)",
       "score": 0,
       "reason": "no keyword match"
     },
@@ -832,8 +850,20 @@
       "reason": "no keyword match"
     },
     {
+      "title": "Astera Labs Q1 2026 Earnings: Strong EPS Beat Amidst Stealthy Revenue Disclosures - Viral Trade Signals - Newser",
+      "source": "Google News (Astera Labs CXL revenue)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
       "title": "AI bonus frenzy raises image of blue-collar jobs as more workers seek to join 'kingsanjik' - Korea JoongAng Daily",
       "source": "Google News (SK Hynix labor union)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "China\u2019s AI trade is holding up even as the wider economy stays weak - MEXC",
+      "source": "Google News (Artificial Analysis tokens per dollar)",
       "score": 0,
       "reason": "no keyword match"
     },
@@ -852,12 +882,6 @@
     {
       "title": "Amid A Global Memory Chip Supply Crunch, Is China the Answer? - The Wire China",
       "source": "Google News (Korea memory chip industry)",
-      "score": 0,
-      "reason": "no keyword match"
-    },
-    {
-      "title": "China\u2019s tech stocks are proving to be a better trade than its economy, or America\u2019s - Cryptopolitan",
-      "source": "Google News (Artificial Analysis tokens per dollar)",
       "score": 0,
       "reason": "no keyword match"
     },
@@ -982,6 +1006,12 @@
       "reason": "no keyword match"
     },
     {
+      "title": "Corsair DDR5 RAM spotted using Chinese chips \u2014 here's why that's important - MSN",
+      "source": "Google News (CXMT DDR5)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
       "title": "Stony-faced N. Korean women\u2019s team leaves S. Korea after title win",
       "source": "Korea Herald National",
       "score": 0,
@@ -1036,12 +1066,6 @@
       "reason": "no keyword match"
     },
     {
-      "title": "Corsair DDR5 RAM spotted using Chinese chips \u2014 here's why that's important - MSN",
-      "source": "Google News (CXMT DDR5)",
-      "score": 0,
-      "reason": "no keyword match"
-    },
-    {
       "title": "The AI semiconductor industry is changing in 2026. The 1.58-bit based Samjin model shows the potenti.. - \ub9e4\uc77c\uacbd\uc81c",
       "source": "Google News (HBM AI bottleneck)",
       "score": 0,
@@ -1055,6 +1079,12 @@
     },
     {
       "title": "South Korea\u2019s Exports Explode 52.6% as AI Chip Demand Skyrockets - MEXC",
+      "source": "Google News (Korea memory chip industry)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Koreas red-hot rally demands a cooler head - aju press",
       "source": "Google News (Korea memory chip industry)",
       "score": 0,
       "reason": "no keyword match"
