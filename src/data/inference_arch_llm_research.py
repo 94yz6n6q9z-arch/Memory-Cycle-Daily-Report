@@ -163,7 +163,15 @@ def _kv_kb_to_gb_per_1m(kv_kb: float) -> float:
 # ── Claude API call ───────────────────────────────────────────────────────────
 
 def _invoke_and_extract(prompt: str, max_tokens: int) -> dict:
-    """Single API call with web_search; parse JSON from response text."""
+    """Single API call with web_search; parse JSON from response text.
+
+    v3.8.4 — Uses streaming. The Anthropic SDK enforces a 10-minute timeout
+    on non-streaming requests, which the rigorous Path A prompt (with web
+    search agentic loop accumulating across multiple internal turns) reliably
+    exceeds on retry. Streaming removes that timeout. Calibration calls are
+    short but go through the same code path for consistency — streaming adds
+    no overhead for fast calls.
+    """
     import anthropic
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -173,12 +181,13 @@ def _invoke_and_extract(prompt: str, max_tokens: int) -> dict:
     from src.config import SONNET_MODEL
 
     client = anthropic.Anthropic()
-    response = client.messages.create(
+    with client.messages.stream(
         model=SONNET_MODEL,
         max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
         tools=[{"type": "web_search_20250305", "name": "web_search"}],
-    )
+    ) as stream:
+        response = stream.get_final_message()
 
     text_parts = []
     for block in response.content:
@@ -496,7 +505,18 @@ or after. No markdown fences. JSON only.
     }}
   ],
   "confidence": "high" | "medium" | "low"
-}}"""
+}}
+
+═══════════════════════════════════════════════════════════════════════════
+FINAL REMINDER (this overrides any urge you have to explain first)
+═══════════════════════════════════════════════════════════════════════════
+
+Output the JSON object directly. Do your web research silently — do NOT
+narrate your search strategy, do NOT write "I'll start by searching for...",
+do NOT summarize what you found before giving the JSON. Your output budget
+is limited; spending tokens on prose risks truncating the JSON.
+
+Your VERY FIRST output character must be the opening brace. Begin now:"""
 
 
 # Path B (economic triangulation) was removed in v3.8.3 — the X-axis question

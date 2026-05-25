@@ -1,5 +1,72 @@
 # Memory Cycle Brief — Changelog
 
+## v3.8.4 (2026-05-25) — Streaming API + FINAL REMINDER prompt block
+
+The v3.8.3 production run failed with two cascading errors that masked each
+other:
+
+1. **Initial Path A call (16K tokens) returned no JSON.** The rigorous prompt's
+   complexity caused the model to spend its token budget on prose narration
+   (search strategy explanation, reasoning out loud) before reaching the
+   structured JSON output. `_extract_json` correctly reported "No '{' found".
+
+2. **Retry call (32K tokens) hit the SDK 10-minute timeout.** The Anthropic
+   Python SDK enforces a hard 10-minute limit on non-streaming requests. With
+   doubled max_tokens and the web_search agentic loop accumulating across
+   multiple internal turns, the retry reliably exceeded this limit. The error
+   message: "Streaming is required for operations that may take longer than
+   10 minutes."
+
+### Fix 1 — Streaming API (mandatory)
+
+`_invoke_and_extract()` now uses `client.messages.stream()` instead of
+`client.messages.create()`. The streaming context manager calls
+`get_final_message()` after the stream completes to get the same Message
+object the non-streaming API would have returned. No timeout. Same response
+structure, same downstream parsing.
+
+Streaming has no downside for short calls (calibration ~10s) — adds zero
+overhead. All API calls in the worker now route through streaming for
+consistency.
+
+### Fix 2 — FINAL REMINDER block at end of Path A prompt
+
+Claude follows recency in long prompts. The "JSON only" directive in Part 6
+of the rigorous prompt was being undermined by 5 preceding parts of research
+instructions that implicitly encouraged thinking out loud.
+
+Added a final block after the JSON template:
+
+```
+═══════════════════════════════════════════════════════════════════════════
+FINAL REMINDER (this overrides any urge you have to explain first)
+═══════════════════════════════════════════════════════════════════════════
+
+Output the JSON object directly. Do your web research silently — do NOT
+narrate your search strategy, do NOT write "I'll start by searching for...",
+do NOT summarize what you found before giving the JSON. Your output budget
+is limited; spending tokens on prose risks truncating the JSON.
+
+Your VERY FIRST output character must be the opening brace. Begin now:
+```
+
+This is the last thing the model reads before generating. Combined with the
+opening directive, it sandwiches the research instructions between two
+strong "JSON only" reminders.
+
+### Workflow commit messages
+
+Updated hardcoded `v3.8.0` references in both workflow YAML files to v3.8.4.
+
+### Tests
+
+33 tests pass (31 from v3.8.3 + 2 new):
+
+- `test_v3_8_4_uses_streaming_api`: verifies `_invoke_and_extract` calls
+  `messages.stream()` and explicitly fails if anyone calls `messages.create()`
+- `test_v3_8_4_path_a_prompt_has_final_reminder`: verifies the FINAL REMINDER
+  block is present in the Path A prompt
+
 ## v3.8.3 (2026-05-25) — Rigorous Path A prompt + drop Path B
 
 The production run that committed Llama 3.3 70B at floor (4.0 GB/1M) revealed

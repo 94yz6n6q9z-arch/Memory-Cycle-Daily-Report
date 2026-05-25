@@ -503,3 +503,54 @@ def test_xaxis_force_run_workflow_input_present():
     wf = Path(".github/workflows/inference_arch_research.yml").read_text()
     assert "force_run" in wf
     assert "FORCE_RUN" in wf
+
+
+def test_v3_8_4_uses_streaming_api(monkeypatch):
+    """v3.8.4 — _invoke_and_extract must use messages.stream() not messages.create().
+
+    The Anthropic SDK enforces a 10-minute timeout on non-streaming requests.
+    Path A with the rigorous prompt + web search agentic loop reliably exceeded
+    this on retry. Switching to streaming removes the timeout.
+    """
+    from unittest.mock import MagicMock, patch
+
+    # Mock the env var and config
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    # Build a fake stream context manager that returns a fake message
+    fake_message = MagicMock()
+    fake_block = MagicMock()
+    fake_block.text = '{"as_of_date": "2026-05-25", "method": "vendor_disclosures", "candidates": []}'
+    fake_message.content = [fake_block]
+
+    fake_stream_cm = MagicMock()
+    fake_stream_cm.__enter__ = MagicMock(return_value=MagicMock(
+        get_final_message=MagicMock(return_value=fake_message)
+    ))
+    fake_stream_cm.__exit__ = MagicMock(return_value=False)
+
+    fake_client = MagicMock()
+    fake_client.messages.stream = MagicMock(return_value=fake_stream_cm)
+    # If anyone calls messages.create, this attribute exists but should not be invoked
+    fake_client.messages.create = MagicMock(side_effect=AssertionError(
+        "messages.create() was called — v3.8.4 must use messages.stream()"
+    ))
+
+    import anthropic
+    with patch.object(anthropic, "Anthropic", return_value=fake_client):
+        from src.data.inference_arch_llm_research import _invoke_and_extract
+        result = _invoke_and_extract("test prompt", max_tokens=4096)
+
+    fake_client.messages.stream.assert_called_once()
+    fake_client.messages.create.assert_not_called()
+    assert result["method"] == "vendor_disclosures"
+
+
+def test_v3_8_4_path_a_prompt_has_final_reminder():
+    """v3.8.4 — Path A prompt must end with the FINAL REMINDER block
+    that overrides the model's urge to narrate before producing JSON.
+    """
+    from src.data.inference_arch_llm_research import _build_path_a_vendor_prompt
+    prompt = _build_path_a_vendor_prompt()
+    assert "FINAL REMINDER" in prompt
+    assert "VERY FIRST output character must be the opening brace" in prompt
