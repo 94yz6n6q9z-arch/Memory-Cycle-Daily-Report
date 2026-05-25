@@ -37,13 +37,12 @@ Selection criterion — Option A (most efficient confirmed open-source model):
   separate premium.
 
 Calibration back-test (runs first, aborts on failure):
-  Ask the worker to independently re-derive DeepSeek V3's KV footprint using
-  the MLA formula and publicly disclosed architecture params:
-    61 layers, lora_rank=512, rope_dim=64, FP8 (bytes_per_element=1)
-  Known answer: ~34 GB/1M (kv_kb ≈ 36 KB/token from state).
-  Tolerance: ±40% → 20.4 to 47.6 GB/1M.
-  If the worker's independently-derived answer falls outside this band,
-  prompts have likely drifted and we abort before committing anything.
+  Applies the MLA formula with fixed inputs (bytes_per_element=2, FP16):
+    61 layers, lora_rank=512, rope_dim=64, bytes=2 → target ≈ 65 GB/1M.
+  Specifying precision eliminates ambiguity — this tests formula application
+  only. Serving-precision discovery happens in Path A.
+  Tolerance: ±40% → 39.0 to 91.0 GB/1M.
+  If the answer falls outside this band, abort before committing anything.
 
 State output:
   Writes to state/inference_arch_state.json under key "llm_worker_frontier".
@@ -80,15 +79,18 @@ ARCH_STATE_FILE = Path("state/inference_arch_state.json")
 # re-run 30 days before the next slot if genuinely needed.
 STALENESS_GUARD_DAYS = 60
 
-# Calibration back-test: re-derive DeepSeek V3 KV footprint.
+# Calibration back-test: re-derive DeepSeek V3 KV footprint at FP16.
 # MLA formula: kv_bytes = num_layers × (lora_rank + rope_dim) × bytes_per_element
 #             kv_kb = kv_bytes / 1024
-# DeepSeek V3: 61 × (512 + 64) × 1 / 1024 = 34.3 KB/token
-# kv_gb_per_1m = 34.3 × 1e6 / 1024 / 1024 ≈ 32.7 GB/1M
-# State stores kv_kb_per_token=36 (rounded up with minor overhead) → 34.3 GB/1M
-# We target the rounded state value (34 GB/1M) with ±40% tolerance.
-CALIBRATION_TARGET_GB_PER_1M = 34.0
-CALIBRATION_TOLERANCE_FRACTION = 0.40  # ±40% → 20.4 to 47.6 GB/1M
+# DeepSeek V3 at FP16: 61 × (512 + 64) × 2 / 1024 = 68.6 KB/token
+# kv_gb_per_1m = 68.6 × 1e6 / 1024 / 1024 ≈ 65.4 GB/1M
+#
+# Prompt specifies FP16 explicitly (bytes_per_element = 2) — makes this a
+# pure formula-application test. Serving-precision discovery happens in
+# Path A where it belongs, not in calibration.
+# Target: 65.0 GB/1M ± 40% → band 39.0 to 91.0 GB/1M.
+CALIBRATION_TARGET_GB_PER_1M = 65.0
+CALIBRATION_TOLERANCE_FRACTION = 0.40  # ±40% → 39.0 to 91.0 GB/1M
 CALIBRATION_MODEL_NAME = "DeepSeek V3"
 
 # Floor: never commit a KV value below this. 4.0 GB/1M is the R3 lower
@@ -232,21 +234,26 @@ def _build_calibration_prompt() -> str:
     return f"""You are performing a calibration check for an HBM investment analysis framework.
 Today is {date.today().isoformat()}.
 
-YOUR TASK: Independently derive the KV cache footprint per million tokens of context
-for DeepSeek V3. Use ONLY the publicly disclosed architecture parameters from the
-DeepSeek V3 technical report — do not use any value you have memorized or seen before.
+YOUR TASK: Compute the KV cache footprint per million tokens of context for DeepSeek V3
+using the MLA formula and the architecture parameters below. This is a controlled
+formula-application test — all inputs are provided. Do NOT search for serving precision
+or substitute different values.
 
-FORMULA to apply (Multi-head Latent Attention / MLA class):
-  kv_bytes_per_token = num_layers × (mla_kv_lora_rank + mla_qk_rope_head_dim) × bytes_per_element
-  kv_kb_per_token    = kv_bytes_per_token / 1024
+FIXED INPUTS (use exactly these — do not search for alternatives):
+  num_layers          = 61
+  mla_kv_lora_rank    = 512
+  mla_qk_rope_head_dim = 64
+  bytes_per_element   = 2   (FP16 — specified for this calibration test)
+
+FORMULA (MLA class):
+  kv_bytes_per_token  = num_layers × (mla_kv_lora_rank + mla_qk_rope_head_dim) × bytes_per_element
+  kv_kb_per_token     = kv_bytes_per_token / 1024
   kv_gb_per_1m_tokens = kv_kb_per_token × 1,000,000 / 1024 / 1024
 
-RESEARCH STEPS:
-  1. Find the DeepSeek V3 technical report (arxiv.org/abs/2412.19437 or official sources).
-  2. Extract: num_layers, mla_kv_lora_rank, mla_qk_rope_head_dim, and inference precision
-     (FP8 means bytes_per_element = 1; FP16/BF16 means bytes_per_element = 2).
-  3. Apply the formula above. Show each step.
-  4. Report kv_gb_per_1m_tokens.
+Apply the formula with the fixed inputs above. Show each arithmetic step.
+
+SOURCE: You may verify the architecture parameters against the DeepSeek V3 technical
+report (arxiv.org/abs/2412.19437) but use the inputs as given regardless.
 
 OUTPUT FORMAT — STRICT:
 Begin your response with the character {{ and end with the matching }}.
@@ -257,7 +264,7 @@ Do NOT include markdown fences.
   "num_layers": <int>,
   "mla_kv_lora_rank": <int>,
   "mla_qk_rope_head_dim": <int>,
-  "bytes_per_element": <1 or 2>,
+  "bytes_per_element": 2,
   "kv_bytes_per_token": <int>,
   "kv_kb_per_token": <float>,
   "kv_gb_per_1m_tokens": <float>,

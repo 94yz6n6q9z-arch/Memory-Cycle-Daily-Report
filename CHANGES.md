@@ -1,5 +1,36 @@
 # Memory Cycle Brief — Changelog
 
+## v3.8.1 (2026-05-25) — Calibration target fix (FP16, 65 GB/1M)
+
+Single targeted fix to the X-axis calibration back-test. No other changes.
+
+**Root cause.** The first production run of the X-axis worker failed calibration
+with deviation 93%: worker returned 65.5 GB/1M, target was 34.0 GB/1M. The
+worker applied the MLA formula correctly using FP16 (bytes=2), arriving at
+`61 × (512 + 64) × 2 / 1024 = 68.6 KB/token → 65.4 GB/1M`. The target was
+set to the FP8 answer (34.0) but the prompt asked the model to discover
+serving precision from the technical report. Because DeepSeek V3 is widely
+discussed in both FP8 and BF16/FP16 contexts, the model defaulted to FP16.
+
+**Fix.** Two changes in `src/data/inference_arch_llm_research.py`:
+
+1. `CALIBRATION_TARGET_GB_PER_1M`: 34.0 → 65.0. Correct FP16 answer.
+   ±40% band: 20.4–47.6 GB/1M → 39.0–91.0 GB/1M.
+
+2. `_build_calibration_prompt()`: now provides all four inputs as fixed values
+   (`num_layers=61`, `mla_kv_lora_rank=512`, `mla_qk_rope_head_dim=64`,
+   `bytes_per_element=2`) and explicitly states *"This is a controlled
+   formula-application test — all inputs are provided. Do NOT search for
+   serving precision or substitute different values."*
+
+   This makes calibration what it was always designed to be: a test that the
+   model can correctly apply the MLA formula. Serving-precision discovery
+   happens in Path A where it belongs.
+
+**Why the worker is correct to abort on calibration failure.** State was not
+written, the open_models fallback continued serving the brief. The safety
+mechanism worked exactly as designed.
+
 ## v3.8.0 (2026-05-25) — X-axis LLM worker + Y-axis cost fixes
 
 Two parallel workstreams shipped together. The X-axis (KV efficiency) gets its
