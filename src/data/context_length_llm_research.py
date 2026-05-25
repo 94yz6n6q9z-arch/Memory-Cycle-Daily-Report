@@ -192,7 +192,12 @@ ARR, or user count as proxy)
 DO NOT use empirical third-party measurements (that's a different research \
 path). Stick to vendor sources for this call.
 
-OUTPUT — return ONLY a JSON object (no markdown fences, no prose around it):
+
+OUTPUT FORMAT — STRICT:
+Begin your response with the character `{{` and end with the matching `}}`.
+Do NOT write any prose, headers, bullet lists, or commentary before or after
+the JSON object. Do NOT include markdown fences. Web search tool calls are
+visible to me separately; do not narrate them. The JSON schema:
 {{
   "value": <integer tokens>,
   "method": "vendor_disclosures",
@@ -249,7 +254,12 @@ disclosures (MAU × sessions × messages, or ARR / per-customer-rate, etc.)
   6. Sanity check: does the implied per-request size match the order of \
 magnitude you'd expect for this category?
 
-OUTPUT — return ONLY a JSON object (no markdown fences):
+
+OUTPUT FORMAT — STRICT:
+Begin your response with the character `{{` and end with the matching `}}`.
+Do NOT write any prose, headers, bullet lists, or commentary before or after
+the JSON object. Do NOT include markdown fences. Web search tool calls are
+visible to me separately; do not narrate them. The JSON schema:
 {{
   "value": <integer tokens>,
   "method": "economic_triangulation",
@@ -299,7 +309,12 @@ data is developer API traffic — for consumer_chat it must be adjusted \
 downward (OpenRouter has no consumer chat). For enterprise_vertical_agents \
 it must be adjusted for the RAG-heavy access pattern.
 
-OUTPUT — return ONLY a JSON object (no markdown fences):
+
+OUTPUT FORMAT — STRICT:
+Begin your response with the character `{{` and end with the matching `}}`.
+Do NOT write any prose, headers, bullet lists, or commentary before or after
+the JSON object. Do NOT include markdown fences. Web search tool calls are
+visible to me separately; do not narrate them. The JSON schema:
 {{
   "value": <integer tokens>,
   "method": "empirical_third_party",
@@ -356,7 +371,12 @@ consumer %, Google AI revenue mix, etc.)
 tokens-per-prompt; the result is independent of revenue
   5. Sum across categories, normalize to 100%
 
-OUTPUT — return ONLY a JSON object (no markdown fences):
+
+OUTPUT FORMAT — STRICT:
+Begin your response with the character `{{` and end with the matching `}}`.
+Do NOT write any prose, headers, bullet lists, or commentary before or after
+the JSON object. Do NOT include markdown fences. Web search tool calls are
+visible to me separately; do not narrate them. The JSON schema:
 {{
   "shares": {{
     "consumer_chat": <int 0-100>,
@@ -409,7 +429,12 @@ top consumer products (ChatGPT, Gemini, Claude.ai, Microsoft Copilot, Perplexity
   4. Multiply: total tokens per category ≈ (users) × (tokens-per-user-per-week)
   5. Normalize to 100% across categories
 
-OUTPUT — return ONLY a JSON object (no markdown fences):
+
+OUTPUT FORMAT — STRICT:
+Begin your response with the character `{{` and end with the matching `}}`.
+Do NOT write any prose, headers, bullet lists, or commentary before or after
+the JSON object. Do NOT include markdown fences. Web search tool calls are
+visible to me separately; do not narrate them. The JSON schema:
 {{
   "shares": {{
     "consumer_chat": <int 0-100>,
@@ -464,7 +489,12 @@ using whichever data is available:
 DO NOT use the same data sources as the revenue-mix-disclosure approach \
 or the traffic-share approach. Use product-specific operational figures.
 
-OUTPUT — return ONLY a JSON object (no markdown fences):
+
+OUTPUT FORMAT — STRICT:
+Begin your response with the character `{{` and end with the matching `}}`.
+Do NOT write any prose, headers, bullet lists, or commentary before or after
+the JSON object. Do NOT include markdown fences. Web search tool calls are
+visible to me separately; do not narrate them. The JSON schema:
 {{
   "shares": {{
     "consumer_chat": <int 0-100>,
@@ -528,7 +558,12 @@ You should be able to find it readily via web search.
 
 Just find the empirical figure. Don't try to derive it from first principles.
 
-OUTPUT — return ONLY a JSON object (no markdown fences):
+
+OUTPUT FORMAT — STRICT:
+Begin your response with the character `{{` and end with the matching `}}`.
+Do NOT write any prose, headers, bullet lists, or commentary before or after
+the JSON object. Do NOT include markdown fences. Web search tool calls are
+visible to me separately; do not narrate them. The JSON schema:
 {{
   "value": <integer average prompt tokens>,
   "study_or_source_name": "<name>",
@@ -604,12 +639,11 @@ def _extract_json_from_text(text: str) -> dict:
     return json.loads(text[start:end + 1])
 
 
-def _call_claude_with_search(prompt: str, max_tokens: int = 8192) -> dict:
-    """Call Claude (Sonnet 4.6) with web_search enabled. Return parsed JSON.
+def _invoke_and_extract(prompt: str, max_tokens: int) -> dict:
+    """Single attempt: call Claude with web_search, extract JSON from response.
 
-    max_tokens default is 8192 (raised from v3.6.2's 4096); the volume_share
-    paths in particular need the headroom to return full 5-category JSON
-    with rationale.
+    Separated from _call_claude_with_search so that retry logic can wrap it
+    cleanly without recursion. Raises on JSON failure; caller decides on retry.
     """
     try:
         import anthropic
@@ -648,8 +682,45 @@ def _call_claude_with_search(prompt: str, max_tokens: int = 8192) -> dict:
         return _extract_json_from_text(final_text)
     except (json.JSONDecodeError, ValueError) as e:
         preview = final_text[:500].replace("\n", "\\n")
-        logger.error(f"JSON extraction failed. First 500 chars: {preview}")
+        logger.error(f"JSON extraction failed (max_tokens={max_tokens}). First 500 chars: {preview}")
         raise
+
+
+def _call_claude_with_search(prompt: str, max_tokens: int = 16384) -> dict:
+    """Call Claude with web_search and parse the JSON response.
+
+    v3.7.2 changes:
+      - Default max_tokens raised from 8192 to 16384. Vendor research path
+        in particular tends to write substantial prose preamble before the
+        JSON; the larger budget reduces truncation incidents.
+      - One automatic retry on JSONDecodeError/ValueError with doubled
+        max_tokens. This is centralized here so every caller (calibration,
+        typical_context paths, volume_share paths) benefits without code
+        changes at each site. The retry cool-down is brief (3s) to avoid
+        compounding latency.
+
+    Raises on second failure; caller's per-path try/except converts that
+    into a "path treated as missing" outcome rather than a run-killer.
+    """
+    try:
+        return _invoke_and_extract(prompt, max_tokens)
+    except (json.JSONDecodeError, ValueError) as first_err:
+        retry_tokens = max_tokens * 2
+        logger.warning(
+            f"JSON extraction failed at max_tokens={max_tokens}: "
+            f"{type(first_err).__name__}: {first_err}. "
+            f"Retrying once with max_tokens={retry_tokens}..."
+        )
+        time.sleep(3)
+        try:
+            return _invoke_and_extract(prompt, retry_tokens)
+        except (json.JSONDecodeError, ValueError) as second_err:
+            logger.error(
+                f"JSON extraction failed on retry too. "
+                f"First: {type(first_err).__name__}: {first_err}. "
+                f"Second: {type(second_err).__name__}: {second_err}."
+            )
+            raise
 
 
 # ── Calibration ───────────────────────────────────────────────────────────────
@@ -714,42 +785,88 @@ def _run_calibration_check() -> tuple[bool, dict]:
 
 # ── Triangulation synthesis ───────────────────────────────────────────────────
 
+def _fmt_int(v) -> str:
+    """Format an integer with thousands separator, safe for None.
+
+    v3.7.2 — added because synthesis can legitimately return None for
+    `candidate` (the all-paths-failed-floor-applied branch sets it to None
+    to signal "no candidate computable, only floor"). Format-string crashes
+    on None were the v3.7.1 production failure mode.
+    """
+    if v is None:
+        return "N/A"
+    try:
+        return f"{int(v):,}"
+    except (TypeError, ValueError):
+        return str(v)
+
+
 def _synthesize_paths(
     path_a: dict, path_b: dict, path_c: dict, category: str,
 ) -> dict:
     """v3.7.1 — Floor + max(economic, mean) synthesis.
 
-    Rule:
-        candidate = max(path_B_economic, mean(all_available_paths))
-        final     = max(candidate, SEED_FLOORS_TYPICAL_CONTEXT[category])
+    v3.7.2 — Plausibility filter applied at the PATH level:
+      A path value is only added to values_by_label if it falls within
+      [MIN_PLAUSIBLE_CONTEXT, MAX_PLAUSIBLE_CONTEXT]. Otherwise it's
+      logged and treated as missing. This prevents a single garbage path
+      value (e.g. 1 token because the model misunderstood, or 50M tokens
+      because the model returned a max-context number) from dragging
+      the mean.
 
-    The seed floor is the never-go-below anchor. Order-of-magnitude work:
-    we pick the higher of the economic path or the mean across all paths.
-    All three paths participate in the mean (Path C included), but the
-    economic path gets a "max" privilege because it derives from disclosed
-    throughput / revenue / pricing — the most rigorously deterministic of
-    the three methodologies.
+    Rule:
+        candidate = max(path_B_economic, mean(filtered_paths))
+        final     = max(candidate, SEED_FLOORS_TYPICAL_CONTEXT[category])
 
     Returns:
         Dict with full provenance — path values, candidate, floor, final,
         which-rule-was-binding, raw paths. ALWAYS commits (no divergence
         gate); divergence info is recorded in spread_pct field for audit.
     """
-    # Collect numeric values from each path
+    # Collect numeric values from each path, filtering for plausibility
     values_by_label = {}
+    dropped_paths = []
     for label, result in (("a", path_a), ("b", path_b), ("c", path_c)):
         v = result.get("value") if result else None
-        if isinstance(v, (int, float)) and v > 0:
-            values_by_label[label] = int(v)
+        if v is None:
+            dropped_paths.append(f"path_{label}: no value (path missing or no 'value' field)")
+            continue
+        if not isinstance(v, (int, float)):
+            dropped_paths.append(
+                f"path_{label}: 'value' is not numeric "
+                f"(got {type(v).__name__}: {repr(v)[:60]})"
+            )
+            continue
+        if v <= 0:
+            dropped_paths.append(f"path_{label}: non-positive value {v}")
+            continue
+        v_int = int(v)
+        if v_int < MIN_PLAUSIBLE_CONTEXT or v_int > MAX_PLAUSIBLE_CONTEXT:
+            dropped_paths.append(
+                f"path_{label}: implausible value {v_int:,} "
+                f"(outside [{MIN_PLAUSIBLE_CONTEXT:,}, {MAX_PLAUSIBLE_CONTEXT:,}])"
+            )
+            continue
+        values_by_label[label] = v_int
+
+    if dropped_paths:
+        for msg in dropped_paths:
+            logger.warning(f"  [{category}] {msg}")
 
     seed_floor = SEED_FLOORS_TYPICAL_CONTEXT.get(category, MIN_PLAUSIBLE_CONTEXT)
 
     if not values_by_label:
-        # All paths failed — commit floor as a defensive baseline
+        # All paths failed (missing, wrong schema, or implausible) — commit
+        # floor as a defensive baseline. candidate stays None so the summary
+        # message can show "(no candidate computable)".
+        logger.warning(
+            f"  [{category}] All paths dropped or failed; committing floor {seed_floor:,}"
+        )
         return {
             "status": "all_paths_failed_floor_applied",
             "label": f"typical_context[{category}]",
             "path_values": {},
+            "dropped_paths": dropped_paths,
             "candidate": None,
             "seed_floor": seed_floor,
             "committed_value": seed_floor,
@@ -761,27 +878,28 @@ def _synthesize_paths(
     mean = int(round(sum(nums) / len(nums)))
     spread_fraction = ((max(nums) - min(nums)) / mean) if mean > 0 else 0.0
 
-    # Path B (economic) gets the "max" privilege — if present, candidate is
-    # max(B, mean). If B is missing, fall back to mean of the other paths.
+    # Path B (economic) gets the "max" privilege — if present and plausible,
+    # candidate is max(B, mean). If B is missing or rejected, fall back to mean.
     path_b_value = values_by_label.get("b")
     if path_b_value is not None:
         candidate = max(path_b_value, mean)
         candidate_source = "max(path_B_economic, mean_of_paths)"
     else:
         candidate = mean
-        candidate_source = "mean_of_paths_(path_B_missing)"
+        candidate_source = "mean_of_paths_(path_B_missing_or_rejected)"
 
     # Apply seed floor — never go below it
     final = max(candidate, seed_floor)
     binding_rule = "floor" if final == seed_floor and candidate < seed_floor else "candidate"
 
-    # Final plausibility sanity (catches outright garbage like negative or 100M-token values)
+    # Final plausibility sanity (clamp final committed value)
     final = min(max(final, MIN_PLAUSIBLE_CONTEXT), MAX_PLAUSIBLE_CONTEXT)
 
     result = {
         "status": "committed",
         "label": f"typical_context[{category}]",
         "path_values": values_by_label,
+        "dropped_paths": dropped_paths,    # may be empty
         "mean_of_paths": mean,
         "candidate": candidate,
         "candidate_source": candidate_source,
@@ -921,16 +1039,99 @@ def _save_state(state: dict) -> None:
 
 # ── Main entry point ──────────────────────────────────────────────────────────
 
+def _print_run_summary(summary: dict, state: dict) -> None:
+    """v3.7.2 — Print a human-readable end-of-run summary block to stdout.
+
+    Without this, operators have to scroll through several minutes of HTTP
+    logs to extract the actual outcome of the run. The summary block makes
+    the GitHub Actions log instantly readable.
+    """
+    bar = "═" * 64
+    print(f"\n{bar}")
+    print(f" v3.7.2 RUN SUMMARY — {date.today().isoformat()}")
+    print(bar)
+
+    cal = summary.get("calibration") or {}
+    cal_status = cal.get("calibration_status", "(none)")
+    cal_value = cal.get("worker_derived_value", "?")
+    cal_target = cal.get("target_value", CALIBRATION_TARGET_VALUE)
+    cal_tol = int(cal_target * CALIBRATION_TARGET_TOLERANCE_FRACTION) if isinstance(cal_target, int) else "?"
+    if isinstance(cal_value, int) and isinstance(cal_target, int):
+        print(f" Calibration: {cal_status.upper()} "
+              f"(worker {cal_value:,} vs target {cal_target:,} ±{cal_tol:,})")
+    else:
+        print(f" Calibration: {cal_status.upper()}")
+
+    if summary.get("status") == "aborted_calibration_failed":
+        print(" Run aborted on calibration failure; no research performed.")
+        print(bar + "\n")
+        return
+
+    typical = state.get("typical_context_tokens", {})
+    committed_count = len(summary.get("committed", []))
+    floor_count = len(summary.get("floor_bound", []))
+    print(f" Categories committed: {committed_count - (1 if summary.get('volume_shares_result', {}).get('status') == 'committed' else 0)}/5  "
+          f"({floor_count} floor-bound, {len(CATEGORIES) - floor_count} candidate-bound)")
+    for cat in CATEGORIES:
+        rec = typical.get(cat, {})
+        current = rec.get("current")
+        synthesis = summary.get("typical_context_results", {}).get(cat, {})
+        rule = synthesis.get("binding_rule", "?")
+        label = "floor" if rule == "floor" else "candidate"
+        if current is not None:
+            print(f"   {cat:<28} {current:>10,} ({label})")
+        else:
+            print(f"   {cat:<28}        ??? ({label})")
+
+    shares_state = state.get("volume_shares", {}).get("committed", {})
+    shares_result = summary.get("volume_shares_result", {})
+    if shares_state and shares_result.get("status") == "committed":
+        ordered = " / ".join(str(shares_state.get(c, "?")) for c in CATEGORIES)
+        total = sum(v for v in shares_state.values() if isinstance(v, int))
+        print(f" Volume shares: {ordered}  (sum {total})")
+    else:
+        print(f" Volume shares: NOT COMMITTED "
+              f"(status={shares_result.get('status', 'unknown')})")
+
+    err_count = len(summary.get("errors", []))
+    if err_count:
+        print(f" Errors: {err_count}")
+        for err in summary["errors"][:5]:
+            print(f"   - {err}")
+        if err_count > 5:
+            print(f"   ... and {err_count - 5} more")
+    else:
+        print(" Errors: 0")
+
+    print(bar + "\n")
+
+
 def research_context_length_inputs() -> dict:
-    """v3.7.1 — Floor + max(B, mean) synthesis. Always commits.
+    """v3.7.2 — Reliability-hardened version of v3.7.1.
+
+    Reliability changes from v3.7.1:
+      - Per-path try/except for typical_context AND volume_shares calls.
+        A failure on path A no longer prevents paths B and C from running.
+      - Per-category state save after each typical_context category's
+        history append. If a later category crashes the run, earlier
+        categories' commits are already persisted on disk.
+      - try/finally wrapper around the whole research function. Final
+        metadata + state save always runs, even on unhandled exception.
+      - None-safe formatting in all summary message construction (the
+        crash mode that bit v3.7.1).
+      - Centralized JSON-parse retry in _call_claude_with_search with
+        doubled max_tokens on retry. Truncation-induced JSON failures
+        no longer permanently lose a path on first attempt.
 
     Sequence:
-      1. Calibration back-test — if fails, abort and write nothing
-      2. For each of 5 categories: 3-path typical_context research, then
-         apply floor + max(B, mean) rule. Always commits a value.
-      3. 3-path volume_share research, then mean(A, B) ignoring C.
-         Normalize to 100; commit unless math fails entirely.
-      4. Persist state with full provenance per history entry.
+      1. Calibration back-test — if fails, abort and write metadata only
+      2. For each of 5 categories:
+         a. Try each path independently (one path failure ≠ category failure)
+         b. Synthesize via floor + max(B, mean), plausibility-filtered
+         c. Save state immediately
+      3. 3-path volume_share research (per-path try/except), mean(A, B)
+         ignoring C; commit if all 5 categories produced usable A or B
+      4. Persist final state with full provenance
     """
     state = _load_state()
     today = date.today().isoformat()
@@ -947,170 +1148,212 @@ def research_context_length_inputs() -> dict:
         "exit_code": 0,
     }
 
-    # 1. Calibration — same as v3.7.0
-    cal_passed, cal_diag = _run_calibration_check()
-    summary["calibration"] = cal_diag
-    state["_metadata"].setdefault("calibration_history", []).append({
-        "date": today, **cal_diag,
-    })
-    state["_metadata"]["calibration_history"] = (
-        state["_metadata"]["calibration_history"][-12:]
-    )
+    try:
+        # 1. Calibration — unchanged from v3.7.1
+        cal_passed, cal_diag = _run_calibration_check()
+        summary["calibration"] = cal_diag
+        state["_metadata"].setdefault("calibration_history", []).append({
+            "date": today, **cal_diag,
+        })
+        state["_metadata"]["calibration_history"] = (
+            state["_metadata"]["calibration_history"][-12:]
+        )
 
-    if not cal_passed:
-        logger.error("Aborting run: calibration back-test failed.")
-        summary["status"] = "aborted_calibration_failed"
-        summary["errors"].append("Calibration back-test failed; no research performed")
-        summary["exit_code"] = 2
-        state["_metadata"]["last_run_at"] = datetime.now(timezone.utc).isoformat()
-        state["_metadata"]["last_run_summary"] = {
-            "status": summary["status"], "calibration": cal_diag,
-        }
-        _save_state(state)
-        return summary
+        if not cal_passed:
+            logger.error("Aborting run: calibration back-test failed.")
+            summary["status"] = "aborted_calibration_failed"
+            summary["errors"].append("Calibration back-test failed; no research performed")
+            summary["exit_code"] = 2
+            return summary    # try/finally below saves metadata + summary
 
-    # 2. Typical context — 3 paths × 5 categories, floor + max-rule synthesis
-    for category in CATEGORIES:
-        logger.info(f"Researching typical_context_tokens[{category}] (3 paths)...")
-        path_a = path_b = path_c = None
+        # 2. Typical context — 3 paths × 5 categories, INDEPENDENT per-path errors
+        for category in CATEGORIES:
+            logger.info(f"Researching typical_context_tokens[{category}] (3 paths)...")
+            path_a = path_b = path_c = None
+
+            # Each path in its own try/except — path A failing does NOT prevent B or C
+            try:
+                path_a = _call_claude_with_search(_build_typical_path_a_vendor(category))
+            except Exception as e:
+                err = f"typical[{category}].path_a: {type(e).__name__}: {e}"
+                summary["errors"].append(err)
+                logger.error(err)
+            time.sleep(2)
+            try:
+                path_b = _call_claude_with_search(_build_typical_path_b_economic(category))
+            except Exception as e:
+                err = f"typical[{category}].path_b: {type(e).__name__}: {e}"
+                summary["errors"].append(err)
+                logger.error(err)
+            time.sleep(2)
+            try:
+                path_c = _call_claude_with_search(_build_typical_path_c_empirical(category))
+            except Exception as e:
+                err = f"typical[{category}].path_c: {type(e).__name__}: {e}"
+                summary["errors"].append(err)
+                logger.error(err)
+
+            synthesis = _synthesize_paths(
+                path_a or {}, path_b or {}, path_c or {}, category
+            )
+            summary["typical_context_results"][category] = synthesis
+
+            new_value = synthesis["committed_value"]
+            prev_value = int(state["typical_context_tokens"][category].get("current") or 0)
+
+            # Always commit — the floor + max-rule has already done the validity work
+            state["typical_context_tokens"][category]["current"] = new_value
+            state["typical_context_tokens"][category].setdefault("history", []).append({
+                "date": today,
+                "value": new_value,
+                "source": "llm_research_v3_7_2",
+                "synthesis_rule": "max(path_B_economic, mean(filtered_paths)) floored at seed",
+                "path_values": synthesis.get("path_values", {}),
+                "dropped_paths": synthesis.get("dropped_paths", []),
+                "mean_of_paths": synthesis.get("mean_of_paths"),
+                "candidate": synthesis.get("candidate"),
+                "candidate_source": synthesis.get("candidate_source"),
+                "seed_floor": synthesis.get("seed_floor"),
+                "binding_rule": synthesis.get("binding_rule"),
+                "spread_pct": synthesis.get("spread_pct"),    # informational; no gate
+                "previous_value": prev_value,
+                "delta_pct": (round((new_value - prev_value) / prev_value * 100, 1)
+                              if prev_value else 0),
+                "paths_provenance": {
+                    "a": {k: (path_a or {}).get(k)
+                          for k in ("value", "method", "confidence",
+                                    "weighted_calculation", "products_analyzed")},
+                    "b": {k: (path_b or {}).get(k)
+                          for k in ("value", "method", "confidence",
+                                    "math_steps", "sanity_check")},
+                    "c": {k: (path_c or {}).get(k)
+                          for k in ("value", "method", "confidence",
+                                    "studies_cited", "category_adjustment_reasoning")},
+                },
+            })
+
+            # v3.7.2 — None-safe formatting (handles "all paths failed" branch)
+            if synthesis.get("binding_rule") == "floor":
+                summary["floor_bound"].append(
+                    f"typical_context[{category}]: floor {_fmt_int(new_value)} "
+                    f"(candidate was {_fmt_int(synthesis.get('candidate'))})"
+                )
+            summary["committed"].append(
+                f"typical_context[{category}]: {_fmt_int(prev_value)} → {_fmt_int(new_value)} "
+                f"({synthesis.get('binding_rule')})"
+            )
+
+            # v3.7.2 — Save state immediately after each category. If a later
+            # category crashes Python, the work done so far is on disk.
+            try:
+                _save_state(state)
+                logger.info(f"  [{category}] state persisted")
+            except Exception as e:
+                err = f"_save_state failed after {category}: {type(e).__name__}: {e}"
+                summary["errors"].append(err)
+                logger.error(err)
+
+        # 3. Volume shares — INDEPENDENT per-path errors here too
+        logger.info("Researching volume_share_pct (3 paths × 5 categories; C ignored in math)...")
+        share_a = share_b = share_c = None
         try:
-            path_a = _call_claude_with_search(_build_typical_path_a_vendor(category))
-            time.sleep(2)
-            path_b = _call_claude_with_search(_build_typical_path_b_economic(category))
-            time.sleep(2)
-            path_c = _call_claude_with_search(_build_typical_path_c_empirical(category))
+            share_a = _call_claude_with_search(_build_share_path_a_revenue_mix())
         except Exception as e:
-            err = f"typical[{category}]: {type(e).__name__}: {e}"
+            err = f"volume_shares.path_a: {type(e).__name__}: {e}"
             summary["errors"].append(err)
             logger.error(err)
-            # Even if some paths fail, synthesis below handles missing values
+        time.sleep(2)
+        try:
+            share_b = _call_claude_with_search(_build_share_path_b_traffic_proxy())
+        except Exception as e:
+            err = f"volume_shares.path_b: {type(e).__name__}: {e}"
+            summary["errors"].append(err)
+            logger.error(err)
+        time.sleep(2)
+        try:
+            share_c = _call_claude_with_search(_build_share_path_c_bottom_up())
+        except Exception as e:
+            err = f"volume_shares.path_c: {type(e).__name__}: {e}"
+            summary["errors"].append(err)
+            logger.error(err)
 
-        synthesis = _synthesize_paths(
-            path_a or {}, path_b or {}, path_c or {}, category
-        )
-        summary["typical_context_results"][category] = synthesis
+        share_synthesis = _synthesize_share_paths(share_a or {}, share_b or {}, share_c or {})
+        summary["volume_shares_result"] = share_synthesis
 
-        new_value = synthesis["committed_value"]
-        prev_value = int(state["typical_context_tokens"][category].get("current") or 0)
-
-        # Always commit — the floor + max-rule has already done the validity work
-        state["typical_context_tokens"][category]["current"] = new_value
-        state["typical_context_tokens"][category].setdefault("history", []).append({
-            "date": today,
-            "value": new_value,
-            "source": "llm_research_v3_7_1",
-            "synthesis_rule": "max(path_B_economic, mean(A,B,C)) floored at seed",
-            "path_values": synthesis.get("path_values", {}),
-            "mean_of_paths": synthesis.get("mean_of_paths"),
-            "candidate": synthesis.get("candidate"),
-            "candidate_source": synthesis.get("candidate_source"),
-            "seed_floor": synthesis.get("seed_floor"),
-            "binding_rule": synthesis.get("binding_rule"),
-            "spread_pct": synthesis.get("spread_pct"),    # informational; no gate
-            "previous_value": prev_value,
-            "delta_pct": (round((new_value - prev_value) / prev_value * 100, 1)
-                          if prev_value else 0),
-            "paths_provenance": {
-                "a": {k: (path_a or {}).get(k)
-                      for k in ("value", "method", "confidence",
-                                "weighted_calculation", "products_analyzed")},
-                "b": {k: (path_b or {}).get(k)
-                      for k in ("value", "method", "confidence",
-                                "math_steps", "sanity_check")},
-                "c": {k: (path_c or {}).get(k)
-                      for k in ("value", "method", "confidence",
-                                "studies_cited", "category_adjustment_reasoning")},
-            },
-        })
-
-        if synthesis.get("binding_rule") == "floor":
-            summary["floor_bound"].append(
-                f"typical_context[{category}]: floor {new_value:,} "
-                f"(candidate was {synthesis.get('candidate'):,})"
+        if share_synthesis["status"] == "committed":
+            prev_shares = dict(state["volume_shares"]["committed"])
+            new_shares = share_synthesis["committed_shares"]
+            state["volume_shares"]["committed"] = new_shares
+            state["volume_shares"]["history"].append({
+                "date": today,
+                "shares": new_shares,
+                "source": "llm_research_v3_7_2",
+                "synthesis_rule": "mean(path_A_revenue_mix, path_B_traffic_proxy), path_C_ignored",
+                "raw_means_pre_normalization": share_synthesis["raw_means_pre_normalization"],
+                "per_category": share_synthesis["per_category"],
+                "previous_shares": prev_shares,
+                "paths_provenance": {
+                    "a": {"shares": (share_a or {}).get("shares"),
+                          "method": (share_a or {}).get("method")},
+                    "b": {"shares": (share_b or {}).get("shares"),
+                          "method": (share_b or {}).get("method")},
+                    "c_informational_only": {"shares": (share_c or {}).get("shares"),
+                                             "method": (share_c or {}).get("method"),
+                                             "note": "v3.7.1+ excludes path C from share math; "
+                                                     "logged for provenance only"},
+                },
+            })
+            state["volume_shares"]["proposal_status"] = "none"
+            summary["committed"].append(f"volume_shares: {prev_shares} → {new_shares}")
+            logger.info(f"  COMMITTED volume_shares: {new_shares}")
+        else:
+            summary["errors"].append(
+                f"volume_shares synthesis incomplete: "
+                f"missing={share_synthesis.get('missing_categories')}"
             )
-        summary["committed"].append(
-            f"typical_context[{category}]: {prev_value:,} → {new_value:,} "
-            f"({synthesis.get('binding_rule')})"
+            state["volume_shares"]["history"].append({
+                "date": today,
+                "source": "llm_research_v3_7_2_incomplete",
+                "status": "incomplete",
+                "per_category": share_synthesis.get("per_category"),
+            })
+
+        # Finalize status flags (try/finally below saves the state)
+        if summary["errors"]:
+            summary["status"] = "completed_with_errors"
+            summary["exit_code"] = 1
+        else:
+            summary["status"] = "completed_success"
+            summary["exit_code"] = 0
+
+        logger.info(
+            f"v3.7.2 research complete: "
+            f"committed={len(summary['committed'])}, "
+            f"floor_bound={len(summary['floor_bound'])}, "
+            f"errors={len(summary['errors'])}"
         )
+        return summary
 
-    # 3. Volume shares — mean(A, B), Path C ignored
-    logger.info("Researching volume_share_pct (3 paths × 5 categories; C ignored in math)...")
-    share_a = share_b = share_c = None
-    try:
-        share_a = _call_claude_with_search(_build_share_path_a_revenue_mix())
-        time.sleep(2)
-        share_b = _call_claude_with_search(_build_share_path_b_traffic_proxy())
-        time.sleep(2)
-        share_c = _call_claude_with_search(_build_share_path_c_bottom_up())
-    except Exception as e:
-        err = f"volume_shares: {type(e).__name__}: {e}"
-        summary["errors"].append(err)
-        logger.error(err)
-
-    share_synthesis = _synthesize_share_paths(share_a or {}, share_b or {}, share_c or {})
-    summary["volume_shares_result"] = share_synthesis
-
-    if share_synthesis["status"] == "committed":
-        prev_shares = dict(state["volume_shares"]["committed"])
-        new_shares = share_synthesis["committed_shares"]
-        state["volume_shares"]["committed"] = new_shares
-        state["volume_shares"]["history"].append({
-            "date": today,
-            "shares": new_shares,
-            "source": "llm_research_v3_7_1",
-            "synthesis_rule": "mean(path_A_revenue_mix, path_B_traffic_proxy), path_C_ignored",
-            "raw_means_pre_normalization": share_synthesis["raw_means_pre_normalization"],
-            "per_category": share_synthesis["per_category"],
-            "previous_shares": prev_shares,
-            "paths_provenance": {
-                "a": {"shares": (share_a or {}).get("shares"),
-                      "method": (share_a or {}).get("method")},
-                "b": {"shares": (share_b or {}).get("shares"),
-                      "method": (share_b or {}).get("method")},
-                "c_informational_only": {"shares": (share_c or {}).get("shares"),
-                                         "method": (share_c or {}).get("method"),
-                                         "note": "v3.7.1 excludes path C from share math; "
-                                                 "logged for provenance only"},
-            },
-        })
-        state["volume_shares"]["proposal_status"] = "none"
-        summary["committed"].append(f"volume_shares: {prev_shares} → {new_shares}")
-        logger.info(f"  COMMITTED volume_shares: {new_shares}")
-    else:
-        # Paths failed for at least some categories — can't normalize safely
-        summary["errors"].append(
-            f"volume_shares synthesis incomplete: {share_synthesis.get('missing_categories')}"
-        )
-        state["volume_shares"]["history"].append({
-            "date": today,
-            "source": "llm_research_v3_7_1_incomplete",
-            "status": "incomplete",
-            "per_category": share_synthesis.get("per_category"),
-        })
-
-    # 4. Persist
-    state["_metadata"]["last_run_at"] = datetime.now(timezone.utc).isoformat()
-    state["_metadata"]["last_run_summary"] = {
-        "committed_count": len(summary["committed"]),
-        "floor_bound_count": len(summary["floor_bound"]),
-        "error_count": len(summary["errors"]),
-    }
-    _save_state(state)
-
-    if summary["errors"]:
-        summary["status"] = "completed_with_errors"
-        summary["exit_code"] = 1
-    else:
-        summary["status"] = "completed_success"
-        summary["exit_code"] = 0
-
-    logger.info(
-        f"v3.7.1 research complete: "
-        f"committed={len(summary['committed'])}, "
-        f"floor_bound={len(summary['floor_bound'])}, "
-        f"errors={len(summary['errors'])}"
-    )
-    return summary
+    finally:
+        # v3.7.2 — ALWAYS write final metadata + persist state, even if an
+        # unhandled exception escapes the loops above. This guarantees that
+        # whatever made it into `state` is on disk (and that the commit step
+        # in the workflow has something to push), no matter how the run ends.
+        state["_metadata"]["last_run_at"] = datetime.now(timezone.utc).isoformat()
+        state["_metadata"]["last_run_summary"] = {
+            "status": summary.get("status", "unknown"),
+            "committed_count": len(summary.get("committed", [])),
+            "floor_bound_count": len(summary.get("floor_bound", [])),
+            "error_count": len(summary.get("errors", [])),
+        }
+        try:
+            _save_state(state)
+        except Exception as e:
+            logger.error(f"Final state save in try/finally failed: {type(e).__name__}: {e}")
+        try:
+            _print_run_summary(summary, state)
+        except Exception as e:
+            logger.error(f"Run summary print failed: {type(e).__name__}: {e}")
 
 
 if __name__ == "__main__":

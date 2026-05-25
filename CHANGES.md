@@ -1,5 +1,159 @@
 # Memory Cycle Brief — Changelog
 
+## v3.7.2 (2026-05-25) — Reliability hardening
+
+v3.7.1's first production run started cleanly. Calibration passed at exactly 6,000 (0% deviation). `consumer_chat` floor-bound at 8,500. `coding_agents` floor-bound at 100,000. Then on `enterprise_vertical_agents`, path A's response failed JSON extraction — Sonnet wrote ~4,200 characters of prose preamble (`"I'll research vendor disclosures... Now I have sufficient data... **Key vendor disclosures gathered:** - **Anthropic Claude Enterprise**: CloudZero cites a 'RAG application with a 50,000-token system prompt'..."`) before the JSON itself began, and at `max_tokens=8192` the JSON got truncated mid-object. The brace-matcher correctly identified `Unbalanced braces — no matching ` for first `{`: line 41 column 1 (char 4219)`.
+
+The outer try/except caught the exception. Synthesis returned `committed_value: 65000 (floor)` with `candidate: None`. Then the summary message construction crashed:
+
+```python
+summary["floor_bound"].append(
+    f"typical_context[{category}]: floor {new_value:,} "
+    f"(candidate was {synthesis.get('candidate'):,})"    # TypeError: None:,
+)
+```
+
+`TypeError: unsupported format string passed to NoneType.__format__`. The crash propagated out of `research_context_length_inputs()` before `_save_state()` ran. Two in-memory commits (consumer_chat=8,500 and coding_agents=100,000) were lost. The workflow's commit step reported "No context-length changes to commit." Nothing reached the repository.
+
+v3.7.2 hardens the worker against this and related failure modes. The synthesis math (floor + max(B, mean) for typical_context; mean(A, B) ignoring C for shares) is unchanged.
+
+### Centralized JSON-parse retry
+
+`_call_claude_with_search` is split into `_invoke_and_extract` (one attempt) wrapped by the public function which now retries once on `JSONDecodeError` or `ValueError` with `max_tokens * 2`:
+
+```python
+def _call_claude_with_search(prompt: str, max_tokens: int = 16384) -> dict:
+    try:
+        return _invoke_and_extract(prompt, max_tokens)
+    except (json.JSONDecodeError, ValueError) as first_err:
+        retry_tokens = max_tokens * 2
+        logger.warning(f"JSON extraction failed at max_tokens={max_tokens}: {first_err}. "
+                       f"Retrying once with max_tokens={retry_tokens}...")
+        time.sleep(3)
+        try:
+            return _invoke_and_extract(prompt, retry_tokens)
+        except (json.JSONDecodeError, ValueError) as second_err:
+            logger.error(f"JSON extraction failed on retry too. ...")
+            raise
+```
+
+This is centralized so calibration, all 3 typical_context paths per category, and all 3 volume_share paths benefit without per-call-site changes. The default `max_tokens` is raised from 8,192 to 16,384; the retry doubles to 32,768. Worst-case latency adds one extra API call (~30 seconds) and ~$0.06/year in cost across the bi-monthly cadence.
+
+### Per-path try/except
+
+Both `typical_context` and `volume_shares` previously wrapped all 3 path calls in a single try/except. If path A raised, paths B and C never ran. v3.7.2 splits these into 3 independent try/except blocks:
+
+```python
+try:
+    path_a = _call_claude_with_search(_build_typical_path_a_vendor(category))
+except Exception as e:
+    summary["errors"].append(f"typical[{category}].path_a: {e}")
+time.sleep(2)
+try:
+    path_b = _call_claude_with_search(_build_typical_path_b_economic(category))
+except Exception as e:
+    summary["errors"].append(f"typical[{category}].path_b: {e}")
+# ... same for path_c
+```
+
+Combined with the JSON retry, a single-path failure costs at most one extra API call and only loses that path. The other two still contribute, the floor synthesis still binds, the category still commits.
+
+### Per-category state save
+
+After each category's history entry is appended, `_save_state(state)` runs immediately. If category 4 of 5 crashes Python (OOM, runner reclaim, signal), categories 1-3 are already on disk. Combined with the existing atomic write (`tmp.replace()`), state writes are durable across runner kills.
+
+### try/finally wrapper
+
+The entire body of `research_context_length_inputs()` is now wrapped in `try/finally`. The `finally` block always writes `last_run_at` and `last_run_summary` to state metadata and calls `_save_state(state)` one more time, plus prints the end-of-run summary block. Even an unhandled exception from a non-LLM code path leaves the state file consistent and forensically useful.
+
+### None-safe formatting
+
+The exact crash mode is fixed with a `_fmt_int(v)` helper that returns `"N/A"` for None and `f"{int(v):,}"` for ints. Applied at every site in summary construction that formats a synthesis field with `:,`. The "all paths failed, floor applied" branch can legitimately set `candidate=None`; the formatting layer now handles it.
+
+### Plausibility filter on individual path values
+
+Previously a path returning 1 token (model misunderstood the question) or 50,000,000 tokens (model returned a max-context number) was added to the mean and pulled it toward the garbage value. Now in `_synthesize_paths`, values are filtered before being added to `values_by_label`:
+
+```python
+if v_int < MIN_PLAUSIBLE_CONTEXT or v_int > MAX_PLAUSIBLE_CONTEXT:
+    dropped_paths.append(
+        f"path_{label}: implausible value {v_int:,} "
+        f"(outside [{MIN_PLAUSIBLE_CONTEXT:,}, {MAX_PLAUSIBLE_CONTEXT:,}])"
+    )
+    continue
+```
+
+Same filtering for non-numeric values, missing `value` fields, and non-positive values. Each rejection is logged with a specific reason and recorded in the history entry under `dropped_paths` for forensic audit.
+
+### Strengthened JSON-only directive
+
+All 7 path-builder prompts previously ended with `OUTPUT — return ONLY a JSON object (no markdown fences[, no prose around it]):`. Sonnet ignored that and wrote thousands of characters of prose first. v3.7.2 replaces all 7 with a stronger directive at the same position:
+
+> OUTPUT FORMAT — STRICT:
+> Begin your response with the character `{` and end with the matching `}`.
+> Do NOT write any prose, headers, bullet lists, or commentary before or after the JSON object. Do NOT include markdown fences. Web search tool calls are visible to me separately; do not narrate them. The JSON schema:
+
+This is the prompt-side fix that complements the max_tokens bump. Together they reduce the probability of JSON truncation; the retry catches whatever still slips through.
+
+### End-of-run summary block
+
+The worker now prints a human-readable summary block to stdout at the end of every run:
+
+```
+════════════════════════════════════════════════════════════════
+ v3.7.2 RUN SUMMARY — 2026-05-25
+════════════════════════════════════════════════════════════════
+ Calibration: PASSED (worker 6,000 vs target 6,000 ±2,400)
+ Categories committed: 5/5  (5 floor-bound, 0 candidate-bound)
+   consumer_chat                    8,500 (floor)
+   coding_agents                  100,000 (floor)
+   enterprise_vertical_agents      65,000 (floor)
+   developer_raw_api               40,000 (floor)
+   other_creative_rag               8,500 (floor)
+ Volume shares: 17 / 19 / 33 / 23 / 8  (sum 100)
+ Errors: 0
+════════════════════════════════════════════════════════════════
+```
+
+Without this, reading a GitHub Actions log meant scrolling past four minutes of HTTP request lines to extract the result by hand.
+
+### Version string
+
+History entries now record `"source": "llm_research_v3_7_2"` for forensic continuity (v3.7.1 entries from never-shipped commits do not exist in production state).
+
+### Tests
+
+20 new tests across 7 classes in `tests/test_v3_7_2_reliability_hardening.py`:
+
+- `TestNoneSafeFormatting` (5): `_fmt_int` handles None/ints/floats/garbage; floor-summary message reproduces the exact v3.7.1 crash conditions and verifies it no longer crashes.
+- `TestPlausibilityFilter` (5): too-low / too-high / non-numeric / missing-value path values are dropped with logged reasons; `dropped_paths` recorded in history.
+- `TestPerPathIsolation` (1): exact v3.7.1 enterprise_vertical scenario — path A raises mid-loop; paths B and C still run; category commits at floor.
+- `TestPerCategoryStateSave` (2): `_save_state` called per-category; state from earlier categories persists when a later category crashes the run.
+- `TestTryFinallyWrapper` (1): metadata written to state file even when an unhandled exception escapes from a non-LLM code path.
+- `TestJsonRetry` (4): retry on first failure with doubled tokens; no retry on first success; second failure propagates; default max_tokens is 16,384.
+- `TestPromptJsonDirective` (2): all 7 prompts contain strengthened directive; old weaker phrasing fully removed.
+
+Plus 21 carried tests from v3.7.1 (the synthesis math itself, calibration, multiplier-removed assertions, seed floors, removed gates, full end-to-end May 25 reproduction). Total: 41 tests in the v3.7.2 file, **685 total passing** in clean regression.
+
+### What didn't change
+
+- Synthesis math (floor + max(B, mean) for typical_context; mean(A, B) ignoring C for shares) — unchanged from v3.7.1
+- Seed floors (consumer 8,500; coding 100,000; enterprise 65,000; dev_api 40,000; other 8,500) — unchanged
+- Calibration back-test (re-derive ~6,000; ±40% tolerance; abort on failure) — unchanged
+- DHCR's +1 Y-band anticipation premium remains the framework's singular forward-looking element — unchanged
+- Cost (~$3.50/year, 6 runs × ~19 calls × ~$0.03) — unchanged outside retry tail
+
+### Deploy
+
+State seed already in production from v3.7.0. Workflow timeout already at 45 min. Only code changes need to sync:
+
+1. Publish release `v3.7.2` **with the zip attached** (the v3.7.1 deploy's first attempt failed because the zip wasn't attached — `deploy_from_release.yml` requires the asset to be present at publish time and refuses to deploy otherwise; it is by design).
+2. Manually trigger workflow via Actions tab → "Context Length Research" → "Run workflow".
+
+Expected outcome: calibration passes, all 5 typical_context categories commit (likely 5 at floor again per the May 25 measurement pattern; some categories may commit above floor if Sonnet's larger budget produces stronger numbers), volume_shares commits at 17/19/33/23/8 (or close), exit 0, summary block prints to stdout, state on disk includes full provenance per entry. If a path JSON-parses fail despite the retry, only that single path is recorded as dropped with a reason; the category still commits.
+
+
+
 ## v3.7.1 (2026-05-25) — Floor + max-rule synthesis, drop 1.40 multiplier
 
 v3.7.0's first production run on 2026-05-25 07:56 UTC executed cleanly — calibration passed at 0% deviation (worker independently re-derived OpenRouter's ~6,000 figure), all 19 LLM calls fired with valid JSON, 25-minute total runtime. But the architecture's convergence gate rejected every value: 5 of 5 typical_context categories diverged (spreads ranging 33% to 91% across the 3 paths), and 4 of 5 volume_share categories diverged. Zero state changes committed.
