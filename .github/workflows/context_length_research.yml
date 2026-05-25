@@ -1,35 +1,45 @@
 # context_length_research.yml
 #
-# Bi-monthly LLM-driven context length research worker (v3.6.0).
+# Quarterly LLM-driven context length research worker (v3.8.0).
 #
 # Replaces the v3.4.14 scraper + aggregator with a single Claude API call
 # that uses web search to triangulate current context length and volume
 # share data from public sources (earnings disclosures, vendor product
 # pages, SimilarWeb / Sacra reports, news coverage).
 #
-# Cadence: 1st of every odd month at 06:00 UTC
-#   - Jan 1, Mar 1, May 1, Jul 1, Sep 1, Nov 1
-#   - 6 runs/year
-#   - Bi-monthly gives time for both axes to move materially before
-#     re-measuring
+# Cadence: 1st of every quarter at 06:00 UTC
+#   - Jan 1, Apr 1, Jul 1, Oct 1
+#   - 4 runs/year (changed from bi-monthly in v3.8.0)
+#   - Quarterly gives more time for context length to shift materially
 #
-# Cost: ~$0.50/run × 6 = ~$3/year (Anthropic API + web search tool use)
+# Cost: ~18 LLM calls per run (Path C volume shares dropped in v3.8.0)
+#   ≈ $9/run × 4 runs/year ≈ $36/year (~€33).
+#   Staleness guard (60 days) in the worker prevents cost multiplication
+#   from repeated manual workflow_dispatch triggers.
 #
 # Safety:
-#   - Sanity-checks reject implausible changes (>50% per typical_context,
-#     >15pp per share, sums-to-100 enforced)
+#   - Staleness guard: worker skips if state updated within 60 days
+#   - Calibration back-test rejects implausible changes before any commits
 #   - Rejected values keep previous state — never silently corrupts
 #   - Workflow failure opens a GitHub Issue automatically
 #
 # Manual trigger: workflow_dispatch is enabled for ad-hoc re-runs.
+#   The 60-day staleness guard means redundant triggers exit immediately.
+#   To bypass the guard (e.g. after a bad result or during testing), check
+#   the "Bypass staleness guard" box in the workflow_dispatch UI.
 
 name: Context Length Research (LLM-driven, bi-monthly)
 
 on:
   schedule:
-    # Bi-monthly: 06:00 UTC on the 1st of Jan/Mar/May/Jul/Sep/Nov
-    - cron: "0 6 1 1,3,5,7,9,11 *"
-  workflow_dispatch: {}
+    # Quarterly: 06:00 UTC on the 1st of Jan/Apr/Jul/Oct
+    - cron: "0 6 1 1,4,7,10 *"
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: "Bypass 60-day staleness guard (use for testing or after a bad result)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -39,9 +49,9 @@ jobs:
   research:
     name: LLM-driven research worker
     runs-on: ubuntu-latest
-    timeout-minutes: 45    # v3.7.0 — 19 LLM calls per run (was 6 in v3.6.x);
+    timeout-minutes: 45    # v3.8.0 — 18 LLM calls per run (Path C volume shares removed);
                            # each call takes 30-90s with web_search enabled,
-                           # so worst case is ~28 minutes of LLM time + setup.
+                           # so worst case is ~27 minutes of LLM time + setup.
 
     steps:
       - name: Checkout main
@@ -66,6 +76,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONPATH: .
+          FORCE_RUN: ${{ inputs.force_run || 'false' }}
         run: |
           echo "════════════════════════════════════════════════════════════════"
           echo " CONTEXT LENGTH LLM RESEARCH — $(date -u +%Y-%m-%d)"
@@ -80,7 +91,7 @@ jobs:
             echo "No context-length changes to commit."
             exit 0
           fi
-          git commit -m "Context length LLM research $(date -u +%Y-%m-%d) (v3.6.0)"
+          git commit -m "Context length LLM research $(date -u +%Y-%m-%d) (v3.8.0)"
           # Pull + rebase before push to handle concurrent workflow runs
           if ! git pull --rebase origin main; then
             echo "::error::git pull --rebase failed before push"
