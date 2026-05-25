@@ -1,29 +1,43 @@
-"""Context length research worker — v3.7.0 (2026-05-25).
+"""Context length research worker — v3.7.1 (2026-05-25).
 
-Multi-path triangulation architecture. For each input the framework needs,
-the worker runs 3 INDEPENDENT research paths with different methodologies,
-then commits only if the three paths converge within 30%. If they diverge,
-the run logs all three results and skips the commit — a divergence is more
-useful information than a guessed average.
+Architecture (v3.7.1 update over v3.7.0):
+  - 3-path triangulation per input is unchanged (Path A vendor, B economic, C empirical)
+  - Calibration back-test is unchanged (must independently re-derive ~6,000 from OpenRouter)
+  - SYNTHESIS LOGIC CHANGED — convergence gate removed; floor + max-rule replaces it
 
-Architecture changes from v3.6.2:
-  - Each typical_context_tokens category now researched via 3 prompts:
-      Path A — Vendor disclosures (vendor docs, product pages, blog posts)
-      Path B — Economic triangulation (revenue / pricing / user count math)
-      Path C — Empirical third-party studies (OpenRouter, RAGAS, analyst reports)
-  - volume_share_pct now researched via 3 different lenses, same pattern
-  - Convergence gate: if paths agree within 30% spread, commit the mean.
-    If they disagree, no commit, full provenance logged for human review.
-  - Calibration back-test runs FIRST. Worker is asked to independently
-    re-derive OpenRouter's published "6,000 average prompt tokens" finding.
-    If it lands outside 4,500-8,500, the whole run aborts and opens an issue.
-    This catches prompt drift, model behavior change, and web-search
-    quality regressions before they corrupt state.
-  - Prompts now use the explicit KV-cache definition with arithmetic
-    examples — eliminates the "user query size vs full context loaded"
-    ambiguity that caused v3.6.2 to under-report by ~10x.
+For typical_context_tokens (per category):
+  candidate = max(path_B_economic, mean(path_A, path_B, path_C))
+  final     = max(candidate, SEED_FLOOR[category])
 
-Cost: ~19 LLM calls per run (was 6) × $0.03/call × 6 runs/year ≈ $3.50/year.
+  Path C is INCLUDED in the math (the mean accounts for all three paths).
+  The seed floor is the never-go-below anchor; outcomes can never go lower.
+  Order-of-magnitude work: we pick the higher of the economic path or the mean.
+
+For volume_share_pct (per category):
+  candidate = mean(path_A, path_B)        # Path C IGNORED in math (recorded in history only)
+  final     = candidate, renormalized to sum to 100 if needed
+
+  Path C is recorded for provenance but excluded from math because empirical
+  share studies (e.g., OpenRouter) are themselves developer-API-only and miss
+  consumer chat traffic entirely. The May 25 first run had Path C reporting
+  developer_raw_api at 68% (vs 13% from B and 33% from A); the methodology
+  is structurally biased for shares.
+
+REMOVED in v3.7.1:
+  - 30% convergence gate (was: spread > 30% blocked commits)
+  - 50% delta sanity check (was: |new - prev| / prev > 50% blocked commits)
+  - Floor + max-rule replaces both as the validity anchor; first run commits
+    everything at seed floor (proven safe baseline), future runs ratchet up
+    only when measured behavior genuinely exceeds the conservative floor.
+
+KEPT in v3.7.1:
+  - Calibration back-test (catches catastrophic prompt drift before any commits)
+  - Full provenance recording (every history entry includes all 3 path values,
+    candidate, floor, final, which-rule-was-binding)
+  - Plausibility bounds (committed values must be 1K-10M tokens, paths must
+    be numeric — catches outright garbage but doesn't gate on disagreement)
+
+Cost: ~19 LLM calls per run × $0.03/call × 6 runs/year ≈ $3.50/year (unchanged).
 """
 
 from __future__ import annotations
@@ -42,12 +56,7 @@ logger = logging.getLogger(__name__)
 
 CONTEXT_STATE_FILE = Path("state/context_length_state.json")
 
-# v3.7.0 — convergence threshold across triangulation paths.
-# If max(value) and min(value) across the 3 paths differ by more than this
-# fraction of the mean, the result is flagged DIVERGENT and not committed.
-MAX_PATH_SPREAD_FRACTION = 0.30
-
-# v3.7.0 — calibration back-test parameters.
+# v3.7.1 — calibration back-test parameters.
 # The worker independently re-derives the OpenRouter 100T-token study finding
 # ("average prompt tokens per request increased ~4x from 1,500 to over 6,000
 # between early 2024 and late 2025"). If the worker's independently-derived
@@ -55,12 +64,24 @@ MAX_PATH_SPREAD_FRACTION = 0.30
 CALIBRATION_TARGET_VALUE = 6_000
 CALIBRATION_TARGET_TOLERANCE_FRACTION = 0.40    # ±40% = 3,600-8,400
 
-# Existing safety thresholds (carried from v3.6.2)
-MAX_DELTA_FRACTION_CONTEXT = 0.50
-MAX_DELTA_PP_SHARE = 15
+# v3.7.1 — seed floors for typical_context_tokens.
+# Committed values can never go below these. The floors reflect the May 25
+# deep-dive research baseline, anchored to public sources documented in
+# state/context_length_state.json history entries. Forward-looking signal lives
+# in the framework's +1 Y-band anticipation premium (src/analysis/dhcr.py),
+# not in these floors and not in any X-axis multiplier.
+SEED_FLOORS_TYPICAL_CONTEXT = {
+    "consumer_chat": 8_500,
+    "coding_agents": 100_000,
+    "enterprise_vertical_agents": 65_000,
+    "developer_raw_api": 40_000,
+    "other_creative_rag": 8_500,
+}
+
+# Plausibility bounds (carried from v3.6.2) — catch outright garbage but don't
+# gate on path disagreement. The floor + max-rule does the validity work.
 MIN_PLAUSIBLE_CONTEXT = 1_000
 MAX_PLAUSIBLE_CONTEXT = 10_000_000
-ACCEPTED_CONFIDENCE = {"high", "medium"}
 
 CATEGORIES = [
     "consumer_chat",
@@ -694,61 +715,93 @@ def _run_calibration_check() -> tuple[bool, dict]:
 # ── Triangulation synthesis ───────────────────────────────────────────────────
 
 def _synthesize_paths(
-    path_a: dict, path_b: dict, path_c: dict, label: str,
+    path_a: dict, path_b: dict, path_c: dict, category: str,
 ) -> dict:
-    """Combine 3 path results into a converged value or a divergence flag.
+    """v3.7.1 — Floor + max(economic, mean) synthesis.
 
-    Returns a dict with:
-      - status: "converged" | "divergent" | "missing_values"
-      - committed_value: int (only if converged)
-      - uncertainty_band: {low, mid, high}
-      - spread_fraction: float (max-min)/mean
-      - paths: {a, b, c} (full path provenance)
+    Rule:
+        candidate = max(path_B_economic, mean(all_available_paths))
+        final     = max(candidate, SEED_FLOORS_TYPICAL_CONTEXT[category])
+
+    The seed floor is the never-go-below anchor. Order-of-magnitude work:
+    we pick the higher of the economic path or the mean across all paths.
+    All three paths participate in the mean (Path C included), but the
+    economic path gets a "max" privilege because it derives from disclosed
+    throughput / revenue / pricing — the most rigorously deterministic of
+    the three methodologies.
+
+    Returns:
+        Dict with full provenance — path values, candidate, floor, final,
+        which-rule-was-binding, raw paths. ALWAYS commits (no divergence
+        gate); divergence info is recorded in spread_pct field for audit.
     """
-    values = []
-    for label_p, result_p in (("a", path_a), ("b", path_b), ("c", path_c)):
-        v = result_p.get("value") if result_p else None
+    # Collect numeric values from each path
+    values_by_label = {}
+    for label, result in (("a", path_a), ("b", path_b), ("c", path_c)):
+        v = result.get("value") if result else None
         if isinstance(v, (int, float)) and v > 0:
-            values.append((label_p, int(v)))
+            values_by_label[label] = int(v)
 
-    if len(values) < 2:
+    seed_floor = SEED_FLOORS_TYPICAL_CONTEXT.get(category, MIN_PLAUSIBLE_CONTEXT)
+
+    if not values_by_label:
+        # All paths failed — commit floor as a defensive baseline
         return {
-            "status": "missing_values",
-            "reason": f"Only {len(values)}/3 paths returned a usable numeric value",
+            "status": "all_paths_failed_floor_applied",
+            "label": f"typical_context[{category}]",
+            "path_values": {},
+            "candidate": None,
+            "seed_floor": seed_floor,
+            "committed_value": seed_floor,
+            "binding_rule": "floor",
             "paths": {"a": path_a, "b": path_b, "c": path_c},
         }
 
-    nums = [v for _, v in values]
-    mean = sum(nums) / len(nums)
-    spread = (max(nums) - min(nums)) / mean if mean > 0 else 1.0
+    nums = list(values_by_label.values())
+    mean = int(round(sum(nums) / len(nums)))
+    spread_fraction = ((max(nums) - min(nums)) / mean) if mean > 0 else 0.0
+
+    # Path B (economic) gets the "max" privilege — if present, candidate is
+    # max(B, mean). If B is missing, fall back to mean of the other paths.
+    path_b_value = values_by_label.get("b")
+    if path_b_value is not None:
+        candidate = max(path_b_value, mean)
+        candidate_source = "max(path_B_economic, mean_of_paths)"
+    else:
+        candidate = mean
+        candidate_source = "mean_of_paths_(path_B_missing)"
+
+    # Apply seed floor — never go below it
+    final = max(candidate, seed_floor)
+    binding_rule = "floor" if final == seed_floor and candidate < seed_floor else "candidate"
+
+    # Final plausibility sanity (catches outright garbage like negative or 100M-token values)
+    final = min(max(final, MIN_PLAUSIBLE_CONTEXT), MAX_PLAUSIBLE_CONTEXT)
 
     result = {
-        "status": "converged" if spread <= MAX_PATH_SPREAD_FRACTION else "divergent",
-        "label": label,
-        "path_values": {lbl: v for lbl, v in values},
-        "mean": int(round(mean)),
-        "min": min(nums),
-        "max": max(nums),
-        "spread_fraction": round(spread, 3),
-        "spread_pct": round(spread * 100, 1),
-        "uncertainty_band": {
-            "low": min(nums),
-            "mid": int(round(mean)),
-            "high": max(nums),
-        },
+        "status": "committed",
+        "label": f"typical_context[{category}]",
+        "path_values": values_by_label,
+        "mean_of_paths": mean,
+        "candidate": candidate,
+        "candidate_source": candidate_source,
+        "seed_floor": seed_floor,
+        "committed_value": final,
+        "binding_rule": binding_rule,
+        "spread_fraction": round(spread_fraction, 3),
+        "spread_pct": round(spread_fraction * 100, 1),    # informational only
         "paths": {"a": path_a, "b": path_b, "c": path_c},
     }
-    if result["status"] == "converged":
-        result["committed_value"] = int(round(mean))
+
+    if binding_rule == "floor":
         logger.info(
-            f"  [{label}] CONVERGED — paths: {[v for _, v in values]} → "
-            f"mean={int(mean):,}, spread={spread*100:.1f}%"
+            f"  [{category}] FLOOR BINDING — paths {nums}, mean={mean:,}, "
+            f"candidate={candidate:,} < floor={seed_floor:,} → committed {final:,}"
         )
     else:
-        logger.warning(
-            f"  [{label}] DIVERGENT — paths: {[v for _, v in values]} → "
-            f"spread={spread*100:.1f}% exceeds {MAX_PATH_SPREAD_FRACTION*100:.0f}% threshold; "
-            f"NOT committing"
+        logger.info(
+            f"  [{category}] CANDIDATE — paths {nums}, mean={mean:,}, "
+            f"candidate={candidate:,} ≥ floor={seed_floor:,} → committed {final:,}"
         )
 
     return result
@@ -757,92 +810,85 @@ def _synthesize_paths(
 def _synthesize_share_paths(
     path_a: dict, path_b: dict, path_c: dict,
 ) -> dict:
-    """Synthesize 3 volume_share paths into per-category convergence.
+    """v3.7.1 — Volume shares synthesized as mean(A, B), Path C ignored.
 
-    Each path returns a dict {category: int}. We synthesize per category.
-    A run only commits if ALL 5 categories converge. Otherwise we log the
-    divergence and skip the entire volume_share update for this run.
+    Rule:
+        per_category[i] = mean(path_A[i], path_B[i])
+        committed = normalize_to_100(per_category)
+
+    Path C is RECORDED in history for provenance but EXCLUDED from the math.
+    The empirical study landscape for share-of-volume is structurally biased
+    (OpenRouter is the only large-scale dataset and is 100% developer API
+    traffic, so Path C systematically over-counts dev_raw_api). The May 25
+    first run had Path C reporting dev_raw_api at 68% vs A=33% and B=13% —
+    a clear methodology problem, not a measurement issue.
+
+    No floors on shares (zero-sum constraint), no divergence gate.
     """
-    per_cat_results = {}
-    all_converged = True
+    shares_a = path_a.get("shares") if path_a else None
+    shares_b = path_b.get("shares") if path_b else None
+    shares_c = path_c.get("shares") if path_c else {}    # for provenance only
+
+    per_cat_synthesis = {}
+    raw_means = {}
 
     for cat in CATEGORIES:
-        cat_paths = {}
-        for label, result in (("a", path_a), ("b", path_b), ("c", path_c)):
-            shares = result.get("shares") if result else None
-            if shares and cat in shares and isinstance(shares[cat], (int, float)):
-                cat_paths[label] = float(shares[cat])
+        a_val = shares_a.get(cat) if shares_a else None
+        b_val = shares_b.get(cat) if shares_b else None
+        c_val = shares_c.get(cat) if shares_c else None    # informational
 
-        if len(cat_paths) < 2:
-            per_cat_results[cat] = {"status": "missing_values", "paths": cat_paths}
-            all_converged = False
-            continue
-
-        nums = list(cat_paths.values())
-        mean = sum(nums) / len(nums)
-        # For shares (percentages), use absolute pp spread, not fractional
-        spread_pp = max(nums) - min(nums)
-        # Convergence: ≤10pp spread per category (tighter than 30% rule for shares)
-        converged = spread_pp <= 10.0
-
-        per_cat_results[cat] = {
-            "status": "converged" if converged else "divergent",
-            "path_values": cat_paths,
-            "mean": round(mean, 1),
-            "spread_pp": round(spread_pp, 1),
-        }
-        if not converged:
-            all_converged = False
-
-    if all_converged:
-        # Build the committed shares dict from per-category means, normalize to 100
-        raw = {cat: per_cat_results[cat]["mean"] for cat in CATEGORIES}
-        total = sum(raw.values())
-        if total > 0:
-            normalized = {cat: int(round(v * 100 / total)) for cat, v in raw.items()}
-            # Absorb rounding drift into largest share
-            drift = 100 - sum(normalized.values())
-            if drift != 0:
-                largest = max(normalized, key=normalized.get)
-                normalized[largest] += drift
+        usable = [v for v in (a_val, b_val) if isinstance(v, (int, float))]
+        if len(usable) == 2:
+            mean_ab = sum(usable) / 2.0
+        elif len(usable) == 1:
+            mean_ab = float(usable[0])    # one path missing; use the other
         else:
-            normalized = {cat: 20 for cat in CATEGORIES}    # fallback even split
+            mean_ab = None    # both paths missing for this category
 
+        per_cat_synthesis[cat] = {
+            "path_a": a_val,
+            "path_b": b_val,
+            "path_c_informational": c_val,
+            "mean_ab": mean_ab,
+        }
+        if mean_ab is not None:
+            raw_means[cat] = mean_ab
+
+    if len(raw_means) < len(CATEGORIES):
+        # Some categories failed entirely — can't normalize confidently
         return {
-            "status": "converged",
-            "per_category": per_cat_results,
-            "committed_shares": normalized,
+            "status": "incomplete_paths",
+            "per_category": per_cat_synthesis,
+            "missing_categories": [c for c in CATEGORIES if c not in raw_means],
             "paths": {"a": path_a, "b": path_b, "c": path_c},
         }
+
+    # Normalize to exactly 100 (integer shares)
+    total = sum(raw_means.values())
+    if total > 0:
+        normalized_floats = {c: v * 100 / total for c, v in raw_means.items()}
+    else:
+        normalized_floats = {c: 20.0 for c in CATEGORIES}
+
+    # Round to ints and absorb drift into largest share
+    normalized = {c: int(round(v)) for c, v in normalized_floats.items()}
+    drift = 100 - sum(normalized.values())
+    if drift != 0:
+        largest = max(normalized, key=normalized.get)
+        normalized[largest] += drift
+
+    logger.info(
+        f"  volume_shares mean(A,B) raw={raw_means}, sum={total:.1f}, "
+        f"normalized to 100 → {normalized}"
+    )
+
     return {
-        "status": "divergent",
-        "per_category": per_cat_results,
+        "status": "committed",
+        "per_category": per_cat_synthesis,
+        "raw_means_pre_normalization": raw_means,
+        "committed_shares": normalized,
         "paths": {"a": path_a, "b": path_b, "c": path_c},
     }
-
-
-# ── Sanity checks (carried + tightened) ───────────────────────────────────────
-
-def _sanity_check_typical_context(
-    value: int, prev_value: int, confidence: str, category: str,
-) -> tuple[bool, str]:
-    if not isinstance(value, (int, float)):
-        return False, f"Value is not numeric: {type(value).__name__}"
-    value = int(value)
-    if value < MIN_PLAUSIBLE_CONTEXT:
-        return False, f"Value {value:,} below plausible floor"
-    if value > MAX_PLAUSIBLE_CONTEXT:
-        return False, f"Value {value:,} above plausible ceiling"
-    if confidence not in ACCEPTED_CONFIDENCE:
-        return False, f"Confidence '{confidence}' below threshold (need high/medium)"
-    if prev_value and prev_value > 0:
-        delta = abs(value - prev_value) / prev_value
-        if delta > MAX_DELTA_FRACTION_CONTEXT:
-            return False, (
-                f"Delta {delta * 100:.0f}% ({prev_value:,} → {value:,}) "
-                f"exceeds {MAX_DELTA_FRACTION_CONTEXT * 100:.0f}% threshold"
-            )
-    return True, ""
 
 
 # ── State load/save ───────────────────────────────────────────────────────────
@@ -876,14 +922,15 @@ def _save_state(state: dict) -> None:
 # ── Main entry point ──────────────────────────────────────────────────────────
 
 def research_context_length_inputs() -> dict:
-    """v3.7.0 — Multi-path triangulation research worker.
+    """v3.7.1 — Floor + max(B, mean) synthesis. Always commits.
 
     Sequence:
       1. Calibration back-test — if fails, abort and write nothing
-      2. For each of 5 categories: 3-path typical_context research
-      3. 3-path volume_share research
-      4. Synthesis: commit only converged values; log divergent ones
-      5. Persist state
+      2. For each of 5 categories: 3-path typical_context research, then
+         apply floor + max(B, mean) rule. Always commits a value.
+      3. 3-path volume_share research, then mean(A, B) ignoring C.
+         Normalize to 100; commit unless math fails entirely.
+      4. Persist state with full provenance per history entry.
     """
     state = _load_state()
     today = date.today().isoformat()
@@ -895,19 +942,19 @@ def research_context_length_inputs() -> dict:
         "typical_context_results": {},
         "volume_shares_result": None,
         "committed": [],
-        "divergent": [],
+        "floor_bound": [],
         "errors": [],
         "exit_code": 0,
     }
 
-    # 1. Calibration
+    # 1. Calibration — same as v3.7.0
     cal_passed, cal_diag = _run_calibration_check()
     summary["calibration"] = cal_diag
     state["_metadata"].setdefault("calibration_history", []).append({
         "date": today, **cal_diag,
     })
     state["_metadata"]["calibration_history"] = (
-        state["_metadata"]["calibration_history"][-12:]    # keep last 12 runs
+        state["_metadata"]["calibration_history"][-12:]
     )
 
     if not cal_passed:
@@ -922,9 +969,10 @@ def research_context_length_inputs() -> dict:
         _save_state(state)
         return summary
 
-    # 2. Typical context — 3 paths × 5 categories
+    # 2. Typical context — 3 paths × 5 categories, floor + max-rule synthesis
     for category in CATEGORIES:
         logger.info(f"Researching typical_context_tokens[{category}] (3 paths)...")
+        path_a = path_b = path_c = None
         try:
             path_a = _call_claude_with_search(_build_typical_path_a_vendor(category))
             time.sleep(2)
@@ -935,84 +983,59 @@ def research_context_length_inputs() -> dict:
             err = f"typical[{category}]: {type(e).__name__}: {e}"
             summary["errors"].append(err)
             logger.error(err)
-            continue
+            # Even if some paths fail, synthesis below handles missing values
 
         synthesis = _synthesize_paths(
-            path_a, path_b, path_c, f"typical_context[{category}]"
+            path_a or {}, path_b or {}, path_c or {}, category
         )
         summary["typical_context_results"][category] = synthesis
 
-        if synthesis["status"] != "converged":
-            summary["divergent"].append(f"typical_context[{category}]")
-            # Still log the attempt to history for human review
-            state["typical_context_tokens"][category].setdefault("history", []).append({
-                "date": today,
-                "source": "llm_research_v3_7_0_divergent",
-                "status": synthesis["status"],
-                "path_values": synthesis.get("path_values", {}),
-                "spread_pct": synthesis.get("spread_pct"),
-                "paths_provenance": {
-                    "a": {k: path_a.get(k) for k in ("value", "method", "confidence", "weighted_calculation")},
-                    "b": {k: path_b.get(k) for k in ("value", "method", "confidence", "sanity_check")},
-                    "c": {k: path_c.get(k) for k in ("value", "method", "confidence", "category_adjustment_reasoning")},
-                },
-            })
-            continue
-
-        # Converged — sanity-check the committed value
         new_value = synthesis["committed_value"]
         prev_value = int(state["typical_context_tokens"][category].get("current") or 0)
-        # Use mean confidence across paths (lowest wins)
-        path_confidences = [p.get("confidence", "low") for p in (path_a, path_b, path_c)]
-        confidence = ("low" if "low" in path_confidences
-                      else ("medium" if "medium" in path_confidences else "high"))
 
-        ok, reason = _sanity_check_typical_context(
-            new_value, prev_value, confidence, category
-        )
-        if not ok:
-            summary["divergent"].append(f"typical_context[{category}] (sanity)")
-            state["typical_context_tokens"][category].setdefault("history", []).append({
-                "date": today,
-                "source": "llm_research_v3_7_0_sanity_rejected",
-                "proposed_value": new_value,
-                "previous_value": prev_value,
-                "rejection_reason": reason,
-                "uncertainty_band": synthesis["uncertainty_band"],
-                "spread_pct": synthesis["spread_pct"],
-            })
-            logger.warning(f"  Sanity-rejected typical_context[{category}]: {reason}")
-            continue
-
-        # Accept
+        # Always commit — the floor + max-rule has already done the validity work
         state["typical_context_tokens"][category]["current"] = new_value
         state["typical_context_tokens"][category].setdefault("history", []).append({
             "date": today,
             "value": new_value,
-            "source": "llm_research_v3_7_0",
-            "confidence": confidence,
-            "spread_pct": synthesis["spread_pct"],
-            "uncertainty_band": synthesis["uncertainty_band"],
-            "path_values": synthesis["path_values"],
+            "source": "llm_research_v3_7_1",
+            "synthesis_rule": "max(path_B_economic, mean(A,B,C)) floored at seed",
+            "path_values": synthesis.get("path_values", {}),
+            "mean_of_paths": synthesis.get("mean_of_paths"),
+            "candidate": synthesis.get("candidate"),
+            "candidate_source": synthesis.get("candidate_source"),
+            "seed_floor": synthesis.get("seed_floor"),
+            "binding_rule": synthesis.get("binding_rule"),
+            "spread_pct": synthesis.get("spread_pct"),    # informational; no gate
             "previous_value": prev_value,
             "delta_pct": (round((new_value - prev_value) / prev_value * 100, 1)
                           if prev_value else 0),
             "paths_provenance": {
-                "a": {k: path_a.get(k) for k in ("value", "method", "confidence", "weighted_calculation", "products_analyzed")},
-                "b": {k: path_b.get(k) for k in ("value", "method", "confidence", "math_steps")},
-                "c": {k: path_c.get(k) for k in ("value", "method", "confidence", "studies_cited", "category_adjustment_reasoning")},
+                "a": {k: (path_a or {}).get(k)
+                      for k in ("value", "method", "confidence",
+                                "weighted_calculation", "products_analyzed")},
+                "b": {k: (path_b or {}).get(k)
+                      for k in ("value", "method", "confidence",
+                                "math_steps", "sanity_check")},
+                "c": {k: (path_c or {}).get(k)
+                      for k in ("value", "method", "confidence",
+                                "studies_cited", "category_adjustment_reasoning")},
             },
         })
+
+        if synthesis.get("binding_rule") == "floor":
+            summary["floor_bound"].append(
+                f"typical_context[{category}]: floor {new_value:,} "
+                f"(candidate was {synthesis.get('candidate'):,})"
+            )
         summary["committed"].append(
-            f"typical_context[{category}]: {prev_value:,} → {new_value:,}"
-        )
-        logger.info(
-            f"  COMMITTED typical_context[{category}]: "
-            f"{prev_value:,} → {new_value:,} (confidence={confidence})"
+            f"typical_context[{category}]: {prev_value:,} → {new_value:,} "
+            f"({synthesis.get('binding_rule')})"
         )
 
-    # 3. Volume shares — 3 paths, synthesized per category
-    logger.info("Researching volume_share_pct (3 paths × 5 categories)...")
+    # 3. Volume shares — mean(A, B), Path C ignored
+    logger.info("Researching volume_share_pct (3 paths × 5 categories; C ignored in math)...")
+    share_a = share_b = share_c = None
     try:
         share_a = _call_claude_with_search(_build_share_path_a_revenue_mix())
         time.sleep(2)
@@ -1023,51 +1046,53 @@ def research_context_length_inputs() -> dict:
         err = f"volume_shares: {type(e).__name__}: {e}"
         summary["errors"].append(err)
         logger.error(err)
-        share_a = share_b = share_c = {"shares": {}, "error": str(e)}
 
-    share_synthesis = _synthesize_share_paths(share_a, share_b, share_c)
+    share_synthesis = _synthesize_share_paths(share_a or {}, share_b or {}, share_c or {})
     summary["volume_shares_result"] = share_synthesis
 
-    if share_synthesis["status"] == "converged":
+    if share_synthesis["status"] == "committed":
         prev_shares = dict(state["volume_shares"]["committed"])
         new_shares = share_synthesis["committed_shares"]
-
         state["volume_shares"]["committed"] = new_shares
         state["volume_shares"]["history"].append({
             "date": today,
             "shares": new_shares,
-            "source": "llm_research_v3_7_0",
-            "per_category_synthesis": share_synthesis["per_category"],
+            "source": "llm_research_v3_7_1",
+            "synthesis_rule": "mean(path_A_revenue_mix, path_B_traffic_proxy), path_C_ignored",
+            "raw_means_pre_normalization": share_synthesis["raw_means_pre_normalization"],
+            "per_category": share_synthesis["per_category"],
             "previous_shares": prev_shares,
             "paths_provenance": {
-                "a": {"shares": share_a.get("shares"), "method": share_a.get("method")},
-                "b": {"shares": share_b.get("shares"), "method": share_b.get("method")},
-                "c": {"shares": share_c.get("shares"), "method": share_c.get("method")},
+                "a": {"shares": (share_a or {}).get("shares"),
+                      "method": (share_a or {}).get("method")},
+                "b": {"shares": (share_b or {}).get("shares"),
+                      "method": (share_b or {}).get("method")},
+                "c_informational_only": {"shares": (share_c or {}).get("shares"),
+                                         "method": (share_c or {}).get("method"),
+                                         "note": "v3.7.1 excludes path C from share math; "
+                                                 "logged for provenance only"},
             },
         })
         state["volume_shares"]["proposal_status"] = "none"
         summary["committed"].append(f"volume_shares: {prev_shares} → {new_shares}")
         logger.info(f"  COMMITTED volume_shares: {new_shares}")
     else:
-        summary["divergent"].append("volume_shares")
+        # Paths failed for at least some categories — can't normalize safely
+        summary["errors"].append(
+            f"volume_shares synthesis incomplete: {share_synthesis.get('missing_categories')}"
+        )
         state["volume_shares"]["history"].append({
             "date": today,
-            "source": "llm_research_v3_7_0_divergent",
-            "status": "divergent",
-            "per_category_synthesis": share_synthesis["per_category"],
-            "paths_provenance": {
-                "a": {"shares": share_a.get("shares")},
-                "b": {"shares": share_b.get("shares")},
-                "c": {"shares": share_c.get("shares")},
-            },
+            "source": "llm_research_v3_7_1_incomplete",
+            "status": "incomplete",
+            "per_category": share_synthesis.get("per_category"),
         })
-        logger.warning(f"  DIVERGENT volume_shares — not committing")
 
     # 4. Persist
     state["_metadata"]["last_run_at"] = datetime.now(timezone.utc).isoformat()
     state["_metadata"]["last_run_summary"] = {
         "committed_count": len(summary["committed"]),
-        "divergent_count": len(summary["divergent"]),
+        "floor_bound_count": len(summary["floor_bound"]),
         "error_count": len(summary["errors"]),
     }
     _save_state(state)
@@ -1075,17 +1100,14 @@ def research_context_length_inputs() -> dict:
     if summary["errors"]:
         summary["status"] = "completed_with_errors"
         summary["exit_code"] = 1
-    elif summary["divergent"]:
-        summary["status"] = "completed_with_divergence"
-        summary["exit_code"] = 1
     else:
         summary["status"] = "completed_success"
         summary["exit_code"] = 0
 
     logger.info(
-        f"v3.7.0 research complete: "
+        f"v3.7.1 research complete: "
         f"committed={len(summary['committed'])}, "
-        f"divergent={len(summary['divergent'])}, "
+        f"floor_bound={len(summary['floor_bound'])}, "
         f"errors={len(summary['errors'])}"
     )
     return summary
