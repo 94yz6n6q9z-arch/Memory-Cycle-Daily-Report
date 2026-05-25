@@ -1829,69 +1829,15 @@ def _build_operative_context_trend(dhcr: dict) -> str:
 
 
 def _build_context_volume_proposal_diagnostic(dhcr: dict) -> str:
-    """v3.4.14 — Render pending volume-share proposal in the DHCR diagnostic block.
+    """v3.6.0 — Deprecated stub.
 
-    Returns empty string if no pending proposal.
+    The volume-share proposal mechanism was removed in v3.6.0 when the LLM
+    research worker replaced the daily aggregator. The worker commits
+    values directly after sanity checks (no proposal step). This stub is
+    retained so the existing call site in _build_dhcr_section_4_card
+    keeps working without an explicit code change.
     """
-    proposal = dhcr.get("context_volume_proposal")
-    if not proposal or not isinstance(proposal, dict):
-        return ""
-    proposed = proposal.get("proposed") or {}
-    committed = proposal.get("committed") or {}
-    created = proposal.get("created", "")
-    evidence = proposal.get("evidence") or []
-    if not proposed or not committed:
-        return ""
-
-    rows = []
-    for cat, new_share in sorted(proposed.items()):
-        old_share = committed.get(cat, 0)
-        delta = new_share - old_share
-        if abs(delta) < 0.5:
-            continue
-        sign = "▲" if delta > 0 else "▼"
-        color = "#B91C1C" if delta < 0 else "#15803D"
-        rows.append(
-            f"<tr>"
-            f"<td style='padding:2px 8px;font-size:11px'>{html.escape(cat)}</td>"
-            f"<td style='padding:2px 8px;font-size:11px'>{old_share:.1f}%</td>"
-            f"<td style='padding:2px 8px;font-size:11px;color:{color}'>"
-            f"{sign} {new_share:.1f}%</td>"
-            f"</tr>"
-        )
-    if not rows:
-        return ""
-
-    evidence_html = ""
-    if evidence:
-        ev_items = "".join(
-            f"<li style='font-size:11px'>{html.escape(str(e))}</li>"
-            for e in evidence[:3]
-        )
-        evidence_html = f"<ul style='margin:4px 0 0 16px;padding:0'>{ev_items}</ul>"
-
-    table_rows = "".join(rows)
-    return (
-        f"<div style='margin:8px 0;padding:8px;background:#FFF7ED;"
-        f"border-left:3px solid #D97706;border-radius:3px'>"
-        f"<strong style='font-size:12px;color:#92400E'>"
-        f"⚠ Context volume-share update pending — {html.escape(created)}</strong><br/>"
-        f"<table style='margin-top:4px;border-collapse:collapse'>"
-        f"<tr style='background:#F5F5F5'>"
-        f"<th style='padding:2px 8px;font-size:11px;text-align:left'>Category</th>"
-        f"<th style='padding:2px 8px;font-size:11px;text-align:left'>Current</th>"
-        f"<th style='padding:2px 8px;font-size:11px;text-align:left'>Proposed</th>"
-        f"</tr>"
-        f"{table_rows}"
-        f"</table>"
-        f"<p style='font-size:11px;margin:4px 0 0 0'>Evidence:{evidence_html}</p>"
-        f"<p style='font-size:11px;margin:4px 0 0 0;color:#92400E'>"
-        f"Auto-commits when max delta ≤ 10pp and ≥ 5 signals accumulated. "
-        f"To manually commit: set <code>volume_shares.proposal_status = \"none\"</code> "
-        f"and copy proposed values to committed in "
-        f"<code>state/context_length_state.json</code>.</p>"
-        f"</div>"
-    )
+    return ""
 
 
 def _build_dhcr_latest_developments_prose(dhcr: dict) -> str:

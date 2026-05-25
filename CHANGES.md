@@ -1,5 +1,74 @@
 # Memory Cycle Brief — Changelog
 
+## v3.6.0 (2026-05-24) — LLM-driven context length research
+
+Replaces the v3.4.14 scraper + aggregator with a single Claude API call (web search enabled) that runs bi-monthly and triangulates context length values from current public sources. The principle from `TRIANGULATION_METHODOLOGY.md` ("approximately right with public proxy data > elaborately wrong from broken scraping") is now implemented in code, not just documented.
+
+**Why this change.** The v3.4.14 design assumed product doc pages would be scrapeable with regex. They aren't — OpenAI returns Cloudflare 403, Anthropic/Google/Cursor/Devin/Copilot all return parser_no_match because the content is JavaScript-rendered. The v3.5.3 dry-run validated this empirically. The data we actually want (revenue mix disclosures, web traffic share, ARR figures, vendor blog posts) is LLM-natural prose data — exactly what a Claude API call with web search is designed for. One worker, one cadence, no per-source fragility.
+
+**New module: `src/data/context_length_llm_research.py`.** Calls `claude-sonnet-4-6` with `web_search_20250305` tool. Six calls per run (one per category for typical_context_tokens + one for volume_share_pct distribution). Each call returns structured JSON with value, confidence, reasoning, source URLs, and category-by-category rationale. Estimated cost: ~$0.50/run × 6 runs/year ≈ $3/year.
+
+**Sanity checks before commit.** Reject if: typical_context_tokens outside [1K, 10M], delta from previous > 50%, low confidence. Reject if: volume shares don't sum to 100±1, any category share negative or > 90%, per-category delta > 15pp, low confidence. Rejected values keep previous state (never silently corrupts). Workflow failure opens a GitHub Issue automatically.
+
+**New workflow: `.github/workflows/context_length_research.yml`.** Cron `0 6 1 1,3,5,7,9,11 *` — 06:00 UTC on the 1st of Jan/Mar/May/Jul/Sep/Nov (bi-monthly). Manual `workflow_dispatch` trigger as backup. Reads `ANTHROPIC_API_KEY` from repository secrets. Same `git pull --rebase` push pattern as the other workflows for concurrent-run safety.
+
+**Deleted modules** (replaced by LLM worker):
+- `src/data/context_length_scraper.py` (v3.4.14 bespoke scraper)
+- `src/analysis/context_length_aggregator.py` (v3.4.14 daily proposer)
+- `.github/workflows/context_length_refresh.yml` (old monthly schedule)
+- `.github/workflows/context_length_dry_run.yml` (v3.5.3 dev helper, no longer needed)
+- `tests/test_v3_5_3_dry_run.py` (entire dry-run test suite)
+
+**Consumer-side cleanup.** `src/analysis/digester.py` no longer asks Layer 1 Haiku to extract `context_volume_signals` from earnings transcripts (the aggregator that read it is gone). `src/fast_tier.py` no longer calls `run_context_volume_aggregator()`. `src/email_module/template.py` retains `_build_context_volume_proposal_diagnostic()` as a deprecated stub that always returns "" — existing call site is preserved without an explicit code-flow change.
+
+**State file format preserved.** `state/context_length_state.json` schema is unchanged; only the writer changes (was: scraper + aggregator, now: LLM worker). `dhcr.py:load_dhcr_data()` reads the same state file the same way. The v3.5.4 manual calibration values from yesterday (operative context 407K, band C3) remain in state as the bootstrap baseline; the LLM worker will refresh them on first scheduled run (next: 2026-07-01).
+
+**Tests.** `tests/test_v3_6_0_llm_research.py` adds 26 tests across 6 classes covering sanity checks, JSON parsing (including markdown-fence stripping), state file updates, rejection-keeps-previous-state behavior, workflow file structure, deprecated proposal-diagnostic stub, and verification that obsolete modules are gone. Surviving tests from `test_v3_4_14_context_length.py` (8 tests) and `test_v3_5_1_bug_fixes.py` (19 tests) retained and trimmed. **850 passing** (858 baseline − 8 obsolete tests removed). 27 pre-existing failures unchanged.
+
+**Deploy requires three manual workflow file actions** (because `deploy_from_release.yml` excludes `.github/workflows/` from rsync):
+1. **Delete** `.github/workflows/context_length_refresh.yml` from the repo (replaced)
+2. **Delete** `.github/workflows/context_length_dry_run.yml` from the repo (replaced)
+3. **Add** `.github/workflows/context_length_research.yml` via GitHub UI ("Add file" → "Create new file")
+4. **Add** `ANTHROPIC_API_KEY` to repository secrets (Settings → Secrets and variables → Actions)
+
+After those four manual steps, the release zip handles everything else automatically.
+
+
+## v3.5.3 (2026-05-24) — Dry-run test environment for context length scraper
+
+The v3.4.14 manual test run revealed the scraper was producing values entirely from hardcoded fallbacks (OpenAI 403'd, Anthropic + Google + Cursor + Claude Code + Devin + Copilot + MS Copilot + Perplexity all parser_no_match). The v3.5.1 fix gated `data_extracted` on `any_data` — but `any_data` was being set to True by static URL=None providers (Harvey, Generic RAG, "Others") which always return their `known_value`. So the gate didn't catch the real problem: zero actual scraping was happening.
+
+This release does NOT fix the scraping itself yet. It builds the test environment we need to iterate on the scraping logic without risking the production state file or running deep/fast tier on bogus data.
+
+**`src/data/context_length_scraper.py`** — major refactor:
+- `_fetch_page()` now returns `(html, diagnostic_dict)` with HTTP status, response size, client used, elapsed time, and error string
+- `_scrape_provider()` accepts `capture_diag=True` and returns a third tuple element with per-provider diagnostic: URL, weight, known_value, fetch details, keywords found in HTML, every regex pattern attempted (matched or not), suggested fixes, and a `is_static_fallback` flag
+- New `_diagnose_failure()` helper produces actionable per-failure suggestions: HTTP 403 → switch to OpenRouter API or install curl_cffi; parser_no_match → quote the 500 chars of HTML around the first keyword so we can see what the regex should match; static fallback → warn that this is NOT real data
+- `_compute_category_result()` now tracks `any_real_scrape` (True only if a non-static URL provider succeeded) — distinct from `any_data` which is True for static fallbacks too
+- `run_context_length_scraper(dry_run=False)` accepts dry_run parameter. When True: writes NOTHING to state, makes NO sentinel changes, captures full per-provider diagnostics, returns them in the summary dict
+- `format_dry_run_diagnostic(summary)` pretty-prints the diagnostic in a readable per-category, per-provider report with HTTP status, patterns tried, surrounding text from the page, and suggested fixes
+- CLI: `python -m src.data.context_length_scraper --dry-run` triggers diagnostic mode
+
+**`.github/workflows/context_length_dry_run.yml`** — new manual-trigger workflow:
+- `workflow_dispatch` only; no cron
+- `permissions: contents: read` — READ-ONLY, cannot write to the repo
+- Runs `python -m src.data.context_length_scraper --dry-run`
+- Final step verifies `git status --porcelain state/` is empty — fails loudly if anything was written to state/
+- No commits, no state changes possible
+- Outputs full diagnostic to the Actions log
+
+**`tests/test_v3_4_10_yahoo_cascade_and_probe.py`** — fixed v3.5.2 regression:
+- Old test `test_probe_workflow_yml_exists` checked for the now-removed probe_bright_data.yml
+- Replaced with `test_probe_workflow_yml_was_removed_v3_5_2` which documents the intentional removal and prevents the file from creeping back in
+- The script `scripts/probe_bright_data.py` is retained for manual local execution
+
+**18 new tests** in `tests/test_v3_5_3_dry_run.py` across 6 classes. **877 passing** (858 baseline + 18 new + 2 v3.5.1 mock fixes - 1 orphan removed). 27 pre-existing failures unchanged. Zero new regressions.
+
+**Production state untouched.** The scraper's production behavior is unchanged — only the dry-run code path is new. The `context_length_refresh.yml` monthly workflow still exists and still works, but we're recommending you don't run it again until the next bug-fix release validates against real provider pages via the dry-run harness.
+
+**Honest disclosure on market share weights**: the consumer_chat weights I hardcoded (ChatGPT 60% / Claude 20% / Gemini 15% / Others 5%) were made up, not derived from public data. Publicly available 2025 figures suggest weekly active users are roughly ChatGPT 86% / Gemini 11% / Claude 3% (Sam Altman Aug 2025 cited ~800M WAU for ChatGPT; Sundar Pichai Feb 2025 cited ~350M MAU for Gemini; Claude consumer WAU is not officially disclosed). Token volume share likely diverges from user share (Claude users are heavier per-user). The next release will document the actual source for weighting assumptions and make them adjustable via the YAML.
+
+
 ## v3.5.2 (2026-05-24) — Bundle cleanup
 
 No code changes from v3.5.1. Strips 4 obsolete workflows from the deploy bundle so they stop appearing in extracted folders:

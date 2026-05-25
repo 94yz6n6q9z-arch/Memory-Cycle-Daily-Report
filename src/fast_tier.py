@@ -626,15 +626,10 @@ def run_fast_tier() -> int:
         aggregate_revenue_extractions()
     except Exception as e:
         logger.error(f"DHCR revenue aggregator failed (state preserved): {e}", exc_info=True)
-    # v3.4.14 — volume-share aggregator: reads context_volume_signals from
-    # Layer 1 extraction logs and proposes / auto-commits volume_share_pct
-    # updates in state/context_length_state.json BEFORE the snapshot is computed.
-    try:
-        from src.analysis.context_length_aggregator import run_context_volume_aggregator
-        cl_agg_result = run_context_volume_aggregator()
-        logger.info(f"Context volume aggregator: {cl_agg_result}")
-    except Exception as e:
-        logger.error(f"Context volume aggregator failed (state preserved): {e}", exc_info=True)
+    # v3.6.0 — the context_volume_aggregator was replaced by the
+    # context_length_llm_research worker (bi-monthly GHA workflow).
+    # No daily aggregator call here anymore; state/context_length_state.json
+    # is now maintained exclusively by the LLM worker.
 
     try:
         from src.analysis.dhcr import compute_dhcr_snapshot, compute_dhcr_trajectory

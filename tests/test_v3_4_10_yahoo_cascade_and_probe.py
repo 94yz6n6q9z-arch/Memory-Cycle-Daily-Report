@@ -486,14 +486,15 @@ class TestBrightDataProbeScript(unittest.TestCase):
             rc = module.main()
             self.assertEqual(rc, 2)
 
-    def test_probe_workflow_yml_exists(self):
+    def test_probe_workflow_yml_was_removed_v3_5_2(self):
+        """v3.5.2 — probe_bright_data.yml was intentionally removed from the
+        bundle as part of obsolete-workflow cleanup. This test documents
+        that removal and prevents the file from creeping back in.
+        The probe script itself (scripts/probe_bright_data.py) is retained
+        for manual local execution if needed."""
         yml = PROJ_ROOT / ".github" / "workflows" / "probe_bright_data.yml"
-        self.assertTrue(yml.exists(), "probe_bright_data.yml workflow must exist")
-        text = yml.read_text()
-        self.assertIn("workflow_dispatch", text,
-            "Probe workflow must be workflow_dispatch (manual trigger)")
-        self.assertIn("RESIDENTIAL_PROXY_URL", text,
-            "Probe workflow must pass RESIDENTIAL_PROXY_URL from secrets")
+        self.assertFalse(yml.exists(),
+            "probe_bright_data.yml should NOT exist — removed in v3.5.2 as obsolete")
 
 
 # ============================================================

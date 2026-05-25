@@ -2407,6 +2407,12 @@ HAIKU_MAX_TOKENS = 16000
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for
 # marginal quality gain on this structured task.
 SONNET_MODEL = os.environ.get("SONNET_MODEL_OVERRIDE") or "claude-sonnet-4-6"
+
+# v3.6.0 — Opus model for bi-monthly research worker (LLM-driven context length
+# research, runs 6x/year at ~$0.10/call). Opus chosen over Sonnet because the
+# task is open-ended triangulation across many sources (revenue mix, web traffic,
+# vendor specs) where deeper reasoning matters more than latency.
+OPUS_MODEL = os.environ.get("OPUS_MODEL_OVERRIDE") or "claude-opus-4-7"
 # v3.39.1: bumped 24000 → 48000. The 20:30 May 17 run (first with v3.39
 # streaming) used the full 24K cap and still truncated at char 47369, with
 # json_repair recovering 14/22 indicators. The 14th was partial, missing
