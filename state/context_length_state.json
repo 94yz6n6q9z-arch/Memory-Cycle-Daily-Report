@@ -1,0 +1,40 @@
+{
+  "_metadata": {
+    "schema_version": "1.0",
+    "bootstrapped_on": "2026-05-25",
+    "calibration_source": "v3.7.0 release — empirically anchored from OpenRouter 100T study, Anthropic enterprise pricing examples, Claude Code official cost docs, Microsoft Copilot Enterprise RAG patterns, Perplexity defaults",
+    "calibration_notes": "Each typical_context_tokens value reflects what gets LOADED INTO KV CACHE on a typical production request — not the maximum context window the product supports. Consumer chat: ~8.5K = system prompt (~1K) + memory layer (~500) + 2-3 turn history (~2K) + occasional pastes weighted in. Coding agents: ~100K = weighted mix of GitHub Copilot autocomplete (~3K), chat queries (~15K), Claude Code refactoring (~75K), full-agent runs (~300K). Enterprise vertical: ~65K = production RAG retrieves selectively (10-30K Copilot, 30-100K Harvey/Hebbia per-document), not max windows. Developer raw API: ~40K = OpenRouter empirical avg ~6K pulled up by long-tail API usage. Other creative/RAG: ~8.5K = Perplexity default 4K, Pro 32K, image gen ~500.",
+    "calibration_history": []
+  },
+  "typical_context_tokens": {
+    "consumer_chat": {
+      "current": 8500,
+      "history": [{"date": "2026-05-25", "value": 8500, "source": "v3_7_0_release_seed", "confidence": "medium", "rationale": "OpenRouter 100T study all-traffic avg 6K pulled up by coding; consumer-only is lower. ChatGPT typical session: system 1K + memory 500 + 2-turn 2K + current 200 = ~3.5K. Power-user pastes weight avg to 7-10K."}]
+    },
+    "coding_agents": {
+      "current": 100000,
+      "history": [{"date": "2026-05-25", "value": 100000, "source": "v3_7_0_release_seed", "confidence": "medium", "rationale": "Claude Code docs: edit-file 50-150K, 10-file project 50K, 500-file monorepo 500K+. Weighted mix (Copilot inline ~3K, chat 15K, refactoring 75K, full-agent 300K) lands 80-120K."}]
+    },
+    "enterprise_vertical_agents": {
+      "current": 65000,
+      "history": [{"date": "2026-05-25", "value": 65000, "source": "v3_7_0_release_seed", "confidence": "medium", "rationale": "Microsoft Copilot Enterprise 64-128K windows, RAG fills selectively 10-30K. Harvey/Hebbia per-doc 30-100K. NOT the 1M max — production patterns rarely fill due to cost/latency/lost-in-middle."}]
+    },
+    "developer_raw_api": {
+      "current": 40000,
+      "history": [{"date": "2026-05-25", "value": 40000, "source": "v3_7_0_release_seed", "confidence": "medium", "rationale": "OpenRouter empirical 6K skewed by short prompts. Production raw API typically 20-50K. Anthropic API B2B examples cite ~2K but integrations span 10-100K."}]
+    },
+    "other_creative_rag": {
+      "current": 8500,
+      "history": [{"date": "2026-05-25", "value": 8500, "source": "v3_7_0_release_seed", "confidence": "medium", "rationale": "Perplexity default 4K, Pro 32K. Grok consumer 5-10K. Image gen <500. Weighted 5-12K."}]
+    }
+  },
+  "volume_shares": {
+    "committed": {"consumer_chat": 30, "coding_agents": 18, "enterprise_vertical_agents": 30, "developer_raw_api": 17, "other_creative_rag": 5},
+    "proposed": null,
+    "proposal_evidence": [],
+    "proposal_status": "none",
+    "proposal_created": null,
+    "history": [{"date": "2026-05-25", "shares": {"consumer_chat": 30, "coding_agents": 18, "enterprise_vertical_agents": 30, "developer_raw_api": 17, "other_creative_rag": 5}, "source": "v3_7_0_release_seed", "rationale": "Anthropic ~80% enterprise of $30B = $24B; OpenAI ~60% consumer of $25B = $15B; Claude Code ~$2.5B. Token-weighted (not revenue-weighted) shares account for consumer flat-fee where revenue understates volume."}]
+  },
+  "operative_context_history": []
+}
