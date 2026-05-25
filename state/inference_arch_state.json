@@ -6,7 +6,7 @@
     "last_aggregator_run": "2026-05-25T13:42:25Z",
     "description": "Frontier inference model registry. open_models feeds frontier_kv computation. closed_models excluded from frontier calc (architecture unknown) but Sonnet may reference them in narrative. Auto-updated by src/analysis/dhcr_arch_aggregator.py.",
     "last_run_additions": 0,
-    "last_arch_research_run_at": "2026-05-25T19:27:03Z",
+    "last_arch_research_run_at": "2026-05-25T19:58:41Z",
     "last_arch_research_additions": 1
   },
   "open_models": [
@@ -226,15 +226,18 @@
     }
   ],
   "llm_worker_frontier": {
-    "last_run_at": "2026-05-25T19:27:03Z",
-    "frontier_model_name": "Llama 3.3 70B Instruct",
-    "frontier_model_release_date": "",
-    "arch_family": "unknown",
-    "source_url": "",
-    "source_verified": false,
-    "committed_kv_gb_per_1m": 4.0,
-    "committed_kv_kb_per_token": 4.1943,
-    "floor_applied": true,
+    "last_run_at": "2026-05-25T19:58:41Z",
+    "frontier_model_name": "DeepSeek V3",
+    "frontier_model_release_date": "2024-12-26",
+    "arch_family": "MLA-MoE",
+    "lab": "DeepSeek (deepseek-ai)",
+    "precision_declared": "FP8",
+    "is_moe": true,
+    "source_url": "https://arxiv.org/abs/2412.19437",
+    "source_verified": true,
+    "committed_kv_gb_per_1m": 32.73,
+    "committed_kv_kb_per_token": 34.3199,
+    "floor_applied": false,
     "floor_value_gb_per_1m": 4.0,
     "history": [
       {
@@ -509,6 +512,231 @@
           "target_gb_per_1m": 65.0,
           "tolerance_fraction": 0.4,
           "actual_deviation_fraction": 0.006,
+          "worker_cited_source": "https://arxiv.org/abs/2412.19437",
+          "worker_params": {
+            "num_layers": 61,
+            "mla_kv_lora_rank": 512,
+            "mla_qk_rope_head_dim": 64,
+            "bytes_per_element": 2
+          }
+        }
+      },
+      {
+        "date": "2026-05-25",
+        "frontier_model": "DeepSeek V3",
+        "committed_kv_gb_per_1m": 32.73,
+        "committed_kv_kb_per_token": 34.3199,
+        "floor_applied": false,
+        "path_a_candidates": 7,
+        "all_candidates": {
+          "deepseek v3": {
+            "name": "DeepSeek V3",
+            "release_date": "2024-12-26",
+            "arch_family": "MLA-MoE",
+            "lab": "DeepSeek (deepseek-ai)",
+            "precision_declared": "FP8",
+            "is_moe": true,
+            "kv_gb_per_1m": 32.73,
+            "kv_kb_per_token_computed": 34.3125,
+            "kv_kb_per_token_paper_stated": null,
+            "computed_vs_paper_pct_diff": null,
+            "synthesis_rule": "path_A_only",
+            "source_verified": true,
+            "source_url": "https://arxiv.org/abs/2412.19437",
+            "source_type": "arxiv",
+            "benchmark_presence": [
+              "LiveBench top-30",
+              "Artificial Analysis intelligence index top-30",
+              "lmarena.ai top-30 Hard prompts"
+            ],
+            "candidate_confidence": "high",
+            "notes": "DeepSeek R1 (released 2025-01-20) is identical architecture (same MLA params, same MoE config) trained via RL on V3 base; consolidated as single entry per Part 2 same-architecture rule, using V3 as representative. V3-0324 and V3.5 are also same arch line; V3 (original) used here as it is the production-validated FP8 checkpoint. kv_lora_rank=512 and qk_rope_head_dim=64 sourced from HuggingFace transformers DeepSeek-V3 config defaults matching the official deepseek-ai/DeepSeek-V3 repo."
+          },
+          "llama 4 scout": {
+            "name": "Llama 4 Scout",
+            "release_date": "2025-04-05",
+            "arch_family": "GQA-MoE",
+            "lab": "Meta (Llama family)",
+            "precision_declared": "BF16",
+            "is_moe": true,
+            "kv_gb_per_1m": 366.21,
+            "kv_kb_per_token_computed": 384.0,
+            "kv_kb_per_token_paper_stated": null,
+            "computed_vs_paper_pct_diff": null,
+            "synthesis_rule": "path_A_only",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/docs/transformers/en/model_doc/llama4",
+            "source_type": "huggingface",
+            "benchmark_presence": [
+              "MMLU-Pro top-30",
+              "lmarena.ai top-30 Hard prompts"
+            ],
+            "candidate_confidence": "high",
+            "notes": "Scout released as BF16 weights (lab's validated production precision); 17B active params, 16 experts, 109B total. num_hidden_layers=48, num_key_value_heads=8, head_dim=128 from HuggingFace Llama4 model doc defaults (identical to meta-llama/Llama-4-Scout-17B-16E-Instruct config). Separate entry from Maverick per different expert count and distinct deployment tier."
+          },
+          "llama 4 maverick": {
+            "name": "Llama 4 Maverick",
+            "release_date": "2025-04-05",
+            "arch_family": "GQA-MoE",
+            "lab": "Meta (Llama family)",
+            "precision_declared": "FP8",
+            "is_moe": true,
+            "kv_gb_per_1m": 183.11,
+            "kv_kb_per_token_computed": 192.0,
+            "kv_kb_per_token_paper_stated": null,
+            "computed_vs_paper_pct_diff": null,
+            "synthesis_rule": "path_A_only",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/docs/transformers/en/model_doc/llama4",
+            "source_type": "huggingface",
+            "benchmark_presence": [
+              "MMLU-Pro top-30",
+              "lmarena.ai top-30 Hard prompts",
+              "Artificial Analysis intelligence index top-30"
+            ],
+            "candidate_confidence": "high",
+            "notes": "Maverick released in both BF16 and FP8; FP8 is the lab-validated production serving format (fits single H100 DGX host); 17B active params, 128 experts (+1 shared), 400B total; alternating dense and MoE layers. Same num_layers/kv_heads/head_dim as Scout but different expert count and precision, making it a separate entry."
+          },
+          "qwen3 235b a22b": {
+            "name": "Qwen3-235B-A22B",
+            "release_date": "2025-04-28",
+            "arch_family": "GQA-MoE",
+            "lab": "Alibaba (Qwen family)",
+            "precision_declared": "BF16",
+            "is_moe": true,
+            "kv_gb_per_1m": 179.29,
+            "kv_kb_per_token_computed": 188.0,
+            "kv_kb_per_token_paper_stated": null,
+            "computed_vs_paper_pct_diff": null,
+            "synthesis_rule": "path_A_only",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/Qwen/Qwen3-235B-A22B",
+            "source_type": "huggingface",
+            "benchmark_presence": [
+              "LiveBench top-30",
+              "Artificial Analysis intelligence index top-30",
+              "lmarena.ai top-30 Hard prompts"
+            ],
+            "candidate_confidence": "high",
+            "notes": "num_layers=94, 64 Q heads, 4 KV heads, head_dim=128 confirmed from official Qwen/Qwen3-235B-A22B HuggingFace model card; 235B total, 22B active, 128 experts (8 active per token); BF16 is the lab-released precision; Qwen3-30B-A3B is a different size class and excluded as smaller/lower benchmark rank."
+          },
+          "qwen3 32b": {
+            "name": "Qwen3-32B",
+            "release_date": "2025-04-28",
+            "arch_family": "GQA",
+            "lab": "Alibaba (Qwen family)",
+            "precision_declared": "BF16",
+            "is_moe": false,
+            "kv_gb_per_1m": 244.14,
+            "kv_kb_per_token_computed": 256.0,
+            "kv_kb_per_token_paper_stated": null,
+            "computed_vs_paper_pct_diff": null,
+            "synthesis_rule": "path_A_only",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/Qwen/Qwen3-32B",
+            "source_type": "huggingface",
+            "benchmark_presence": [
+              "MMLU-Pro top-30",
+              "LiveBench top-30",
+              "Artificial Analysis intelligence index top-30"
+            ],
+            "candidate_confidence": "high",
+            "notes": "Dense 32B model; 64 layers, 64 Q heads, 8 KV heads (GQA), head_dim=128 confirmed from apxml.com spec cross-referencing Qwen3 HF config defaults; separate entry from Qwen3-235B-A22B per Part 2 (different num_layers and architecture: dense vs MoE)."
+          },
+          "mistral small 3.1 24b": {
+            "name": "Mistral Small 3.1 24B",
+            "release_date": "2025-03-17",
+            "arch_family": "GQA",
+            "lab": "Mistral AI",
+            "precision_declared": "BF16",
+            "is_moe": false,
+            "kv_gb_per_1m": 305.18,
+            "kv_kb_per_token_computed": 320.0,
+            "kv_kb_per_token_paper_stated": null,
+            "computed_vs_paper_pct_diff": null,
+            "synthesis_rule": "path_A_only",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503",
+            "source_type": "huggingface",
+            "benchmark_presence": [
+              "MMLU-Pro top-30",
+              "Artificial Analysis intelligence index top-30"
+            ],
+            "candidate_confidence": "high",
+            "notes": "Layers=40, num_kv_heads=8, head_dim=128 from NVIDIA NIM model card (Mistral Small 3 / 2501 spec, unchanged in 3.1 architecture) and HuggingFace forum config disclosure; Mistral Small 3.2 (2506) has identical architecture per lab disclosure \u2014 using 3.1 as the most-cited benchmark-present representative; BF16 is the primary release precision (~55 GB GPU RAM per HF page)."
+          },
+          "gemma 3 27b": {
+            "name": "Gemma 3 27B",
+            "release_date": "2025-03-12",
+            "arch_family": "GQA",
+            "lab": "Google (Gemma family)",
+            "precision_declared": "BF16",
+            "is_moe": false,
+            "kv_gb_per_1m": 472.72,
+            "kv_kb_per_token_computed": 496.0,
+            "kv_kb_per_token_paper_stated": null,
+            "computed_vs_paper_pct_diff": null,
+            "synthesis_rule": "path_A_only",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/google/gemma-3-27b-it/discussions/11",
+            "source_type": "huggingface",
+            "benchmark_presence": [
+              "MMLU-Pro top-30",
+              "lmarena.ai top-30 Hard prompts",
+              "Artificial Analysis intelligence index top-30"
+            ],
+            "candidate_confidence": "high",
+            "notes": "num_hidden_layers=62, num_key_value_heads=16, head_dim=128 sourced from config.json dump in google/gemma-3-27b-it HuggingFace discussion thread; model uses 5:1 local-to-global attention ratio which reduces effective long-context KV in practice, but formula is applied uniformly across all 62 layers per Part 3 instructions; BF16 is lab release precision (torch_dtype=bfloat16 in config)."
+          }
+        },
+        "excluded_by_prompt": [
+          {
+            "name": "DeepSeek R1",
+            "reason": "Identical architecture to DeepSeek V3 (same num_layers=61, same MLA params, same MoE config); consolidated into V3 entry per Part 2 same-architecture rule."
+          },
+          {
+            "name": "DeepSeek V3-0324",
+            "reason": "Same architecture as DeepSeek V3 (same MLA/MoE config); consolidated into V3 entry per Part 2 same-architecture rule."
+          },
+          {
+            "name": "Mistral Small 3.2 24B",
+            "reason": "Architecture identical to Mistral Small 3.1 per lab disclosure ('architecture is identical \u2014 migration is a model-identifier swap'); consolidated into Mistral Small 3.1 entry per Part 2 same-architecture rule."
+          },
+          {
+            "name": "Qwen3-30B-A3B",
+            "reason": "Smaller MoE variant in same Qwen3 release; lower benchmark rank than Qwen3-235B-A22B and Qwen3-32B in its class; excluded to avoid redundancy within same release date family where larger variants dominate leaderboards."
+          },
+          {
+            "name": "Llama 4 Behemoth",
+            "reason": "Research-only preview \u2014 no production weights released as of 2026-05-25; fails Part 1 criterion (research-only models with no production weights released)."
+          },
+          {
+            "name": "GLM-4 / GLM-Z1 (Z.ai)",
+            "reason": "No confirmed benchmark presence in MMLU-Pro top-30, LiveBench top-30, Artificial Analysis top-30, or lmarena.ai Hard prompts top-30 for open-weights variants released after 2024-12-01; fails Part 1B benchmark presence criterion."
+          },
+          {
+            "name": "Grok open-weights (xAI)",
+            "reason": "No open-weight model from xAI released between 2024-12-01 and 2026-05-25 confirmed with production weights and top-30 benchmark presence; Grok-3 weights not publicly released as of 2026-05-25."
+          },
+          {
+            "name": "Gemma 3 1B / 4B / 12B",
+            "reason": "Smaller size classes; not in top-30 of relevant benchmarks in competition with frontier models from other labs."
+          },
+          {
+            "name": "Qwen2.5-72B",
+            "reason": "Released before 2024-12-01 cutoff (released September 2024); fails Part 1 date criterion."
+          },
+          {
+            "name": "DeepSeek-R1-Distill-Qwen / Llama variants",
+            "reason": "Fine-tunes of other labs' base models (Qwen2.5 / Llama3 bases); explicitly excluded per Part 1 exclusion criteria."
+          }
+        ],
+        "calibration": {
+          "calibration_status": "passed",
+          "worker_derived_gb_per_1m": 65.46,
+          "target_gb_per_1m": 65.0,
+          "tolerance_fraction": 0.4,
+          "actual_deviation_fraction": 0.007,
           "worker_cited_source": "https://arxiv.org/abs/2412.19437",
           "worker_params": {
             "num_layers": 61,
