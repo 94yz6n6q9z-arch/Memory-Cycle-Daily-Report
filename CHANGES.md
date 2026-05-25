@@ -1,5 +1,106 @@
 # Memory Cycle Brief — Changelog
 
+## v3.8.5 (2026-05-25) — Find the actual frontier (DeepSeek V4 and beyond)
+
+The v3.8.4 production run succeeded but landed on DeepSeek V3 (December 2024)
+as the frontier — 17 months old. DeepSeek V4 was released April 24, 2026
+(four weeks ago) and is the actual current frontier. Investigation found
+three reasons the worker couldn't find or use V4:
+
+1. **Benchmark presence requirement excluded recent releases.** Part 1B
+   required MMLU-Pro / LiveBench / Artificial Analysis / lmarena top-30
+   placement. V4 hadn't accumulated benchmark coverage yet despite being
+   the obvious new frontier from an approved lab.
+
+2. **No formula for V4's novel architecture.** V4 uses DeepSeek Sparse
+   Attention (DSA) and "Manifold-Constrained Hyper-Connections" — neither
+   GQA nor MLA. The prompt's Part 3 only had formulas for GQA and MLA,
+   leaving the worker unable to compute V4's KV even if it found it.
+
+3. **No path to use paper-stated KV values when formulas don't apply.**
+   The V4 technical report states the KV cache is "10% of V3.2 at 1M
+   context" — an authoritative number the framework had no way to consume.
+
+Three targeted fixes plus a bandwidth tune.
+
+### Fix 1 — Bandwidth (default Path A from 16K → 32K, retry capped at 32K)
+
+The v3.8.4 run was reliably making two Path A attempts (first at 16K failed
+JSON extraction, second at 32K succeeded). Wasted ~$1 per run. Now Path A
+calls 32K directly on first attempt. Retry doubling is capped at 32K to
+avoid exceeding Sonnet's practical streaming output limit on subsequent
+retries. Cost per run drops back to ~$1.
+
+### Fix 2 — Priority-by-recency rule in Part 1
+
+Added to Path A prompt Part 1:
+
+> **PRIORITY-BY-RECENCY EXCEPTION:** For each lab in (A), you MUST include
+> their most recent flagship release within the lookback window, EVEN IF
+> benchmark presence in (B) cannot yet be confirmed. Rationale: a model
+> 4-8 weeks old from an approved lab may not yet appear on leaderboards,
+> but the lab-of-origin signal alone is sufficient quality assurance for
+> the latest flagship.
+
+This ensures the framework tracks the actual frontier rather than
+systematically falling back to older models that have had time to be
+benchmarked. The rule includes guidance on identifying "most recent
+flagship" (lab's currently-positioned primary release, not preview/
+experimental/specialized variants) and how to mark such entries
+(confidence "medium" or "low" with explanatory note).
+
+### Fix 3 — Novel architecture handling in Part 3
+
+Added a third architecture-family section after GQA and MLA covering:
+DeepSeek Sparse Attention (DSA), Engram conditional memory, sliding window
+attention, hybrid attention, linear attention variants.
+
+For these architectures, the worker is instructed to:
+1. Use the paper-stated KV value directly (do not compute from scratch)
+2. Set `architecture_family` to `"novel:<short_name>"` (e.g., `"novel:DSA"`)
+3. Set both computed and paper-stated KV fields to the same paper value
+4. Quote the relevant passage in notes with section/figure reference
+
+**Ratio-based claims** are handled explicitly with a worked example. If a
+paper states KV as a ratio vs prior model ("10% of V3.2"), the prompt
+provides reference values for V3/V3.2, Llama 3 70B (BF16 and FP8),
+Qwen3 235B, and shows the derivation:
+
+> Paper claim: "V4-Pro uses 10% of V3.2's KV cache at 1M context"
+> Prior reference: V3.2 ≈ 33 GB/1M
+> Computed: V4-Pro ≈ 33 × 0.10 = 3.3 GB/1M tokens
+
+This makes the framework able to consume papers that state efficiency
+gains relatively rather than absolutely.
+
+### Schema update
+
+`architecture_family` enum extended to allow `"novel:<short_name>"` format.
+Synthesis and state writing already handle this (string passthrough).
+
+### Expected outcome
+
+Worker finds DeepSeek V4 (most recent flagship from approved lab → passes
+priority-by-recency). Computes ~3-4 GB/1M from paper's 10%-of-V3.2 claim.
+Floor at 4.0 GB/1M applies (conservative-high, per design). Committed:
+4.0 GB/1M → R3 raw → R4 market cell (with +1 anticipation premium).
+
+The committed band matches v3.7.4 baseline's speculative 13.3 figure
+(R3 raw / R4 market), but the underlying state finally reflects a real
+verified frontier model with proper provenance, primary-source citation,
+and a path to track future genuinely sub-R3 releases.
+
+### Tests
+
+36 tests pass (33 from v3.8.4 + 3 new for v3.8.5):
+- `test_v3_8_5_retry_max_tokens_capped_at_32k`
+- `test_v3_8_5_path_a_prompt_has_priority_by_recency_rule`
+- `test_v3_8_5_path_a_prompt_has_novel_architecture_section`
+
+### Workflow commit messages
+
+Updated from `v3.8.4` → `v3.8.5` in both workflow YAML files.
+
 ## v3.8.4 (2026-05-25) — Streaming API + FINAL REMINDER prompt block
 
 The v3.8.3 production run failed with two cascading errors that masked each

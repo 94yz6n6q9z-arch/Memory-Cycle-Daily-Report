@@ -222,13 +222,17 @@ def _call_claude_with_search(prompt: str, max_tokens: int = 16384) -> dict:
     """Call Claude with web_search and parse JSON. One automatic retry at 2× tokens.
 
     Inherits all v3.7.2 reliability patterns:
-      - Centralized JSON-parse retry with doubled max_tokens.
+      - Centralized JSON-parse retry with doubled max_tokens, capped at 32K.
       - Raises on second failure; caller's per-path try/except handles it.
+
+    v3.8.5 — retry tokens capped at 32768. Doubling above this point exceeds
+    Sonnet's practical streaming output limit and the retry would itself fail
+    with a payload size error rather than the JSON parsing it was meant to fix.
     """
     try:
         return _invoke_and_extract(prompt, max_tokens)
     except (json.JSONDecodeError, ValueError) as first_err:
-        retry_tokens = max_tokens * 2
+        retry_tokens = min(max_tokens * 2, 32768)
         logger.warning(
             f"JSON extraction failed at max_tokens={max_tokens}: "
             f"{type(first_err).__name__}: {first_err}. "
@@ -328,6 +332,23 @@ ONLY IF it meets BOTH of these criteria:
   picked up yet is too new/experimental. A benchmark-listed model from
   a non-listed lab is likely a fine-tune, not architecturally novel.
 
+PRIORITY-BY-RECENCY EXCEPTION (added in v3.8.5):
+  For each lab in (A), you MUST include their most recent flagship release
+  within the lookback window, EVEN IF benchmark presence in (B) cannot yet
+  be confirmed. Rationale: a model 4-8 weeks old from an approved lab may
+  not yet appear on leaderboards, but the lab-of-origin signal alone is
+  sufficient quality assurance for the latest flagship. Without this rule,
+  the worker systematically excludes the actual frontier in favor of older
+  models that have had time to be benchmarked.
+
+  How to identify "most recent flagship": the model the lab itself currently
+  positions as its primary general-purpose release (largest size or main
+  named version), not preview/experimental/specialized variants.
+
+  Example: if Lab X released "X-Flagship-v5" 30 days ago with a technical
+  report on arxiv, INCLUDE it with confidence "medium" or "low" noting
+  "benchmark presence pending — included via priority-by-recency rule".
+
 EXPLICITLY EXCLUDED:
   - Closed-source models (GPT, Claude, Gemini API-only, Grok-API-only)
   - Fine-tunes of other labs' base models (e.g. Nous-Hermes, WizardLM)
@@ -414,6 +435,59 @@ labelled "Multi-head Latent Attention"):
   point is dramatic KV reduction. If your MLA computation is not in this
   efficiency neighborhood, recheck your inputs.
 
+──────────────────────────────────────────────────────────────────────
+NOVEL ARCHITECTURES (added in v3.8.5):
+
+Some recent models use attention patterns NOT covered by the GQA or MLA
+formulas above. Examples:
+  - DeepSeek Sparse Attention (DSA) — used in DeepSeek V4 (April 2026)
+  - Engram conditional memory
+  - Sliding window attention
+  - Hybrid attention (e.g., alternating dense and sparse layers)
+  - Linear attention variants
+
+For these, the GQA/MLA formulas do NOT apply. Instead:
+
+  1. Use the paper-stated KV-per-token (or KV-per-1M-tokens) value DIRECTLY
+     from the technical report. Do not attempt to compute from scratch.
+
+  2. Set architecture_family to "novel:<short_name>" (e.g., "novel:DSA",
+     "novel:Engram", "novel:hybrid").
+
+  3. Set BOTH kv_kb_per_token_computed AND kv_kb_per_token_paper_stated
+     to the same paper-stated value. Set computed_vs_paper_pct_diff = 0.
+
+  4. In notes, quote the relevant passage from the paper (e.g., "Paper
+     states: 'V4-Pro KV cache is 10% of V3.2 at 1M context'") and cite
+     section/figure number.
+
+RATIO-BASED CLAIMS:
+
+  If the paper expresses KV as a RATIO vs a prior model (e.g., "10% of
+  V3.2's KV cache"), compute the absolute value:
+
+    1. Find the prior model's KV per 1M tokens. Reference points:
+       - DeepSeek V3 / V3.2: ~33 GB/1M tokens (MLA + FP8)
+       - Llama 3 70B at BF16: ~305 GB/1M tokens
+       - Llama 3 70B at FP8: ~153 GB/1M tokens
+       - Qwen3 235B MLA + FP8: ~53 GB/1M tokens
+
+    2. Apply the ratio: new_kv = prior_kv × ratio
+
+    3. WORKED EXAMPLE — DeepSeek V4 at FP8:
+       Paper claim: "V4-Pro uses 10% of V3.2's KV cache at 1M context"
+       Prior reference: V3.2 ≈ 33 GB/1M
+       Computed: V4-Pro ≈ 33 × 0.10 = 3.3 GB/1M tokens
+       (which converts to ~3.5 KB/token at FP8)
+
+    4. Document the chain in notes: "Derived from paper ratio claim
+       (V4 = 10% of V3.2). Using V3.2 baseline of 33 GB/1M, V4 ≈ 3.3 GB/1M."
+
+A novel-architecture candidate with a clear paper-stated KV value is
+preferable to NOT including the model — the framework's whole purpose
+is tracking the efficiency frontier, which is where novel architectures
+appear first.
+
 ═══════════════════════════════════════════════════════════════════════════
 PART 4 — PRECISION (bytes_per_element)
 ═══════════════════════════════════════════════════════════════════════════
@@ -476,7 +550,7 @@ or after. No markdown fences. JSON only.
       "name": "<canonical model name as the lab uses it>",
       "lab": "<lab name from Part 1 list>",
       "release_date": "<YYYY-MM-DD>",
-      "architecture_family": "GQA" | "GQA-MoE" | "MLA" | "MLA-MoE" | "MHA",
+      "architecture_family": "GQA" | "GQA-MoE" | "MLA" | "MLA-MoE" | "MHA" | "novel:<short_name>",
       "num_layers": <int>,
       "arch_params": {{
         "num_kv_heads": <int or null>,
@@ -771,7 +845,7 @@ def research_inference_arch() -> dict:
         path_a_result: dict = {}
         try:
             logger.info("Running Path A: vendor disclosures...")
-            path_a_result = _call_claude_with_search(_build_path_a_vendor_prompt())
+            path_a_result = _call_claude_with_search(_build_path_a_vendor_prompt(), max_tokens=32768)
             n_a = len(path_a_result.get("candidates") or [])
             logger.info(f"  Path A returned {n_a} candidate(s)")
         except Exception as e:

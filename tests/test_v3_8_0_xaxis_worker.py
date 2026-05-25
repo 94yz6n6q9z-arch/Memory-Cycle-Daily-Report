@@ -554,3 +554,38 @@ def test_v3_8_4_path_a_prompt_has_final_reminder():
     prompt = _build_path_a_vendor_prompt()
     assert "FINAL REMINDER" in prompt
     assert "VERY FIRST output character must be the opening brace" in prompt
+
+
+# ── v3.8.5 tests ─────────────────────────────────────────────────────────────
+
+def test_v3_8_5_retry_max_tokens_capped_at_32k():
+    """Retry doubling must cap at 32K to avoid exceeding Sonnet streaming limit."""
+    import inspect
+    from src.data.inference_arch_llm_research import _call_claude_with_search
+    src = inspect.getsource(_call_claude_with_search)
+    assert "min(max_tokens * 2, 32768)" in src, (
+        "Retry max_tokens must be capped at 32768"
+    )
+
+
+def test_v3_8_5_path_a_prompt_has_priority_by_recency_rule():
+    """Part 1 must include the priority-by-recency exception that overrides
+    benchmark presence requirement for the latest flagship from each lab."""
+    from src.data.inference_arch_llm_research import _build_path_a_vendor_prompt
+    prompt = _build_path_a_vendor_prompt()
+    assert "PRIORITY-BY-RECENCY EXCEPTION" in prompt
+    assert "most recent flagship release" in prompt
+    assert "EVEN IF benchmark presence" in prompt
+
+
+def test_v3_8_5_path_a_prompt_has_novel_architecture_section():
+    """Part 3 must include novel architecture handling for DSA/Engram/etc.,
+    with the ratio-based KV derivation worked example."""
+    from src.data.inference_arch_llm_research import _build_path_a_vendor_prompt
+    prompt = _build_path_a_vendor_prompt()
+    assert "NOVEL ARCHITECTURES" in prompt
+    assert "DeepSeek Sparse Attention" in prompt or "DSA" in prompt
+    assert "novel:<short_name>" in prompt or 'novel:DSA' in prompt
+    # Ratio-based derivation must be documented
+    assert "RATIO-BASED CLAIMS" in prompt
+    assert "10%" in prompt and "V3.2" in prompt  # worked example
