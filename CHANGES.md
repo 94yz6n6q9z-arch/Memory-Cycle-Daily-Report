@@ -1,5 +1,37 @@
 # Memory Cycle Brief — Changelog
 
+## v3.8.2 (2026-05-25) — Remove URL verification gate from frontier selection
+
+Single targeted fix to `_synthesize_candidates()` in the X-axis worker.
+
+**Root cause.** The first successful worker run committed DeepSeek-R1 (January
+2025, 66.76 GB/1M) — an 18-month-old model — as the frontier. The URL
+verification filter was gating frontier selection on `source_verified = True`,
+which excluded any candidate whose source URL contained a placeholder arxiv ID.
+This caused the selector to skip newer, more efficient (lower-KV) candidates
+that the worker found through real research but couldn't link to a published
+paper, falling back to the oldest confirmed model in the candidate set.
+
+**The design error.** The placeholder URL filter was originally added to protect
+against the hand-curated `open_models` catalog's speculative entries (DeepSeek
+V4 estimated, DeepSeek V3.5 with fake URLs). But the LLM worker does its own
+research from scratch — Path A has to find real architecture parameters, Path B
+has to find real economic data. If the worker found a candidate, it found it
+through genuine research. Excluding it from selection because the arxiv paper
+isn't published yet defeats the purpose of tracking the efficiency frontier.
+
+**Fix.** In `_synthesize_candidates()`:
+- Removed the `verified_candidates` filter from frontier selection
+- Frontier is now `argmin(kv_gb_per_1m)` across ALL candidates within
+  plausibility bounds
+- `source_verified` field retained in the committed state for provenance and
+  audit — but it does not gate selection
+
+**Updated test.** `test_unverified_candidate_excluded_when_verified_exists`
+renamed to `test_all_candidates_participate_regardless_of_url_verification`
+and inverted: now asserts that Model B (10 GB/1M, placeholder URL) beats
+Model A (30 GB/1M, verified URL) in frontier selection.
+
 ## v3.8.1 (2026-05-25) — Calibration target fix (FP16, 65 GB/1M)
 
 Single targeted fix to the X-axis calibration back-test. No other changes.

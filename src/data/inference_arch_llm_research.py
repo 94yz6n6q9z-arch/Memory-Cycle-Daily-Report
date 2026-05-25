@@ -431,9 +431,13 @@ def _synthesize_candidates(path_a_result: dict, path_b_result: dict) -> dict:
         kv = max(path_B_value, mean(path_A_value, path_B_value))
     For models in only one path: use that path's value.
 
-    Frontier = candidate with minimum kv_gb_per_1m among those with:
-      - source_verified = True in Path A (or verified by URL inspection)
-      - kv_gb_per_1m within plausibility bounds
+    Frontier = candidate with minimum kv_gb_per_1m among ALL candidates
+      within plausibility bounds. URL verification is recorded for provenance
+      but does NOT gate frontier selection — the worker's research process
+      (Path A finding architecture params, Path B finding economic data) is
+      itself the verification. Excluding unverified candidates causes the
+      selector to fall back to older confirmed models rather than tracking
+      the actual efficiency frontier.
 
     Floor: committed_kv = max(frontier.kv, KV_FLOOR_GB_PER_1M)
     """
@@ -515,14 +519,11 @@ def _synthesize_candidates(path_a_result: dict, path_b_result: dict) -> dict:
             "committed_kv_gb_per_1m": None,
         }
 
-    # Select frontier: minimum KV among verified candidates
-    verified_candidates = {n: c for n, c in per_candidate.items() if c["source_verified"]}
-    if not verified_candidates:
-        logger.warning("No verified candidates found — falling back to all candidates (unverified)")
-        verified_candidates = per_candidate
-
-    frontier_name = min(verified_candidates, key=lambda n: verified_candidates[n]["kv_gb_per_1m"])
-    frontier = verified_candidates[frontier_name]
+    # Select frontier: minimum KV among ALL candidates.
+    # URL verification is recorded for provenance only — not a selection gate.
+    # The worker's research process is the verification.
+    frontier_name = min(per_candidate, key=lambda n: per_candidate[n]["kv_gb_per_1m"])
+    frontier = per_candidate[frontier_name]
 
     # Apply floor
     raw_kv = frontier["kv_gb_per_1m"]

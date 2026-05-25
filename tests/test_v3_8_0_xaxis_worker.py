@@ -155,13 +155,19 @@ def test_placeholder_url_detected():
     assert _is_placeholder_url("") is True
 
 
-def test_unverified_candidate_excluded_when_verified_exists(tmp_path):
-    """If one candidate has a real URL and another has a placeholder, pick the real one."""
+def test_all_candidates_participate_regardless_of_url_verification(tmp_path):
+    """All worker-found candidates must participate in frontier selection.
+
+    URL verification is provenance only — not a selection gate. The worker's
+    research process (Path A finding architecture params, Path B finding
+    economic data) is itself the verification. Excluding unverified candidates
+    causes fallback to older confirmed models rather than tracking the frontier.
+    """
     state_file = tmp_path / "inference_arch_state.json"
     state_file.write_text(json.dumps({"_metadata": {}, "open_models": []}))
 
-    # Model A: 30 GB/1M, verified URL  ← should be selected (lowest verified KV)
-    # Model B: 10 GB/1M, placeholder URL ← should be excluded from verified set
+    # Model A: 30 GB/1M, verified URL
+    # Model B: 10 GB/1M, placeholder URL  ← should WIN (lower KV = frontier)
     path_a = {
         "candidates": [
             {
@@ -192,7 +198,7 @@ def test_unverified_candidate_excluded_when_verified_exists(tmp_path):
             },
         ]
     }
-    path_b = {"candidates": []}  # Path B has nothing
+    path_b = {"candidates": []}
 
     with (
         patch("src.data.inference_arch_llm_research.ARCH_STATE_FILE", state_file),
@@ -210,8 +216,9 @@ def test_unverified_candidate_excluded_when_verified_exists(tmp_path):
 
     reloaded = json.loads(state_file.read_text())
     worker = reloaded.get("llm_worker_frontier", {})
-    assert worker.get("frontier_model_name") == "Model A", (
-        f"Expected Model A (verified, 30 GB/1M) to be selected, got {worker.get('frontier_model_name')}"
+    assert worker.get("frontier_model_name") == "Model B", (
+        f"Expected Model B (10 GB/1M, lower KV = efficiency frontier) to be selected "
+        f"regardless of placeholder URL, got {worker.get('frontier_model_name')}"
     )
 
 
