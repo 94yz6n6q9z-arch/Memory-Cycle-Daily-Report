@@ -198,7 +198,6 @@ def test_all_candidates_participate_regardless_of_url_verification(tmp_path):
             },
         ]
     }
-    path_b = {"candidates": []}
 
     with (
         patch("src.data.inference_arch_llm_research.ARCH_STATE_FILE", state_file),
@@ -208,7 +207,7 @@ def test_all_candidates_participate_regardless_of_url_verification(tmp_path):
         ),
         patch(
             "src.data.inference_arch_llm_research._call_claude_with_search",
-            side_effect=[path_a, path_b],
+            side_effect=[path_a],
         ),
     ):
         from src.data.inference_arch_llm_research import research_inference_arch
@@ -225,12 +224,12 @@ def test_all_candidates_participate_regardless_of_url_verification(tmp_path):
 # ── Floor application ──────────────────────────────────────────────────────────
 
 def test_floor_applied_when_kv_below_threshold(tmp_path):
-    """When best candidate KV < 4.0 GB/1M, committed value must be 4.0."""
+    """When best candidate KV < 4.0 GB/1M (but above plausibility floor of 1.0),
+    committed value must be 4.0."""
     state_file = tmp_path / "inference_arch_state.json"
     state_file.write_text(json.dumps({"_metadata": {}, "open_models": []}))
 
-    path_a = _minimal_path_a("LowKV Model", kv=1.5, verified=True)
-    path_b = _minimal_path_b("LowKV Model", kv=2.0)
+    path_a = _minimal_path_a("LowKV Model", kv=2.0, verified=True)
 
     with (
         patch("src.data.inference_arch_llm_research.ARCH_STATE_FILE", state_file),
@@ -240,7 +239,7 @@ def test_floor_applied_when_kv_below_threshold(tmp_path):
         ),
         patch(
             "src.data.inference_arch_llm_research._call_claude_with_search",
-            side_effect=[path_a, path_b],
+            side_effect=[path_a],
         ),
     ):
         from src.data.inference_arch_llm_research import research_inference_arch
@@ -253,12 +252,14 @@ def test_floor_applied_when_kv_below_threshold(tmp_path):
 
 
 def test_floor_not_applied_when_kv_above_threshold(tmp_path):
-    """When best candidate KV >= 4.0 GB/1M, committed value equals raw KV."""
+    """When best candidate KV >= 4.0 GB/1M, committed value equals raw KV.
+
+    v3.8.3 — single-path synthesis: result is just Path A's value.
+    """
     state_file = tmp_path / "inference_arch_state.json"
     state_file.write_text(json.dumps({"_metadata": {}, "open_models": []}))
 
-    path_a = _minimal_path_a("HighKV Model", kv=32.0, verified=True)
-    path_b = _minimal_path_b("HighKV Model", kv=35.0)
+    path_a = _minimal_path_a("HighKV Model", kv=35.0, verified=True)
 
     with (
         patch("src.data.inference_arch_llm_research.ARCH_STATE_FILE", state_file),
@@ -268,7 +269,7 @@ def test_floor_not_applied_when_kv_above_threshold(tmp_path):
         ),
         patch(
             "src.data.inference_arch_llm_research._call_claude_with_search",
-            side_effect=[path_a, path_b],
+            side_effect=[path_a],
         ),
     ):
         from src.data.inference_arch_llm_research import research_inference_arch
@@ -277,40 +278,45 @@ def test_floor_not_applied_when_kv_above_threshold(tmp_path):
     reloaded = json.loads(state_file.read_text())
     worker = reloaded.get("llm_worker_frontier", {})
     assert worker.get("floor_applied") is False
-    # max(path_B=35, mean(32,35)=33.5) = 35.0
     assert worker.get("committed_kv_gb_per_1m") == 35.0
 
 
-# ── Synthesis path-B max-privilege ────────────────────────────────────────────
+# ── Single-path synthesis behavior (v3.8.3) ──────────────────────────────────
 
-def test_synthesis_prefers_path_b_over_mean():
-    """max(path_B, mean(A,B)) must give path_B when path_B > mean."""
-    from src.data.inference_arch_llm_research import _synthesize_candidates
-
-    path_a = _minimal_path_a("TestModel", kv=10.0, verified=True)
-    path_b = _minimal_path_b("TestModel", kv=30.0)  # B > mean(10,30)=20 → B wins
-
-    result = _synthesize_candidates(path_a, path_b)
-    assert result["status"] == "committed"
-    # max(30, mean(10,30)) = max(30, 20) = 30
-    assert result["committed_kv_gb_per_1m"] == 30.0
-
-
-def test_synthesis_uses_mean_when_path_b_below():
-    """max(path_B, mean(A,B)) must give mean when path_B < mean."""
+def test_synthesis_passes_through_path_a_value():
+    """v3.8.3 single-path synthesis: committed value equals Path A's value
+    (subject to plausibility filter and floor)."""
     from src.data.inference_arch_llm_research import _synthesize_candidates
 
     path_a = _minimal_path_a("TestModel", kv=30.0, verified=True)
-    path_b = _minimal_path_b("TestModel", kv=10.0)  # B < mean(30,10)=20 → mean wins
 
-    result = _synthesize_candidates(path_a, path_b)
+    result = _synthesize_candidates(path_a)
     assert result["status"] == "committed"
-    # max(10, mean(30,10)) = max(10, 20) = 20
-    assert result["committed_kv_gb_per_1m"] == 20.0
+    assert result["committed_kv_gb_per_1m"] == 30.0
+    assert result["synthesis_rule"] == "path_A_only"
 
 
-def test_synthesis_selects_minimum_kv_among_verified():
-    """With multiple verified candidates, the one with the lowest KV must be selected."""
+def test_synthesis_filters_implausibly_low_values():
+    """v3.8.3 — values < 1.0 GB/1M (new plausibility floor) are excluded."""
+    from src.data.inference_arch_llm_research import _synthesize_candidates
+
+    path_a = {
+        "candidates": [
+            {**_minimal_path_a("RealisticModel", kv=30.0)["candidates"][0]},
+            {**_minimal_path_a("ImplausibleModel", kv=0.05)["candidates"][0],
+             "name": "ImplausibleModel"},
+        ]
+    }
+
+    result = _synthesize_candidates(path_a)
+    assert result["status"] == "committed"
+    # ImplausibleModel filtered → RealisticModel selected
+    assert result["frontier_model_name"] == "RealisticModel"
+
+
+def test_synthesis_selects_minimum_kv_across_all_candidates():
+    """With multiple candidates, the one with the lowest KV is selected
+    regardless of source URL verification status (v3.8.2 behavior preserved)."""
     from src.data.inference_arch_llm_research import _synthesize_candidates
 
     path_a = {
@@ -320,9 +326,8 @@ def test_synthesis_selects_minimum_kv_among_verified():
              "name": "ModelB", "source_url": "https://arxiv.org/abs/2501.11111"},
         ]
     }
-    path_b = {"candidates": []}
 
-    result = _synthesize_candidates(path_a, path_b)
+    result = _synthesize_candidates(path_a)
     assert result["status"] == "committed"
     assert result["frontier_model_name"] == "ModelB"  # 10.0 < 30.0
 

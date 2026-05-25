@@ -1,5 +1,86 @@
 # Memory Cycle Brief — Changelog
 
+## v3.8.3 (2026-05-25) — Rigorous Path A prompt + drop Path B
+
+The production run that committed Llama 3.3 70B at floor (4.0 GB/1M) revealed
+two compounding problems: Path B's economic triangulation was returning
+implausible <0.1 GB/1M values for multiple candidates (the model giving up
+rather than producing real estimates), and Path A was underspecified enough
+that it returned wrong KV values for the wrong models.
+
+### Path A — fully rewritten prompt (Parts 1-6, ~4× the length)
+
+The new prompt makes implicit assumptions explicit:
+
+- **Part 1: candidate filter.** Lab-of-origin list (DeepSeek, Meta, Alibaba,
+  Mistral, Z.ai, xAI, Google-Gemma, Anthropic-research) AND benchmark presence
+  (MMLU-Pro / LiveBench / Artificial Analysis / lmarena top-30). Both required.
+  Explicit exclusions: closed-source, fine-tunes, quantized redistributions,
+  research-only, vision-only.
+
+- **Part 2: variant handling.** Same architecture → one entry. Different sizes
+  → separate entries. Different precisions → use lowest the lab itself validates.
+  No more "DeepSeek V3, V3-0324, V3.5" expanding into three near-identical rows.
+
+- **Part 3: formulas with worked numeric examples.** Both GQA (Llama 3 70B at
+  BF16 → 305 GB/1M, at FP8 → 152 GB/1M) and MLA (DeepSeek V3 at FP8 → 33 GB/1M).
+  Explicit rule that MoE does NOT multiply KV by experts — KV is computed once
+  per token before routing.
+
+- **Part 4: precision.** Use serving precision declared by the lab. BF16 = 2,
+  FP8 = 1, INT4 = 0.5. Don't adopt FP8 unless the lab demonstrably trained or
+  fine-tuned at FP8.
+
+- **Part 5: research process.** Primary source preference order (arxiv → HF
+  model card → lab blog → GitHub config). Paper-stated-vs-computed cross-check
+  with confidence buckets. "If you can't find primary-source params, INCLUDE
+  with nulls and a note — do NOT guess."
+
+- **Part 6: output schema.** Adds `lab`, `precision_declared`, `is_moe`,
+  `kv_kb_per_token_paper_stated`, `computed_vs_paper_pct_diff`,
+  `benchmark_presence`, `notes`, and a `candidates_considered_but_excluded`
+  section so the worker reports its filtering decisions for audit.
+
+### Path B removed
+
+Economic triangulation requires cost-curve-at-different-context-lengths data
+that providers do not consistently disclose. In production, Path B returned
+implausible values (<0.1 GB/1M) for half its candidates and offered no useful
+cross-check on the others. The X-axis question (KV bytes per token from
+architecture) is precisely answered by primary sources — Path A with the new
+prompt is the authoritative path. Removing Path B drops one LLM call per run
+(~$0.50 saved) with no information loss.
+
+### Plausibility floor raised
+
+`MIN_PLAUSIBLE_KV_GB` raised from 0.1 to 1.0 GB/1M. The most efficient real
+architecture (DeepSeek V3 MLA at FP8) is ~33 GB/1M. Anything below 1.0 is
+the model failing, not a real measurement.
+
+### Synthesis simplified
+
+`_synthesize_candidates()` now takes one argument (Path A result) instead of
+two. Behavior: plausibility filter → min-KV across all candidates → floor.
+URL verification is still recorded for provenance but does not gate selection
+(v3.8.2 behavior preserved).
+
+### State schema additions
+
+`llm_worker_frontier` now records: `lab`, `precision_declared`, `is_moe`,
+plus an `excluded_by_prompt` history field listing models the prompt's
+Part 1 filter rejected and why. This makes the worker's filtering decisions
+auditable.
+
+### Cost
+
+2 LLM calls per run (calibration + Path A) ≈ $1/run × 4 runs/year ≈ $4/year.
+
+### Tests
+
+31 tests pass (unchanged count — 2 path-B-specific tests removed, 2 new
+single-path tests added). All path_b mocks in test setups updated to
+single-argument synthesis signature.
+
 ## v3.8.2 (2026-05-25) — Remove URL verification gate from frontier selection
 
 Single targeted fix to `_synthesize_candidates()` in the X-axis worker.

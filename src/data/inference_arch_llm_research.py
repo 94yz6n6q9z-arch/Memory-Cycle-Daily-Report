@@ -15,17 +15,17 @@ Architecture:
     parameters (MLA or GQA), compute KV/1M per model using dhcr.py formula.
     Return a list of candidates with computed KV values and verified source URLs.
 
-  Path B — economic triangulation:
-    For the same candidate models, reverse-engineer KV-per-token from disclosed
-    inference cost curves (cost at short vs long context), GPU memory consumption
-    per concurrent request, and serving throughput benchmarks.
+    The prompt (Parts 1-6 inside _build_path_a_vendor_prompt) is intentionally
+    rigorous: explicit lab-of-origin filter, explicit benchmark presence filter,
+    variant collapsing rules, MoE handling rule (KV does NOT multiply by experts),
+    paper-stated-vs-computed cross-check, worked numeric examples for both GQA
+    and MLA, and explicit "include with nulls if you can't find params" so the
+    worker tells us what's missing rather than fabricating values.
 
 Synthesis (in Python, not via LLM):
-  For each candidate present in both paths:
-      kv_per_1m = max(path_B_economic, mean(path_A, path_B))
-  For candidates only in one path: use that path's value.
-  Frontier = candidate with min kv_per_1m WHERE source_url is verified
-             (no placeholder arxiv IDs — strings matching /\\d{4}\\.XXXXX/).
+  Frontier = candidate with min kv_gb_per_1m within plausibility bounds
+             [MIN_PLAUSIBLE_KV_GB, MAX_PLAUSIBLE_KV_GB].
+  URL verification is recorded for provenance but does NOT gate selection.
   committed_kv = max(frontier.kv_per_1m, KV_FLOOR_GB_PER_1M)
 
 Selection criterion — Option A (most efficient confirmed open-source model):
@@ -51,8 +51,14 @@ State output:
   dhcr.py:compute_frontier_kv() checks llm_worker_frontier first and falls
   back to open_models only when the worker key is absent.
 
-Cost: 3 LLM calls per run (calibration + Path A + Path B) ≈ $1.50/run
-  × 4 runs/year ≈ $6/year (~€5.5).
+v3.8.3 history:
+  - Path B (economic triangulation) was dropped. In production it returned
+    implausible <0.1 GB/1M values for multiple candidates — providers do not
+    consistently disclose the cost-curve-vs-context-length data needed for
+    triangulation. Path A with the rigorous prompt is the authoritative path.
+  - Plausibility floor raised from 0.1 to 1.0 GB/1M.
+
+Cost: 2 LLM calls per run (calibration + Path A) ≈ $1/run × 4 runs/year ≈ $4/year.
   Staleness guard (60 days) prevents cost multiplication from repeated
   manual workflow_dispatch triggers.
 """
@@ -99,9 +105,12 @@ CALIBRATION_MODEL_NAME = "DeepSeek V3"
 KV_FLOOR_GB_PER_1M = 4.0
 
 # Plausibility bounds: reject individual path values outside this range.
-# <0.1 GB/1M is physically impossible for any plausible attention architecture.
+# <1.0 GB/1M is implausible for any current frontier model (DeepSeek V3 at
+# FP8 with MLA — the most efficient real architecture — is ~33 GB/1M).
+# Sub-1 GB/1M values in production runs indicated the model giving up rather
+# than producing a real estimate.
 # >500 GB/1M would require thousands of layers at FP32 — clearly garbage.
-MIN_PLAUSIBLE_KV_GB = 0.1
+MIN_PLAUSIBLE_KV_GB = 1.0
 MAX_PLAUSIBLE_KV_GB = 500.0
 
 # Candidate lookback window: how many months back to search for frontier models.
@@ -277,143 +286,225 @@ def _build_path_a_vendor_prompt() -> str:
     cutoff = date.today().isoformat()
     from datetime import timedelta
     lookback_date = (date.today() - timedelta(days=CANDIDATE_LOOKBACK_MONTHS * 30)).isoformat()
-    return f"""You are researching for an HBM investment analysis framework. Today is {cutoff}.
+    return f"""You are researching for a quantitative HBM investment analysis framework.
+Today is {cutoff}. Your output drives a financial model — incorrect values
+flow directly into investment decisions. Precision matters more than coverage.
 
-YOUR TASK: Identify frontier open-source language models released between {lookback_date}
-and {cutoff}, and compute their KV cache footprint (GB per 1M tokens of context)
-from publicly disclosed architecture parameters.
+═══════════════════════════════════════════════════════════════════════════
+PART 1 — WHAT YOU ARE LOOKING FOR
+═══════════════════════════════════════════════════════════════════════════
 
-DEFINITION: "frontier open-source" means the model weights are publicly released
-(not API-only) and the model is competitive with or exceeds the capability of
-closed models at its size class. Focus on the most architecturally significant
-releases — not every fine-tune or minor variant.
+Identify "frontier open-source language models" released between {lookback_date}
+and {cutoff}. A model qualifies as a frontier open-source candidate if AND
+ONLY IF it meets BOTH of these criteria:
 
-ARCHITECTURE FORMULAS:
+  (A) LAB OF ORIGIN. The model comes from one of these labs that have shipped
+      architecturally significant work in the last 24 months:
+        - DeepSeek (deepseek-ai)
+        - Meta (Llama family)
+        - Alibaba (Qwen family)
+        - Mistral AI
+        - Z.ai (GLM family, formerly Zhipu)
+        - xAI (Grok open-weights releases only)
+        - Google (Gemma family — open-weights only, NOT Gemini)
+        - Anthropic research releases (open-weights only, currently none)
 
-For GQA-class models (standard grouped-query attention):
+  (B) BENCHMARK PRESENCE. The model appears in at least one of:
+        - MMLU-Pro top-30 in its size class (e.g. <100B params, or MoE)
+        - LiveBench top-30 overall
+        - Artificial Analysis intelligence index top-30
+        - lmarena.ai top-30 in Hard prompts category
+
+  Both criteria must be met. A lab-of-origin model that no benchmark has
+  picked up yet is too new/experimental. A benchmark-listed model from
+  a non-listed lab is likely a fine-tune, not architecturally novel.
+
+EXPLICITLY EXCLUDED:
+  - Closed-source models (GPT, Claude, Gemini API-only, Grok-API-only)
+  - Fine-tunes of other labs' base models (e.g. Nous-Hermes, WizardLM)
+  - Quantized redistributions (e.g. Unsloth GGUFs of Llama)
+  - Models older than {lookback_date}
+  - Research-only models with no production weights released
+  - Vision/multimodal-only models (text inference is the HBM driver)
+
+═══════════════════════════════════════════════════════════════════════════
+PART 2 — VARIANT HANDLING
+═══════════════════════════════════════════════════════════════════════════
+
+A "model family" can have multiple variants. Apply these rules:
+
+  - SAME ARCHITECTURE (same num_layers, same KV head config, same precision):
+    Pick ONE representative. Use the most-cited or most-deployed variant.
+    Example: DeepSeek V3, V3-0324, V3.5 → ONE entry (use "DeepSeek V3.5"
+    as the latest representative of the V3 architecture line).
+
+  - DIFFERENT SIZES (different num_layers): SEPARATE entries.
+    Example: Llama 4 Scout (small) and Llama 4 Maverick (large) → TWO entries.
+
+  - DIFFERENT PRECISIONS published by the same lab for the same arch:
+    Use the LOWEST-PRECISION variant the lab itself validates as production
+    (typically FP8 if published, otherwise BF16). Do NOT use community
+    INT4/INT8 quantizations unless the lab itself published them.
+
+═══════════════════════════════════════════════════════════════════════════
+PART 3 — KV CACHE FORMULAS (this is what you compute, per candidate)
+═══════════════════════════════════════════════════════════════════════════
+
+The KV cache stores per-token key and value tensors across all layers.
+At inference, KV grows linearly with context length. We compute KV per
+1 million tokens of context, in gigabytes.
+
+CRITICAL: For MoE models, KV cache is computed ONCE per token before
+expert routing. KV does NOT multiply by number of experts. The MoE
+routing happens AFTER KV is written. Use the SHARED attention block's
+parameters, not "total params" or "active params" arithmetic.
+
+──────────────────────────────────────────────────────────────────────
+GQA / GQA-MoE (most Llama, Mistral, Qwen2.5, Gemma):
+
   kv_bytes_per_token = 2 × num_layers × num_kv_heads × head_dim × bytes_per_element
-  kv_kb_per_token    = kv_bytes_per_token / 1024
-  kv_gb_per_1m_tokens = kv_kb_per_token × 1,000,000 / 1024 / 1024
 
-For MLA-class models (DeepSeek Multi-head Latent Attention):
+  Where:
+    num_layers       = transformer decoder layer count
+    num_kv_heads     = NUMBER OF KEY-VALUE HEADS (the GQA group count,
+                       NOT the total attention heads). For pure MHA,
+                       num_kv_heads = num_attention_heads.
+    head_dim         = hidden_size / num_attention_heads (often 128)
+    bytes_per_element: see Part 4
+
+  WORKED EXAMPLE — Llama 3 70B at BF16:
+    num_layers = 80, num_kv_heads = 8, head_dim = 128, bytes = 2
+    kv_bytes = 2 × 80 × 8 × 128 × 2 = 327,680 bytes per token
+    kv_kb   = 327,680 / 1024 = 320 KB per token
+    kv_gb_per_1m = 320 × 1,000,000 / 1024 / 1024 = 305.18 GB per 1M tokens
+
+  WORKED EXAMPLE — Llama 3 70B at FP8 (if the lab published FP8):
+    Same architecture, bytes = 1
+    kv_bytes = 2 × 80 × 8 × 128 × 1 = 163,840 bytes per token
+    kv_gb_per_1m = 152.59 GB per 1M tokens
+
+──────────────────────────────────────────────────────────────────────
+MLA / MLA-MoE (DeepSeek V2/V3/V3.5, Qwen3 with MLA, anything explicitly
+labelled "Multi-head Latent Attention"):
+
   kv_bytes_per_token = num_layers × (mla_kv_lora_rank + mla_qk_rope_head_dim) × bytes_per_element
-  kv_kb_per_token    = kv_bytes_per_token / 1024
-  kv_gb_per_1m_tokens = kv_kb_per_token × 1,000,000 / 1024 / 1024
 
-bytes_per_element: FP16/BF16 = 2, FP8 = 1, INT4 = 0.5
+  Where:
+    num_layers           = decoder layer count
+    mla_kv_lora_rank     = the latent KV dimension (typically 512 in DeepSeek)
+    mla_qk_rope_head_dim = the RoPE dimension added per token (typically 64)
+    bytes_per_element    = see Part 4
 
-RESEARCH STEPS:
-  1. Search for frontier open-source model releases in the target date range.
-     Relevant families: Llama, Mistral, Qwen, DeepSeek, Falcon, Gemma, Phi, Yi, OLMo.
-  2. For each candidate, find the technical report, arxiv paper, or HuggingFace
-     model card that discloses the architecture parameters.
-  3. Extract the parameters and apply the appropriate formula.
-  4. Note whether the source URL is real (no "XXXXX" placeholders).
-  5. Include only models with VERIFIED source URLs — if you cannot find a real
-     published technical report, exclude the model.
+  WORKED EXAMPLE — DeepSeek V3 at FP8:
+    num_layers = 61, lora_rank = 512, rope_dim = 64, bytes = 1
+    kv_bytes = 61 × (512 + 64) × 1 = 35,136 bytes per token
+    kv_kb   = 35,136 / 1024 = 34.3 KB per token
+    kv_gb_per_1m = 34.3 × 1,000,000 / 1024 / 1024 = 32.69 GB per 1M tokens
 
-SOURCE REQUIREMENTS: Only arxiv papers, HuggingFace model cards, or official
-release blogs count. Do not estimate architecture from model size alone.
+  Note: this is ~10x more efficient than Llama 3 70B at FP8 — MLA's whole
+  point is dramatic KV reduction. If your MLA computation is not in this
+  efficiency neighborhood, recheck your inputs.
 
-OUTPUT FORMAT — STRICT:
-Begin your response with the character {{ and end with the matching }}.
-Do NOT write any prose, headers, or commentary before or after the JSON object.
-Do NOT include markdown fences.
+═══════════════════════════════════════════════════════════════════════════
+PART 4 — PRECISION (bytes_per_element)
+═══════════════════════════════════════════════════════════════════════════
+
+Use the SERVING PRECISION DECLARED BY THE LAB in their official release —
+not community quantizations, not theoretical lower-precision variants.
+
+  FP32 → bytes = 4   (almost never used at inference; legacy)
+  BF16 → bytes = 2   (default for most pre-2024 models)
+  FP16 → bytes = 2   (older default)
+  FP8  → bytes = 1   (DeepSeek V3+, some 2025+ releases — must be lab-published)
+  INT4 → bytes = 0.5 (rare; only if the lab explicitly publishes INT4 weights)
+
+If the paper publishes weights in BF16 but mentions FP8 as a deployment
+option without architectural support (no FP8 training, no FP8 validation):
+USE BF16. Only adopt FP8 if the lab demonstrably trained or fine-tuned
+at FP8 (DeepSeek V3 is the canonical example).
+
+═══════════════════════════════════════════════════════════════════════════
+PART 5 — RESEARCH PROCESS
+═══════════════════════════════════════════════════════════════════════════
+
+For each candidate that passes Part 1:
+
+  1. Find the PRIMARY source. Acceptable in order of preference:
+       (a) arxiv paper or official technical report PDF
+       (b) HuggingFace model card with full config.json visible
+       (c) Official lab blog post with architecture disclosure
+       (d) Official GitHub config files
+     NOT acceptable: third-party blog posts, news articles, leaderboard
+     entries without underlying disclosure, community benchmarks.
+
+  2. Extract the required parameters with citations to the source.
+
+  3. Compute kv_gb_per_1m_tokens using the appropriate formula.
+
+  4. CROSS-CHECK: If the paper itself states a "KV cache per token" number
+     (some papers do — DeepSeek V3 paper does, Llama papers don't),
+     compare your computed value to the paper's stated value.
+       - If within 10%: confidence "high"
+       - If 10-30% off: confidence "medium", note the discrepancy
+       - If >30% off: confidence "low", recheck your formula inputs
+
+  5. If you cannot find primary-source architecture parameters for a model
+     that otherwise qualifies, INCLUDE IT with kv values set to null and
+     a note explaining what's missing. Do NOT guess from model size.
+
+═══════════════════════════════════════════════════════════════════════════
+PART 6 — OUTPUT FORMAT (STRICT)
+═══════════════════════════════════════════════════════════════════════════
+
+Begin your response with {{ and end with the matching }}. No prose before
+or after. No markdown fences. JSON only.
+
 {{
   "as_of_date": "{cutoff}",
   "method": "vendor_disclosures",
   "candidates": [
     {{
-      "name": "<model name>",
+      "name": "<canonical model name as the lab uses it>",
+      "lab": "<lab name from Part 1 list>",
       "release_date": "<YYYY-MM-DD>",
       "architecture_family": "GQA" | "GQA-MoE" | "MLA" | "MLA-MoE" | "MHA",
       "num_layers": <int>,
       "arch_params": {{
-        "comment": "GQA: num_kv_heads + head_dim; MLA: mla_kv_lora_rank + mla_qk_rope_head_dim",
         "num_kv_heads": <int or null>,
         "head_dim": <int or null>,
         "mla_kv_lora_rank": <int or null>,
         "mla_qk_rope_head_dim": <int or null>
       }},
-      "bytes_per_element": <2 | 1 | 0.5>,
-      "kv_kb_per_token": <float>,
+      "bytes_per_element": 2 | 1 | 0.5,
+      "precision_declared": "BF16" | "FP16" | "FP8" | "INT4",
+      "is_moe": true | false,
+      "kv_kb_per_token_computed": <float>,
+      "kv_kb_per_token_paper_stated": <float or null>,
       "kv_gb_per_1m_tokens": <float>,
-      "source_url": "<real arxiv or HuggingFace or official blog URL>",
-      "source_verified": true | false,
-      "confidence": "high" | "medium" | "low"
+      "computed_vs_paper_pct_diff": <float or null>,
+      "source_url": "<primary source URL>",
+      "source_type": "arxiv" | "huggingface" | "lab_blog" | "github",
+      "benchmark_presence": ["<benchmark names from Part 1B where this model appears>"],
+      "confidence": "high" | "medium" | "low",
+      "notes": "<one-sentence note on any caveat, discrepancy, or excluded variant>"
     }}
   ],
-  "confidence": "high" | "medium" | "low"
-}}"""
-
-
-def _build_path_b_economic_prompt() -> str:
-    cutoff = date.today().isoformat()
-    from datetime import timedelta
-    lookback_date = (date.today() - timedelta(days=CANDIDATE_LOOKBACK_MONTHS * 30)).isoformat()
-    return f"""You are researching for an HBM investment analysis framework. Today is {cutoff}.
-
-YOUR TASK: For frontier open-source language models released between {lookback_date}
-and {cutoff}, independently estimate their KV cache footprint (GB per 1M tokens of
-context) using ECONOMIC TRIANGULATION — NOT from disclosed architecture parameters.
-
-This path uses serving economics to independently cross-check architecture-derived values.
-
-ECONOMIC TRIANGULATION METHOD for each candidate model:
-
-Method 1 — Cost curve inflection:
-  Providers like Together, Fireworks, Anyscale publish per-million-token pricing
-  at different context lengths (e.g., price at 8K vs 32K vs 128K context).
-  For a GQA model, KV cache memory scales linearly with context. If serving cost
-  rises by factor F when context increases by factor C, then:
-    KV_fraction_of_serving_cost ≈ (F - 1) / (C - 1) for small F
-  Combined with known GPU memory (e.g., H100 80GB, 50% utilization → 40GB usable),
-  batch size implied by throughput, and cost per hour → derive KV GB per token.
-
-Method 2 — GPU memory allocation:
-  From benchmarks or provider disclosures: total GPU memory used per concurrent
-  request at a given context length / total context length = KV bytes per token.
-  Convert to GB per 1M tokens.
-
-Method 3 — Throughput degradation:
-  Throughput at long context vs short context. KV cache is the primary bottleneck
-  at long context; throughput degradation curve implies KV size.
-
-RESEARCH STEPS:
-  1. Identify the same frontier open-source models from the target date range.
-  2. For each, find serving cost curves, GPU memory benchmarks, or throughput
-     data from Together, Fireworks, Anyscale, NVIDIA NIM, llama.cpp benchmarks,
-     or HuggingFace optimum-benchmark reports.
-  3. Apply one or more of the methods above to derive kv_gb_per_1m_tokens.
-  4. If you cannot find enough economic data for a model, record it with
-     confidence "low" and note what's missing.
-
-OUTPUT FORMAT — STRICT:
-Begin your response with the character {{ and end with the matching }}.
-Do NOT write any prose, headers, or commentary before or after the JSON object.
-Do NOT include markdown fences.
-{{
-  "as_of_date": "{cutoff}",
-  "method": "economic_triangulation",
-  "candidates": [
+  "candidates_considered_but_excluded": [
     {{
       "name": "<model name>",
-      "release_date": "<YYYY-MM-DD>",
-      "kv_gb_per_1m_tokens": <float>,
-      "estimation_method": "cost_curve_inflection" | "gpu_memory_allocation" | "throughput_degradation" | "combined",
-      "data_sources": [
-        {{
-          "source": "<provider or benchmark name>",
-          "data_point": "<what was found, e.g. '$0.80/M tok at 8K, $1.20/M tok at 128K'>",
-          "url": "<url>"
-        }}
-      ],
-      "derivation_steps": "<show the arithmetic>",
-      "confidence": "high" | "medium" | "low"
+      "reason": "<which Part 1 criterion failed>"
     }}
   ],
   "confidence": "high" | "medium" | "low"
 }}"""
+
+
+# Path B (economic triangulation) was removed in v3.8.3 — the X-axis question
+# (KV bytes per token from architecture) is precisely answered by primary sources
+# in Path A. Path B's serving-economics approach produced implausible values
+# (<0.1 GB/1M) in production because providers do not consistently disclose the
+# cost-curve-vs-context-length data needed for triangulation. Path A with the
+# rigorous prompt is the authoritative path; no synthesis cross-check needed.
 
 
 # ── Synthesis ─────────────────────────────────────────────────────────────────
@@ -424,104 +515,78 @@ def _is_verified(candidate: dict) -> bool:
     return bool(url) and not _is_placeholder_url(url)
 
 
-def _synthesize_candidates(path_a_result: dict, path_b_result: dict) -> dict:
-    """Combine Path A and Path B candidate lists; select minimum-KV verified model.
+def _synthesize_candidates(path_a_result: dict) -> dict:
+    """Single-path synthesis from Path A vendor disclosures.
 
-    For each model name present in both paths:
-        kv = max(path_B_value, mean(path_A_value, path_B_value))
-    For models in only one path: use that path's value.
+    v3.8.3 — Path B (economic triangulation) was dropped. The X-axis question
+    (KV bytes per token from architecture) is precisely answered by primary
+    sources; Path B's serving-economics approach returned implausible values
+    in production and added no useful signal.
 
-    Frontier = candidate with minimum kv_gb_per_1m among ALL candidates
-      within plausibility bounds. URL verification is recorded for provenance
-      but does NOT gate frontier selection — the worker's research process
-      (Path A finding architecture params, Path B finding economic data) is
-      itself the verification. Excluding unverified candidates causes the
-      selector to fall back to older confirmed models rather than tracking
-      the actual efficiency frontier.
+    Frontier = candidate with minimum kv_gb_per_1m_tokens among ALL candidates
+    within plausibility bounds. The new rigorous Path A prompt (Parts 1-6)
+    handles candidate filtering, variant collapsing, MoE handling, precision
+    declaration, and primary-source citation — so the synthesis layer is
+    intentionally minimal.
 
-    Floor: committed_kv = max(frontier.kv, KV_FLOOR_GB_PER_1M)
+    Plausibility bounds [MIN_PLAUSIBLE_KV_GB, MAX_PLAUSIBLE_KV_GB] catch
+    formula misapplications. Floor: committed_kv = max(frontier.kv, KV_FLOOR_GB_PER_1M).
     """
-    # Build lookup dicts keyed by normalised model name
     def _norm(name: str) -> str:
         return name.lower().strip().replace("-", " ").replace("_", " ")
 
-    path_a_by_name = {}
-    for c in (path_a_result.get("candidates") or []):
-        path_a_by_name[_norm(c.get("name", ""))] = c
-
-    path_b_by_name = {}
-    for c in (path_b_result.get("candidates") or []):
-        path_b_by_name[_norm(c.get("name", ""))] = c
-
-    all_names = set(path_a_by_name) | set(path_b_by_name)
-
     per_candidate = {}
-    for norm_name in all_names:
-        a = path_a_by_name.get(norm_name)
-        b = path_b_by_name.get(norm_name)
-
-        kv_a = float(a["kv_gb_per_1m_tokens"]) if a and a.get("kv_gb_per_1m_tokens") is not None else None
-        kv_b = float(b["kv_gb_per_1m_tokens"]) if b and b.get("kv_gb_per_1m_tokens") is not None else None
-
-        # Plausibility filter
-        if kv_a is not None and not (MIN_PLAUSIBLE_KV_GB <= kv_a <= MAX_PLAUSIBLE_KV_GB):
-            logger.warning(f"  [{norm_name}] path_A kv_gb={kv_a:.2f} outside plausibility bounds — dropped")
-            kv_a = None
-        if kv_b is not None and not (MIN_PLAUSIBLE_KV_GB <= kv_b <= MAX_PLAUSIBLE_KV_GB):
-            logger.warning(f"  [{norm_name}] path_B kv_gb={kv_b:.2f} outside plausibility bounds — dropped")
-            kv_b = None
-
-        if kv_a is None and kv_b is None:
-            logger.warning(f"  [{norm_name}] both paths dropped — excluding from synthesis")
+    for c in (path_a_result.get("candidates") or []):
+        name = c.get("name", "")
+        norm_name = _norm(name)
+        if not norm_name:
             continue
 
-        # Synthesis: path B max-privilege
-        if kv_b is not None and kv_a is not None:
-            mean_val = (kv_a + kv_b) / 2.0
-            combined_kv = max(kv_b, mean_val)
-            rule = "max(path_B, mean(path_A, path_B))"
-        elif kv_b is not None:
-            combined_kv = kv_b
-            rule = "path_B only (path_A missing)"
-        else:
-            combined_kv = kv_a
-            rule = "path_A only (path_B missing)"
+        kv = c.get("kv_gb_per_1m_tokens")
+        if kv is None:
+            logger.warning(f"  [{norm_name}] no kv value — included for inventory but excluded from selection")
+            continue
+        try:
+            kv = float(kv)
+        except (TypeError, ValueError):
+            logger.warning(f"  [{norm_name}] non-numeric kv={kv!r} — excluded")
+            continue
 
-        # Verification: use Path A source_verified flag; fall back to URL check
-        verified = False
-        source_url = ""
-        release_date = ""
-        arch_family = "unknown"
-        if a:
-            verified = a.get("source_verified", False) or _is_verified(a)
-            source_url = a.get("source_url", "")
-            release_date = a.get("release_date", "")
-            arch_family = a.get("architecture_family", "unknown")
+        # Plausibility filter
+        if not (MIN_PLAUSIBLE_KV_GB <= kv <= MAX_PLAUSIBLE_KV_GB):
+            logger.warning(f"  [{norm_name}] kv_gb={kv:.2f} outside plausibility bounds — excluded")
+            continue
 
-        display_name = (a or b or {}).get("name", norm_name)
-
+        url = c.get("source_url", "") or ""
         per_candidate[norm_name] = {
-            "name": display_name,
-            "release_date": release_date,
-            "arch_family": arch_family,
-            "kv_gb_per_1m": round(combined_kv, 4),
-            "path_a_kv_gb": kv_a,
-            "path_b_kv_gb": kv_b,
-            "synthesis_rule": rule,
-            "source_verified": verified,
-            "source_url": source_url,
+            "name": name,
+            "release_date": c.get("release_date", ""),
+            "arch_family": c.get("architecture_family", "unknown"),
+            "lab": c.get("lab", ""),
+            "precision_declared": c.get("precision_declared", ""),
+            "is_moe": c.get("is_moe", False),
+            "kv_gb_per_1m": round(kv, 4),
+            "kv_kb_per_token_computed": c.get("kv_kb_per_token_computed"),
+            "kv_kb_per_token_paper_stated": c.get("kv_kb_per_token_paper_stated"),
+            "computed_vs_paper_pct_diff": c.get("computed_vs_paper_pct_diff"),
+            "synthesis_rule": "path_A_only",
+            "source_verified": bool(url) and not _is_placeholder_url(url),
+            "source_url": url,
+            "source_type": c.get("source_type", ""),
+            "benchmark_presence": c.get("benchmark_presence", []),
+            "candidate_confidence": c.get("confidence", "unknown"),
+            "notes": c.get("notes", ""),
         }
 
     if not per_candidate:
         return {
             "status": "no_candidates",
-            "error": "Both paths returned no plausible candidates",
+            "error": "Path A returned no plausible candidates",
             "committed_kv_gb_per_1m": None,
         }
 
-    # Select frontier: minimum KV among ALL candidates.
-    # URL verification is recorded for provenance only — not a selection gate.
-    # The worker's research process is the verification.
+    # Select frontier: minimum KV across ALL candidates. URL verification is
+    # provenance only, not a selection gate (see v3.8.2 fix).
     frontier_name = min(per_candidate, key=lambda n: per_candidate[n]["kv_gb_per_1m"])
     frontier = per_candidate[frontier_name]
 
@@ -530,7 +595,6 @@ def _synthesize_candidates(path_a_result: dict, path_b_result: dict) -> dict:
     floor_applied = raw_kv < KV_FLOOR_GB_PER_1M
     committed_kv = max(raw_kv, KV_FLOOR_GB_PER_1M)
 
-    # Convert back to KB/token for dhcr.py compatibility
     # kv_gb_per_1m = kv_kb_per_token × 1e6 / 1024 / 1024
     # → kv_kb_per_token = committed_kv × 1024 × 1024 / 1e6
     committed_kb = committed_kv * 1024.0 * 1024.0 / 1_000_000.0
@@ -540,6 +604,9 @@ def _synthesize_candidates(path_a_result: dict, path_b_result: dict) -> dict:
         "frontier_model_name": frontier["name"],
         "frontier_model_release_date": frontier["release_date"],
         "arch_family": frontier["arch_family"],
+        "lab": frontier["lab"],
+        "precision_declared": frontier["precision_declared"],
+        "is_moe": frontier["is_moe"],
         "source_url": frontier["source_url"],
         "source_verified": frontier["source_verified"],
         "raw_kv_gb_per_1m": round(raw_kv, 4),
@@ -547,8 +614,9 @@ def _synthesize_candidates(path_a_result: dict, path_b_result: dict) -> dict:
         "floor_value_gb_per_1m": KV_FLOOR_GB_PER_1M,
         "committed_kv_gb_per_1m": round(committed_kv, 4),
         "committed_kv_kb_per_token": round(committed_kb, 4),
-        "synthesis_rule": frontier["synthesis_rule"],
+        "synthesis_rule": "path_A_only",
         "all_candidates": per_candidate,
+        "excluded_by_prompt": path_a_result.get("candidates_considered_but_excluded", []),
     }
 
 
@@ -626,9 +694,8 @@ def research_inference_arch() -> dict:
       1. Staleness guard — skip if state updated within STALENESS_GUARD_DAYS
       2. Calibration back-test — abort if DeepSeek V3 re-derivation fails
       3. Path A — vendor disclosures (one LLM call, returns candidate list)
-      4. Path B — economic triangulation (one LLM call, returns candidate list)
-      5. Synthesis in Python — match candidates, max(B, mean(A,B)), select min-KV verified
-      6. Apply floor, write state/inference_arch_state.json["llm_worker_frontier"]
+      4. Synthesis in Python — plausibility filter, min-KV selection, floor
+      5. Apply floor, write state/inference_arch_state.json["llm_worker_frontier"]
 
     Returns summary dict for logging.
     """
@@ -693,25 +760,15 @@ def research_inference_arch() -> dict:
             logger.error(err)
         time.sleep(2)
 
-        # ── 4. Path B — economic triangulation ───────────────────────────────
-        path_b_result: dict = {}
-        try:
-            logger.info("Running Path B: economic triangulation...")
-            path_b_result = _call_claude_with_search(_build_path_b_economic_prompt())
-            n_b = len(path_b_result.get("candidates") or [])
-            logger.info(f"  Path B returned {n_b} candidate(s)")
-        except Exception as e:
-            err = f"path_B: {type(e).__name__}: {e}"
-            summary["errors"].append(err)
-            logger.error(err)
-        time.sleep(2)
+        # v3.8.3 — Path B (economic triangulation) removed; Path A with the
+        # rigorous prompt is the authoritative path.
 
-        if not path_a_result and not path_b_result:
-            summary["errors"].append("Both paths failed — no state changes made")
+        if not path_a_result:
+            summary["errors"].append("Path A failed — no state changes made")
             return summary
 
-        # ── 5. Synthesis ──────────────────────────────────────────────────────
-        synthesis = _synthesize_candidates(path_a_result, path_b_result)
+        # ── 4. Synthesis ──────────────────────────────────────────────────────
+        synthesis = _synthesize_candidates(path_a_result)
         summary["synthesis"] = synthesis
         n_cands = len(synthesis.get("all_candidates") or {})
         summary["candidates_found"] = n_cands
@@ -723,7 +780,7 @@ def research_inference_arch() -> dict:
             logger.error(f"  {err}")
             return summary
 
-        # ── 6. Write state ────────────────────────────────────────────────────
+        # ── 5. Write state ────────────────────────────────────────────────────
         today = date.today().isoformat()
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -735,6 +792,9 @@ def research_inference_arch() -> dict:
             "frontier_model_name": synthesis["frontier_model_name"],
             "frontier_model_release_date": synthesis["frontier_model_release_date"],
             "arch_family": synthesis["arch_family"],
+            "lab": synthesis.get("lab", ""),
+            "precision_declared": synthesis.get("precision_declared", ""),
+            "is_moe": synthesis.get("is_moe", False),
             "source_url": synthesis["source_url"],
             "source_verified": synthesis["source_verified"],
             "committed_kv_gb_per_1m": synthesis["committed_kv_gb_per_1m"],
@@ -748,8 +808,8 @@ def research_inference_arch() -> dict:
                 "committed_kv_kb_per_token": synthesis["committed_kv_kb_per_token"],
                 "floor_applied": synthesis["floor_applied"],
                 "path_a_candidates": len(path_a_result.get("candidates") or []),
-                "path_b_candidates": len(path_b_result.get("candidates") or []),
                 "all_candidates": synthesis.get("all_candidates"),
+                "excluded_by_prompt": synthesis.get("excluded_by_prompt", []),
                 "calibration": cal_diagnostic,
             }],
         }
