@@ -1,5 +1,69 @@
 # Memory Cycle Brief — Changelog
 
+## v3.7.4 (2026-05-25) — Section-4 visual polish (chart row center + card 7/8 title cleanup)
+
+Three small visual changes on the brief, no behavioral or computational impact. All confined to `src/email_module/template.py`.
+
+### 1. DHCR chart row — vertically center the two charts
+
+The DHCR card's two-column chart row (matrix 5x5 grid on the left, SK Hynix HBM captive-ratio spectrum bar on the right) was anchored at the top of both `<td>` cells. Because the matrix chart is shorter than the spectrum bar's full vertical span, the matrix appeared visually offset toward the top of the row while the spectrum bar extended below it. v3.7.4 changes both outer cells from `vertical-align:top` to `vertical-align:middle` so the two charts center-align relative to each other:
+
+```diff
+-    "<td style='width:50%;vertical-align:top;padding-right:10px'>"
++    "<td style='width:50%;vertical-align:middle;padding-right:10px'>"
+     ...
+-    "<td style='width:50%;vertical-align:top;padding-left:10px'>"
++    "<td style='width:50%;vertical-align:middle;padding-left:10px'>"
+```
+
+The change is scoped to the two outer cells in `_build_dhcr_chart_row()` (around line 2090). Inner cells inside the spectrum bar's own component (the score axis, the band labels, the moat-strength column) keep their existing `vertical-align:top` — those are internal layout decisions inside the bar that aren't affected.
+
+### 2. Competitor card title — drop "Indicator 7 — " prefix
+
+The active `_build_competitor_section4_card()` builder rendered its h3 as `Indicator 7 — Competitor dynamics`. Every other section-4 card (the five top-Sonnet picks and the DHCR card) renders without an "Indicator X — " prefix; cards 7 and 8 were inconsistent. v3.7.4 brings them in line:
+
+```diff
+-    f"<h3>Indicator 7 — Competitor dynamics "
++    f"<h3>Competitor dynamics "
+```
+
+### 3. ADR card title — drop "Indicator 8 — " prefix
+
+Same change for the active `_build_adr_section4_card()` builder:
+
+```diff
+-    f"<h3>Indicator 8 — US ADR / SPO event tracking "
++    f"<h3>US ADR / SPO event tracking "
+```
+
+### Scope
+
+- **Active builders only.** The dead-code `_build_competitor_section4_card_legacy()` and `_build_adr_section4_card_legacy()` paths (which retain their old "Indicator X — " headers) are left untouched. They're not called by any current code path; touching them would expand the diff without operator-visible benefit.
+- **Placeholder card builder from v3.7.3 unchanged.** The `_build_section4_card_or_placeholder()` helper already received clean titles via its `indicator_title` kwarg ("Decode HBM Captive Ratio (DHCR)", "Competitor dynamics", "US ADR / SPO event") in v3.7.3 — those call sites in `build_email_html()` were already correct. The placeholder's body text retains its "Indicator N of 8" breadcrumb framing for failure context; that's intentional and unrelated.
+- **DHCR card title unchanged.** It was already correct (no "Indicator 6 — " prefix). A regression-guard test asserts this continues to hold.
+
+### Tests
+
+11 new tests in `tests/test_v3_7_4_section4_visual_polish.py` across 4 classes:
+
+- `TestDhcrChartRowVerticalCenter` (3) — both outer chart-row cells use `vertical-align:middle`; the layout still works when the matrix chart is absent (spectrum-only fallback); the legacy `vertical-align:top` strings are removed verbatim from the file (regression guard).
+- `TestCompetitorTitleNoIndicatorPrefix` (3) — active builder's h3 no longer contains "Indicator 7"; still contains "Competitor dynamics"; doesn't start with a stray em-dash or hyphen from the removed prefix.
+- `TestAdrTitleNoIndicatorPrefix` (3) — same three checks for the ADR card.
+- `TestExistingTitlesUnchanged` (2) — DHCR's active builder still uses `<h3>Decode HBM Captive Ratio (DHCR)`; placeholder call sites pass clean titles via `indicator_title=`.
+
+**721 total passing** in clean regression.
+
+### Deploy
+
+Code-only change. State and workflows unchanged.
+
+1. Publish release `v3.7.4` **with the zip attached** (drag `memory_cycle_brief_v3_7_4.zip` into the assets area **before** clicking Publish).
+2. Next scheduled fast-tier run picks up the change automatically. To verify immediately, Actions → "Fast Tier" → "Run workflow".
+
+Expected outcome on the next brief: the DHCR card's two charts (matrix + spectrum bar) center-align vertically to each other instead of both top-anchoring; cards 7 and 8 show "Competitor dynamics" / "US ADR / SPO event tracking" as their titles, matching the styling of the other six section-4 cards.
+
+
+
 ## v3.7.3 (2026-05-25) — DHCR card silent-vanish hotfix + section-4 loud-failure rendering
 
 The fast-tier brief sent on 2026-05-25 11:29 UTC dropped indicator 6 (DHCR) entirely — the email jumped from indicator 5 (Memory pure-plays underperform SOX) directly to indicator 7 (Competitor dynamics). Two compounding bugs produced this silent failure.

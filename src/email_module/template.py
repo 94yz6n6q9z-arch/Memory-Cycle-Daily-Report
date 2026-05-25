@@ -751,8 +751,11 @@ def _build_competitor_section4_card(comp: Optional[dict]) -> str:
 
     parts = []
     # Header (matches cards 1-5: h3 + status badge inline)
+    # v3.7.4 — dropped "Indicator 7 — " prefix per consistency with the other
+    # section-4 cards (DHCR / cards 1-5), none of which carry the "Indicator X — "
+    # prefix in their title. The numbering is implicit from the section's order.
     parts.append(
-        f"<h3>Indicator 7 — Competitor dynamics "
+        f"<h3>Competitor dynamics "
         f"<span class='status-badge' "
         f"style='background:{status_color};color:{text_color};margin-left:8px'>"
         f"{html.escape(status)}</span></h3>"
@@ -1056,8 +1059,11 @@ def _build_adr_section4_card(adr: Optional[dict]) -> str:
 
     parts = []
     # Header
+    # v3.7.4 — dropped "Indicator 8 — " prefix per consistency with the other
+    # section-4 cards (DHCR / cards 1-5), none of which carry the "Indicator X — "
+    # prefix in their title.
     parts.append(
-        f"<h3>Indicator 8 — US ADR / SPO event tracking "
+        f"<h3>US ADR / SPO event tracking "
         f"<span class='status-badge' "
         f"style='background:{status_color};color:{text_color};margin-left:8px'>"
         f"{html.escape(status)}</span></h3>"
@@ -2087,7 +2093,7 @@ def _build_dhcr_chart_row(
     cells = []
     if matrix_chart_b64:
         cells.append(
-            "<td style='width:50%;vertical-align:top;padding-right:10px'>"
+            "<td style='width:50%;vertical-align:middle;padding-right:10px'>"
             f"<img src='data:image/png;base64,{matrix_chart_b64}' "
             f"style='width:100%;display:block' "
             f"alt='DHCR 5x5 matrix — KV efficiency vs operative context' />"
@@ -2095,7 +2101,7 @@ def _build_dhcr_chart_row(
         )
     # Right column: the v3.4.9.2 vertical spectrum bar
     cells.append(
-        "<td style='width:50%;vertical-align:top;padding-left:10px'>"
+        "<td style='width:50%;vertical-align:middle;padding-left:10px'>"
         f"{_build_dhcr_spectrum_bar(score, market_zone)}"
         "</td>"
     )
