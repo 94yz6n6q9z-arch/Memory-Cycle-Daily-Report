@@ -5,7 +5,9 @@
     "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
     "last_aggregator_run": "2026-05-25T13:42:25Z",
     "description": "Frontier inference model registry. open_models feeds frontier_kv computation. closed_models excluded from frontier calc (architecture unknown) but Sonnet may reference them in narrative. Auto-updated by src/analysis/dhcr_arch_aggregator.py.",
-    "last_run_additions": 0
+    "last_run_additions": 0,
+    "last_arch_research_run_at": "2026-05-25T16:12:35Z",
+    "last_arch_research_additions": 1
   },
   "open_models": [
     {
@@ -222,5 +224,187 @@
       "estimation_method": "back-solve from 1M-context pricing",
       "notes": "Google has been most aggressive on long context. May have proprietary attention compression."
     }
-  ]
+  ],
+  "llm_worker_frontier": {
+    "last_run_at": "2026-05-25T16:12:35Z",
+    "frontier_model_name": "DeepSeek-R1",
+    "frontier_model_release_date": "2025-01-20",
+    "arch_family": "MLA-MoE",
+    "source_url": "https://arxiv.org/abs/2501.12948",
+    "source_verified": true,
+    "committed_kv_gb_per_1m": 66.76,
+    "committed_kv_kb_per_token": 70.0029,
+    "floor_applied": false,
+    "floor_value_gb_per_1m": 4.0,
+    "history": [
+      {
+        "date": "2026-05-25",
+        "frontier_model": "DeepSeek-R1",
+        "committed_kv_gb_per_1m": 66.76,
+        "committed_kv_kb_per_token": 70.0029,
+        "floor_applied": false,
+        "path_a_candidates": 7,
+        "path_b_candidates": 11,
+        "all_candidates": {
+          "llama 4 scout 17b 16e": {
+            "name": "Llama-4-Scout-17B-16E",
+            "release_date": "2025-04-05",
+            "arch_family": "GQA-MoE",
+            "kv_gb_per_1m": 187.5,
+            "path_a_kv_gb": 183.11,
+            "path_b_kv_gb": 187.5,
+            "synthesis_rule": "max(path_B, mean(path_A, path_B))",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/docs/transformers/en/model_doc/llama4"
+          },
+          "mistral small 3.1 24b instruct 2503": {
+            "name": "Mistral-Small-3.1-24B-Instruct-2503",
+            "release_date": "",
+            "arch_family": "unknown",
+            "kv_gb_per_1m": 156.25,
+            "path_a_kv_gb": null,
+            "path_b_kv_gb": 156.25,
+            "synthesis_rule": "path_B only (path_A missing)",
+            "source_verified": false,
+            "source_url": ""
+          },
+          "mistral small 3 24b instruct 2501": {
+            "name": "Mistral-Small-3-24B-Instruct-2501",
+            "release_date": "",
+            "arch_family": "unknown",
+            "kv_gb_per_1m": 156.25,
+            "path_a_kv_gb": null,
+            "path_b_kv_gb": 156.25,
+            "synthesis_rule": "path_B only (path_A missing)",
+            "source_verified": false,
+            "source_url": ""
+          },
+          "deepseek r1": {
+            "name": "DeepSeek-R1",
+            "release_date": "2025-01-20",
+            "arch_family": "MLA-MoE",
+            "kv_gb_per_1m": 66.76,
+            "path_a_kv_gb": 65.46,
+            "path_b_kv_gb": 66.76,
+            "synthesis_rule": "max(path_B, mean(path_A, path_B))",
+            "source_verified": true,
+            "source_url": "https://arxiv.org/abs/2501.12948"
+          },
+          "gemma 3 27b": {
+            "name": "Gemma-3-27B",
+            "release_date": "2025-03-12",
+            "arch_family": "GQA",
+            "kv_gb_per_1m": 473.0,
+            "path_a_kv_gb": 473.0,
+            "path_b_kv_gb": null,
+            "synthesis_rule": "path_A only (path_B missing)",
+            "source_verified": true,
+            "source_url": "https://arxiv.org/abs/2503.19786"
+          },
+          "qwen2.5 72b instruct": {
+            "name": "Qwen2.5-72B-Instruct",
+            "release_date": "",
+            "arch_family": "unknown",
+            "kv_gb_per_1m": 312.5,
+            "path_a_kv_gb": null,
+            "path_b_kv_gb": 312.5,
+            "synthesis_rule": "path_B only (path_A missing)",
+            "source_verified": false,
+            "source_url": ""
+          },
+          "deepseek v3": {
+            "name": "DeepSeek-V3",
+            "release_date": "2024-12-26",
+            "arch_family": "MLA-MoE",
+            "kv_gb_per_1m": 66.76,
+            "path_a_kv_gb": 65.46,
+            "path_b_kv_gb": 66.76,
+            "synthesis_rule": "max(path_B, mean(path_A, path_B))",
+            "source_verified": true,
+            "source_url": "https://arxiv.org/abs/2412.19437"
+          },
+          "mistral small 3.1 24b devstral 2505": {
+            "name": "Mistral-Small-3.1-24B-Devstral-2505",
+            "release_date": "",
+            "arch_family": "unknown",
+            "kv_gb_per_1m": 156.25,
+            "path_a_kv_gb": null,
+            "path_b_kv_gb": 156.25,
+            "synthesis_rule": "path_B only (path_A missing)",
+            "source_verified": false,
+            "source_url": ""
+          },
+          "qwen3 32b": {
+            "name": "Qwen3-32B",
+            "release_date": "2025-04-28",
+            "arch_family": "GQA",
+            "kv_gb_per_1m": 244.14,
+            "path_a_kv_gb": 244.14,
+            "path_b_kv_gb": null,
+            "synthesis_rule": "path_A only (path_B missing)",
+            "source_verified": true,
+            "source_url": "https://arxiv.org/abs/2505.09388"
+          },
+          "qwen3 235b a22b": {
+            "name": "Qwen3-235B-A22B",
+            "release_date": "2025-04-28",
+            "arch_family": "GQA-MoE",
+            "kv_gb_per_1m": 183.5,
+            "path_a_kv_gb": 179.29,
+            "path_b_kv_gb": 183.5,
+            "synthesis_rule": "max(path_B, mean(path_A, path_B))",
+            "source_verified": true,
+            "source_url": "https://arxiv.org/abs/2505.09388"
+          },
+          "qwen3 30b a3b": {
+            "name": "Qwen3-30B-A3B",
+            "release_date": "",
+            "arch_family": "unknown",
+            "kv_gb_per_1m": 61.44,
+            "path_a_kv_gb": null,
+            "path_b_kv_gb": 61.44,
+            "synthesis_rule": "path_B only (path_A missing)",
+            "source_verified": false,
+            "source_url": ""
+          },
+          "deepseek r1 0528": {
+            "name": "DeepSeek-R1-0528",
+            "release_date": "",
+            "arch_family": "unknown",
+            "kv_gb_per_1m": 66.76,
+            "path_a_kv_gb": null,
+            "path_b_kv_gb": 66.76,
+            "synthesis_rule": "path_B only (path_A missing)",
+            "source_verified": false,
+            "source_url": ""
+          },
+          "llama 4 maverick 17b 128e": {
+            "name": "Llama-4-Maverick-17B-128E",
+            "release_date": "2025-04-05",
+            "arch_family": "GQA-MoE",
+            "kv_gb_per_1m": 187.5,
+            "path_a_kv_gb": 183.11,
+            "path_b_kv_gb": 187.5,
+            "synthesis_rule": "max(path_B, mean(path_A, path_B))",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/docs/transformers/en/model_doc/llama4"
+          }
+        },
+        "calibration": {
+          "calibration_status": "passed",
+          "worker_derived_gb_per_1m": 65.45,
+          "target_gb_per_1m": 65.0,
+          "tolerance_fraction": 0.4,
+          "actual_deviation_fraction": 0.007,
+          "worker_cited_source": "https://arxiv.org/abs/2412.19437",
+          "worker_params": {
+            "num_layers": 61,
+            "mla_kv_lora_rank": 512,
+            "mla_qk_rope_head_dim": 64,
+            "bytes_per_element": 2
+          }
+        }
+      }
+    ]
+  }
 }
