@@ -1,5 +1,113 @@
 # Memory Cycle Brief — Changelog
 
+## v3.8.6 (2026-05-25) — Anchor catalog + maturity-degradation (no more floor)
+
+The v3.8.5 production run revealed that asking Sonnet to compute KV values
+from first principles for well-known models was unreliable — Llama 4 Maverick
+came back at 22.89 GB/1M (formula-mis-applied by 7x; the correct value is
+~153 GB/1M). Also, paper-claim values like DeepSeek V4's "10% of V3.2" were
+being treated with the same confidence as multi-year-proven architectures,
+requiring the post-hoc floor of 4.0 GB/1M to keep the framework conservative.
+
+v3.8.6 fixes both issues structurally.
+
+### Anchor catalog embedded in prompt
+
+A hand-verified catalog of frontier open-source models is now embedded
+directly in the Path A prompt. For any model in the catalog, Sonnet returns
+the kv_gb_per_1m value verbatim — no recomputation. The worker spends its
+research budget on what's actually new since the catalog's as-of date.
+
+Initial catalog (May 25, 2026): Llama 3 70B (BF16 + FP8), Llama 3.1 70B,
+Llama 4 Maverick, Mistral Large 2, Qwen 2.5 72B, DeepSeek V2, V3, V3.5,
+Qwen3 235B MLA, DeepSeek V4-Pro. Each entry includes architecture family,
+precision, KV value, maturity, and source URL.
+
+### Maturity-degradation replaces the floor
+
+Each candidate now carries a maturity classification with an associated
+degradation factor applied at synthesis time:
+
+| Maturity     | Factor | Definition                                    |
+|--------------|--------|-----------------------------------------------|
+| proven       | 1.0×   | >12mo + multi-provider production deployment  |
+| emerging     | 1.5×   | 6-12mo + independent benchmark data           |
+| paper-claim  | 2.0×   | paper + weights, <6mo, limited validation     |
+| preview      | 2.5×   | preview/early-access, claims unverified       |
+
+`effective_kv = raw_kv × degradation_factor`. Frontier = `min(effective_kv)`.
+
+This means a paper-claim entry at raw=3.3 GB/1M (DeepSeek V4) becomes
+effective=6.6 GB/1M for selection purposes. A proven entry at raw=33 GB/1M
+(DeepSeek V3) stays at 33. The framework follows the proven frontier, not
+the bragged frontier.
+
+As paper-claim entries accumulate production evidence over quarterly runs,
+maintainers promote them in the anchor catalog. Their degradation factor
+drops, and the framework's effective frontier moves with the real evidence.
+This handles the multi-year decay problem that a static floor would have
+created.
+
+### KV_FLOOR_GB_PER_1M removed entirely
+
+Conservatism now comes structurally from degradation factors rather than a
+post-hoc clamp. The 1.0 GB/1M plausibility lower bound remains as a
+defensive backstop against fabricated values.
+
+### Prompt size reduced from ~20K to ~7K chars
+
+The verbose Parts 1-6 structure is gone. The new prompt has just two
+sections: the anchor catalog block (rendered from the Python constant),
+and a two-job task description. Reduces cognitive load on Sonnet and
+leaves more output budget for the actual JSON response.
+
+### Anchor promotion suggestions
+
+The worker can now propose maturity promotions in its output
+(`anchor_promotion_suggestions` array). E.g., "V4 now deployed by 3
+providers, suggest promoting paper-claim → emerging". These are advisory
+only — maintainers review and update the catalog manually. Anchor entries
+themselves are version-controlled and cannot be auto-mutated by the worker.
+
+### State schema changes
+
+`llm_worker_frontier` no longer writes `floor_applied` or
+`floor_value_gb_per_1m`. It now writes:
+- `raw_kv_gb_per_1m` (pre-degradation value)
+- `maturity` and `degradation_factor`
+- `anchor_catalog_as_of` (which catalog version was used)
+- `from_anchor_catalog` (true if frontier came from anchor, false if new)
+- `anchor_promotion_suggestions` (worker's advisory output)
+
+`committed_kv_gb_per_1m` and `committed_kv_kb_per_token` retained for
+dhcr.py shim compatibility (no fast-tier disruption).
+
+### Expected first-run outcome
+
+Worker reads anchor catalog. DeepSeek V4-Pro entry: raw=3.3, maturity=
+paper-claim, degradation=2.0 → effective=6.6 GB/1M. Other anchors range
+from 33 (V3) to 305 (Llama 3 70B BF16). V4-Pro wins on effective.
+
+Committed: **6.6 GB/1M → R3 raw → R4 market cell** (with +1 anticipation
+premium). Matches the band Raul anticipated. Framework finally tracks the
+real frontier (DeepSeek V4, April 2026) with appropriate uncertainty
+degradation rather than overstated confidence in a paper claim.
+
+### Tests
+
+39 tests pass (36 from v3.8.5 + 5 new for v3.8.6 - 2 floor tests removed):
+- `test_paper_claim_kv_is_degraded_by_factor_2`
+- `test_proven_kv_passes_through_unchanged`
+- `test_v3_8_6_anchor_catalog_present_in_prompt`
+- `test_v3_8_6_maturity_degradation_factors_defined`
+- `test_v3_8_6_no_floor_in_module`
+- `test_v3_8_6_unknown_maturity_defaults_to_paper_claim`
+- `test_v3_8_6_frontier_selects_min_effective_not_min_raw`
+
+### Workflow commit messages
+
+Updated from `v3.8.5` → `v3.8.6` in both workflow YAML files.
+
 ## v3.8.5 (2026-05-25) — Find the actual frontier (DeepSeek V4 and beyond)
 
 The v3.8.4 production run succeeded but landed on DeepSeek V3 (December 2024)

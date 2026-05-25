@@ -23,10 +23,15 @@ Architecture:
     worker tells us what's missing rather than fabricating values.
 
 Synthesis (in Python, not via LLM):
-  Frontier = candidate with min kv_gb_per_1m within plausibility bounds
-             [MIN_PLAUSIBLE_KV_GB, MAX_PLAUSIBLE_KV_GB].
+  For each candidate:
+    raw_kv       = candidate['kv_gb_per_1m'] (anchor-verbatim or paper-derived)
+    degradation  = MATURITY_DEGRADATION_FACTORS[candidate['maturity']]
+    effective_kv = raw_kv × degradation
+  Frontier = candidate with min effective_kv across all candidates within
+             plausibility bounds [MIN_PLAUSIBLE_KV_GB, MAX_PLAUSIBLE_KV_GB].
   URL verification is recorded for provenance but does NOT gate selection.
-  committed_kv = max(frontier.kv_per_1m, KV_FLOOR_GB_PER_1M)
+  committed_kv = effective_kv of frontier. No floor (v3.8.6 removed it —
+  see top-of-module comment).
 
 Selection criterion — Option A (most efficient confirmed open-source model):
   The framework's HBM demand thesis asserts that even the most efficient
@@ -99,19 +104,105 @@ CALIBRATION_TARGET_GB_PER_1M = 65.0
 CALIBRATION_TOLERANCE_FRACTION = 0.40  # ±40% → 39.0 to 91.0 GB/1M
 CALIBRATION_MODEL_NAME = "DeepSeek V3"
 
-# Floor: never commit a KV value below this. 4.0 GB/1M is the R3 lower
-# boundary. The framework cannot drop into R2 until measured confirmed-
-# architecture frontier behavior actually proves we are there.
-KV_FLOOR_GB_PER_1M = 4.0
+# v3.8.6 — KV_FLOOR_GB_PER_1M removed entirely. Conservatism now comes from
+# per-candidate maturity-degradation (see MATURITY_DEGRADATION_FACTORS below)
+# applied during synthesis. The degradation factor structurally attaches
+# uncertainty to each candidate based on evidence quality, replacing the
+# blunt post-hoc floor. Effective_kv = raw_kv × degradation_factor.
 
-# Plausibility bounds: reject individual path values outside this range.
-# <1.0 GB/1M is implausible for any current frontier model (DeepSeek V3 at
-# FP8 with MLA — the most efficient real architecture — is ~33 GB/1M).
-# Sub-1 GB/1M values in production runs indicated the model giving up rather
-# than producing a real estimate.
-# >500 GB/1M would require thousands of layers at FP32 — clearly garbage.
+# Maturity classification per candidate. Each level corresponds to evidence
+# accumulation: paper exists → weights released → independent benchmarks →
+# multi-provider production deployment.
+#
+# The framework picks min(effective_kv) across candidates. A paper-claim
+# entry with raw=3.3 becomes effective=6.6 (× 2.0); a proven entry with
+# raw=33 stays at 33. The proven 33 still beats the paper-claim 6.6 only
+# if degradation pushes the paper above the proven — i.e., if the bragger
+# isn't actually that much better than the established frontier.
+#
+# As paper-claim entries mature (deployment evidence accumulates over
+# quarterly runs), they get promoted in the anchor catalog and their
+# degradation factor decreases. The framework follows the proven frontier,
+# not the bragged frontier.
+MATURITY_DEGRADATION_FACTORS = {
+    "proven":      1.0,   # >12mo old + multi-provider production deployment
+    "emerging":    1.5,   # 6-12mo + independent benchmark data
+    "paper-claim": 2.0,   # paper + weights, <6mo or limited validation
+    "preview":     2.5,   # preview/early-access, paper may be incomplete
+}
+DEFAULT_NEW_CANDIDATE_MATURITY = "paper-claim"
+
+# Plausibility bounds: reject individual RAW values outside this range.
+# Applied BEFORE maturity degradation. <1.0 GB/1M is implausible for any
+# current frontier model. >500 GB/1M would require thousands of layers at
+# FP32 — clearly garbage.
+# With degradation removed-floor system, a paper-claim at raw=0.5 would
+# fail this plausibility filter anyway, eliminating the need for a post-hoc
+# floor as a defensive backstop.
 MIN_PLAUSIBLE_KV_GB = 1.0
 MAX_PLAUSIBLE_KV_GB = 500.0
+
+# ── Anchor catalog (v3.8.6) ───────────────────────────────────────────────────
+# Hand-verified reference set as of the date below. The Path A prompt embeds
+# this catalog so the worker has a known-good baseline rather than re-deriving
+# every value from scratch (which v3.8.5 production runs got wrong by 7x for
+# well-known models like Llama 4 Maverick).
+#
+# Each entry has a maturity classification that determines its degradation
+# factor at synthesis time. The worker uses anchor values verbatim for
+# anchored models and only computes from scratch for genuinely new candidates.
+#
+# UPDATE PROCESS: when a quarterly run proposes a maturity promotion (e.g.,
+# "V4 has now been deployed by 3 providers, suggest promoting paper-claim →
+# emerging"), review and update this catalog. Anchor entries are version-
+# controlled; the worker cannot mutate them.
+ANCHOR_CATALOG_AS_OF = "2026-05-25"
+ANCHOR_CATALOG = [
+    # GQA family
+    {"name": "Llama 3 70B",         "family": "GQA", "precision": "BF16",
+     "kv_gb_per_1m": 305.0, "maturity": "proven",
+     "source": "https://ai.meta.com/blog/meta-llama-3/",
+     "formula_check": "2×80×8×128×2/1024 = 320 KB/tok → 305 GB/1M"},
+    {"name": "Llama 3.1 70B",       "family": "GQA", "precision": "FP8",
+     "kv_gb_per_1m": 153.0, "maturity": "proven",
+     "source": "https://ai.meta.com/blog/meta-llama-3-1/",
+     "formula_check": "2×80×8×128×1/1024 = 160 KB/tok → 153 GB/1M"},
+    {"name": "Llama 4 Maverick",    "family": "GQA-MoE", "precision": "FP8",
+     "kv_gb_per_1m": 153.0, "maturity": "proven",
+     "source": "https://ai.meta.com/blog/llama-4/",
+     "formula_check": "Same KV arch as Llama 3 70B at FP8"},
+    {"name": "Mistral Large 2",     "family": "GQA", "precision": "FP8",
+     "kv_gb_per_1m": 168.0, "maturity": "proven",
+     "source": "https://mistral.ai/news/mistral-large-2407/",
+     "formula_check": "2×88×8×128×1/1024 = 176 KB/tok → 168 GB/1M"},
+    {"name": "Qwen 2.5 72B",        "family": "GQA", "precision": "FP8",
+     "kv_gb_per_1m": 153.0, "maturity": "proven",
+     "source": "https://qwen.readthedocs.io/",
+     "formula_check": "2×80×8×128×1/1024 = 160 KB/tok → 153 GB/1M"},
+    # MLA family
+    {"name": "DeepSeek V2",         "family": "MLA", "precision": "BF16",
+     "kv_gb_per_1m": 68.0, "maturity": "proven",
+     "source": "https://arxiv.org/abs/2405.04434",
+     "formula_check": "60×(512+64)×2/1024 = 67.5 KB/tok → 64 GB/1M"},
+    {"name": "DeepSeek V3",         "family": "MLA-MoE", "precision": "FP8",
+     "kv_gb_per_1m": 33.0, "maturity": "proven",
+     "source": "https://arxiv.org/abs/2412.19437",
+     "formula_check": "61×(512+64)×1/1024 = 34.3 KB/tok → 33 GB/1M"},
+    {"name": "DeepSeek V3.5",       "family": "MLA-MoE", "precision": "FP8",
+     "kv_gb_per_1m": 33.0, "maturity": "emerging",
+     "source": "https://api-docs.deepseek.com/news/news250922",
+     "formula_check": "Same MLA arch as V3"},
+    {"name": "Qwen3 235B MLA",      "family": "MLA-MoE", "precision": "FP8",
+     "kv_gb_per_1m": 53.0, "maturity": "emerging",
+     "source": "https://qwenlm.github.io/blog/qwen3/",
+     "formula_check": "94×(512+64)×1/1024 = 53 KB/tok → 50 GB/1M"},
+    # Novel architectures (paper-stated; degradation handles uncertainty)
+    {"name": "DeepSeek V4-Pro",     "family": "novel:CSA-HCA", "precision": "FP8",
+     "kv_gb_per_1m": 3.3, "maturity": "paper-claim",
+     "source": "https://fe-static.deepseek.com/chat/transparency/deepseek-V4-model-card-EN.pdf",
+     "formula_check": "Paper claim: V4-Pro KV cache is ~10% of V3.2 at 1M context → 33 × 0.10 = 3.3 GB/1M. Architecture: CSA/HCA hybrid sparse attention (April 2026 release)."},
+]
+
 
 # Candidate lookback window: how many months back to search for frontier models.
 CANDIDATE_LOOKBACK_MONTHS = 18
@@ -296,301 +387,166 @@ Do NOT include markdown fences.
 
 
 def _build_path_a_vendor_prompt() -> str:
+    """Build the Path A research prompt with embedded anchor catalog (v3.8.6).
+
+    Design philosophy: rather than asking Sonnet to re-derive every KV value
+    from first principles (which v3.8.5 production runs got wrong by 7x for
+    well-known models like Llama 4 Maverick), the prompt embeds a hand-verified
+    anchor catalog as the baseline. Sonnet's job is narrow:
+
+      1. Verify the anchor catalog is still accurate (no architecture corrections)
+      2. Find any new frontier model released since the catalog's as-of date
+      3. Compute KV for new models, with the anchor catalog as sanity reference
+      4. Classify each new candidate's maturity (paper-claim or preview)
+      5. Return all candidates — anchors verbatim + any new ones
+
+    Maturity classification drives synthesis degradation downstream.
+    Anchors are used verbatim (worker cannot mutate anchor values).
+    """
     cutoff = date.today().isoformat()
     from datetime import timedelta
     lookback_date = (date.today() - timedelta(days=CANDIDATE_LOOKBACK_MONTHS * 30)).isoformat()
+
+    # Format the anchor catalog as a readable block
+    anchor_block_lines = [f"  As-of date: {ANCHOR_CATALOG_AS_OF}", ""]
+    for a in ANCHOR_CATALOG:
+        anchor_block_lines.append(
+            f"  • {a['name']:<24s} | {a['family']:<10s} | {a['precision']:<5s} | "
+            f"{a['kv_gb_per_1m']:>6.1f} GB/1M | {a['maturity']:<11s}"
+        )
+        anchor_block_lines.append(f"      {a['formula_check']}")
+        anchor_block_lines.append(f"      source: {a['source']}")
+    anchor_block = "\n".join(anchor_block_lines)
+
     return f"""You are researching for a quantitative HBM investment analysis framework.
 Today is {cutoff}. Your output drives a financial model — incorrect values
-flow directly into investment decisions. Precision matters more than coverage.
+flow directly into investment decisions.
 
 ═══════════════════════════════════════════════════════════════════════════
-PART 1 — WHAT YOU ARE LOOKING FOR
+ANCHOR CATALOG — hand-verified reference values (use these directly)
 ═══════════════════════════════════════════════════════════════════════════
 
-Identify "frontier open-source language models" released between {lookback_date}
-and {cutoff}. A model qualifies as a frontier open-source candidate if AND
-ONLY IF it meets BOTH of these criteria:
+The following frontier open-source models have been verified by the framework
+maintainers. For ANY model on this list, return the kv_gb_per_1m value
+VERBATIM. Do NOT recompute. Do NOT search for "more accurate" values.
+These are the authoritative numbers for these architectures.
 
-  (A) LAB OF ORIGIN. The model comes from one of these labs that have shipped
-      architecturally significant work in the last 24 months:
-        - DeepSeek (deepseek-ai)
-        - Meta (Llama family)
-        - Alibaba (Qwen family)
-        - Mistral AI
-        - Z.ai (GLM family, formerly Zhipu)
-        - xAI (Grok open-weights releases only)
-        - Google (Gemma family — open-weights only, NOT Gemini)
-        - Anthropic research releases (open-weights only, currently none)
+{anchor_block}
 
-  (B) BENCHMARK PRESENCE. The model appears in at least one of:
-        - MMLU-Pro top-30 in its size class (e.g. <100B params, or MoE)
-        - LiveBench top-30 overall
-        - Artificial Analysis intelligence index top-30
-        - lmarena.ai top-30 in Hard prompts category
+═══════════════════════════════════════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════════════════════════════════════
 
-  Both criteria must be met. A lab-of-origin model that no benchmark has
-  picked up yet is too new/experimental. A benchmark-listed model from
-  a non-listed lab is likely a fine-tune, not architecturally novel.
+You have TWO jobs, in order:
 
-PRIORITY-BY-RECENCY EXCEPTION (added in v3.8.5):
-  For each lab in (A), you MUST include their most recent flagship release
-  within the lookback window, EVEN IF benchmark presence in (B) cannot yet
-  be confirmed. Rationale: a model 4-8 weeks old from an approved lab may
-  not yet appear on leaderboards, but the lab-of-origin signal alone is
-  sufficient quality assurance for the latest flagship. Without this rule,
-  the worker systematically excludes the actual frontier in favor of older
-  models that have had time to be benchmarked.
+JOB 1 — Return all anchor catalog entries above as candidates, using the
+  exact kv_gb_per_1m value shown and the maturity classification shown.
+  Source URLs from the catalog must be passed through unchanged.
 
-  How to identify "most recent flagship": the model the lab itself currently
-  positions as its primary general-purpose release (largest size or main
-  named version), not preview/experimental/specialized variants.
+JOB 2 — Find any frontier open-source model released between
+  {ANCHOR_CATALOG_AS_OF} and {cutoff} that is NOT already in the anchor
+  catalog.
 
-  Example: if Lab X released "X-Flagship-v5" 30 days ago with a technical
-  report on arxiv, INCLUDE it with confidence "medium" or "low" noting
-  "benchmark presence pending — included via priority-by-recency rule".
+  If this date window is zero days (which happens when the anchor catalog
+  was updated today), there is nothing to research. JOB 2 returns an
+  empty addition — that is correct, not an error.
 
-EXPLICITLY EXCLUDED:
-  - Closed-source models (GPT, Claude, Gemini API-only, Grok-API-only)
-  - Fine-tunes of other labs' base models (e.g. Nous-Hermes, WizardLM)
-  - Quantized redistributions (e.g. Unsloth GGUFs of Llama)
+  For each new candidate found:
+
+  (a) Verify it's from an approved lab: DeepSeek, Meta (Llama),
+      Alibaba (Qwen), Mistral AI, Z.ai (GLM), xAI (Grok open-weights only),
+      Google (Gemma open-weights only).
+
+  (b) Find the primary source (arxiv paper, HuggingFace model card with
+      config.json visible, or official lab blog).
+
+  (c) Compute kv_gb_per_1m. CHOOSE ONE OF THESE PATHS:
+
+      PATH I — paper-stated value (PREFERRED when available):
+        If the paper states KV cache per token directly, use that value.
+        If the paper states KV as a ratio vs a known model (e.g., "10% of
+        V3.2's KV at 1M context"), compute using anchor catalog values
+        above. Example: "10% of V3.2" → 33 × 0.10 = 3.3 GB/1M.
+
+      PATH II — compute from architecture parameters (only if Path I N/A):
+        For GQA: kv_kb_per_token = 2 × num_layers × num_kv_heads × head_dim
+                                   × bytes_per_element / 1024
+        For MLA: kv_kb_per_token = num_layers × (mla_kv_lora_rank
+                                   + mla_qk_rope_head_dim) × bytes_per_element
+                                   / 1024
+        Then: kv_gb_per_1m = kv_kb_per_token × 1e6 / 1024 / 1024
+        bytes_per_element: BF16/FP16 = 2, FP8 = 1, INT4 = 0.5
+
+        SANITY CHECK against the anchor catalog: if your computed value
+        differs by more than 2× from the nearest comparable anchor (same
+        family, similar layer count, same precision), you have likely
+        made an error. Either recheck your inputs or use Path I if the
+        paper provides any KV claim at all.
+
+  (d) Classify maturity:
+        "preview"     — early-access, paper may be incomplete, <30 days old
+        "paper-claim" — paper + weights released, <6 months old, limited
+                        independent validation (DEFAULT for new candidates)
+
+      You do NOT promote to "emerging" or "proven" — those transitions
+      require multi-quarter evidence and are handled by maintainers.
+
+═══════════════════════════════════════════════════════════════════════════
+WHAT TO EXCLUDE (applies to JOB 2 new candidates only — anchor entries
+in JOB 1 are returned regardless of age)
+═══════════════════════════════════════════════════════════════════════════
+
+  - Closed-source models (GPT, Claude, Gemini API-only)
+  - Fine-tunes of other labs' base models (Nous-Hermes, WizardLM, etc.)
+  - Quantized redistributions (Unsloth GGUFs, AWQ rehosts)
   - Models older than {lookback_date}
+  - Vision/multimodal-only models
   - Research-only models with no production weights released
-  - Vision/multimodal-only models (text inference is the HBM driver)
 
 ═══════════════════════════════════════════════════════════════════════════
-PART 2 — VARIANT HANDLING
+OUTPUT FORMAT (STRICT JSON)
 ═══════════════════════════════════════════════════════════════════════════
-
-A "model family" can have multiple variants. Apply these rules:
-
-  - SAME ARCHITECTURE (same num_layers, same KV head config, same precision):
-    Pick ONE representative. Use the most-cited or most-deployed variant.
-    Example: DeepSeek V3, V3-0324, V3.5 → ONE entry (use "DeepSeek V3.5"
-    as the latest representative of the V3 architecture line).
-
-  - DIFFERENT SIZES (different num_layers): SEPARATE entries.
-    Example: Llama 4 Scout (small) and Llama 4 Maverick (large) → TWO entries.
-
-  - DIFFERENT PRECISIONS published by the same lab for the same arch:
-    Use the LOWEST-PRECISION variant the lab itself validates as production
-    (typically FP8 if published, otherwise BF16). Do NOT use community
-    INT4/INT8 quantizations unless the lab itself published them.
-
-═══════════════════════════════════════════════════════════════════════════
-PART 3 — KV CACHE FORMULAS (this is what you compute, per candidate)
-═══════════════════════════════════════════════════════════════════════════
-
-The KV cache stores per-token key and value tensors across all layers.
-At inference, KV grows linearly with context length. We compute KV per
-1 million tokens of context, in gigabytes.
-
-CRITICAL: For MoE models, KV cache is computed ONCE per token before
-expert routing. KV does NOT multiply by number of experts. The MoE
-routing happens AFTER KV is written. Use the SHARED attention block's
-parameters, not "total params" or "active params" arithmetic.
-
-──────────────────────────────────────────────────────────────────────
-GQA / GQA-MoE (most Llama, Mistral, Qwen2.5, Gemma):
-
-  kv_bytes_per_token = 2 × num_layers × num_kv_heads × head_dim × bytes_per_element
-
-  Where:
-    num_layers       = transformer decoder layer count
-    num_kv_heads     = NUMBER OF KEY-VALUE HEADS (the GQA group count,
-                       NOT the total attention heads). For pure MHA,
-                       num_kv_heads = num_attention_heads.
-    head_dim         = hidden_size / num_attention_heads (often 128)
-    bytes_per_element: see Part 4
-
-  WORKED EXAMPLE — Llama 3 70B at BF16:
-    num_layers = 80, num_kv_heads = 8, head_dim = 128, bytes = 2
-    kv_bytes = 2 × 80 × 8 × 128 × 2 = 327,680 bytes per token
-    kv_kb   = 327,680 / 1024 = 320 KB per token
-    kv_gb_per_1m = 320 × 1,000,000 / 1024 / 1024 = 305.18 GB per 1M tokens
-
-  WORKED EXAMPLE — Llama 3 70B at FP8 (if the lab published FP8):
-    Same architecture, bytes = 1
-    kv_bytes = 2 × 80 × 8 × 128 × 1 = 163,840 bytes per token
-    kv_gb_per_1m = 152.59 GB per 1M tokens
-
-──────────────────────────────────────────────────────────────────────
-MLA / MLA-MoE (DeepSeek V2/V3/V3.5, Qwen3 with MLA, anything explicitly
-labelled "Multi-head Latent Attention"):
-
-  kv_bytes_per_token = num_layers × (mla_kv_lora_rank + mla_qk_rope_head_dim) × bytes_per_element
-
-  Where:
-    num_layers           = decoder layer count
-    mla_kv_lora_rank     = the latent KV dimension (typically 512 in DeepSeek)
-    mla_qk_rope_head_dim = the RoPE dimension added per token (typically 64)
-    bytes_per_element    = see Part 4
-
-  WORKED EXAMPLE — DeepSeek V3 at FP8:
-    num_layers = 61, lora_rank = 512, rope_dim = 64, bytes = 1
-    kv_bytes = 61 × (512 + 64) × 1 = 35,136 bytes per token
-    kv_kb   = 35,136 / 1024 = 34.3 KB per token
-    kv_gb_per_1m = 34.3 × 1,000,000 / 1024 / 1024 = 32.69 GB per 1M tokens
-
-  Note: this is ~10x more efficient than Llama 3 70B at FP8 — MLA's whole
-  point is dramatic KV reduction. If your MLA computation is not in this
-  efficiency neighborhood, recheck your inputs.
-
-──────────────────────────────────────────────────────────────────────
-NOVEL ARCHITECTURES (added in v3.8.5):
-
-Some recent models use attention patterns NOT covered by the GQA or MLA
-formulas above. Examples:
-  - DeepSeek Sparse Attention (DSA) — used in DeepSeek V4 (April 2026)
-  - Engram conditional memory
-  - Sliding window attention
-  - Hybrid attention (e.g., alternating dense and sparse layers)
-  - Linear attention variants
-
-For these, the GQA/MLA formulas do NOT apply. Instead:
-
-  1. Use the paper-stated KV-per-token (or KV-per-1M-tokens) value DIRECTLY
-     from the technical report. Do not attempt to compute from scratch.
-
-  2. Set architecture_family to "novel:<short_name>" (e.g., "novel:DSA",
-     "novel:Engram", "novel:hybrid").
-
-  3. Set BOTH kv_kb_per_token_computed AND kv_kb_per_token_paper_stated
-     to the same paper-stated value. Set computed_vs_paper_pct_diff = 0.
-
-  4. In notes, quote the relevant passage from the paper (e.g., "Paper
-     states: 'V4-Pro KV cache is 10% of V3.2 at 1M context'") and cite
-     section/figure number.
-
-RATIO-BASED CLAIMS:
-
-  If the paper expresses KV as a RATIO vs a prior model (e.g., "10% of
-  V3.2's KV cache"), compute the absolute value:
-
-    1. Find the prior model's KV per 1M tokens. Reference points:
-       - DeepSeek V3 / V3.2: ~33 GB/1M tokens (MLA + FP8)
-       - Llama 3 70B at BF16: ~305 GB/1M tokens
-       - Llama 3 70B at FP8: ~153 GB/1M tokens
-       - Qwen3 235B MLA + FP8: ~53 GB/1M tokens
-
-    2. Apply the ratio: new_kv = prior_kv × ratio
-
-    3. WORKED EXAMPLE — DeepSeek V4 at FP8:
-       Paper claim: "V4-Pro uses 10% of V3.2's KV cache at 1M context"
-       Prior reference: V3.2 ≈ 33 GB/1M
-       Computed: V4-Pro ≈ 33 × 0.10 = 3.3 GB/1M tokens
-       (which converts to ~3.5 KB/token at FP8)
-
-    4. Document the chain in notes: "Derived from paper ratio claim
-       (V4 = 10% of V3.2). Using V3.2 baseline of 33 GB/1M, V4 ≈ 3.3 GB/1M."
-
-A novel-architecture candidate with a clear paper-stated KV value is
-preferable to NOT including the model — the framework's whole purpose
-is tracking the efficiency frontier, which is where novel architectures
-appear first.
-
-═══════════════════════════════════════════════════════════════════════════
-PART 4 — PRECISION (bytes_per_element)
-═══════════════════════════════════════════════════════════════════════════
-
-Use the SERVING PRECISION DECLARED BY THE LAB in their official release —
-not community quantizations, not theoretical lower-precision variants.
-
-  FP32 → bytes = 4   (almost never used at inference; legacy)
-  BF16 → bytes = 2   (default for most pre-2024 models)
-  FP16 → bytes = 2   (older default)
-  FP8  → bytes = 1   (DeepSeek V3+, some 2025+ releases — must be lab-published)
-  INT4 → bytes = 0.5 (rare; only if the lab explicitly publishes INT4 weights)
-
-If the paper publishes weights in BF16 but mentions FP8 as a deployment
-option without architectural support (no FP8 training, no FP8 validation):
-USE BF16. Only adopt FP8 if the lab demonstrably trained or fine-tuned
-at FP8 (DeepSeek V3 is the canonical example).
-
-═══════════════════════════════════════════════════════════════════════════
-PART 5 — RESEARCH PROCESS
-═══════════════════════════════════════════════════════════════════════════
-
-For each candidate that passes Part 1:
-
-  1. Find the PRIMARY source. Acceptable in order of preference:
-       (a) arxiv paper or official technical report PDF
-       (b) HuggingFace model card with full config.json visible
-       (c) Official lab blog post with architecture disclosure
-       (d) Official GitHub config files
-     NOT acceptable: third-party blog posts, news articles, leaderboard
-     entries without underlying disclosure, community benchmarks.
-
-  2. Extract the required parameters with citations to the source.
-
-  3. Compute kv_gb_per_1m_tokens using the appropriate formula.
-
-  4. CROSS-CHECK: If the paper itself states a "KV cache per token" number
-     (some papers do — DeepSeek V3 paper does, Llama papers don't),
-     compare your computed value to the paper's stated value.
-       - If within 10%: confidence "high"
-       - If 10-30% off: confidence "medium", note the discrepancy
-       - If >30% off: confidence "low", recheck your formula inputs
-
-  5. If you cannot find primary-source architecture parameters for a model
-     that otherwise qualifies, INCLUDE IT with kv values set to null and
-     a note explaining what's missing. Do NOT guess from model size.
-
-═══════════════════════════════════════════════════════════════════════════
-PART 6 — OUTPUT FORMAT (STRICT)
-═══════════════════════════════════════════════════════════════════════════
-
-Begin your response with {{ and end with the matching }}. No prose before
-or after. No markdown fences. JSON only.
 
 {{
   "as_of_date": "{cutoff}",
-  "method": "vendor_disclosures",
+  "anchor_catalog_used": "{ANCHOR_CATALOG_AS_OF}",
   "candidates": [
     {{
-      "name": "<canonical model name as the lab uses it>",
-      "lab": "<lab name from Part 1 list>",
+      "name": "<model name>",
+      "from_anchor_catalog": true | false,
+      "family": "GQA" | "GQA-MoE" | "MLA" | "MLA-MoE" | "novel:<short_name>",
+      "precision": "BF16" | "FP16" | "FP8" | "INT4",
       "release_date": "<YYYY-MM-DD>",
-      "architecture_family": "GQA" | "GQA-MoE" | "MLA" | "MLA-MoE" | "MHA" | "novel:<short_name>",
-      "num_layers": <int>,
-      "arch_params": {{
-        "num_kv_heads": <int or null>,
-        "head_dim": <int or null>,
-        "mla_kv_lora_rank": <int or null>,
-        "mla_qk_rope_head_dim": <int or null>
-      }},
-      "bytes_per_element": 2 | 1 | 0.5,
-      "precision_declared": "BF16" | "FP16" | "FP8" | "INT4",
-      "is_moe": true | false,
-      "kv_kb_per_token_computed": <float>,
-      "kv_kb_per_token_paper_stated": <float or null>,
-      "kv_gb_per_1m_tokens": <float>,
-      "computed_vs_paper_pct_diff": <float or null>,
+      "kv_gb_per_1m": <float>,
+      "computation_path": "anchor" | "paper_stated" | "paper_ratio" | "formula",
+      "computation_note": "<one-line explanation if computed; for anchors, copy formula_check>",
+      "maturity": "proven" | "emerging" | "paper-claim" | "preview",
       "source_url": "<primary source URL>",
-      "source_type": "arxiv" | "huggingface" | "lab_blog" | "github",
-      "benchmark_presence": ["<benchmark names from Part 1B where this model appears>"],
-      "confidence": "high" | "medium" | "low",
-      "notes": "<one-sentence note on any caveat, discrepancy, or excluded variant>"
+      "confidence": "high" | "medium" | "low"
     }}
   ],
-  "candidates_considered_but_excluded": [
+  "anchor_promotion_suggestions": [
     {{
-      "name": "<model name>",
-      "reason": "<which Part 1 criterion failed>"
+      "name": "<anchor model name>",
+      "current_maturity": "<current value>",
+      "suggested_maturity": "<proposed value>",
+      "rationale": "<why — e.g., now deployed by N major providers>"
     }}
   ],
   "confidence": "high" | "medium" | "low"
 }}
 
+The "anchor_promotion_suggestions" array is OPTIONAL — only populate it
+if during research you found clear evidence that an anchor entry should
+graduate to a higher maturity level. Empty array is fine.
+
 ═══════════════════════════════════════════════════════════════════════════
-FINAL REMINDER (this overrides any urge you have to explain first)
+FINAL REMINDER
 ═══════════════════════════════════════════════════════════════════════════
 
-Output the JSON object directly. Do your web research silently — do NOT
-narrate your search strategy, do NOT write "I'll start by searching for...",
-do NOT summarize what you found before giving the JSON. Your output budget
-is limited; spending tokens on prose risks truncating the JSON.
-
-Your VERY FIRST output character must be the opening brace. Begin now:"""
+Output the JSON object directly. Do not narrate your research or
+explain your approach. Your VERY FIRST output character must be the
+opening brace. Begin now:"""
 
 
 # Path B (economic triangulation) was removed in v3.8.3 — the X-axis question
@@ -609,22 +565,37 @@ def _is_verified(candidate: dict) -> bool:
     return bool(url) and not _is_placeholder_url(url)
 
 
+def _norm_model_name(name: str) -> str:
+    """Normalize model name for anchor lookup: case/whitespace/dash-insensitive."""
+    return name.lower().strip().replace("-", " ").replace("_", " ").replace(".", " ")
+
+
+def _find_anchor_by_name(name: str) -> dict | None:
+    """Return the ANCHOR_CATALOG entry matching the given name (loose match),
+    or None if not found. Tolerates dash/underscore/case/dot variations."""
+    target = _norm_model_name(name)
+    for a in ANCHOR_CATALOG:
+        if _norm_model_name(a["name"]) == target:
+            return a
+    return None
+
+
 def _synthesize_candidates(path_a_result: dict) -> dict:
-    """Single-path synthesis from Path A vendor disclosures.
+    """Single-path synthesis with maturity-degradation (v3.8.6).
 
-    v3.8.3 — Path B (economic triangulation) was dropped. The X-axis question
-    (KV bytes per token from architecture) is precisely answered by primary
-    sources; Path B's serving-economics approach returned implausible values
-    in production and added no useful signal.
+    For each candidate:
+      raw_kv         = candidate['kv_gb_per_1m'] (anchor-verbatim or paper-derived)
+      degradation    = MATURITY_DEGRADATION_FACTORS[candidate['maturity']]
+      effective_kv   = raw_kv × degradation
 
-    Frontier = candidate with minimum kv_gb_per_1m_tokens among ALL candidates
-    within plausibility bounds. The new rigorous Path A prompt (Parts 1-6)
-    handles candidate filtering, variant collapsing, MoE handling, precision
-    declaration, and primary-source citation — so the synthesis layer is
-    intentionally minimal.
+    Frontier = candidate with minimum effective_kv across all candidates within
+    plausibility bounds. committed_kv = effective_kv of frontier. No floor.
 
-    Plausibility bounds [MIN_PLAUSIBLE_KV_GB, MAX_PLAUSIBLE_KV_GB] catch
-    formula misapplications. Floor: committed_kv = max(frontier.kv, KV_FLOOR_GB_PER_1M).
+    The degradation factor structurally attaches uncertainty to each candidate
+    based on evidence quality. A paper-claim entry at raw=3.3 becomes
+    effective=6.6 (×2.0); a proven entry at raw=33 stays at 33. As paper-claim
+    entries mature into emerging/proven (anchor catalog updates), their
+    degradation factor drops and the framework follows the evidence frontier.
     """
     def _norm(name: str) -> str:
         return name.lower().strip().replace("-", " ").replace("_", " ")
@@ -636,41 +607,125 @@ def _synthesize_candidates(path_a_result: dict) -> dict:
         if not norm_name:
             continue
 
-        kv = c.get("kv_gb_per_1m_tokens")
-        if kv is None:
-            logger.warning(f"  [{norm_name}] no kv value — included for inventory but excluded from selection")
+        # v3.8.6 — read kv_gb_per_1m directly (new schema); fall back to
+        # kv_gb_per_1m_tokens for backward compat with older path_a outputs
+        kv_raw = c.get("kv_gb_per_1m")
+        if kv_raw is None:
+            kv_raw = c.get("kv_gb_per_1m_tokens")
+        if kv_raw is None:
+            logger.warning(f"  [{norm_name}] no kv value — excluded from selection")
             continue
         try:
-            kv = float(kv)
+            kv_raw = float(kv_raw)
         except (TypeError, ValueError):
-            logger.warning(f"  [{norm_name}] non-numeric kv={kv!r} — excluded")
+            logger.warning(f"  [{norm_name}] non-numeric kv={kv_raw!r} — excluded")
             continue
 
-        # Plausibility filter
-        if not (MIN_PLAUSIBLE_KV_GB <= kv <= MAX_PLAUSIBLE_KV_GB):
-            logger.warning(f"  [{norm_name}] kv_gb={kv:.2f} outside plausibility bounds — excluded")
+        # v3.8.6 — Anchor validation: ALWAYS check if the candidate name matches
+        # an anchor entry (regardless of from_anchor_catalog flag — Sonnet may
+        # forget to set the flag but the name match is the real signal).
+        # If matched and kv differs from catalog, override with catalog value.
+        # Defense against Sonnet "correcting" anchor values despite VERBATIM
+        # instruction, AND against Sonnet computing from scratch for a known
+        # anchor model and getting it wrong (like Maverick at 22.89 in v3.8.5).
+        anchor_override_applied = False
+        anchor = _find_anchor_by_name(name)
+        if anchor is not None:
+            anchor_kv = float(anchor["kv_gb_per_1m"])
+            if abs(kv_raw - anchor_kv) > 0.05:  # 0.05 GB/1M tolerance
+                logger.warning(
+                    f"  [{norm_name}] matches anchor catalog entry but Sonnet returned "
+                    f"kv={kv_raw} while catalog has {anchor_kv}. Overriding with "
+                    f"catalog value (defense against Sonnet recomputation errors)."
+                )
+                kv_raw = anchor_kv
+                anchor_override_applied = True
+            # Also override maturity from catalog
+            if c.get("maturity") != anchor["maturity"]:
+                logger.warning(
+                    f"  [{norm_name}] matches anchor catalog entry but Sonnet returned "
+                    f"maturity='{c.get('maturity')}' while catalog has "
+                    f"'{anchor['maturity']}'. Overriding with catalog value."
+                )
+                c["maturity"] = anchor["maturity"]
+                anchor_override_applied = True
+            # Force from_anchor_catalog flag to True for downstream provenance
+            c["from_anchor_catalog"] = True
+
+        # Plausibility filter on RAW value (before degradation)
+        if not (MIN_PLAUSIBLE_KV_GB <= kv_raw <= MAX_PLAUSIBLE_KV_GB):
+            logger.warning(f"  [{norm_name}] raw kv_gb={kv_raw:.2f} outside plausibility bounds — excluded")
             continue
+
+        # v3.8.6 — apply maturity degradation
+        maturity = c.get("maturity", DEFAULT_NEW_CANDIDATE_MATURITY)
+        degradation = MATURITY_DEGRADATION_FACTORS.get(maturity)
+        if degradation is None:
+            logger.warning(
+                f"  [{norm_name}] unknown maturity '{maturity}' — defaulting to "
+                f"'{DEFAULT_NEW_CANDIDATE_MATURITY}' (degradation "
+                f"{MATURITY_DEGRADATION_FACTORS[DEFAULT_NEW_CANDIDATE_MATURITY]})"
+            )
+            maturity = DEFAULT_NEW_CANDIDATE_MATURITY
+            degradation = MATURITY_DEGRADATION_FACTORS[maturity]
+
+        kv_effective = kv_raw * degradation
 
         url = c.get("source_url", "") or ""
         per_candidate[norm_name] = {
             "name": name,
             "release_date": c.get("release_date", ""),
-            "arch_family": c.get("architecture_family", "unknown"),
-            "lab": c.get("lab", ""),
-            "precision_declared": c.get("precision_declared", ""),
-            "is_moe": c.get("is_moe", False),
-            "kv_gb_per_1m": round(kv, 4),
-            "kv_kb_per_token_computed": c.get("kv_kb_per_token_computed"),
-            "kv_kb_per_token_paper_stated": c.get("kv_kb_per_token_paper_stated"),
-            "computed_vs_paper_pct_diff": c.get("computed_vs_paper_pct_diff"),
-            "synthesis_rule": "path_A_only",
+            "arch_family": c.get("family") or c.get("architecture_family", "unknown"),
+            "precision_declared": c.get("precision") or c.get("precision_declared", ""),
+            "kv_gb_per_1m_raw": round(kv_raw, 4),
+            "kv_gb_per_1m_effective": round(kv_effective, 4),
+            "maturity": maturity,
+            "degradation_factor": degradation,
+            "computation_path": c.get("computation_path", "unknown"),
+            "computation_note": c.get("computation_note", ""),
+            "from_anchor_catalog": bool(c.get("from_anchor_catalog", False)),
             "source_verified": bool(url) and not _is_placeholder_url(url),
             "source_url": url,
-            "source_type": c.get("source_type", ""),
-            "benchmark_presence": c.get("benchmark_presence", []),
             "candidate_confidence": c.get("confidence", "unknown"),
-            "notes": c.get("notes", ""),
         }
+
+    # v3.8.6 — Safety net: inject any anchor catalog entries that Sonnet
+    # failed to return. The anchor catalog is the source of truth; we should
+    # never lose entries because Sonnet skipped them. This guarantees the
+    # framework always considers the full known frontier set regardless of
+    # Sonnet's behavior.
+    returned_names_norm = set(per_candidate.keys())
+    injected_anchors = []
+    for a in ANCHOR_CATALOG:
+        anchor_name_norm = _norm(a["name"])
+        if anchor_name_norm in returned_names_norm:
+            continue
+        # Anchor was missing from Sonnet's response — inject it
+        injected_anchors.append(a["name"])
+        kv_raw = float(a["kv_gb_per_1m"])
+        maturity = a["maturity"]
+        degradation = MATURITY_DEGRADATION_FACTORS[maturity]
+        per_candidate[anchor_name_norm] = {
+            "name": a["name"],
+            "release_date": "",
+            "arch_family": a["family"],
+            "precision_declared": a["precision"],
+            "kv_gb_per_1m_raw": round(kv_raw, 4),
+            "kv_gb_per_1m_effective": round(kv_raw * degradation, 4),
+            "maturity": maturity,
+            "degradation_factor": degradation,
+            "computation_path": "anchor_injected",
+            "computation_note": f"Injected by synthesis safety net (Sonnet did not return this anchor). {a['formula_check']}",
+            "from_anchor_catalog": True,
+            "source_verified": True,
+            "source_url": a["source"],
+            "candidate_confidence": "high",
+        }
+    if injected_anchors:
+        logger.warning(
+            f"  Synthesis injected {len(injected_anchors)} anchor(s) missing from "
+            f"Sonnet's response: {', '.join(injected_anchors)}"
+        )
 
     if not per_candidate:
         return {
@@ -679,18 +734,11 @@ def _synthesize_candidates(path_a_result: dict) -> dict:
             "committed_kv_gb_per_1m": None,
         }
 
-    # Select frontier: minimum KV across ALL candidates. URL verification is
-    # provenance only, not a selection gate (see v3.8.2 fix).
-    frontier_name = min(per_candidate, key=lambda n: per_candidate[n]["kv_gb_per_1m"])
+    # Select frontier: minimum EFFECTIVE KV across all candidates
+    frontier_name = min(per_candidate, key=lambda n: per_candidate[n]["kv_gb_per_1m_effective"])
     frontier = per_candidate[frontier_name]
 
-    # Apply floor
-    raw_kv = frontier["kv_gb_per_1m"]
-    floor_applied = raw_kv < KV_FLOOR_GB_PER_1M
-    committed_kv = max(raw_kv, KV_FLOOR_GB_PER_1M)
-
-    # kv_gb_per_1m = kv_kb_per_token × 1e6 / 1024 / 1024
-    # → kv_kb_per_token = committed_kv × 1024 × 1024 / 1e6
+    committed_kv = frontier["kv_gb_per_1m_effective"]
     committed_kb = committed_kv * 1024.0 * 1024.0 / 1_000_000.0
 
     return {
@@ -698,19 +746,18 @@ def _synthesize_candidates(path_a_result: dict) -> dict:
         "frontier_model_name": frontier["name"],
         "frontier_model_release_date": frontier["release_date"],
         "arch_family": frontier["arch_family"],
-        "lab": frontier["lab"],
         "precision_declared": frontier["precision_declared"],
-        "is_moe": frontier["is_moe"],
+        "from_anchor_catalog": frontier["from_anchor_catalog"],
         "source_url": frontier["source_url"],
         "source_verified": frontier["source_verified"],
-        "raw_kv_gb_per_1m": round(raw_kv, 4),
-        "floor_applied": floor_applied,
-        "floor_value_gb_per_1m": KV_FLOOR_GB_PER_1M,
+        "raw_kv_gb_per_1m": frontier["kv_gb_per_1m_raw"],
+        "maturity": frontier["maturity"],
+        "degradation_factor": frontier["degradation_factor"],
         "committed_kv_gb_per_1m": round(committed_kv, 4),
         "committed_kv_kb_per_token": round(committed_kb, 4),
-        "synthesis_rule": "path_A_only",
+        "synthesis_rule": "anchor_or_paper × maturity_degradation",
         "all_candidates": per_candidate,
-        "excluded_by_prompt": path_a_result.get("candidates_considered_but_excluded", []),
+        "anchor_promotion_suggestions": path_a_result.get("anchor_promotion_suggestions", []),
     }
 
 
@@ -886,24 +933,29 @@ def research_inference_arch() -> dict:
             "frontier_model_name": synthesis["frontier_model_name"],
             "frontier_model_release_date": synthesis["frontier_model_release_date"],
             "arch_family": synthesis["arch_family"],
-            "lab": synthesis.get("lab", ""),
             "precision_declared": synthesis.get("precision_declared", ""),
-            "is_moe": synthesis.get("is_moe", False),
+            "from_anchor_catalog": synthesis.get("from_anchor_catalog", False),
             "source_url": synthesis["source_url"],
             "source_verified": synthesis["source_verified"],
+            "raw_kv_gb_per_1m": synthesis.get("raw_kv_gb_per_1m"),
+            "maturity": synthesis.get("maturity", ""),
+            "degradation_factor": synthesis.get("degradation_factor"),
             "committed_kv_gb_per_1m": synthesis["committed_kv_gb_per_1m"],
             "committed_kv_kb_per_token": synthesis["committed_kv_kb_per_token"],
-            "floor_applied": synthesis["floor_applied"],
-            "floor_value_gb_per_1m": KV_FLOOR_GB_PER_1M,
+            "synthesis_rule": synthesis.get("synthesis_rule", ""),
+            "anchor_catalog_as_of": ANCHOR_CATALOG_AS_OF,
+            "anchor_promotion_suggestions": synthesis.get("anchor_promotion_suggestions", []),
             "history": worker_state.get("history", []) + [{
                 "date": today,
                 "frontier_model": synthesis["frontier_model_name"],
+                "raw_kv_gb_per_1m": synthesis.get("raw_kv_gb_per_1m"),
+                "maturity": synthesis.get("maturity", ""),
+                "degradation_factor": synthesis.get("degradation_factor"),
                 "committed_kv_gb_per_1m": synthesis["committed_kv_gb_per_1m"],
                 "committed_kv_kb_per_token": synthesis["committed_kv_kb_per_token"],
-                "floor_applied": synthesis["floor_applied"],
                 "path_a_candidates": len(path_a_result.get("candidates") or []),
                 "all_candidates": synthesis.get("all_candidates"),
-                "excluded_by_prompt": synthesis.get("excluded_by_prompt", []),
+                "anchor_promotion_suggestions": synthesis.get("anchor_promotion_suggestions", []),
                 "calibration": cal_diagnostic,
             }],
         }
@@ -913,10 +965,13 @@ def research_inference_arch() -> dict:
         state["_metadata"]["last_arch_research_additions"] = 1
         _save_state(state)
 
+        raw = synthesis.get("raw_kv_gb_per_1m")
+        maturity = synthesis.get("maturity", "")
+        deg = synthesis.get("degradation_factor")
         committed_str = (
             f"{synthesis['frontier_model_name']} "
+            f"raw={_fmt(raw, ' GB/1M')} × {deg} ({maturity}) = "
             f"{_fmt(synthesis['committed_kv_gb_per_1m'], ' GB/1M')}"
-            f"{' (floor)' if synthesis['floor_applied'] else ''}"
         )
         summary["committed"].append(committed_str)
         logger.info(

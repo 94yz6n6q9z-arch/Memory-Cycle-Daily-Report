@@ -16,6 +16,20 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+
+@pytest.fixture
+def empty_anchor_catalog(monkeypatch):
+    """Isolate unit tests from the v3.8.6 anchor safety net by patching
+    ANCHOR_CATALOG to []. Tests that explicitly verify anchor behavior
+    should NOT use this fixture."""
+    monkeypatch.setattr(
+        "src.data.inference_arch_llm_research.ANCHOR_CATALOG", []
+    )
+    yield
+
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -29,26 +43,32 @@ def _make_arch_state(days_ago: int | None = None, worker: dict | None = None) ->
     return state
 
 
-def _minimal_path_a(name: str, kv: float, verified: bool = True) -> dict:
+def _minimal_path_a(name: str, kv: float, verified: bool = True,
+                    maturity: str = "proven") -> dict:
+    """v3.8.6 schema: kv_gb_per_1m (not kv_gb_per_1m_tokens), maturity field,
+    family (not architecture_family). Backward compat with old key names
+    preserved by synthesis."""
     url = "https://arxiv.org/abs/2412.12345" if verified else "https://arxiv.org/abs/2509.XXXXX"
     return {
         "candidates": [{
             "name": name,
+            "from_anchor_catalog": True,
+            "family": "MLA",
+            "precision": "FP8",
             "release_date": "2024-12-26",
-            "architecture_family": "MLA",
-            "num_layers": 61,
-            "arch_params": {},
-            "bytes_per_element": 1,
-            "kv_kb_per_token": kv * 1024 * 1024 / 1_000_000,
-            "kv_gb_per_1m_tokens": kv,
+            "kv_gb_per_1m": kv,
+            "computation_path": "anchor",
+            "computation_note": "test fixture",
+            "maturity": maturity,
             "source_url": url,
-            "source_verified": verified,
             "confidence": "high",
         }]
     }
 
 
 def _minimal_path_b(name: str, kv: float) -> dict:
+    """Path B fixture retained only for legacy two-path tests (now unused
+    by the worker but referenced in older test scaffolding)."""
     return {
         "candidates": [{
             "name": name,
@@ -155,7 +175,7 @@ def test_placeholder_url_detected():
     assert _is_placeholder_url("") is True
 
 
-def test_all_candidates_participate_regardless_of_url_verification(tmp_path):
+def test_all_candidates_participate_regardless_of_url_verification(tmp_path, empty_anchor_catalog):
     """All worker-found candidates must participate in frontier selection.
 
     URL verification is provenance only — not a selection gate. The worker's
@@ -221,15 +241,16 @@ def test_all_candidates_participate_regardless_of_url_verification(tmp_path):
     )
 
 
-# ── Floor application ──────────────────────────────────────────────────────────
+# ── Maturity-degradation (v3.8.6) ────────────────────────────────────────────
 
-def test_floor_applied_when_kv_below_threshold(tmp_path):
-    """When best candidate KV < 4.0 GB/1M (but above plausibility floor of 1.0),
-    committed value must be 4.0."""
+def test_paper_claim_kv_is_degraded_by_factor_2(tmp_path, empty_anchor_catalog):
+    """v3.8.6 — a paper-claim entry at raw=3.3 must be committed at 6.6
+    (raw × 2.0 paper-claim degradation factor). No floor applied."""
     state_file = tmp_path / "inference_arch_state.json"
     state_file.write_text(json.dumps({"_metadata": {}, "open_models": []}))
 
-    path_a = _minimal_path_a("LowKV Model", kv=2.0, verified=True)
+    path_a = _minimal_path_a("DeepSeek V4-Pro", kv=3.3, verified=True,
+                             maturity="paper-claim")
 
     with (
         patch("src.data.inference_arch_llm_research.ARCH_STATE_FILE", state_file),
@@ -247,19 +268,20 @@ def test_floor_applied_when_kv_below_threshold(tmp_path):
 
     reloaded = json.loads(state_file.read_text())
     worker = reloaded.get("llm_worker_frontier", {})
-    assert worker.get("floor_applied") is True
-    assert worker.get("committed_kv_gb_per_1m") == 4.0
+    assert worker.get("maturity") == "paper-claim"
+    assert worker.get("degradation_factor") == 2.0
+    assert worker.get("raw_kv_gb_per_1m") == 3.3
+    assert worker.get("committed_kv_gb_per_1m") == 6.6
 
 
-def test_floor_not_applied_when_kv_above_threshold(tmp_path):
-    """When best candidate KV >= 4.0 GB/1M, committed value equals raw KV.
-
-    v3.8.3 — single-path synthesis: result is just Path A's value.
-    """
+def test_proven_kv_passes_through_unchanged(tmp_path, empty_anchor_catalog):
+    """v3.8.6 — a proven entry at raw=35.0 must be committed at 35.0
+    (raw × 1.0 proven degradation factor). No floor applied."""
     state_file = tmp_path / "inference_arch_state.json"
     state_file.write_text(json.dumps({"_metadata": {}, "open_models": []}))
 
-    path_a = _minimal_path_a("HighKV Model", kv=35.0, verified=True)
+    path_a = _minimal_path_a("Proven Model", kv=35.0, verified=True,
+                             maturity="proven")
 
     with (
         patch("src.data.inference_arch_llm_research.ARCH_STATE_FILE", state_file),
@@ -277,26 +299,29 @@ def test_floor_not_applied_when_kv_above_threshold(tmp_path):
 
     reloaded = json.loads(state_file.read_text())
     worker = reloaded.get("llm_worker_frontier", {})
-    assert worker.get("floor_applied") is False
+    assert worker.get("maturity") == "proven"
+    assert worker.get("degradation_factor") == 1.0
+    assert worker.get("raw_kv_gb_per_1m") == 35.0
     assert worker.get("committed_kv_gb_per_1m") == 35.0
 
 
 # ── Single-path synthesis behavior (v3.8.3) ──────────────────────────────────
 
-def test_synthesis_passes_through_path_a_value():
-    """v3.8.3 single-path synthesis: committed value equals Path A's value
-    (subject to plausibility filter and floor)."""
+def test_synthesis_passes_through_path_a_value(empty_anchor_catalog):
+    """v3.8.6 — synthesis applies maturity degradation. For a proven entry,
+    raw × 1.0 = raw, so committed = raw."""
     from src.data.inference_arch_llm_research import _synthesize_candidates
 
-    path_a = _minimal_path_a("TestModel", kv=30.0, verified=True)
+    path_a = _minimal_path_a("TestModel", kv=30.0, verified=True,
+                             maturity="proven")
 
     result = _synthesize_candidates(path_a)
     assert result["status"] == "committed"
     assert result["committed_kv_gb_per_1m"] == 30.0
-    assert result["synthesis_rule"] == "path_A_only"
+    assert "maturity_degradation" in result["synthesis_rule"]
 
 
-def test_synthesis_filters_implausibly_low_values():
+def test_synthesis_filters_implausibly_low_values(empty_anchor_catalog):
     """v3.8.3 — values < 1.0 GB/1M (new plausibility floor) are excluded."""
     from src.data.inference_arch_llm_research import _synthesize_candidates
 
@@ -314,7 +339,7 @@ def test_synthesis_filters_implausibly_low_values():
     assert result["frontier_model_name"] == "RealisticModel"
 
 
-def test_synthesis_selects_minimum_kv_across_all_candidates():
+def test_synthesis_selects_minimum_kv_across_all_candidates(empty_anchor_catalog):
     """With multiple candidates, the one with the lowest KV is selected
     regardless of source URL verification status (v3.8.2 behavior preserved)."""
     from src.data.inference_arch_llm_research import _synthesize_candidates
@@ -549,11 +574,14 @@ def test_v3_8_4_uses_streaming_api(monkeypatch):
 def test_v3_8_4_path_a_prompt_has_final_reminder():
     """v3.8.4 — Path A prompt must end with the FINAL REMINDER block
     that overrides the model's urge to narrate before producing JSON.
+    Preserved through v3.8.6 prompt restructure.
     """
     from src.data.inference_arch_llm_research import _build_path_a_vendor_prompt
     prompt = _build_path_a_vendor_prompt()
     assert "FINAL REMINDER" in prompt
-    assert "VERY FIRST output character must be the opening brace" in prompt
+    # The directive may wrap across lines; collapse whitespace for the check
+    collapsed = " ".join(prompt.split())
+    assert "VERY FIRST output character must be the opening brace" in collapsed
 
 
 # ── v3.8.5 tests ─────────────────────────────────────────────────────────────
@@ -568,24 +596,273 @@ def test_v3_8_5_retry_max_tokens_capped_at_32k():
     )
 
 
-def test_v3_8_5_path_a_prompt_has_priority_by_recency_rule():
-    """Part 1 must include the priority-by-recency exception that overrides
-    benchmark presence requirement for the latest flagship from each lab."""
+# ── v3.8.6 tests ─────────────────────────────────────────────────────────────
+
+def test_v3_8_6_anchor_catalog_present_in_prompt():
+    """v3.8.6 — Path A prompt embeds the anchor catalog so Sonnet has known-good
+    baseline values rather than recomputing every entry from scratch."""
     from src.data.inference_arch_llm_research import _build_path_a_vendor_prompt
     prompt = _build_path_a_vendor_prompt()
-    assert "PRIORITY-BY-RECENCY EXCEPTION" in prompt
-    assert "most recent flagship release" in prompt
-    assert "EVEN IF benchmark presence" in prompt
+    assert "ANCHOR CATALOG" in prompt
+    assert "return the kv_gb_per_1m value\nVERBATIM" in prompt
+    # Specific known-good anchors must appear
+    assert "DeepSeek V3" in prompt
+    assert "Llama 4 Maverick" in prompt
+    assert "DeepSeek V4-Pro" in prompt
+    # Maturity classifications must appear
+    assert "proven" in prompt
+    assert "paper-claim" in prompt
 
 
-def test_v3_8_5_path_a_prompt_has_novel_architecture_section():
-    """Part 3 must include novel architecture handling for DSA/Engram/etc.,
-    with the ratio-based KV derivation worked example."""
-    from src.data.inference_arch_llm_research import _build_path_a_vendor_prompt
-    prompt = _build_path_a_vendor_prompt()
-    assert "NOVEL ARCHITECTURES" in prompt
-    assert "DeepSeek Sparse Attention" in prompt or "DSA" in prompt
-    assert "novel:<short_name>" in prompt or 'novel:DSA' in prompt
-    # Ratio-based derivation must be documented
-    assert "RATIO-BASED CLAIMS" in prompt
-    assert "10%" in prompt and "V3.2" in prompt  # worked example
+def test_v3_8_6_maturity_degradation_factors_defined():
+    """v3.8.6 — maturity factors must be defined with the expected values."""
+    from src.data.inference_arch_llm_research import MATURITY_DEGRADATION_FACTORS
+    assert MATURITY_DEGRADATION_FACTORS["proven"] == 1.0
+    assert MATURITY_DEGRADATION_FACTORS["emerging"] == 1.5
+    assert MATURITY_DEGRADATION_FACTORS["paper-claim"] == 2.0
+    assert MATURITY_DEGRADATION_FACTORS["preview"] == 2.5
+
+
+def test_v3_8_6_no_floor_in_module():
+    """v3.8.6 — KV_FLOOR_GB_PER_1M must not be importable. Conservatism
+    comes from maturity-degradation, not a post-hoc floor."""
+    import src.data.inference_arch_llm_research as mod
+    assert not hasattr(mod, "KV_FLOOR_GB_PER_1M"), (
+        "KV_FLOOR_GB_PER_1M was removed in v3.8.6 — degradation replaces floor"
+    )
+
+
+def test_v3_8_6_unknown_maturity_defaults_to_paper_claim(empty_anchor_catalog):
+    """v3.8.6 — if a candidate has unknown maturity, synthesis defaults to
+    paper-claim (degradation factor 2.0) rather than crashing or trusting it."""
+    from src.data.inference_arch_llm_research import _synthesize_candidates
+
+    path_a = {
+        "candidates": [{
+            "name": "MysteryModel",
+            "family": "MLA",
+            "precision": "FP8",
+            "release_date": "2026-05-01",
+            "kv_gb_per_1m": 10.0,
+            "maturity": "some-bogus-value",
+            "source_url": "https://example.com/paper",
+            "confidence": "low",
+        }]
+    }
+    result = _synthesize_candidates(path_a)
+    assert result["status"] == "committed"
+    assert result["maturity"] == "paper-claim"  # defaulted
+    assert result["degradation_factor"] == 2.0
+    assert result["committed_kv_gb_per_1m"] == 20.0  # 10 × 2.0
+
+
+def test_v3_8_6_frontier_selects_min_effective_not_min_raw(empty_anchor_catalog):
+    """v3.8.6 — frontier is min(effective_kv) = min(raw × degradation),
+    NOT min(raw). A paper-claim entry at raw=3.3 (effective=6.6) loses to
+    a proven entry at raw=5.0 (effective=5.0)."""
+    from src.data.inference_arch_llm_research import _synthesize_candidates
+
+    path_a = {
+        "candidates": [
+            {"name": "PaperBragger", "family": "novel:DSA", "precision": "FP8",
+             "release_date": "2026-05-01", "kv_gb_per_1m": 3.3,
+             "maturity": "paper-claim",
+             "source_url": "https://example.com/paper1", "confidence": "medium"},
+            {"name": "ProvenSolid", "family": "MLA", "precision": "FP8",
+             "release_date": "2025-01-01", "kv_gb_per_1m": 5.0,
+             "maturity": "proven",
+             "source_url": "https://example.com/paper2", "confidence": "high"},
+        ]
+    }
+    result = _synthesize_candidates(path_a)
+    # PaperBragger: 3.3 × 2.0 = 6.6 effective
+    # ProvenSolid:   5.0 × 1.0 = 5.0 effective
+    # ProvenSolid wins.
+    assert result["frontier_model_name"] == "ProvenSolid"
+    assert result["committed_kv_gb_per_1m"] == 5.0
+
+
+# ── v3.8.6 anchor safety net tests ───────────────────────────────────────────
+
+def test_v3_8_6_anchor_injection_when_sonnet_omits_anchors():
+    """If Sonnet returns NO candidates, synthesis must inject all anchors
+    from ANCHOR_CATALOG as a safety net. Frontier should be V4-Pro at
+    raw=3.3 × 2.0 (paper-claim) = 6.6 effective GB/1M."""
+    from src.data.inference_arch_llm_research import _synthesize_candidates
+
+    empty_path_a = {"candidates": []}
+    result = _synthesize_candidates(empty_path_a)
+
+    assert result["status"] == "committed"
+    # Frontier from anchor catalog must be V4-Pro
+    assert "v4" in result["frontier_model_name"].lower()
+    # Effective KV = raw 3.3 × paper-claim 2.0 = 6.6
+    assert abs(result["committed_kv_gb_per_1m"] - 6.6) < 0.01
+    # All 10 anchors should be in all_candidates
+    assert len(result["all_candidates"]) == 10
+
+
+def test_v3_8_6_anchor_override_when_sonnet_returns_wrong_kv():
+    """If Sonnet returns DeepSeek V3 with kv=10 (wrong; catalog has 33),
+    synthesis must override with catalog value 33.0."""
+    from src.data.inference_arch_llm_research import _synthesize_candidates
+
+    path_a = {
+        "candidates": [{
+            "name": "DeepSeek V3",
+            "from_anchor_catalog": True,
+            "family": "MLA-MoE",
+            "precision": "FP8",
+            "release_date": "2024-12-26",
+            "kv_gb_per_1m": 10.0,  # WRONG (catalog has 33.0)
+            "maturity": "proven",
+            "source_url": "https://arxiv.org/abs/2412.19437",
+            "confidence": "high",
+        }]
+    }
+    result = _synthesize_candidates(path_a)
+
+    # Find the V3 entry in all_candidates
+    v3 = None
+    for k, v in result["all_candidates"].items():
+        if "v3" in k and "v3 5" not in k and "v4" not in k:
+            # match "deepseek v3" but not "deepseek v3 5"
+            if k.strip() == "deepseek v3":
+                v3 = v
+                break
+    assert v3 is not None, f"DeepSeek V3 not in candidates: {list(result['all_candidates'].keys())}"
+    # The raw kv should have been overridden to 33.0
+    assert v3["kv_gb_per_1m_raw"] == 33.0, (
+        f"Expected catalog value 33.0 to override Sonnet's 10.0, "
+        f"got raw={v3['kv_gb_per_1m_raw']}"
+    )
+
+
+def test_v3_8_6_anchor_override_handles_name_variations():
+    """Anchor matching must be tolerant: 'DeepSeek-V3' or 'deepseek_v3' or
+    'DeepSeek V3' should all match the catalog entry."""
+    from src.data.inference_arch_llm_research import _find_anchor_by_name
+
+    assert _find_anchor_by_name("DeepSeek V3") is not None
+    assert _find_anchor_by_name("DeepSeek-V3") is not None
+    assert _find_anchor_by_name("deepseek_v3") is not None
+    assert _find_anchor_by_name("deepseek v3") is not None
+    assert _find_anchor_by_name("DEEPSEEK V3") is not None
+    # Negative case
+    assert _find_anchor_by_name("DeepSeek V99") is None
+
+
+def test_v3_8_6_anchor_override_does_not_apply_within_tolerance():
+    """Tiny rounding differences (< 0.05 GB/1M) should NOT trigger override.
+    Sonnet returning 33.001 for V3 (catalog: 33.0) is fine."""
+    from src.data.inference_arch_llm_research import _synthesize_candidates
+
+    path_a = {
+        "candidates": [{
+            "name": "DeepSeek V3",
+            "from_anchor_catalog": True,
+            "family": "MLA-MoE",
+            "precision": "FP8",
+            "release_date": "2024-12-26",
+            "kv_gb_per_1m": 33.001,  # essentially catalog
+            "maturity": "proven",
+            "source_url": "https://arxiv.org/abs/2412.19437",
+            "confidence": "high",
+        }]
+    }
+    result = _synthesize_candidates(path_a)
+    v3 = result["all_candidates"]["deepseek v3"]
+    # Should keep Sonnet's value (within tolerance)
+    assert v3["kv_gb_per_1m_raw"] == 33.001
+
+
+def test_v3_8_6_maverick_protection_against_recomputation():
+    """The specific failure mode from v3.8.5: Sonnet returns Llama 4 Maverick
+    at 22.89 GB/1M (formula misapplied by 7x; correct is 153). Synthesis
+    must override to the catalog value 153.0."""
+    from src.data.inference_arch_llm_research import _synthesize_candidates
+
+    path_a = {
+        "candidates": [{
+            "name": "Llama 4 Maverick",
+            "from_anchor_catalog": False,  # Sonnet may forget the flag
+            "family": "GQA-MoE",
+            "precision": "FP8",
+            "release_date": "2026-04-05",
+            "kv_gb_per_1m": 22.89,  # THE WRONG VALUE FROM v3.8.5
+            "maturity": "proven",
+            "source_url": "https://ai.meta.com/blog/llama-4/",
+            "confidence": "medium",
+        }]
+    }
+    result = _synthesize_candidates(path_a)
+    maverick = result["all_candidates"]["llama 4 maverick"]
+    # Must be overridden to catalog value 153
+    assert maverick["kv_gb_per_1m_raw"] == 153.0, (
+        f"Maverick must be overridden from Sonnet's wrong 22.89 to catalog 153.0, "
+        f"got {maverick['kv_gb_per_1m_raw']}"
+    )
+
+
+def test_v3_8_6_end_to_end_expected_committed_value(tmp_path):
+    """End-to-end: simulate a realistic v3.8.6 run where Sonnet returns
+    the anchor catalog correctly. Verify final committed value lands at
+    V4-Pro 6.6 GB/1M (→ R3 workload → R4 market with +1)."""
+    import json
+    from unittest.mock import patch
+    from src.data.inference_arch_llm_research import ANCHOR_CATALOG
+
+    state_file = tmp_path / "inference_arch_state.json"
+    state_file.write_text(json.dumps({"_metadata": {}, "open_models": []}))
+
+    # Build a realistic path_a output: all 10 anchors returned verbatim
+    path_a = {
+        "as_of_date": "2026-05-25",
+        "anchor_catalog_used": "2026-05-25",
+        "candidates": [
+            {
+                "name": a["name"],
+                "from_anchor_catalog": True,
+                "family": a["family"],
+                "precision": a["precision"],
+                "release_date": "2024-01-01",  # whatever
+                "kv_gb_per_1m": a["kv_gb_per_1m"],
+                "computation_path": "anchor",
+                "computation_note": a["formula_check"],
+                "maturity": a["maturity"],
+                "source_url": a["source"],
+                "confidence": "high",
+            }
+            for a in ANCHOR_CATALOG
+        ],
+        "anchor_promotion_suggestions": [],
+        "confidence": "high",
+    }
+
+    with (
+        patch("src.data.inference_arch_llm_research.ARCH_STATE_FILE", state_file),
+        patch(
+            "src.data.inference_arch_llm_research._run_calibration_check",
+            return_value=(True, {"calibration_status": "passed"}),
+        ),
+        patch(
+            "src.data.inference_arch_llm_research._call_claude_with_search",
+            side_effect=[path_a],
+        ),
+    ):
+        from src.data.inference_arch_llm_research import research_inference_arch
+        result = research_inference_arch()
+
+    reloaded = json.loads(state_file.read_text())
+    worker = reloaded.get("llm_worker_frontier", {})
+
+    assert "v4" in worker.get("frontier_model_name", "").lower()
+    assert worker.get("maturity") == "paper-claim"
+    assert worker.get("degradation_factor") == 2.0
+    assert worker.get("raw_kv_gb_per_1m") == 3.3
+    assert abs(worker.get("committed_kv_gb_per_1m") - 6.6) < 0.01
+
+    # Confirm DHCR band classification
+    from src.analysis.dhcr import classify_kv_band
+    band = classify_kv_band(worker["committed_kv_gb_per_1m"])
+    assert band["name"] == "R3", f"Expected R3 (4-16 GB/1M), got {band['name']}"
