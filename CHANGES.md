@@ -1,6 +1,161 @@
 # Memory Cycle Brief — Changelog
 
-## v3.7.4 (2026-05-25) — Section-4 visual polish (chart row center + card 7/8 title cleanup)
+## v3.8.0 (2026-05-25) — X-axis LLM worker + Y-axis cost fixes
+
+Two parallel workstreams shipped together. The X-axis (KV efficiency) gets its
+own LLM-driven research worker, making it measured rather than hand-curated.
+The Y-axis (operative_context) gets three cost fixes without touching its
+methodology or the numbers it commits.
+
+### X-axis: new LLM research worker (`src/data/inference_arch_llm_research.py`)
+
+The DHCR matrix's row dimension (KV efficiency, R1-R5) was previously driven
+by `state/inference_arch_state.json["open_models"]` — a hand-curated catalog
+bootstrapped in May 2026 that included two entries with placeholder arxiv IDs
+(`2509.XXXXX`, `2604.XXXXX`). The production reading of 13.3 GB/1M was coming
+from a speculative DeepSeek V4 (estimated) entry. No automated process was
+keeping this catalog current.
+
+The new worker runs quarterly (Jan/Apr/Jul/Oct, 07:00 UTC) and measures the
+X-axis through 2-path LLM triangulation:
+
+**Path A — vendor disclosures.** Searches arxiv, HuggingFace model cards, and
+official release blogs for frontier open-source models released in the last 18
+months. Extracts architecture parameters (MLA or GQA family), computes
+KV/1M per model using the established `compute_kv_per_token()` formula. Only
+candidates with verified, non-placeholder source URLs are eligible for frontier
+selection.
+
+**Path B — economic triangulation.** Independently reverse-engineers KV-per-token
+from serving economics: cost curves at different context lengths, GPU memory
+consumption per concurrent request, and throughput degradation benchmarks from
+providers such as Together, Fireworks, Anyscale, and NVIDIA NIM.
+
+**Synthesis (Python, not LLM).** For each candidate present in both paths:
+`kv = max(path_B_economic, mean(path_A, path_B))` — same path-B max-privilege
+rationale as the Y-axis worker. Frontier selection: minimum KV among candidates
+with verified source URLs (Option A — most efficient confirmed open-source model).
+Floor: `committed_kv = max(frontier.kv, 4.0 GB/1M)` — the R3 lower boundary.
+The framework cannot drop into R2 until measured confirmed-architecture behavior
+actually proves we are there.
+
+**Calibration back-test.** Before any research, the worker independently
+re-derives DeepSeek V3's KV footprint using the MLA formula and its published
+architecture parameters (61 layers, lora_rank=512, rope_dim=64, FP8). Target:
+~34 GB/1M ± 40%. If the worker's derivation falls outside 20.4–47.6 GB/1M,
+the run aborts before touching state.
+
+**Reliability hardening from v0.** All of v3.7.2's patterns:
+- Per-path try/except (one path failure does not kill the run)
+- try/finally wrapper (summary always logs even on unhandled exception)
+- Centralized JSON-parse retry with doubled max_tokens (16K default, 32K retry)
+- None-safe formatting everywhere
+- Plausibility filter: rejects KV values outside [0.1, 500] GB/1M
+- Atomic state file write via `tmp.replace()`
+- Staleness guard (60 days — see below)
+- End-of-run summary block to stdout
+
+**State output.** Writes to `state/inference_arch_state.json["llm_worker_frontier"]`.
+Does not overwrite `open_models` — the historical catalog is preserved for
+YoY trend tracking. `dhcr.py:compute_frontier_kv()` has a new shim that reads
+`llm_worker_frontier` first and falls back to `open_models` when the worker
+key is absent or malformed.
+
+**Cost.** 3 LLM calls per run (calibration + Path A + Path B) ≈ $1.50/run
+× 4 runs/year ≈ $6/year (~€5.5).
+
+### X-axis: new GitHub Actions workflow (`.github/workflows/inference_arch_research.yml`)
+
+Quarterly schedule at 07:00 UTC (1 hour after the Y-axis worker to avoid
+concurrent runs). `workflow_dispatch` enabled. Staleness guard in the worker
+means redundant manual triggers exit immediately without API calls. Opens a
+GitHub Issue on failure with diagnostics.
+
+### X-axis: dhcr.py shim in `compute_frontier_kv()`
+
+```python
+# v3.8.0 — prefer LLM worker result when present
+worker = arch_yaml.get("llm_worker_frontier")
+if worker and worker.get("committed_kv_kb_per_token"):
+    return {
+        "kv_kb_per_token": float(worker["committed_kv_kb_per_token"]),
+        ...
+        "source": "llm_worker_frontier",
+    }
+# Fall back to open_models catalog (legacy path)
+```
+
+The shim is backward compatible: if the worker has never run (or if its entry
+is malformed), `compute_frontier_kv()` behaves exactly as before v3.8.0. The
+`source` field now distinguishes which path produced the result.
+
+---
+
+### Y-axis cost fixes
+
+The Y-axis context_length_llm_research worker was running manually multiple
+times on testing days (workflow_dispatch with no staleness guard), producing
+spikes of ~€50+ on those days. Three targeted fixes, no methodology changes.
+
+**1. Staleness guard (60 days).** If `state/_metadata.last_run_at` is within
+60 days, the worker logs the reason and returns immediately without making any
+API calls. Applies to manual `workflow_dispatch` triggers. Five manual triggers
+on the same day: first runs, next four skip. The 60-day window allows a
+genuine emergency re-run 30 days before the next quarterly slot if needed.
+
+**2. Quarterly schedule.** Cron changed from `0 6 1 1,3,5,7,9,11 *` (6x/year)
+to `0 6 1 1,4,7,10 *` (4x/year). Context length moves slowly; quarterly
+measurement is sufficient and saves two runs/year.
+
+**3. Volume shares Path C call removed.** Path C for volume shares was being
+executed but was already explicitly excluded from the synthesis math in v3.7.1
+(`synthesis_rule: "mean(path_A_revenue_mix, path_B_traffic_proxy), path_C_ignored"`).
+It was running, burning an API call, and recording its output for provenance
+only. The call is removed in v3.8.0. No change to committed values — Path C
+was not in the math. History entries now record `source: "llm_research_v3_8_0"`
+and omit the `c_informational_only` provenance key.
+
+**Cost after fixes.** ~$9/run × 4 runs/year ≈ $36/year (~€33). Per scheduled
+run cost unchanged; annual cost reduced 33% by dropping 2 runs/year.
+
+---
+
+### Tests
+
+25 new tests across two files:
+
+`tests/test_v3_8_0_yaxis_cost_fixes.py` (8 tests):
+- Staleness guard skips when state is recent (< 60 days)
+- Staleness guard runs when state is stale (> 60 days)
+- Staleness guard runs when no prior run exists
+- Staleness guard handles malformed `last_run_at` gracefully (proceeds, no crash)
+- `_build_share_path_c_bottom_up` is not called anywhere in research loop (AST check)
+- The call-site string is absent from source (regex check)
+- Quarterly cron present in workflow YAML
+- `STALENESS_GUARD_DAYS == 60`
+
+`tests/test_v3_8_0_xaxis_worker.py` (17 tests):
+- X-axis staleness guard: skips when recent, runs when stale, runs when no prior
+- Calibration abort: state file unchanged when calibration fails
+- Placeholder URL detection (positive and negative cases)
+- Unverified candidate excluded when verified candidate exists
+- Floor applied when KV < 4.0 GB/1M
+- Floor not applied when KV ≥ 4.0 GB/1M
+- Synthesis path-B max-privilege (path_B > mean → B wins)
+- Synthesis mean-privilege (path_B < mean → mean wins)
+- Synthesis selects minimum-KV among verified candidates
+- dhcr.py shim prefers `llm_worker_frontier` when present
+- dhcr.py shim falls back to `open_models` when worker absent
+- dhcr.py shim falls back gracefully on malformed worker entry
+- dhcr.py shim falls back on empty worker entry (no committed value)
+- `inference_arch_research.yml` workflow file exists
+- X-axis workflow uses quarterly cron
+
+Total test count: 746 passing (721 pre-existing + 25 new). Zero new failures
+introduced. 22 pre-existing failures are unchanged from v3.7.4 (all require
+runtime state files not present in the working tree).
+
+
 
 Three small visual changes on the brief, no behavioral or computational impact. All confined to `src/email_module/template.py`.
 

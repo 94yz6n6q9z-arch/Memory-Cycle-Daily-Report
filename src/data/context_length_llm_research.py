@@ -1,4 +1,4 @@
-"""Context length research worker — v3.7.1 (2026-05-25).
+"""Context length research worker — v3.8.0 (2026-05-25).
 
 Architecture (v3.7.1 update over v3.7.0):
   - 3-path triangulation per input is unchanged (Path A vendor, B economic, C empirical)
@@ -37,7 +37,9 @@ KEPT in v3.7.1:
   - Plausibility bounds (committed values must be 1K-10M tokens, paths must
     be numeric — catches outright garbage but doesn't gate on disagreement)
 
-Cost: ~19 LLM calls per run × $0.03/call × 6 runs/year ≈ $3.50/year (unchanged).
+Cost: ~18 LLM calls per run (Path C volume shares dropped in v3.8.0) × ~$0.50/call
+  including web search tool use ≈ $9/run × 4 runs/year ≈ $36/year (~€33).
+  Staleness guard (60 days) prevents redundant manual re-runs from multiplying cost.
 """
 
 from __future__ import annotations
@@ -55,6 +57,13 @@ logger = logging.getLogger(__name__)
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 CONTEXT_STATE_FILE = Path("state/context_length_state.json")
+
+# v3.8.0 — staleness guard. If state was updated within this many days,
+# skip the run entirely. Protects against cost multiplication from
+# repeated manual workflow_dispatch triggers on the same day.
+# Set to 60 days: the quarterly schedule runs every ~90 days, so this
+# allows re-runs 30 days before the next scheduled slot if needed.
+STALENESS_GUARD_DAYS = 60
 
 # v3.7.1 — calibration back-test parameters.
 # The worker independently re-derives the OpenRouter 100T-token study finding
@@ -1107,33 +1116,58 @@ def _print_run_summary(summary: dict, state: dict) -> None:
 
 
 def research_context_length_inputs() -> dict:
-    """v3.7.2 — Reliability-hardened version of v3.7.1.
+    """v3.8.0 — Adds staleness guard and drops Path C volume shares call.
 
-    Reliability changes from v3.7.1:
+    v3.7.2 reliability changes (unchanged):
       - Per-path try/except for typical_context AND volume_shares calls.
-        A failure on path A no longer prevents paths B and C from running.
-      - Per-category state save after each typical_context category's
-        history append. If a later category crashes the run, earlier
-        categories' commits are already persisted on disk.
-      - try/finally wrapper around the whole research function. Final
-        metadata + state save always runs, even on unhandled exception.
-      - None-safe formatting in all summary message construction (the
-        crash mode that bit v3.7.1).
-      - Centralized JSON-parse retry in _call_claude_with_search with
-        doubled max_tokens on retry. Truncation-induced JSON failures
-        no longer permanently lose a path on first attempt.
+      - Per-category state save after each typical_context category commit.
+      - try/finally wrapper — final metadata save always runs.
+      - None-safe formatting throughout.
+      - Centralized JSON-parse retry with doubled max_tokens on retry.
+
+    v3.8.0 changes:
+      - Staleness guard: if state was updated within STALENESS_GUARD_DAYS,
+        skip the run and return immediately. Prevents cost multiplication
+        from repeated manual workflow_dispatch triggers.
+      - Volume shares Path C call removed. Path C was already excluded from
+        the synthesis math (mean(A, B) only); it was being run and recorded
+        for provenance only. Dropping it saves one API call per run with
+        zero impact on committed values.
 
     Sequence:
-      1. Calibration back-test — if fails, abort and write metadata only
-      2. For each of 5 categories:
+      1. Staleness guard check — if recent run exists, return early
+      2. Calibration back-test — if fails, abort and write metadata only
+      3. For each of 5 categories:
          a. Try each path independently (one path failure ≠ category failure)
          b. Synthesize via floor + max(B, mean), plausibility-filtered
          c. Save state immediately
-      3. 3-path volume_share research (per-path try/except), mean(A, B)
-         ignoring C; commit if all 5 categories produced usable A or B
-      4. Persist final state with full provenance
+      4. 2-path volume_share research (Path A + B only), mean(A, B)
+      5. Persist final state with full provenance
     """
     state = _load_state()
+
+    # v3.8.0 — staleness guard
+    if os.environ.get("FORCE_RUN", "").lower() == "true":
+        logger.info("FORCE_RUN=true — bypassing staleness guard.")
+    else:
+        last_run_str = state.get("_metadata", {}).get("last_run_at")
+        if last_run_str:
+            try:
+                last_run = datetime.fromisoformat(last_run_str.replace("Z", "+00:00"))
+                if last_run.tzinfo is None:
+                    last_run = last_run.replace(tzinfo=timezone.utc)
+                days_since = (datetime.now(timezone.utc) - last_run).days
+                if days_since < STALENESS_GUARD_DAYS:
+                    logger.info(
+                        f"Staleness guard: state updated {days_since}d ago "
+                        f"(guard={STALENESS_GUARD_DAYS}d). Skipping run — no API calls fired."
+                    )
+                    return {
+                        "skipped": True,
+                        "reason": f"staleness_guard: last_run {days_since}d ago < {STALENESS_GUARD_DAYS}d",
+                    }
+            except Exception as e:
+                logger.warning(f"Could not parse last_run_at '{last_run_str}': {e}. Proceeding with run.")
     today = date.today().isoformat()
     state.setdefault("_metadata", {})
 
@@ -1269,15 +1303,12 @@ def research_context_length_inputs() -> dict:
             err = f"volume_shares.path_b: {type(e).__name__}: {e}"
             summary["errors"].append(err)
             logger.error(err)
-        time.sleep(2)
-        try:
-            share_c = _call_claude_with_search(_build_share_path_c_bottom_up())
-        except Exception as e:
-            err = f"volume_shares.path_c: {type(e).__name__}: {e}"
-            summary["errors"].append(err)
-            logger.error(err)
+        # v3.8.0 — Path C volume shares call removed. Path C was already
+        # excluded from synthesis math (mean(A, B) only) and recorded for
+        # provenance only. Dropping it saves one API call per run with
+        # zero impact on committed values.
 
-        share_synthesis = _synthesize_share_paths(share_a or {}, share_b or {}, share_c or {})
+        share_synthesis = _synthesize_share_paths(share_a or {}, share_b or {}, {})
         summary["volume_shares_result"] = share_synthesis
 
         if share_synthesis["status"] == "committed":
@@ -1287,8 +1318,8 @@ def research_context_length_inputs() -> dict:
             state["volume_shares"]["history"].append({
                 "date": today,
                 "shares": new_shares,
-                "source": "llm_research_v3_7_2",
-                "synthesis_rule": "mean(path_A_revenue_mix, path_B_traffic_proxy), path_C_ignored",
+                "source": "llm_research_v3_8_0",
+                "synthesis_rule": "mean(path_A_revenue_mix, path_B_traffic_proxy)",
                 "raw_means_pre_normalization": share_synthesis["raw_means_pre_normalization"],
                 "per_category": share_synthesis["per_category"],
                 "previous_shares": prev_shares,
@@ -1297,10 +1328,6 @@ def research_context_length_inputs() -> dict:
                           "method": (share_a or {}).get("method")},
                     "b": {"shares": (share_b or {}).get("shares"),
                           "method": (share_b or {}).get("method")},
-                    "c_informational_only": {"shares": (share_c or {}).get("shares"),
-                                             "method": (share_c or {}).get("method"),
-                                             "note": "v3.7.1+ excludes path C from share math; "
-                                                     "logged for provenance only"},
                 },
             })
             state["volume_shares"]["proposal_status"] = "none"

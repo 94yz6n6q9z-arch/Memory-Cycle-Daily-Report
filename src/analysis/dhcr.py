@@ -315,6 +315,24 @@ def compute_kv_per_token(model_entry: dict) -> float:
 
 
 def compute_frontier_kv(arch_yaml: dict, as_of_date: Optional[date] = None) -> dict:
+    # v3.8.0 — prefer LLM worker result when present.
+    # inference_arch_llm_research.py writes arch_yaml["llm_worker_frontier"]
+    # with a committed_kv_kb_per_token from its 2-path triangulation.
+    # This is the authoritative X-axis measurement; the open_models list
+    # below is the fallback for when the worker has never run.
+    worker = arch_yaml.get("llm_worker_frontier")
+    if worker and worker.get("committed_kv_kb_per_token"):
+        try:
+            return {
+                "kv_kb_per_token": float(worker["committed_kv_kb_per_token"]),
+                "model_name": worker.get("frontier_model_name", "LLM worker result"),
+                "arch_family": worker.get("arch_family", "unknown"),
+                "release_date": worker.get("frontier_model_release_date", "unknown"),
+                "source": "llm_worker_frontier",
+            }
+        except (TypeError, ValueError):
+            pass  # malformed worker entry — fall through to open_models
+
     if as_of_date is None:
         as_of_date = date.today()
     eligible = []
@@ -336,6 +354,7 @@ def compute_frontier_kv(arch_yaml: dict, as_of_date: Optional[date] = None) -> d
         "model_name": model["name"],
         "arch_family": model.get("architecture_family", "unknown"),
         "release_date": rd.isoformat(),
+        "source": "open_models_catalog",
     }
 
 
