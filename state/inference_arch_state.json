@@ -6,7 +6,7 @@
     "last_aggregator_run": "2026-05-25T13:42:25Z",
     "description": "Frontier inference model registry. open_models feeds frontier_kv computation. closed_models excluded from frontier calc (architecture unknown) but Sonnet may reference them in narrative. Auto-updated by src/analysis/dhcr_arch_aggregator.py.",
     "last_run_additions": 0,
-    "last_arch_research_run_at": "2026-05-25T16:12:35Z",
+    "last_arch_research_run_at": "2026-05-25T19:27:03Z",
     "last_arch_research_additions": 1
   },
   "open_models": [
@@ -226,15 +226,15 @@
     }
   ],
   "llm_worker_frontier": {
-    "last_run_at": "2026-05-25T16:12:35Z",
-    "frontier_model_name": "DeepSeek-R1",
-    "frontier_model_release_date": "2025-01-20",
-    "arch_family": "MLA-MoE",
-    "source_url": "https://arxiv.org/abs/2501.12948",
-    "source_verified": true,
-    "committed_kv_gb_per_1m": 66.76,
-    "committed_kv_kb_per_token": 70.0029,
-    "floor_applied": false,
+    "last_run_at": "2026-05-25T19:27:03Z",
+    "frontier_model_name": "Llama 3.3 70B Instruct",
+    "frontier_model_release_date": "",
+    "arch_family": "unknown",
+    "source_url": "",
+    "source_verified": false,
+    "committed_kv_gb_per_1m": 4.0,
+    "committed_kv_kb_per_token": 4.1943,
+    "floor_applied": true,
     "floor_value_gb_per_1m": 4.0,
     "history": [
       {
@@ -396,6 +396,119 @@
           "target_gb_per_1m": 65.0,
           "tolerance_fraction": 0.4,
           "actual_deviation_fraction": 0.007,
+          "worker_cited_source": "https://arxiv.org/abs/2412.19437",
+          "worker_params": {
+            "num_layers": 61,
+            "mla_kv_lora_rank": 512,
+            "mla_qk_rope_head_dim": 64,
+            "bytes_per_element": 2
+          }
+        }
+      },
+      {
+        "date": "2026-05-25",
+        "frontier_model": "Llama 3.3 70B Instruct",
+        "committed_kv_gb_per_1m": 4.0,
+        "committed_kv_kb_per_token": 4.1943,
+        "floor_applied": true,
+        "path_a_candidates": 7,
+        "path_b_candidates": 8,
+        "all_candidates": {
+          "deepseek v3": {
+            "name": "DeepSeek-V3",
+            "release_date": "2024-12-26",
+            "arch_family": "MLA-MoE",
+            "kv_gb_per_1m": 65.46,
+            "path_a_kv_gb": 65.46,
+            "path_b_kv_gb": null,
+            "synthesis_rule": "path_A only (path_B missing)",
+            "source_verified": true,
+            "source_url": "https://arxiv.org/abs/2412.19437"
+          },
+          "deepseek r1": {
+            "name": "DeepSeek-R1",
+            "release_date": "2025-01-20",
+            "arch_family": "MLA-MoE",
+            "kv_gb_per_1m": 65.46,
+            "path_a_kv_gb": 65.46,
+            "path_b_kv_gb": null,
+            "synthesis_rule": "path_A only (path_B missing)",
+            "source_verified": true,
+            "source_url": "https://arxiv.org/abs/2501.12948"
+          },
+          "llama 3.3 70b instruct": {
+            "name": "Llama 3.3 70B Instruct",
+            "release_date": "",
+            "arch_family": "unknown",
+            "kv_gb_per_1m": 0.32,
+            "path_a_kv_gb": null,
+            "path_b_kv_gb": 0.32,
+            "synthesis_rule": "path_B only (path_A missing)",
+            "source_verified": false,
+            "source_url": ""
+          },
+          "qwen3 235b a22b": {
+            "name": "Qwen3-235B-A22B",
+            "release_date": "2025-04-29",
+            "arch_family": "GQA-MoE",
+            "kv_gb_per_1m": 89.739,
+            "path_a_kv_gb": 179.29,
+            "path_b_kv_gb": 0.188,
+            "synthesis_rule": "max(path_B, mean(path_A, path_B))",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/Qwen/Qwen3-235B-A22B"
+          },
+          "gemma 3 27b": {
+            "name": "Gemma 3 27B",
+            "release_date": "2025-03-12",
+            "arch_family": "GQA",
+            "kv_gb_per_1m": 473.02,
+            "path_a_kv_gb": 473.02,
+            "path_b_kv_gb": null,
+            "synthesis_rule": "path_A only (path_B missing)",
+            "source_verified": true,
+            "source_url": "https://arxiv.org/abs/2503.19786"
+          },
+          "llama 4 scout (17b 16e)": {
+            "name": "Llama 4 Scout (17B-16E)",
+            "release_date": "2025-04-05",
+            "arch_family": "GQA-MoE",
+            "kv_gb_per_1m": 183.203,
+            "path_a_kv_gb": 366.21,
+            "path_b_kv_gb": 0.196,
+            "synthesis_rule": "max(path_B, mean(path_A, path_B))",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct"
+          },
+          "llama 4 maverick (17b 128e)": {
+            "name": "Llama 4 Maverick (17B-128E)",
+            "release_date": "2025-04-05",
+            "arch_family": "GQA-MoE",
+            "kv_gb_per_1m": 183.203,
+            "path_a_kv_gb": 366.21,
+            "path_b_kv_gb": 0.196,
+            "synthesis_rule": "max(path_B, mean(path_A, path_B))",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct"
+          },
+          "qwen3 32b": {
+            "name": "Qwen3-32B",
+            "release_date": "2025-04-29",
+            "arch_family": "GQA",
+            "kv_gb_per_1m": 488.28,
+            "path_a_kv_gb": 488.28,
+            "path_b_kv_gb": null,
+            "synthesis_rule": "path_A only (path_B missing)",
+            "source_verified": true,
+            "source_url": "https://huggingface.co/Qwen/Qwen3-32B"
+          }
+        },
+        "calibration": {
+          "calibration_status": "passed",
+          "worker_derived_gb_per_1m": 65.42,
+          "target_gb_per_1m": 65.0,
+          "tolerance_fraction": 0.4,
+          "actual_deviation_fraction": 0.006,
           "worker_cited_source": "https://arxiv.org/abs/2412.19437",
           "worker_params": {
             "num_layers": 61,
