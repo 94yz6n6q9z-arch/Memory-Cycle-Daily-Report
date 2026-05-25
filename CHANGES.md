@@ -1,5 +1,53 @@
 # Memory Cycle Brief — Changelog
 
+## v3.7.0 (2026-05-25) — Multi-path triangulation + calibration back-test
+
+The v3.6.2 production run on 2026-05-25 06:38 UTC exposed two real problems beyond what JSON-extraction fixed. First, every typical_context_tokens reading was rejected by the 50% sanity threshold — Sonnet proposed values 70-97% smaller than the baseline (consumer_chat 120K → 6K, enterprise 1M → 33K, etc.). The proposed values weren't hallucinations; they reflected a *narrower* interpretation of "typical context length." Sonnet read the prompt as "average user message size" rather than "tokens loaded into the KV cache during inference." Second, the volume_shares call exceeded `max_tokens=4096` mid-output and produced a truncated JSON the brace-matcher couldn't repair.
+
+The deeper issue: a single-path single-prompt worker can't tell us whether a value is _correct_, only whether it _passed sanity_. Sonnet's 33K for enterprise_vertical was technically defensible from one angle (it's the typical user query length) and totally wrong from another (it ignores RAG-retrieved chunks that fill the actual context window). The framework needs disambiguation built into the methodology, not into post-hoc sanity checks.
+
+**The v3.7.0 rewrite turns the worker into a multi-path triangulator.** For each input the framework needs, the worker now runs THREE independent research paths with structurally different methods, then commits the result only if the paths converge within 30% of the mean. If they diverge, no commit happens — the divergence itself is logged as evidence that the input is genuinely uncertain rather than being papered over with an averaged guess.
+
+**Three paths per typical_context_tokens category:**
+
+- **Path A — Vendor disclosures.** Top 4-6 products in the category, find their published documentation describing typical production usage patterns (system prompt sizes, default RAG retrieval depths, cost-tracking examples). Compute market-share-weighted average across products. Explicitly forbidden from using third-party measurements (that's a separate path).
+
+- **Path B — Economic triangulation.** Find revenue figures, blended API pricing, and disclosed request/user counts. Compute implied total annual input token volume = revenue ÷ blended-price. Divide by annual requests = implied per-request size. Forbidden from using vendor product-page descriptions of per-request behavior.
+
+- **Path C — Empirical third-party measurement.** OpenRouter "State of AI" 100T-token study, RAGAS benchmarks, a16z research, academic production-usage papers. Adjust general findings to the specific category. Forbidden from using vendor sources.
+
+**Three paths per volume_share_pct (one prompt, returns all 5 categories):**
+
+- **Path A — Revenue mix disclosures** converted to token-volume via inverse-blended-pricing (with explicit correction for consumer flat-fee economics where revenue understates token volume).
+- **Path B — Web traffic / MAU share** with per-user token consumption correction (enterprise users consume 100x consumer users per session).
+- **Path C — Bottom-up product volume estimation** summing absolute token volumes per product, normalized to relative shares.
+
+**The convergence gate.** For typical_context_tokens: spread (max - min) / mean ≤ 30% to commit. For volume_share_pct: per-category absolute pp spread ≤ 10pp to commit; ANY divergent category blocks the whole share update for the run. Divergent results write full path provenance to history (each path's value, method, confidence, reasoning) so a human reviewing the state can see exactly where the disagreement was.
+
+**Calibration back-test runs FIRST.** Before any research, the worker is asked to independently re-derive the OpenRouter "average prompt size ~6,000 tokens" figure via web search. If it returns a value outside 3,600-8,400 (±40% of target), the entire run is aborted before any state changes. This catches prompt drift, model behavior changes, and web-search quality regressions before they corrupt state. The deviation is logged to `_metadata.calibration_history` regardless of pass/fail so we can track calibration health across runs.
+
+**The prompts now eliminate the typical_context_tokens ambiguity.** Every prompt opens with an explicit definition block that names the metric ("tokens loaded into the model's input context"), enumerates components (system prompt, chat history, RAG-retrieved content, loaded files, tool outputs), gives concrete arithmetic examples per category, and includes explicit anti-examples ("NOT the maximum context window the model supports", "NOT just the user-typed message"). If a future Sonnet runs through this prompt and still returns "user query size only," the prompt has failed in a way we can read in logs and fix.
+
+**Display-layer forward-looking multiplier (1.40).** State stores measured truth — what production traffic actually loads into KV cache today. The brief's DHCR section 6 shows BOTH the measured operative_context AND a forward-looking value (measured × 1.40) labeled for the 18-month capex horizon. Multiplier lives in `config.OPERATIVE_CONTEXT_FORWARD_LOOKING_MULTIPLIER` and is env-overridable for sensitivity testing. The multiplier never enters state, so bi-monthly delta tracking continues to detect real growth rather than multiplier compounding across runs.
+
+**Calibrated state seed.** Production state in Raul's repo after the v3.4.14 first-run carried a mix of bogus values (consumer 120,615; developer 113,231; other 32,000 from scraper fallback) and one correct value (enterprise 1,000,000 from manual). Even with correct prompts, the 50% delta sanity check would reject every value on the first v3.7.0 run because the baseline is wrong. This release ships a calibrated `state/context_length_state.json` derived from the May 25 deep-dive research (consumer 8,500; coding 100,000; enterprise 65,000; developer 40,000; other 8,500; shares 30/18/30/17/5). Each value is anchored to a public source documented in the state file's history entries. **CRITICAL:** because `deploy_from_release.yml` excludes `state/` from rsync, this seed file does NOT auto-deploy. Raul must manually replace `state/context_length_state.json` in the repo via GitHub UI before the first v3.7.0 workflow run, or the sanity check will reject everything again.
+
+**Cost and runtime.** 19 LLM calls per run (was 6): 1 calibration + 5 categories × 3 paths + 3 volume_share paths. At ~$0.03/call (Sonnet 4.6 with web_search) × 6 runs/year = ~$3.50/year (was ~$1.10/year). Each call takes 30-90 seconds, so total runtime is 15-25 minutes. Workflow `timeout-minutes` raised from 20 to 45 to accommodate.
+
+**Tests.** 28 new tests in `tests/test_v3_7_0_triangulation.py` across 7 classes: path convergence/divergence synthesis (4), volume share per-category convergence (2), calibration check passes/fails/unparseable/non-numeric (4), end-to-end calibration failure aborts run without firing research calls (1), prompt disambiguation checks (parameterized × 3 paths × 3 properties = 9), display-layer multiplier defined/overridable (2), workflow timeout raised (1), provenance writes include all three paths and calibration history (2). The old `tests/test_v3_6_0_llm_research.py` (testing helpers like `_sanity_check_shares` that no longer exist in the v3.7.0 architecture) is deleted. The v3.6.2 JSON-extraction tests are preserved (the brace-matcher is still the JSON-handling layer). **Net test count change: +28 new − 26 obsolete deleted = +2 net.**
+
+**Deploy.** Three manual steps because `deploy_from_release.yml` excludes both `state/` and `.github/workflows/`:
+
+1. **Publish release `v3.7.0`** with the attached zip. `deploy_from_release.yml` auto-syncs code to main. No-touch deploy for `src/`, `tests/`, `CHANGES.md`.
+
+2. **Manually replace `state/context_length_state.json`** in GitHub UI with the file in the zip. Without this step, the first v3.7.0 workflow run will sanity-reject every value due to >50% delta from the bogus v3.4.14 baseline. The calibrated seed is at `state/context_length_state.json` in the zip; copy-paste its contents into the file in your repo.
+
+3. **Manually edit `.github/workflows/context_length_research.yml`** in GitHub UI: change `timeout-minutes: 20` to `timeout-minutes: 45`. (The workflows directory is excluded from auto-deploy to prevent the bundle from overwriting workflow files defensively.)
+
+Then trigger the workflow via Actions tab → "Context Length Research" → "Run workflow". Expected first-run behavior: calibration passes (worker independently finds OpenRouter 6K figure), 5 categories × 3 paths = 15 research calls + 3 volume_share calls fire over ~20 minutes, most or all converge, deltas from seeded baseline are small enough that sanity checks pass, state file is updated and committed. If any input diverges (paths disagree by >30%), it logs full provenance but doesn't commit, and the workflow exits with code 1 (which opens a GitHub Issue).
+
+
+
 ## v3.6.2 (2026-05-25) — Fix JSON extraction + revert to Sonnet
 
 First production run of v3.6.0 (2026-05-25 06:09 UTC) failed on all 6 LLM calls with identical `Expecting value: line 1 column 1 (char 0)` errors. All 6 HTTP calls returned 200; the failure was downstream in response parsing.

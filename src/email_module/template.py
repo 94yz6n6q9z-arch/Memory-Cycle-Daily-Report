@@ -1654,6 +1654,16 @@ def _build_dhcr_where_we_stand_prose(dhcr: dict) -> str:
     model = dhcr.get("frontier_model_name", "?")
     op_ctx = dhcr.get("operative_context_tokens", 0)
     op_ctx_s = f"{op_ctx/1000:.0f}K" if op_ctx < 1_000_000 else f"{op_ctx/1_000_000:.2f}M"
+    # v3.7.0 — display-layer forward-looking multiplier. State stays measured
+    # truth so bi-monthly delta tracking detects real growth; the brief shows
+    # both measured and forward-looking values for the 18-month capex horizon.
+    try:
+        from src.config import OPERATIVE_CONTEXT_FORWARD_LOOKING_MULTIPLIER as _OPCTX_MULT
+    except Exception:
+        _OPCTX_MULT = 1.0
+    op_ctx_fwd = int(op_ctx * _OPCTX_MULT)
+    op_ctx_fwd_s = (f"{op_ctx_fwd/1000:.0f}K" if op_ctx_fwd < 1_000_000
+                    else f"{op_ctx_fwd/1_000_000:.2f}M")
     ent_rr = dhcr.get("enterprise_ai_run_rate_usd_b", 0)
     ent_yoy = dhcr.get("enterprise_ai_yoy_growth_pct") or 0
     hbm_demand = dhcr.get("hbm_bit_demand_index", 0)
@@ -1675,7 +1685,9 @@ def _build_dhcr_where_we_stand_prose(dhcr: dict) -> str:
         f"({html.escape(market_zone)}). Frontier KV efficiency: "
         f"<strong>{kv_gb:.1f} GB per 1M tokens</strong> ({html.escape(model)}). "
         f"Operative context length: <strong>~{op_ctx_s} tokens</strong> "
-        f"(volume-weighted across enterprise inference workloads)."
+        f"measured (volume-weighted), "
+        f"<strong>~{op_ctx_fwd_s} forward-looking</strong> "
+        f"(×{_OPCTX_MULT:.2f} for 18-month capex horizon)."
     )
     sentences.append(
         f"Anticipation gap: <strong>+{anticipation_gap} Y-band(s)</strong> — "

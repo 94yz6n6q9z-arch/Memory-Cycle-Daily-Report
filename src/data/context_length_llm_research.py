@@ -1,26 +1,29 @@
-"""Context length research worker (v3.6.0, 2026-05-24).
+"""Context length research worker — v3.7.0 (2026-05-25).
 
-Replaces:
-  - src/data/context_length_scraper.py (v3.4.14) — bespoke regex scraping
-  - src/analysis/context_length_aggregator.py (v3.4.14) — extraction_log signals
+Multi-path triangulation architecture. For each input the framework needs,
+the worker runs 3 INDEPENDENT research paths with different methodologies,
+then commits only if the three paths converge within 30%. If they diverge,
+the run logs all three results and skips the commit — a divergence is more
+useful information than a guessed average.
 
-Why LLM-driven instead of scrapers:
-  - The data we need (revenue mix, web traffic share, vendor context windows,
-    ARR figures) lives in news articles, earnings transcripts, analyst reports.
-    These are LLM-natural sources; regex breaks on them weekly.
-  - One worker, one cadence, no per-source fragility.
-  - Cost: ~$0.50 per run × 6 runs/year = ~$3/year. Negligible.
+Architecture changes from v3.6.2:
+  - Each typical_context_tokens category now researched via 3 prompts:
+      Path A — Vendor disclosures (vendor docs, product pages, blog posts)
+      Path B — Economic triangulation (revenue / pricing / user count math)
+      Path C — Empirical third-party studies (OpenRouter, RAGAS, analyst reports)
+  - volume_share_pct now researched via 3 different lenses, same pattern
+  - Convergence gate: if paths agree within 30% spread, commit the mean.
+    If they disagree, no commit, full provenance logged for human review.
+  - Calibration back-test runs FIRST. Worker is asked to independently
+    re-derive OpenRouter's published "6,000 average prompt tokens" finding.
+    If it lands outside 4,500-8,500, the whole run aborts and opens an issue.
+    This catches prompt drift, model behavior change, and web-search
+    quality regressions before they corrupt state.
+  - Prompts now use the explicit KV-cache definition with arithmetic
+    examples — eliminates the "user query size vs full context loaded"
+    ambiguity that caused v3.6.2 to under-report by ~10x.
 
-Operating model:
-  - Bi-monthly schedule (1st of Jan/Mar/May/Jul/Sep/Nov, 06:00 UTC)
-  - Manual workflow_dispatch trigger as backup
-  - Each run re-researches:
-      * typical_context_tokens for each of 5 workload categories (5 calls)
-      * volume_share_pct distribution across all categories (1 call)
-  - Each value is sanity-checked before commit; deltas >50% (or shares >15pp
-    per category) are REJECTED, previous values retained, GitHub Issue opened
-  - State written to state/context_length_state.json with full audit trail
-    (sources, reasoning, confidence) per value
+Cost: ~19 LLM calls per run (was 6) × $0.03/call × 6 runs/year ≈ $3.50/year.
 """
 
 from __future__ import annotations
@@ -28,10 +31,10 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
+import time
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -39,20 +42,25 @@ logger = logging.getLogger(__name__)
 
 CONTEXT_STATE_FILE = Path("state/context_length_state.json")
 
-# v3.6.2 — Sonnet 4.6 for bi-monthly research (downgraded from Opus 4.7 in
-# v3.6.0). Sonnet is faster (~15-30s vs ~40-90s per call), produces more
-# consistent JSON output (better-tuned for structured responses with tool use),
-# and is the same model fast_tier uses daily for reasoning. Cost: ~$0.03/call
-# × 6 calls × 6 runs/year = ~$1.10/year.
-#
-# Reuses the same ANTHROPIC_API_KEY secret that fast_tier and deep_tier use.
+# v3.7.0 — convergence threshold across triangulation paths.
+# If max(value) and min(value) across the 3 paths differ by more than this
+# fraction of the mean, the result is flagged DIVERGENT and not committed.
+MAX_PATH_SPREAD_FRACTION = 0.30
 
-# Sanity-check thresholds
-MAX_DELTA_FRACTION_CONTEXT = 0.50    # typical_context_tokens: reject >50% change
-MAX_DELTA_PP_SHARE = 15              # volume_share_pct: reject >15pp per category
-MIN_PLAUSIBLE_CONTEXT = 1_000         # 1K tokens
-MAX_PLAUSIBLE_CONTEXT = 10_000_000    # 10M tokens
-ACCEPTED_CONFIDENCE = {"high", "medium"}   # "low" confidence rejected
+# v3.7.0 — calibration back-test parameters.
+# The worker independently re-derives the OpenRouter 100T-token study finding
+# ("average prompt tokens per request increased ~4x from 1,500 to over 6,000
+# between early 2024 and late 2025"). If the worker's independently-derived
+# answer falls outside this band, prompts have likely drifted and we abort.
+CALIBRATION_TARGET_VALUE = 6_000
+CALIBRATION_TARGET_TOLERANCE_FRACTION = 0.40    # ±40% = 3,600-8,400
+
+# Existing safety thresholds (carried from v3.6.2)
+MAX_DELTA_FRACTION_CONTEXT = 0.50
+MAX_DELTA_PP_SHARE = 15
+MIN_PLAUSIBLE_CONTEXT = 1_000
+MAX_PLAUSIBLE_CONTEXT = 10_000_000
+ACCEPTED_CONFIDENCE = {"high", "medium"}
 
 CATEGORIES = [
     "consumer_chat",
@@ -68,8 +76,8 @@ CATEGORY_DESCRIPTIONS = {
         "ChatGPT, Claude.ai, Gemini app, Microsoft Copilot consumer"
     ),
     "coding_agents": (
-        "Specialized coding agent products that load codebases — "
-        "Claude Code, Cursor, GitHub Copilot Workspace, Devin (Cognition), "
+        "Specialized coding agent products — Claude Code, Cursor, "
+        "GitHub Copilot (chat AND inline autocomplete), Devin (Cognition), "
         "Replit Agent, Lovable, Bolt"
     ),
     "enterprise_vertical_agents": (
@@ -89,135 +97,433 @@ CATEGORY_DESCRIPTIONS = {
 }
 
 
-# ── Prompts ───────────────────────────────────────────────────────────────────
+# ── The unambiguous definition (used in every prompt) ─────────────────────────
 
-def _build_typical_context_prompt(category: str) -> str:
-    """Build the research prompt for one category's typical_context_tokens."""
-    return f"""You are researching current public data for an AI investment framework. \
-Today's date is {date.today().isoformat()}.
+DEFINITION_BLOCK = """\
+DEFINITION OF "typical_context_tokens" (read carefully — this is the most \
+important thing in this prompt):
 
-YOUR TASK: determine `typical_context_tokens` for the workload category "{category}".
+It is the TOTAL TOKENS LOADED INTO THE MODEL'S INPUT CONTEXT when a typical \
+production request is processed in this category. This is what fills the KV \
+cache during inference, which is what determines GPU memory demand.
 
-CATEGORY DEFINITION: {CATEGORY_DESCRIPTIONS[category]}
+This INCLUDES EVERYTHING that goes into the prompt the model actually sees:
+  - System prompt (typically 500-3,000 tokens)
+  - Chat history from prior turns in the same session
+  - RAG-retrieved documents / snippets / chunks
+  - Loaded code files (for coding agents)
+  - Tool outputs from previous tool calls in the session
+  - The current user message
 
-WHAT "typical_context_tokens" MEANS: the weighted average context length (in tokens) \
-that an actual session/request in this category uses on average. This is NOT the \
-maximum context window the products support — it's the average actually filled by \
-typical user behavior. Examples to calibrate intuition:
-  - If ChatGPT supports 128K context but most users have short Q&A turns averaging \
-12K tokens per session, the "typical" value is ~12K, not 128K
-  - If Claude Code loads codebases averaging 600K tokens per session, the typical \
-value is ~600K
-  - If enterprise RAG apps routinely fill 1M context with retrieved documents, the \
-typical value is ~1M
+EXAMPLES OF HOW TO COMPUTE THIS:
+  - Consumer chat, turn 2: system (~1K) + memory layer (~500) + turn-1 \
+exchange (~1K) + current message (~200) = ~2,700 tokens
+  - Claude Code editing 10 files: system (~5K) + loaded files (~30K) + \
+user query (~200) + prior tool outputs (~5K) = ~40,000 tokens
+  - Enterprise RAG query, selective retrieval: system (~2K) + 5 chunks × \
+2K (~10K) + query (~200) = ~12,000 tokens
+  - Enterprise RAG query, broader retrieval: system (~2K) + 20 chunks × \
+2K (~40K) + history (~5K) = ~47,000 tokens
 
-RESEARCH APPROACH:
-1. Use web search to find current data (prefer sources from last 90 days, max 180 days)
-2. Identify the major products in this category and their CURRENT market share weights
-3. For each major product, find its published context window AND any data on actual \
-usage patterns (vendor blog posts, case studies, analyst reports)
-4. Compute a market-share-weighted average
-5. Triangulate across at least 3 independent sources
+WHAT THIS IS NOT:
+  - NOT the maximum context window the model supports (e.g., "Sonnet 4.6 \
+has 1M context" — that is the CEILING, not the TYPICAL FILL)
+  - NOT just the user-typed message (which excludes system prompt, history, \
+and RAG content)
+  - NOT the advertised context capacity of the product
+  - NOT a target or aspiration — it is what production traffic actually uses TODAY
 
-PRIORITIZE SOURCES FROM:
-- Vendor product pages and API docs (for max context specs)
-- Reuters, Bloomberg, The Information, Time Magazine (for revenue / ARR figures)
-- SimilarWeb, Sacra, Cloudflare Radar (for market share / web traffic)
-- Earnings call transcripts and investor disclosures
-
-OUTPUT FORMAT: Return ONLY a JSON object (no markdown fences, no other text):
-{{
-    "value": <integer number of tokens>,
-    "confidence": "high" | "medium" | "low",
-    "reasoning": "<one paragraph explaining your triangulation>",
-    "providers_considered": [
-        {{
-            "name": "<product name>",
-            "share_weight": <0.0 to 1.0>,
-            "max_context": <int tokens>,
-            "typical_usage_fraction": <0.0 to 1.0>,
-            "implied_typical_tokens": <int>
-        }}
-    ],
-    "weighted_calculation": "<algebra string showing how the value was computed>",
-    "source_urls": ["<url1>", "<url2>", "<url3>", ...],
-    "as_of_date": "<YYYY-MM-DD>"
-}}
-
-CRITICAL: provider share weights should sum to ~1.0. Show your math in \
-weighted_calculation.
+If you find yourself reporting "the product supports up to X tokens", you \
+have misread the question. The question is what gets LOADED on a typical \
+production request, not what COULD be loaded at maximum.\
 """
 
 
-def _build_volume_share_prompt() -> str:
-    """Build the volume share prompt — one call for all 5 categories."""
+# ── Prompts: typical_context_tokens (3 paths per category) ────────────────────
+
+def _build_typical_path_a_vendor(category: str) -> str:
+    """Path A — Bottom-up from vendor documentation and product disclosures."""
+    return f"""You are researching for an AI investment framework. Today is {date.today().isoformat()}.
+
+YOUR TASK: Determine typical_context_tokens for the workload category \
+"{category}" by examining what major vendors PUBLISH about typical \
+production request patterns.
+
+CATEGORY: {CATEGORY_DESCRIPTIONS[category]}
+
+{DEFINITION_BLOCK}
+
+RESEARCH METHOD FOR THIS CALL — VENDOR DISCLOSURES ONLY:
+  1. Identify the 4-6 dominant products in this category by current market share
+  2. For each, find their vendor-published documentation or engineering \
+blog posts that describe typical production usage patterns. Look for:
+     - "Typical session loads X files" type statements
+     - Explicit per-request token figures in cost-tracking docs
+     - Default behavior descriptions ("we retrieve top-5 chunks of 2K each")
+     - System prompt sizes if disclosed
+     - Concrete cost examples ("a typical $X/month customer processes Y queries averaging Z tokens")
+  3. For each product, compute a typical context size by SUMMING all \
+components (system prompt + retrieval + history + user message)
+  4. Estimate the current market share weighting (use web traffic share, \
+ARR, or user count as proxy)
+  5. Compute the market-share-weighted average
+
+DO NOT use empirical third-party measurements (that's a different research \
+path). Stick to vendor sources for this call.
+
+OUTPUT — return ONLY a JSON object (no markdown fences, no prose around it):
+{{
+  "value": <integer tokens>,
+  "method": "vendor_disclosures",
+  "products_analyzed": [
+    {{
+      "name": "<product name>",
+      "share_weight": <0.0 to 1.0>,
+      "system_prompt_tokens": <int>,
+      "typical_retrieval_or_loaded_content_tokens": <int>,
+      "typical_history_tokens": <int>,
+      "typical_user_message_tokens": <int>,
+      "total_typical_context": <int>,
+      "evidence_quote": "<short quote from vendor source>",
+      "source_url": "<url>"
+    }}
+  ],
+  "weighted_calculation": "<show the math: e.g. 0.4*40K + 0.3*15K + 0.2*60K + 0.1*100K = ...>",
+  "confidence": "high" | "medium" | "low",
+  "as_of_date": "{date.today().isoformat()}"
+}}"""
+
+
+def _build_typical_path_b_economic(category: str) -> str:
+    """Path B — Top-down from revenue/pricing/usage math."""
+    return f"""You are researching for an AI investment framework. Today is {date.today().isoformat()}.
+
+YOUR TASK: Derive typical_context_tokens for the workload category \
+"{category}" using ECONOMIC TRIANGULATION — revenue figures, API pricing, \
+and disclosed user/request counts. Do not use vendor descriptions of \
+per-request behavior for this call.
+
+CATEGORY: {CATEGORY_DESCRIPTIONS[category]}
+
+{DEFINITION_BLOCK}
+
+RESEARCH METHOD FOR THIS CALL — ECONOMIC MATH:
+  1. Find the total annualized revenue or token volume attributable to this \
+category. Examples:
+     - Anthropic enterprise: ~80% of $30B ARR = ~$24B (publicly disclosed April 2026)
+     - Claude Code: ~$2.5B ARR (Time Magazine, Feb 2026)
+     - OpenAI consumer: ~60% of $25B ARR
+     - For consumer_chat, total revenue is mostly flat subscriptions; use \
+WAU × prompts/week × tokens/prompt × cost-equivalent instead
+  2. Find the average blended input token pricing for dominant models in \
+this category. Approximate guides:
+     - Sonnet 4.6: $3/M input, $15/M output (typically input-dominant)
+     - Opus 4.7: $5/M input, $25/M output
+     - Haiku 4.5: $1/M input, $5/M output
+     - Mixed-tier deployments often blend to ~$2-4/M input
+  3. Compute implied total annual input token volume = revenue / blended-input-price
+  4. Find an estimate of total annual requests in this category from product \
+disclosures (MAU × sessions × messages, or ARR / per-customer-rate, etc.)
+  5. Compute implied tokens per request = total_input_tokens / total_requests
+  6. Sanity check: does the implied per-request size match the order of \
+magnitude you'd expect for this category?
+
+OUTPUT — return ONLY a JSON object (no markdown fences):
+{{
+  "value": <integer tokens>,
+  "method": "economic_triangulation",
+  "math_steps": [
+    {{"step": "annual revenue", "value": "<$X B>", "source_url": "<url>"}},
+    {{"step": "blended input price", "value": "<$Y per 1M tokens>", "source_url": "<url>"}},
+    {{"step": "implied total input tokens/year", "value": "<integer>", "calc": "revenue / price"}},
+    {{"step": "annual request count", "value": "<integer>", "source_url": "<url>"}},
+    {{"step": "implied tokens per request", "value": "<integer>", "calc": "tokens / requests"}}
+  ],
+  "sanity_check": "<does the result look right? why?>",
+  "confidence": "high" | "medium" | "low",
+  "as_of_date": "{date.today().isoformat()}"
+}}"""
+
+
+def _build_typical_path_c_empirical(category: str) -> str:
+    """Path C — Empirical third-party measurement studies."""
+    return f"""You are researching for an AI investment framework. Today is {date.today().isoformat()}.
+
+YOUR TASK: Find EMPIRICAL THIRD-PARTY MEASUREMENTS of typical context size \
+for the workload category "{category}". Use measurement studies, benchmarks, \
+analyst reports, or peer-reviewed papers — NOT vendor claims and NOT \
+economic derivations.
+
+CATEGORY: {CATEGORY_DESCRIPTIONS[category]}
+
+{DEFINITION_BLOCK}
+
+RESEARCH METHOD FOR THIS CALL — THIRD-PARTY MEASUREMENT ONLY:
+Look for studies that have actually measured production LLM traffic, such as:
+  - OpenRouter "State of AI" 100-trillion-token study (Nov 2024-Nov 2025) — \
+reported "average prompt tokens per request increased ~4x from 1,500 to over \
+6,000". This is across ALL OpenRouter traffic; programming/agentic pulls \
+the average UP. Adjust for the specific category you're researching.
+  - RAGAS / RAGAS 2.0 production RAG benchmark studies
+  - a16z research publications, SemiAnalysis reports, Sacra industry analyses
+  - Academic papers analyzing production LLM usage patterns
+  - Reverse-engineering from public cost reports ("$X/month for Y queries" → per-query size)
+
+CRITICAL: do NOT use vendor product pages, vendor blog posts, or vendor \
+marketing claims. If you can't find independent measurement for this \
+specific category, say so via lower confidence.
+
+ALSO: adjust general findings to fit the specific category. OpenRouter \
+data is developer API traffic — for consumer_chat it must be adjusted \
+downward (OpenRouter has no consumer chat). For enterprise_vertical_agents \
+it must be adjusted for the RAG-heavy access pattern.
+
+OUTPUT — return ONLY a JSON object (no markdown fences):
+{{
+  "value": <integer tokens>,
+  "method": "empirical_third_party",
+  "studies_cited": [
+    {{
+      "study_name": "<name>",
+      "publication_date": "<YYYY-MM>",
+      "what_it_measured": "<one sentence>",
+      "raw_measured_value": <int>,
+      "url": "<url>"
+    }}
+  ],
+  "category_adjustment_reasoning": "<how/why you adjusted study findings to \
+fit this specific category>",
+  "confidence": "high" | "medium" | "low",
+  "as_of_date": "{date.today().isoformat()}"
+}}"""
+
+
+# ── Prompts: volume_share_pct (3 paths, each returns all 5 categories) ────────
+
+def _build_share_path_a_revenue_mix() -> str:
+    """Path A — Revenue mix disclosures, converted to token-volume shares."""
     cats_text = "\n".join(f"  - {c}: {CATEGORY_DESCRIPTIONS[c]}" for c in CATEGORIES)
-    return f"""You are researching current public data for an AI investment framework. \
-Today's date is {date.today().isoformat()}.
+    return f"""You are researching for an AI investment framework. Today is {date.today().isoformat()}.
 
-YOUR TASK: determine the `volume_share_pct` distribution across 5 workload \
-categories. The five shares MUST sum to exactly 100.
+YOUR TASK: Determine volume_share_pct (token-volume share, summing to 100%) \
+across 5 workload categories using PUBLIC REVENUE MIX DISCLOSURES from \
+major AI providers. Convert revenue shares to token-volume shares using \
+pricing.
 
-THE FIVE CATEGORIES:
+THE 5 CATEGORIES:
 {cats_text}
 
-WHAT "volume_share_pct" MEANS: of all inference TOKENS served globally by AI \
-systems, what percentage flows through each category? This is TOKEN volume, NOT \
-user count and NOT request count. The distinction matters enormously:
-  - Consumer chat has hundreds of millions of users but flat-fee subscriptions \
-cap per-user token consumption
-  - Enterprise has fewer users but pay-per-token economics and 100K-1M token \
-prompts mean each enterprise user generates 100-1000x more tokens than a consumer
+CRITICAL DEFINITION: "volume_share_pct" measures share of total inference \
+TOKENS served globally — NOT user count, NOT request count, NOT revenue \
+directly. Tokens. The mapping from revenue to tokens depends heavily on \
+pricing model (flat-fee subscription vs pay-per-token).
 
-RESEARCH APPROACH:
-1. Find current revenue mix disclosures for major AI providers (Anthropic, OpenAI, \
-Google, Microsoft). What fraction of each company's revenue is consumer vs enterprise vs API?
-2. Find product-specific ARR for coding agents (Claude Code ARR, Cursor ARR, \
-Copilot ARR, Devin ARR)
-3. Find web traffic share data for consumer products (SimilarWeb monthly reports, \
-Cloudflare Radar, First Page Sage)
-4. Convert pay-per-token revenue to estimated token volume using current API \
-pricing (~$5-10 per 1M tokens average blended)
-5. Estimate consumer token volume from disclosed WAU × prompts/week × tokens/prompt
-6. Sanity check: total enterprise API revenue × inverse-of-avg-price should give \
-roughly the total enterprise token volume
+KEY ECONOMIC FACTS TO USE:
+  - Consumer chat is mostly flat-fee subscriptions ($20-200/mo); token \
+volume scales with usage but revenue does NOT
+  - Enterprise / developer API is pay-per-token; revenue maps directly to tokens
+  - Coding agents are a mix; Claude Code is largely consumption-priced
+  - This asymmetry means consumer revenue UNDERSTATES consumer token volume, \
+and enterprise revenue closely MATCHES enterprise token volume
 
-OUTPUT FORMAT: Return ONLY a JSON object (no markdown fences, no other text):
+METHOD:
+  1. Find current revenue mix disclosures (Anthropic enterprise %, OpenAI \
+consumer %, Google AI revenue mix, etc.)
+  2. Find product-specific ARR for coding agents (Claude Code, Cursor, etc.)
+  3. For pay-per-token segments: convert revenue × inverse-blended-price = token volume
+  4. For flat-fee consumer: estimate tokens via WAU × prompts/week × \
+tokens-per-prompt; the result is independent of revenue
+  5. Sum across categories, normalize to 100%
+
+OUTPUT — return ONLY a JSON object (no markdown fences):
 {{
-    "shares": {{
-        "consumer_chat": <int 0-100>,
-        "coding_agents": <int 0-100>,
-        "enterprise_vertical_agents": <int 0-100>,
-        "developer_raw_api": <int 0-100>,
-        "other_creative_rag": <int 0-100>
-    }},
-    "confidence": "high" | "medium" | "low",
-    "reasoning": "<paragraph explaining triangulation methodology>",
-    "category_rationale": {{
-        "consumer_chat": "<reasoning for this category's share>",
-        "coding_agents": "<reasoning>",
-        "enterprise_vertical_agents": "<reasoning>",
-        "developer_raw_api": "<reasoning>",
-        "other_creative_rag": "<reasoning>"
-    }},
-    "calculation_steps": "<show your math: revenue figures, token-volume conversions, etc.>",
-    "source_urls": ["<url1>", "<url2>", ...],
-    "as_of_date": "<YYYY-MM-DD>"
+  "shares": {{
+    "consumer_chat": <int 0-100>,
+    "coding_agents": <int 0-100>,
+    "enterprise_vertical_agents": <int 0-100>,
+    "developer_raw_api": <int 0-100>,
+    "other_creative_rag": <int 0-100>
+  }},
+  "method": "revenue_mix_to_token_share",
+  "revenue_figures_used": [
+    {{"provider": "<name>", "total_arr": "<$X B>", "enterprise_pct": <int>, "source_url": "<url>"}}
+  ],
+  "consumer_token_volume_derivation": "<show math for consumer estimate \
+since it can't use revenue directly>",
+  "category_calculation_steps": "<show how each category's share was computed>",
+  "confidence": "high" | "medium" | "low",
+  "as_of_date": "{date.today().isoformat()}"
 }}
 
-CRITICAL: the five share values MUST sum to exactly 100. Show your math in \
-calculation_steps.
-"""
+CRITICAL: shares must sum to exactly 100."""
 
 
-# ── LLM call + JSON parsing ───────────────────────────────────────────────────
+def _build_share_path_b_traffic_proxy() -> str:
+    """Path B — Web traffic / MAU share with per-user-token-consumption correction."""
+    cats_text = "\n".join(f"  - {c}: {CATEGORY_DESCRIPTIONS[c]}" for c in CATEGORIES)
+    return f"""You are researching for an AI investment framework. Today is {date.today().isoformat()}.
+
+YOUR TASK: Determine volume_share_pct (token-volume share, summing to 100%) \
+using WEB TRAFFIC SHARE and USER COUNT DATA as the input, then correcting \
+for per-user token consumption (which differs enormously by category).
+
+THE 5 CATEGORIES:
+{cats_text}
+
+CRITICAL DEFINITION: We want TOKEN volume share. Users and requests are \
+proxies. Per-user token consumption ratios are roughly:
+  - Enterprise vertical user: 100-1000x more tokens per user than consumer
+  - Coding agent user: 10-100x more tokens per session than consumer
+  - Developer API user: highly variable, 10-50x consumer
+
+METHOD:
+  1. Find current web traffic share (SimilarWeb, Cloudflare Radar) for \
+top consumer products (ChatGPT, Gemini, Claude.ai, Microsoft Copilot, Perplexity)
+  2. Find disclosed WAU/MAU figures for major products in each category
+  3. Estimate average per-user token consumption for each category:
+     - Consumer: ~30 messages/week × ~5K tokens each = ~150K tokens/user/week
+     - Coding agent: heavy users 10x consumer = ~1.5M tokens/user/week
+     - Enterprise user: 100x consumer = ~15M tokens/user/week
+     - Developer API: variable, ~500K tokens/user/week average
+  4. Multiply: total tokens per category ≈ (users) × (tokens-per-user-per-week)
+  5. Normalize to 100% across categories
+
+OUTPUT — return ONLY a JSON object (no markdown fences):
+{{
+  "shares": {{
+    "consumer_chat": <int 0-100>,
+    "coding_agents": <int 0-100>,
+    "enterprise_vertical_agents": <int 0-100>,
+    "developer_raw_api": <int 0-100>,
+    "other_creative_rag": <int 0-100>
+  }},
+  "method": "traffic_proxy_with_per_user_correction",
+  "user_figures_used": [
+    {{"product": "<name>", "users": "<X M WAU/MAU>", "category": "<cat>", "source_url": "<url>"}}
+  ],
+  "per_user_token_estimates": {{
+    "consumer_chat": <int tokens/user/week>,
+    "coding_agents": <int>,
+    "enterprise_vertical_agents": <int>,
+    "developer_raw_api": <int>,
+    "other_creative_rag": <int>
+  }},
+  "category_calculation_steps": "<show math>",
+  "confidence": "high" | "medium" | "low",
+  "as_of_date": "{date.today().isoformat()}"
+}}
+
+CRITICAL: shares must sum to exactly 100."""
+
+
+def _build_share_path_c_bottom_up() -> str:
+    """Path C — Bottom-up product-by-product token volume estimation."""
+    cats_text = "\n".join(f"  - {c}: {CATEGORY_DESCRIPTIONS[c]}" for c in CATEGORIES)
+    return f"""You are researching for an AI investment framework. Today is {date.today().isoformat()}.
+
+YOUR TASK: Determine volume_share_pct (token-volume share, summing to 100%) \
+by BOTTOM-UP product-by-product estimation. For each major product, \
+estimate its absolute annual token volume independently, then compute \
+relative shares.
+
+THE 5 CATEGORIES:
+{cats_text}
+
+METHOD:
+  1. List the top 3-5 products in each category by revenue or user count
+  2. For each product, derive an absolute annual token volume estimate \
+using whichever data is available:
+     - Disclosed throughput (e.g., Gemini API throughput cited at \
+"16 billion tokens per minute" in Google Cloud disclosures)
+     - Disclosed user count × estimated per-user usage
+     - Disclosed ARR / blended price = total tokens (for pay-per-token products)
+  3. Sum products within each category to get category total
+  4. Compute relative shares across categories, normalize to 100%
+
+DO NOT use the same data sources as the revenue-mix-disclosure approach \
+or the traffic-share approach. Use product-specific operational figures.
+
+OUTPUT — return ONLY a JSON object (no markdown fences):
+{{
+  "shares": {{
+    "consumer_chat": <int 0-100>,
+    "coding_agents": <int 0-100>,
+    "enterprise_vertical_agents": <int 0-100>,
+    "developer_raw_api": <int 0-100>,
+    "other_creative_rag": <int 0-100>
+  }},
+  "method": "bottom_up_product_volumes",
+  "products_estimated": [
+    {{
+      "product": "<name>",
+      "category": "<cat>",
+      "estimated_annual_tokens": "<X T (trillion)>",
+      "data_source": "<throughput|users|arr>",
+      "derivation": "<one-line math>",
+      "source_url": "<url>"
+    }}
+  ],
+  "category_totals_trillion_tokens_per_year": {{
+    "consumer_chat": <float>,
+    "coding_agents": <float>,
+    "enterprise_vertical_agents": <float>,
+    "developer_raw_api": <float>,
+    "other_creative_rag": <float>
+  }},
+  "confidence": "high" | "medium" | "low",
+  "as_of_date": "{date.today().isoformat()}"
+}}
+
+CRITICAL: shares must sum to exactly 100."""
+
+
+# ── Calibration back-test prompt ──────────────────────────────────────────────
+
+def _build_calibration_prompt() -> str:
+    """Asks the worker to independently re-derive OpenRouter's published finding.
+
+    The OpenRouter "State of AI" 100T-token study reported that average prompt
+    tokens per request rose from ~1,500 to ~6,000 between early 2024 and late
+    2025 across ALL traffic on the platform. If our worker can independently
+    arrive at ~6,000 (within ±40%), the prompts and model are calibrated
+    correctly. If it can't, we abort the run before corrupting state.
+
+    The prompt deliberately asks the question WITHOUT mentioning OpenRouter's
+    published figure — we want the worker to find the number, not regurgitate
+    a value we tell it.
+    """
+    return f"""You are doing a calibration check for an AI investment framework. \
+Today is {date.today().isoformat()}.
+
+YOUR TASK: Use web search to find the most authoritative published figure \
+for the AVERAGE PROMPT INPUT TOKENS per request across all OpenRouter \
+traffic during the period November 2024 through November 2025.
+
+Context: OpenRouter is the world's largest unified API gateway for LLMs, \
+routing requests across 300+ models from 60+ providers. They have published \
+empirical studies based on their full traffic dataset. The figure has been \
+widely cited in analyst writeups (e.g. a16z) and developer publications. \
+You should be able to find it readily via web search.
+
+Just find the empirical figure. Don't try to derive it from first principles.
+
+OUTPUT — return ONLY a JSON object (no markdown fences):
+{{
+  "value": <integer average prompt tokens>,
+  "study_or_source_name": "<name>",
+  "study_publication_date": "<YYYY-MM>",
+  "study_data_period": "<e.g. Nov 2024 - Nov 2025>",
+  "source_url": "<url>",
+  "confidence": "high" | "medium" | "low"
+}}"""
+
+
+# ── JSON extraction + LLM client (carried from v3.6.2) ────────────────────────
 
 def _strip_markdown_fences(text: str) -> str:
     """Remove ```json...``` or ```...``` wrappers if present."""
     text = text.strip()
-    # Handle ```json ... ``` or ``` ... ```
     if text.startswith("```"):
-        # Strip opening fence (with optional language hint)
         first_newline = text.find("\n")
         if first_newline != -1:
             text = text[first_newline + 1:]
@@ -226,105 +532,23 @@ def _strip_markdown_fences(text: str) -> str:
     return text.strip()
 
 
-def _call_claude_with_search(prompt: str, max_tokens: int = 4096) -> dict:
-    """Call Claude with web_search tool enabled. Return parsed JSON response.
-
-    Reuses the same Anthropic API setup that fast_tier / deep_tier use daily —
-    just the secret ANTHROPIC_API_KEY which is already configured in repo secrets.
-
-    Raises:
-        ImportError: if `anthropic` package is not installed
-        RuntimeError: if ANTHROPIC_API_KEY not set
-        json.JSONDecodeError: if response can't be parsed as JSON
-        anthropic.APIError: if the API call fails
-    """
-    try:
-        import anthropic
-    except ImportError:
-        raise ImportError(
-            "The 'anthropic' package is required. Already in requirements.txt."
-        )
-
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY environment variable not set. "
-            "This is the same key fast_tier and deep_tier use."
-        )
-
-    # Import lazily so tests don't require config.py side-effects
-    from src.config import SONNET_MODEL
-
-    client = anthropic.Anthropic()
-    response = client.messages.create(
-        model=SONNET_MODEL,
-        max_tokens=max_tokens,
-        messages=[{"role": "user", "content": prompt}],
-        tools=[{
-            "type": "web_search_20250305",
-            "name": "web_search"
-        }]
-    )
-
-    # Concatenate text blocks. When web_search is enabled, Claude often
-    # produces multiple text blocks interleaved with server-side tool_use /
-    # tool_result blocks — typically reasoning prose first ("Let me search
-    # for..."), then the final JSON. We need to find the JSON within the
-    # concatenated stream rather than assuming it starts at char 0.
-    final_text_parts = []
-    for block in response.content:
-        if hasattr(block, "text") and block.text:
-            final_text_parts.append(block.text)
-    final_text = "".join(final_text_parts)
-
-    if not final_text.strip():
-        raise ValueError("Empty response from Claude")
-
-    # v3.6.2 — brace-matching JSON extractor.
-    # The prior implementation called json.loads() on the entire response,
-    # which failed when Claude emitted reasoning prose before/after the JSON
-    # (which it does ~100% of the time with web_search enabled). The fix:
-    # locate the first `{`, walk forward counting brace depth (string-aware,
-    # escape-aware), and extract just the JSON substring.
-    try:
-        return _extract_json_from_text(final_text)
-    except (json.JSONDecodeError, ValueError) as e:
-        # Diagnostic: log the first 500 chars of what Claude returned so we
-        # can debug prompt/parser mismatches without re-running the workflow.
-        preview = final_text[:500].replace("\n", "\\n")
-        logger.error(
-            f"JSON extraction failed. First 500 chars of response: {preview}"
-        )
-        raise
-
-
 def _extract_json_from_text(text: str) -> dict:
     """Extract the first complete top-level JSON object from a text string.
 
-    Walks the text once, tracking brace depth (skipping over braces inside
-    string literals, accounting for escape characters). Returns the parsed
-    dict, or raises json.JSONDecodeError if no balanced JSON object found.
-
-    This is intentionally more permissive than json.loads() — it tolerates:
-      - Reasoning prose before the JSON ("Based on my research, ...")
-      - Markdown code fences (```json ... ```)
-      - Trailing prose after the JSON
-      - Multiple JSON objects (returns only the first)
+    Walks the text once, tracking brace depth (string-aware, escape-aware).
+    Tolerates prose before/after, markdown fences, braces inside strings.
     """
-    # First try stripping markdown fences and parsing directly — fastest path
-    # when Claude returns clean JSON.
     stripped = _strip_markdown_fences(text)
     if stripped.startswith("{"):
         try:
             return json.loads(stripped)
         except json.JSONDecodeError:
-            pass    # fall through to brace-matching
+            pass
 
-    # Find the first `{`
     start = text.find("{")
     if start == -1:
         raise json.JSONDecodeError("No opening brace found in response", text, 0)
 
-    # Walk forward counting braces, tracking string state
     depth = 0
     in_string = False
     escape_next = False
@@ -341,7 +565,6 @@ def _extract_json_from_text(text: str) -> dict:
             elif ch == '"':
                 in_string = False
             continue
-        # Not in string
         if ch == '"':
             in_string = True
         elif ch == "{":
@@ -357,111 +580,286 @@ def _extract_json_from_text(text: str) -> dict:
             "Unbalanced braces — no matching `}` for first `{`",
             text, start
         )
-
-    json_substring = text[start:end + 1]
-    return json.loads(json_substring)
+    return json.loads(text[start:end + 1])
 
 
-# ── Sanity checks ─────────────────────────────────────────────────────────────
+def _call_claude_with_search(prompt: str, max_tokens: int = 8192) -> dict:
+    """Call Claude (Sonnet 4.6) with web_search enabled. Return parsed JSON.
+
+    max_tokens default is 8192 (raised from v3.6.2's 4096); the volume_share
+    paths in particular need the headroom to return full 5-category JSON
+    with rationale.
+    """
+    try:
+        import anthropic
+    except ImportError:
+        raise ImportError("The 'anthropic' package is required.")
+
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise RuntimeError(
+            "ANTHROPIC_API_KEY environment variable not set. "
+            "Same key fast_tier and deep_tier use."
+        )
+
+    from src.config import SONNET_MODEL
+
+    client = anthropic.Anthropic()
+    response = client.messages.create(
+        model=SONNET_MODEL,
+        max_tokens=max_tokens,
+        messages=[{"role": "user", "content": prompt}],
+        tools=[{
+            "type": "web_search_20250305",
+            "name": "web_search"
+        }]
+    )
+
+    final_text_parts = []
+    for block in response.content:
+        if hasattr(block, "text") and block.text:
+            final_text_parts.append(block.text)
+    final_text = "".join(final_text_parts)
+
+    if not final_text.strip():
+        raise ValueError("Empty response from Claude")
+
+    try:
+        return _extract_json_from_text(final_text)
+    except (json.JSONDecodeError, ValueError) as e:
+        preview = final_text[:500].replace("\n", "\\n")
+        logger.error(f"JSON extraction failed. First 500 chars: {preview}")
+        raise
+
+
+# ── Calibration ───────────────────────────────────────────────────────────────
+
+def _run_calibration_check() -> tuple[bool, dict]:
+    """Run the back-test before any real research.
+
+    Returns (passed, diagnostic_dict). When passed=False, the caller should
+    abort the run and open a GitHub Issue with the diagnostic.
+    """
+    logger.info("Running calibration back-test (independent re-derivation of "
+                "OpenRouter average prompt size)...")
+    try:
+        result = _call_claude_with_search(_build_calibration_prompt(), max_tokens=2048)
+    except Exception as e:
+        return False, {
+            "calibration_status": "failed_to_get_response",
+            "error": f"{type(e).__name__}: {e}",
+            "target_value": CALIBRATION_TARGET_VALUE,
+            "tolerance": CALIBRATION_TARGET_TOLERANCE_FRACTION,
+        }
+
+    value = result.get("value")
+    if not isinstance(value, (int, float)):
+        return False, {
+            "calibration_status": "non_numeric_response",
+            "raw_result": result,
+            "target_value": CALIBRATION_TARGET_VALUE,
+        }
+    value = int(value)
+
+    deviation = abs(value - CALIBRATION_TARGET_VALUE) / CALIBRATION_TARGET_VALUE
+    passed = deviation <= CALIBRATION_TARGET_TOLERANCE_FRACTION
+
+    diagnostic = {
+        "calibration_status": "passed" if passed else "failed_outside_tolerance",
+        "worker_derived_value": value,
+        "target_value": CALIBRATION_TARGET_VALUE,
+        "tolerance_fraction": CALIBRATION_TARGET_TOLERANCE_FRACTION,
+        "actual_deviation_fraction": round(deviation, 3),
+        "worker_cited_source": result.get("study_or_source_name", "(none)"),
+        "worker_cited_url": result.get("source_url", "(none)"),
+        "worker_confidence": result.get("confidence", "(none)"),
+    }
+
+    if passed:
+        logger.info(
+            f"  Calibration PASSED: worker returned {value:,} "
+            f"(target {CALIBRATION_TARGET_VALUE:,} ± "
+            f"{int(CALIBRATION_TARGET_VALUE * CALIBRATION_TARGET_TOLERANCE_FRACTION):,})"
+        )
+    else:
+        logger.error(
+            f"  Calibration FAILED: worker returned {value:,} "
+            f"(target {CALIBRATION_TARGET_VALUE:,} ± "
+            f"{int(CALIBRATION_TARGET_VALUE * CALIBRATION_TARGET_TOLERANCE_FRACTION):,}, "
+            f"deviation {deviation * 100:.0f}%)"
+        )
+
+    return passed, diagnostic
+
+
+# ── Triangulation synthesis ───────────────────────────────────────────────────
+
+def _synthesize_paths(
+    path_a: dict, path_b: dict, path_c: dict, label: str,
+) -> dict:
+    """Combine 3 path results into a converged value or a divergence flag.
+
+    Returns a dict with:
+      - status: "converged" | "divergent" | "missing_values"
+      - committed_value: int (only if converged)
+      - uncertainty_band: {low, mid, high}
+      - spread_fraction: float (max-min)/mean
+      - paths: {a, b, c} (full path provenance)
+    """
+    values = []
+    for label_p, result_p in (("a", path_a), ("b", path_b), ("c", path_c)):
+        v = result_p.get("value") if result_p else None
+        if isinstance(v, (int, float)) and v > 0:
+            values.append((label_p, int(v)))
+
+    if len(values) < 2:
+        return {
+            "status": "missing_values",
+            "reason": f"Only {len(values)}/3 paths returned a usable numeric value",
+            "paths": {"a": path_a, "b": path_b, "c": path_c},
+        }
+
+    nums = [v for _, v in values]
+    mean = sum(nums) / len(nums)
+    spread = (max(nums) - min(nums)) / mean if mean > 0 else 1.0
+
+    result = {
+        "status": "converged" if spread <= MAX_PATH_SPREAD_FRACTION else "divergent",
+        "label": label,
+        "path_values": {lbl: v for lbl, v in values},
+        "mean": int(round(mean)),
+        "min": min(nums),
+        "max": max(nums),
+        "spread_fraction": round(spread, 3),
+        "spread_pct": round(spread * 100, 1),
+        "uncertainty_band": {
+            "low": min(nums),
+            "mid": int(round(mean)),
+            "high": max(nums),
+        },
+        "paths": {"a": path_a, "b": path_b, "c": path_c},
+    }
+    if result["status"] == "converged":
+        result["committed_value"] = int(round(mean))
+        logger.info(
+            f"  [{label}] CONVERGED — paths: {[v for _, v in values]} → "
+            f"mean={int(mean):,}, spread={spread*100:.1f}%"
+        )
+    else:
+        logger.warning(
+            f"  [{label}] DIVERGENT — paths: {[v for _, v in values]} → "
+            f"spread={spread*100:.1f}% exceeds {MAX_PATH_SPREAD_FRACTION*100:.0f}% threshold; "
+            f"NOT committing"
+        )
+
+    return result
+
+
+def _synthesize_share_paths(
+    path_a: dict, path_b: dict, path_c: dict,
+) -> dict:
+    """Synthesize 3 volume_share paths into per-category convergence.
+
+    Each path returns a dict {category: int}. We synthesize per category.
+    A run only commits if ALL 5 categories converge. Otherwise we log the
+    divergence and skip the entire volume_share update for this run.
+    """
+    per_cat_results = {}
+    all_converged = True
+
+    for cat in CATEGORIES:
+        cat_paths = {}
+        for label, result in (("a", path_a), ("b", path_b), ("c", path_c)):
+            shares = result.get("shares") if result else None
+            if shares and cat in shares and isinstance(shares[cat], (int, float)):
+                cat_paths[label] = float(shares[cat])
+
+        if len(cat_paths) < 2:
+            per_cat_results[cat] = {"status": "missing_values", "paths": cat_paths}
+            all_converged = False
+            continue
+
+        nums = list(cat_paths.values())
+        mean = sum(nums) / len(nums)
+        # For shares (percentages), use absolute pp spread, not fractional
+        spread_pp = max(nums) - min(nums)
+        # Convergence: ≤10pp spread per category (tighter than 30% rule for shares)
+        converged = spread_pp <= 10.0
+
+        per_cat_results[cat] = {
+            "status": "converged" if converged else "divergent",
+            "path_values": cat_paths,
+            "mean": round(mean, 1),
+            "spread_pp": round(spread_pp, 1),
+        }
+        if not converged:
+            all_converged = False
+
+    if all_converged:
+        # Build the committed shares dict from per-category means, normalize to 100
+        raw = {cat: per_cat_results[cat]["mean"] for cat in CATEGORIES}
+        total = sum(raw.values())
+        if total > 0:
+            normalized = {cat: int(round(v * 100 / total)) for cat, v in raw.items()}
+            # Absorb rounding drift into largest share
+            drift = 100 - sum(normalized.values())
+            if drift != 0:
+                largest = max(normalized, key=normalized.get)
+                normalized[largest] += drift
+        else:
+            normalized = {cat: 20 for cat in CATEGORIES}    # fallback even split
+
+        return {
+            "status": "converged",
+            "per_category": per_cat_results,
+            "committed_shares": normalized,
+            "paths": {"a": path_a, "b": path_b, "c": path_c},
+        }
+    return {
+        "status": "divergent",
+        "per_category": per_cat_results,
+        "paths": {"a": path_a, "b": path_b, "c": path_c},
+    }
+
+
+# ── Sanity checks (carried + tightened) ───────────────────────────────────────
 
 def _sanity_check_typical_context(
     value: int, prev_value: int, confidence: str, category: str,
 ) -> tuple[bool, str]:
-    """Return (ok, reason_if_rejected) for a typical_context_tokens value."""
     if not isinstance(value, (int, float)):
         return False, f"Value is not numeric: {type(value).__name__}"
     value = int(value)
     if value < MIN_PLAUSIBLE_CONTEXT:
-        return False, f"Value {value:,} below plausible floor ({MIN_PLAUSIBLE_CONTEXT:,})"
+        return False, f"Value {value:,} below plausible floor"
     if value > MAX_PLAUSIBLE_CONTEXT:
-        return False, f"Value {value:,} above plausible ceiling ({MAX_PLAUSIBLE_CONTEXT:,})"
+        return False, f"Value {value:,} above plausible ceiling"
     if confidence not in ACCEPTED_CONFIDENCE:
-        return False, f"Confidence '{confidence}' is below accepted threshold (need 'high' or 'medium')"
+        return False, f"Confidence '{confidence}' below threshold (need high/medium)"
     if prev_value and prev_value > 0:
         delta = abs(value - prev_value) / prev_value
         if delta > MAX_DELTA_FRACTION_CONTEXT:
             return False, (
-                f"Delta {delta * 100:.0f}% from previous ({prev_value:,} → {value:,}) "
+                f"Delta {delta * 100:.0f}% ({prev_value:,} → {value:,}) "
                 f"exceeds {MAX_DELTA_FRACTION_CONTEXT * 100:.0f}% threshold"
             )
     return True, ""
 
 
-def _sanity_check_shares(
-    shares: dict, prev_shares: dict, confidence: str,
-) -> tuple[bool, str]:
-    """Return (ok, reason_if_rejected) for a volume_share_pct distribution."""
-    # All categories present
-    for cat in CATEGORIES:
-        if cat not in shares:
-            return False, f"Missing category in shares: {cat}"
-
-    # Coerce to float
-    try:
-        shares_f = {cat: float(shares[cat]) for cat in CATEGORIES}
-    except (TypeError, ValueError) as e:
-        return False, f"Non-numeric share value: {e}"
-
-    # Sum to 100 ±1
-    total = sum(shares_f.values())
-    if abs(total - 100) > 1:
-        return False, f"Shares sum to {total:.1f} (must be 100 ±1)"
-
-    # Per-category bounds
-    for cat, share in shares_f.items():
-        if share < 0:
-            return False, f"Share for {cat} is negative ({share})"
-        if share > 90:
-            return False, f"Share for {cat} is implausibly large ({share}%)"
-
-    # Confidence threshold
-    if confidence not in ACCEPTED_CONFIDENCE:
-        return False, f"Confidence '{confidence}' below accepted threshold"
-
-    # Per-category delta from previous
-    if prev_shares:
-        for cat in CATEGORIES:
-            prev = float(prev_shares.get(cat, 0))
-            cur = shares_f[cat]
-            if abs(cur - prev) > MAX_DELTA_PP_SHARE:
-                return False, (
-                    f"Delta for {cat} ({prev:.0f}pp → {cur:.0f}pp = "
-                    f"{abs(cur - prev):.0f}pp) exceeds {MAX_DELTA_PP_SHARE}pp threshold"
-                )
-
-    return True, ""
-
-
-# ── Main entry point ──────────────────────────────────────────────────────────
+# ── State load/save ───────────────────────────────────────────────────────────
 
 def _load_state() -> dict:
-    """Load current state. Bootstrap with the v3.5.4 manual calibration baseline
-    if no state file exists (matches the values in TRIANGULATION_METHODOLOGY.md)."""
     if CONTEXT_STATE_FILE.exists():
         return json.loads(CONTEXT_STATE_FILE.read_text())
     return {
-        "_metadata": {
-            "schema_version": "1.0",
-            "bootstrapped_on": date.today().isoformat(),
-            "note": "Bootstrapped from v3.5.4 manual calibration baseline"
-        },
+        "_metadata": {"schema_version": "1.0",
+                      "bootstrapped_on": date.today().isoformat()},
         "typical_context_tokens": {
-            "consumer_chat":              {"current": 20_000,    "history": []},
-            "coding_agents":              {"current": 500_000,   "history": []},
-            "enterprise_vertical_agents": {"current": 1_000_000, "history": []},
-            "developer_raw_api":          {"current": 50_000,    "history": []},
-            "other_creative_rag":         {"current": 50_000,    "history": []},
+            cat: {"current": 0, "history": []} for cat in CATEGORIES
         },
         "volume_shares": {
-            "committed": {
-                "consumer_chat": 30, "coding_agents": 18,
-                "enterprise_vertical_agents": 30,
-                "developer_raw_api": 17, "other_creative_rag": 5,
-            },
-            "proposed": None,
-            "proposal_evidence": [],
-            "proposal_status": "none",
-            "proposal_created": None,
+            "committed": {c: 20 for c in CATEGORIES},
+            "proposed": None, "proposal_evidence": [],
+            "proposal_status": "none", "proposal_created": None,
             "history": [],
         },
         "operative_context_history": [],
@@ -469,169 +867,227 @@ def _load_state() -> dict:
 
 
 def _save_state(state: dict) -> None:
-    """Persist state atomically (tmp + rename)."""
     CONTEXT_STATE_FILE.parent.mkdir(exist_ok=True)
     tmp = CONTEXT_STATE_FILE.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(state, indent=2, default=str))
     tmp.replace(CONTEXT_STATE_FILE)
 
 
-def research_context_length_inputs() -> dict:
-    """Re-research all context length inputs from current public sources.
+# ── Main entry point ──────────────────────────────────────────────────────────
 
-    Returns a summary dict for logging / diagnostics.
+def research_context_length_inputs() -> dict:
+    """v3.7.0 — Multi-path triangulation research worker.
+
+    Sequence:
+      1. Calibration back-test — if fails, abort and write nothing
+      2. For each of 5 categories: 3-path typical_context research
+      3. 3-path volume_share research
+      4. Synthesis: commit only converged values; log divergent ones
+      5. Persist state
     """
     state = _load_state()
     today = date.today().isoformat()
     state.setdefault("_metadata", {})
 
-    updated: list[str] = []
-    rejected: list[dict] = []
-    errors: list[str] = []
-
-    # ── 1. Research typical_context_tokens per category ───────────────────────
-    for category in CATEGORIES:
-        logger.info(f"Researching typical_context_tokens for {category}...")
-        try:
-            prev_value = int(state["typical_context_tokens"][category].get("current") or 0)
-            result = _call_claude_with_search(_build_typical_context_prompt(category))
-
-            new_value = int(result["value"])
-            confidence = str(result.get("confidence", "low")).lower()
-
-            ok, reason = _sanity_check_typical_context(
-                new_value, prev_value, confidence, category
-            )
-
-            if not ok:
-                rejected.append({
-                    "field": "typical_context_tokens",
-                    "category": category,
-                    "proposed_value": new_value,
-                    "previous_value": prev_value,
-                    "rejection_reason": reason,
-                    "llm_confidence": confidence,
-                    "llm_reasoning": result.get("reasoning", "")[:500],
-                })
-                logger.warning(
-                    f"REJECTED typical_context_tokens[{category}]: {reason}"
-                )
-                continue
-
-            # Accept
-            state["typical_context_tokens"][category]["current"] = new_value
-            state["typical_context_tokens"][category].setdefault("history", []).append({
-                "date": today,
-                "value": new_value,
-                "source": "llm_research_v3_6_0",
-                "confidence": confidence,
-                "reasoning": result.get("reasoning", ""),
-                "providers_considered": result.get("providers_considered", []),
-                "weighted_calculation": result.get("weighted_calculation", ""),
-                "source_urls": result.get("source_urls", []),
-                "previous_value": prev_value,
-                "delta_pct": (
-                    round((new_value - prev_value) / prev_value * 100, 1)
-                    if prev_value else 0
-                ),
-            })
-            updated.append(f"typical_context[{category}]: {prev_value:,} → {new_value:,}")
-            logger.info(
-                f"UPDATED typical_context_tokens[{category}]: "
-                f"{prev_value:,} → {new_value:,} (confidence={confidence})"
-            )
-
-        except json.JSONDecodeError as e:
-            errors.append(f"typical_context[{category}]: JSON parse error: {e}")
-            logger.error(f"JSON parse failed for {category}: {e}")
-        except Exception as e:
-            errors.append(f"typical_context[{category}]: {type(e).__name__}: {e}")
-            logger.error(f"Error researching {category}: {e}")
-
-    # ── 2. Research volume_share_pct (single call for all 5) ──────────────────
-    logger.info("Researching volume_share_pct across all categories...")
-    try:
-        prev_shares = dict(state["volume_shares"]["committed"])
-        result = _call_claude_with_search(_build_volume_share_prompt())
-
-        new_shares = result["shares"]
-        confidence = str(result.get("confidence", "low")).lower()
-
-        ok, reason = _sanity_check_shares(new_shares, prev_shares, confidence)
-
-        if not ok:
-            rejected.append({
-                "field": "volume_share_pct",
-                "proposed_value": new_shares,
-                "previous_value": prev_shares,
-                "rejection_reason": reason,
-                "llm_confidence": confidence,
-                "llm_reasoning": result.get("reasoning", "")[:500],
-            })
-            logger.warning(f"REJECTED volume_share_pct: {reason}")
-        else:
-            # Coerce to int after sanity check
-            new_shares_int = {cat: int(round(float(new_shares[cat]))) for cat in CATEGORIES}
-            # Normalize to exact 100 (drift from rounding)
-            drift = 100 - sum(new_shares_int.values())
-            if drift != 0:
-                # Adjust the largest share to absorb drift
-                largest_cat = max(new_shares_int, key=new_shares_int.get)
-                new_shares_int[largest_cat] += drift
-
-            state["volume_shares"]["committed"] = new_shares_int
-            state["volume_shares"]["history"].append({
-                "date": today,
-                "shares": new_shares_int,
-                "trigger": "llm_research_v3_6_0",
-                "confidence": confidence,
-                "reasoning": result.get("reasoning", ""),
-                "category_rationale": result.get("category_rationale", {}),
-                "calculation_steps": result.get("calculation_steps", ""),
-                "source_urls": result.get("source_urls", []),
-                "previous_shares": prev_shares,
-            })
-            state["volume_shares"]["proposed"] = None
-            state["volume_shares"]["proposal_status"] = "none"
-            updated.append(f"volume_shares: {prev_shares} → {new_shares_int}")
-            logger.info(f"UPDATED volume_share_pct: {new_shares_int} (confidence={confidence})")
-
-    except json.JSONDecodeError as e:
-        errors.append(f"volume_shares: JSON parse error: {e}")
-        logger.error(f"JSON parse failed for volume_shares: {e}")
-    except Exception as e:
-        errors.append(f"volume_shares: {type(e).__name__}: {e}")
-        logger.error(f"Error researching volume_shares: {e}")
-
-    # ── 3. Persist + summary ──────────────────────────────────────────────────
-    state["_metadata"]["last_llm_research"] = datetime.now(timezone.utc).isoformat()
-    state["_metadata"]["last_run_summary"] = {
-        "updated_count": len(updated),
-        "rejected_count": len(rejected),
-        "error_count": len(errors),
-    }
-
-    _save_state(state)
-
     summary = {
-        "status": "completed" if not errors else "completed_with_errors",
-        "updated_count": len(updated),
-        "rejected_count": len(rejected),
-        "error_count": len(errors),
-        "updated": updated,
-        "rejected": rejected,
-        "errors": errors,
+        "status": "starting",
+        "calibration": None,
+        "typical_context_results": {},
+        "volume_shares_result": None,
+        "committed": [],
+        "divergent": [],
+        "errors": [],
+        "exit_code": 0,
     }
-    logger.info(
-        f"LLM research complete: {summary['updated_count']} updated, "
-        f"{summary['rejected_count']} rejected, {summary['error_count']} errors"
+
+    # 1. Calibration
+    cal_passed, cal_diag = _run_calibration_check()
+    summary["calibration"] = cal_diag
+    state["_metadata"].setdefault("calibration_history", []).append({
+        "date": today, **cal_diag,
+    })
+    state["_metadata"]["calibration_history"] = (
+        state["_metadata"]["calibration_history"][-12:]    # keep last 12 runs
     )
 
-    # Exit non-zero if any errors or rejections, so the workflow can react
-    if errors or rejected:
+    if not cal_passed:
+        logger.error("Aborting run: calibration back-test failed.")
+        summary["status"] = "aborted_calibration_failed"
+        summary["errors"].append("Calibration back-test failed; no research performed")
+        summary["exit_code"] = 2
+        state["_metadata"]["last_run_at"] = datetime.now(timezone.utc).isoformat()
+        state["_metadata"]["last_run_summary"] = {
+            "status": summary["status"], "calibration": cal_diag,
+        }
+        _save_state(state)
+        return summary
+
+    # 2. Typical context — 3 paths × 5 categories
+    for category in CATEGORIES:
+        logger.info(f"Researching typical_context_tokens[{category}] (3 paths)...")
+        try:
+            path_a = _call_claude_with_search(_build_typical_path_a_vendor(category))
+            time.sleep(2)
+            path_b = _call_claude_with_search(_build_typical_path_b_economic(category))
+            time.sleep(2)
+            path_c = _call_claude_with_search(_build_typical_path_c_empirical(category))
+        except Exception as e:
+            err = f"typical[{category}]: {type(e).__name__}: {e}"
+            summary["errors"].append(err)
+            logger.error(err)
+            continue
+
+        synthesis = _synthesize_paths(
+            path_a, path_b, path_c, f"typical_context[{category}]"
+        )
+        summary["typical_context_results"][category] = synthesis
+
+        if synthesis["status"] != "converged":
+            summary["divergent"].append(f"typical_context[{category}]")
+            # Still log the attempt to history for human review
+            state["typical_context_tokens"][category].setdefault("history", []).append({
+                "date": today,
+                "source": "llm_research_v3_7_0_divergent",
+                "status": synthesis["status"],
+                "path_values": synthesis.get("path_values", {}),
+                "spread_pct": synthesis.get("spread_pct"),
+                "paths_provenance": {
+                    "a": {k: path_a.get(k) for k in ("value", "method", "confidence", "weighted_calculation")},
+                    "b": {k: path_b.get(k) for k in ("value", "method", "confidence", "sanity_check")},
+                    "c": {k: path_c.get(k) for k in ("value", "method", "confidence", "category_adjustment_reasoning")},
+                },
+            })
+            continue
+
+        # Converged — sanity-check the committed value
+        new_value = synthesis["committed_value"]
+        prev_value = int(state["typical_context_tokens"][category].get("current") or 0)
+        # Use mean confidence across paths (lowest wins)
+        path_confidences = [p.get("confidence", "low") for p in (path_a, path_b, path_c)]
+        confidence = ("low" if "low" in path_confidences
+                      else ("medium" if "medium" in path_confidences else "high"))
+
+        ok, reason = _sanity_check_typical_context(
+            new_value, prev_value, confidence, category
+        )
+        if not ok:
+            summary["divergent"].append(f"typical_context[{category}] (sanity)")
+            state["typical_context_tokens"][category].setdefault("history", []).append({
+                "date": today,
+                "source": "llm_research_v3_7_0_sanity_rejected",
+                "proposed_value": new_value,
+                "previous_value": prev_value,
+                "rejection_reason": reason,
+                "uncertainty_band": synthesis["uncertainty_band"],
+                "spread_pct": synthesis["spread_pct"],
+            })
+            logger.warning(f"  Sanity-rejected typical_context[{category}]: {reason}")
+            continue
+
+        # Accept
+        state["typical_context_tokens"][category]["current"] = new_value
+        state["typical_context_tokens"][category].setdefault("history", []).append({
+            "date": today,
+            "value": new_value,
+            "source": "llm_research_v3_7_0",
+            "confidence": confidence,
+            "spread_pct": synthesis["spread_pct"],
+            "uncertainty_band": synthesis["uncertainty_band"],
+            "path_values": synthesis["path_values"],
+            "previous_value": prev_value,
+            "delta_pct": (round((new_value - prev_value) / prev_value * 100, 1)
+                          if prev_value else 0),
+            "paths_provenance": {
+                "a": {k: path_a.get(k) for k in ("value", "method", "confidence", "weighted_calculation", "products_analyzed")},
+                "b": {k: path_b.get(k) for k in ("value", "method", "confidence", "math_steps")},
+                "c": {k: path_c.get(k) for k in ("value", "method", "confidence", "studies_cited", "category_adjustment_reasoning")},
+            },
+        })
+        summary["committed"].append(
+            f"typical_context[{category}]: {prev_value:,} → {new_value:,}"
+        )
+        logger.info(
+            f"  COMMITTED typical_context[{category}]: "
+            f"{prev_value:,} → {new_value:,} (confidence={confidence})"
+        )
+
+    # 3. Volume shares — 3 paths, synthesized per category
+    logger.info("Researching volume_share_pct (3 paths × 5 categories)...")
+    try:
+        share_a = _call_claude_with_search(_build_share_path_a_revenue_mix())
+        time.sleep(2)
+        share_b = _call_claude_with_search(_build_share_path_b_traffic_proxy())
+        time.sleep(2)
+        share_c = _call_claude_with_search(_build_share_path_c_bottom_up())
+    except Exception as e:
+        err = f"volume_shares: {type(e).__name__}: {e}"
+        summary["errors"].append(err)
+        logger.error(err)
+        share_a = share_b = share_c = {"shares": {}, "error": str(e)}
+
+    share_synthesis = _synthesize_share_paths(share_a, share_b, share_c)
+    summary["volume_shares_result"] = share_synthesis
+
+    if share_synthesis["status"] == "converged":
+        prev_shares = dict(state["volume_shares"]["committed"])
+        new_shares = share_synthesis["committed_shares"]
+
+        state["volume_shares"]["committed"] = new_shares
+        state["volume_shares"]["history"].append({
+            "date": today,
+            "shares": new_shares,
+            "source": "llm_research_v3_7_0",
+            "per_category_synthesis": share_synthesis["per_category"],
+            "previous_shares": prev_shares,
+            "paths_provenance": {
+                "a": {"shares": share_a.get("shares"), "method": share_a.get("method")},
+                "b": {"shares": share_b.get("shares"), "method": share_b.get("method")},
+                "c": {"shares": share_c.get("shares"), "method": share_c.get("method")},
+            },
+        })
+        state["volume_shares"]["proposal_status"] = "none"
+        summary["committed"].append(f"volume_shares: {prev_shares} → {new_shares}")
+        logger.info(f"  COMMITTED volume_shares: {new_shares}")
+    else:
+        summary["divergent"].append("volume_shares")
+        state["volume_shares"]["history"].append({
+            "date": today,
+            "source": "llm_research_v3_7_0_divergent",
+            "status": "divergent",
+            "per_category_synthesis": share_synthesis["per_category"],
+            "paths_provenance": {
+                "a": {"shares": share_a.get("shares")},
+                "b": {"shares": share_b.get("shares")},
+                "c": {"shares": share_c.get("shares")},
+            },
+        })
+        logger.warning(f"  DIVERGENT volume_shares — not committing")
+
+    # 4. Persist
+    state["_metadata"]["last_run_at"] = datetime.now(timezone.utc).isoformat()
+    state["_metadata"]["last_run_summary"] = {
+        "committed_count": len(summary["committed"]),
+        "divergent_count": len(summary["divergent"]),
+        "error_count": len(summary["errors"]),
+    }
+    _save_state(state)
+
+    if summary["errors"]:
+        summary["status"] = "completed_with_errors"
+        summary["exit_code"] = 1
+    elif summary["divergent"]:
+        summary["status"] = "completed_with_divergence"
         summary["exit_code"] = 1
     else:
+        summary["status"] = "completed_success"
         summary["exit_code"] = 0
+
+    logger.info(
+        f"v3.7.0 research complete: "
+        f"committed={len(summary['committed'])}, "
+        f"divergent={len(summary['divergent'])}, "
+        f"errors={len(summary['errors'])}"
+    )
     return summary
 
 

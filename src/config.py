@@ -2413,6 +2413,18 @@ SONNET_MODEL = os.environ.get("SONNET_MODEL_OVERRIDE") or "claude-sonnet-4-6"
 # task is open-ended triangulation across many sources (revenue mix, web traffic,
 # vendor specs) where deeper reasoning matters more than latency.
 OPUS_MODEL = os.environ.get("OPUS_MODEL_OVERRIDE") or "claude-opus-4-7"
+
+# v3.7.0 — Display-layer multiplier for operative_context.
+# The framework's measured X-axis reflects CURRENT production behavior — what
+# context size requests actually load into KV cache today. HBM capex decisions,
+# however, are made on an 18-month horizon, so the brief shows both the
+# measured-state operative_context and a forward-looking adjusted figure.
+# This multiplier is applied at the DISPLAY layer only (brief template);
+# state/context_length_state.json continues to store measured truth, so that
+# bi-monthly delta tracking detects real growth, not multiplier compounding.
+OPERATIVE_CONTEXT_FORWARD_LOOKING_MULTIPLIER = float(
+    os.environ.get("OPERATIVE_CONTEXT_FORWARD_LOOKING_MULTIPLIER_OVERRIDE") or "1.40"
+)
 # v3.39.1: bumped 24000 → 48000. The 20:30 May 17 run (first with v3.39
 # streaming) used the full 24K cap and still truncated at char 47369, with
 # json_repair recovering 14/22 indicators. The 14th was partial, missing
