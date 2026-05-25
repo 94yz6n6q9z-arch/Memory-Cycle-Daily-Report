@@ -1,0 +1,142 @@
+# inference_arch_research.yml
+#
+# Quarterly LLM-driven inference architecture KV-efficiency research worker (v3.8.0).
+#
+# Measures the X-axis of the DHCR matrix: KV cache GB per 1M tokens for the
+# most efficient confirmed frontier open-source model. Writes result to
+# state/inference_arch_state.json["llm_worker_frontier"], which dhcr.py
+# reads in preference to the hand-curated open_models catalog.
+#
+# Cadence: 1st of every quarter at 07:00 UTC (1 hour after Y-axis worker)
+#   - Jan 1, Apr 1, Jul 1, Oct 1
+#   - 4 runs/year
+#
+# Cost: 3 LLM calls per run (calibration + Path A + Path B)
+#   ≈ $1.50/run × 4 runs/year ≈ $6/year (~€5.5).
+#   Staleness guard (60 days) in the worker prevents cost multiplication
+#   from repeated manual workflow_dispatch triggers.
+#
+# Safety:
+#   - Staleness guard: worker skips if state updated within 60 days
+#   - Calibration back-test (DeepSeek V3 re-derivation) aborts on failure
+#   - Unverified source URLs (placeholder arxiv IDs) filtered from candidates
+#   - Floor at 4.0 GB/1M prevents premature R2 drop
+#   - Workflow failure opens a GitHub Issue automatically
+#
+# Manual trigger: workflow_dispatch is enabled for ad-hoc re-runs.
+#   The 60-day staleness guard means redundant triggers exit immediately.
+#   To bypass the guard (e.g. after a bad result or during testing), check
+#   the "Bypass staleness guard" box in the workflow_dispatch UI.
+
+name: Inference Arch KV Research (LLM-driven, quarterly)
+
+on:
+  schedule:
+    # Quarterly: 07:00 UTC on the 1st of Jan/Apr/Jul/Oct
+    # Offset +1h from context_length_research.yml to avoid concurrent runs
+    - cron: "0 7 1 1,4,7,10 *"
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: "Bypass 60-day staleness guard (use for testing or after a bad result)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  research:
+    name: X-axis LLM research worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30    # 3 LLM calls × 90s worst case + setup ≈ 10 min; 30 min is generous
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure git identity
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
+      - name: Run X-axis LLM research worker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONPATH: .
+          FORCE_RUN: ${{ inputs.force_run || 'false' }}
+        run: |
+          echo "════════════════════════════════════════════════════════════════"
+          echo " INFERENCE ARCH KV RESEARCH — $(date -u +%Y-%m-%d)"
+          echo "════════════════════════════════════════════════════════════════"
+          python -m src.data.inference_arch_llm_research
+
+      - name: Commit state changes
+        if: always()
+        run: |
+          git add state/inference_arch_state.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No inference-arch changes to commit."
+            exit 0
+          fi
+          git commit -m "Inference arch KV research $(date -u +%Y-%m-%d) (v3.8.0)"
+          if ! git pull --rebase origin main; then
+            echo "::error::git pull --rebase failed before push"
+            exit 1
+          fi
+          if git push; then
+            echo "Push succeeded."
+          else
+            echo "First push failed; retrying after 10s..."
+            sleep 10
+            if ! git pull --rebase origin main; then
+              echo "::error::git pull --rebase failed on retry"
+              exit 1
+            fi
+            if ! git push; then
+              echo "::error::git push failed on retry — state NOT persisted"
+              exit 1
+            fi
+            echo "Push succeeded on retry."
+          fi
+
+      - name: Open issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toISOString().slice(0, 10);
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Inference arch KV research failed — ${today}`,
+              body: [
+                `The quarterly inference architecture KV research workflow failed.`,
+                ``,
+                `**Workflow run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                ``,
+                `**What to check:**`,
+                `- Was the ANTHROPIC_API_KEY secret set correctly?`,
+                `- Did the calibration back-test fail? (Check logs for "Calibration FAILED")`,
+                `- Did both Path A and Path B return no candidates?`,
+                `- Did the LLM return malformed JSON?`,
+                ``,
+                `**State impact:** state/inference_arch_state.json["llm_worker_frontier"]`,
+                `is only written on successful synthesis. If calibration failed, no`,
+                `state changes were made. dhcr.py falls back to open_models catalog.`,
+                ``,
+                `_Auto-generated by inference_arch_research.yml._`,
+              ].join("\n"),
+              labels: ["automation-failure", "dhcr-framework"]
+            })
