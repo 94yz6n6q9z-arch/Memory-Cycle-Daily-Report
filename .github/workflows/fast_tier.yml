@@ -2,6 +2,13 @@ name: Memory Cycle Brief — Fast Tier (daily delivery)
 
 # Revision history (most recent at top — inline markers throughout the file
 # detail the specific section a revision touched):
+#   v3.39.7.5 (2026-05-26) — schedule: pulled all 4 crons 1h 30min earlier
+#                            (11:13-12:43 UTC → 09:43-11:13 UTC) to absorb
+#                            GitHub Actions scheduler delays. On 2026-05-26
+#                            primary cron fired at 14:10 UTC (1h 27min late)
+#                            causing email to arrive at 16:35 CEST (target
+#                            was 14:30 CEST). Deep_tier pulled the same
+#                            amount. See cron block comment for details.
 #   v3.4.0    (2026-05-21) — commit step: added state/extraction_log_*.jsonl
 #                            and state/dhcr_state.json to the `git add` list
 #                            so the architecture-signal stream from the deep
@@ -43,13 +50,18 @@ on:
     # (deep ran AND brief not sent) actually produces email + commits.
     # Mon-Sat (1-6) per user pref.
     #
-    # Timing target: email lands well before US market open (13:30 UTC).
-    # With deep_tier firing 10:03-11:03 UTC and fast_tier 11:13-12:43 UTC,
-    # email delivery should be 11:30-13:00 UTC most days (13:30-15:00 Munich).
-    - cron: "13 11 * * 1-6"    # 11:13 UTC — primary
-    - cron: "43 11 * * 1-6"    # 11:43 UTC — fallback (no-ops if 11:13 succeeded)
-    - cron: "13 12 * * 1-6"    # 12:13 UTC — safety
-    - cron: "43 12 * * 1-6"    # 12:43 UTC — last attempt (~47 min before US open)
+    # Timing target (v3.39.7.5, 2026-05-26): email by 14:30 Munich CEST.
+    # On 2026-05-26 the schedule was delayed ~1h 27min by GitHub Actions
+    # (primary cron 11:13 UTC fired at 14:10 UTC), causing email to land at
+    # 16:35 CEST instead of the 14:30 CEST target. Pulled all crons 1h 30min
+    # earlier to absorb such delays. Deep_tier was pulled the same amount.
+    # New window 09:43-11:13 UTC = 11:43-13:13 Munich CEST; email delivery
+    # 12:08-13:38 CEST most days. Even with a 1.5h GitHub delay the primary
+    # cron still delivers by ~13:38 CEST = 50 min ahead of the 14:30 target.
+    - cron: "43 9 * * 1-6"     # 09:43 UTC = 11:43 CEST — primary
+    - cron: "13 10 * * 1-6"    # 10:13 UTC = 12:13 CEST — fallback (no-ops if 09:43 succeeded)
+    - cron: "43 10 * * 1-6"    # 10:43 UTC = 12:43 CEST — safety
+    - cron: "13 11 * * 1-6"    # 11:13 UTC = 13:13 CEST — last attempt (~17 min before old 13:30 UTC US-open target moved back to fallback)
   workflow_dispatch: {}
 
 permissions:
