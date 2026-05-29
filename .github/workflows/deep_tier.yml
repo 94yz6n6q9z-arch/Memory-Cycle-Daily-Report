@@ -2,6 +2,18 @@ name: Memory Cycle Brief — Deep Tier (overnight)
 
 # Revision history (most recent at top — inline markers throughout the file
 # detail the specific section a revision touched):
+#   v3.39.8 (2026-05-29) — schedule: pulled all 5 crons another 1h 30min
+#                          earlier (08:33–09:33 UTC → 07:03–08:03 UTC) after
+#                          v3.39.7.5 deploy showed cron events firing at
+#                          ~11:50 UTC consistently — a STRUCTURAL ~3h delay,
+#                          not an outage. This is the same delay phenomenon
+#                          documented in daily-ticker-report's daily.yml
+#                          ("GitHub routinely executes cron jobs 90–120 min
+#                          after the trigger time"). Setting cron earlier
+#                          than the desired fire time is the standard
+#                          workaround. Companion change: fast_tier.yml now
+#                          uses workflow_run chaining to fire on deep_tier
+#                          completion, eliminating the second cron delay.
 #   v3.39.7.5 (2026-05-26) — schedule: pulled all 5 crons 1h 30min earlier
 #                            (10:03–11:03 UTC → 08:33–09:33 UTC) to absorb
 #                            GitHub Actions scheduler delays. On 2026-05-26
@@ -32,26 +44,41 @@ on:
     # Mon-Sat (1-6) — Korean exchange and US markets active Mon-Fri,
     # Saturday added per user pref for Saturday catch-up briefs.
     #
-    # Timing: window 08:33–09:33 UTC = 10:33–11:33 Munich CEST = 17:33–18:33
-    # KST (pulled 1.5h earlier in v3.39.7.5 to absorb GitHub Actions cron
-    # delays — see comment block on the cron lines below).
-    # v3.39.7.5 (2026-05-26): pulled crons 1h 30min earlier to absorb
-    # GitHub Actions scheduler delays. On 2026-05-26 the original 10:03 UTC
-    # primary cron fired at 12:38 UTC (1h 35min late), and downstream fast_tier
-    # ran at 14:10 UTC delivering email at 16:35 CEST — 2 hours after the
-    # 14:30 CEST target. Pulling 1.5h earlier puts the first cron at 10:33 CEST
-    # so even with today's worst-case delay (~1h 35min) email lands by ~13:40 CEST.
-    # Trade-off: Korean broker first attempt now fires at 17:33 KST instead of
-    # 19:03 KST (about 2h after the 15:30 KST KRX close instead of 3.5h).
-    # The full 5-cron window now spans 17:33–18:33 KST, still well within the
-    # broker post-close publishing window. US transcript availability drops
-    # marginally from ~98% at 10:00 UTC to ~96% at 08:30 UTC. Mirae output is
-    # rarely the gating signal in practice (0 relevant notes most days).
-    - cron: "33 8 * * 1-6"     # 08:33 UTC = 10:33 CEST = 17:33 KST
-    - cron: "47 8 * * 1-6"     # 08:47 UTC = 10:47 CEST = 17:47 KST
-    - cron: "3 9 * * 1-6"      # 09:03 UTC = 11:03 CEST = 18:03 KST
-    - cron: "17 9 * * 1-6"     # 09:17 UTC = 11:17 CEST = 18:17 KST
-    - cron: "33 9 * * 1-6"     # 09:33 UTC = 11:33 CEST = 18:33 KST — last safety attempt
+    # Timing: window 07:03–08:03 UTC = 09:03–10:03 Munich CEST = 16:03–17:03
+    # KST. Cron expression is set deliberately EARLIER than the desired fire
+    # time because GitHub Actions structurally delays scheduled events by
+    # 90–180 min (see v3.39.8 comment below + daily.yml in daily-ticker-report
+    # for empirical evidence). With that delay, actual fire is expected at
+    # ~08:30–11:00 UTC = 10:30–13:00 Munich.
+    # v3.39.8 (2026-05-29): pulled crons another 1.5h earlier (08:33-09:33 UTC
+    # → 07:03-08:03 UTC) after empirically confirming GitHub Actions delays
+    # SCHEDULED cron events by 90-180 min consistently (not just on outage
+    # days — this is the structural delay, same one already documented in
+    # daily-ticker-report/.github/workflows/daily.yml). After v3.39.7.5 deploy
+    # the deep_tier still consistently fired around 11:50 UTC (vs scheduled
+    # 08:33 UTC) — ~3h 17min delay — leading to fast_tier firing around 14:00
+    # UTC and email arriving at 16:00 Munich. Cron expression is now set
+    # EARLIER than the gate window to compensate for the delay, same pattern
+    # as daily.yml ("Cron starts at UTC 01 (= CET 02) so first fallback slot
+    # is CET 02:19").
+    #
+    # Math: cron at 07:03 UTC + worst-case 180 min delay = 10:03 UTC fire =
+    # 12:03 Munich. Email follows ~25 min later from fast_tier (chained via
+    # workflow_run since v3.39.8 — see fast_tier.yml). Worst-case delivery
+    # ~12:30 Munich = 1h 30min before 14:00 target.
+    #
+    # Korean broker trade-off: first cron now at 07:03 UTC = 16:03 KST, which
+    # is 33 min after the 15:30 KST KRX close. Mirae notes typically publish
+    # within ~30 min of close on news days. The 5-cron window now spans
+    # 16:03–17:03 KST. Slightly tighter than v3.39.7.5's 17:33–18:33 KST but
+    # still in the broker post-close publishing window for most days.
+    # Yesterday (2026-05-28) and today (2026-05-29) BOTH had Mirae notes
+    # published before 16:00 KST so this should not regress capture rate.
+    - cron: "3 7 * * 1-6"      # 07:03 UTC = 09:03 CEST = 16:03 KST
+    - cron: "17 7 * * 1-6"     # 07:17 UTC = 09:17 CEST = 16:17 KST
+    - cron: "33 7 * * 1-6"     # 07:33 UTC = 09:33 CEST = 16:33 KST
+    - cron: "47 7 * * 1-6"     # 07:47 UTC = 09:47 CEST = 16:47 KST
+    - cron: "3 8 * * 1-6"      # 08:03 UTC = 10:03 CEST = 17:03 KST — last safety attempt
   workflow_dispatch: {}
 
 permissions:

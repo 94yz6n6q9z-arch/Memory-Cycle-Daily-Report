@@ -2,6 +2,18 @@ name: Memory Cycle Brief — Fast Tier (daily delivery)
 
 # Revision history (most recent at top — inline markers throughout the file
 # detail the specific section a revision touched):
+#   v3.39.8   (2026-05-29) — TRIGGER OVERHAUL: added workflow_run primary
+#                            trigger chained to deep_tier completion. Cron is
+#                            now a fallback only. Same architecture as
+#                            daily-ticker-report's daily.yml. Rationale:
+#                            v3.39.7.5 deploy showed GitHub Actions delays
+#                            SCHEDULE events by 90-180 min structurally (not
+#                            transient outages). workflow_run events fire
+#                            within seconds. Companion change: cron fallback
+#                            pulled from 09:43-11:13 UTC → 07:03-08:33 UTC
+#                            to account for the structural delay. Gate logic
+#                            updated to skip when workflow_run.conclusion
+#                            != "success" (lets cron fallback retry).
 #   v3.39.7.5 (2026-05-26) — schedule: pulled all 4 crons 1h 30min earlier
 #                            (11:13-12:43 UTC → 09:43-11:13 UTC) to absorb
 #                            GitHub Actions scheduler delays. On 2026-05-26
@@ -24,44 +36,45 @@ name: Memory Cycle Brief — Fast Tier (daily delivery)
 #                            "Create issue on critical failure" step.
 
 on:
+  # PRIMARY trigger (v3.39.8, 2026-05-29): fires automatically when deep_tier
+  # completes. This is the reliable path — no GitHub schedule-event delay
+  # (which is structurally 90-180 min on this account, per empirical evidence
+  # in v3.39.7.5 and v3.39.8 deploys). Same pattern as daily-ticker-report's
+  # daily.yml ("This is the reliable path — no GitHub scheduler delay risk").
+  #
+  # workflow_run events fire within seconds of the upstream workflow finishing,
+  # using a different queue lane than schedule events. The gate below still
+  # enforces (a) deep_tier succeeded (conclusion=success) and (b) brief not
+  # already sent today, so this is safe to retry on partial failures.
+  #
+  # IMPORTANT: the workflow name below must match deep_tier.yml's `name:`
+  # field EXACTLY (including the em-dash). If you rename either, update both.
+  workflow_run:
+    workflows: ["Memory Cycle Brief — Deep Tier (overnight)"]
+    types: [completed]
+
+  # FALLBACK trigger: cron in case workflow_run misfires, deep_tier was
+  # triggered manually outside the chain, or the workflow_run event itself
+  # gets lost (rare but documented). Cron also covers the case where
+  # deep_tier failed and we want to retry fast_tier later in the day.
+  #
+  # Cron expression is set deliberately EARLIER than the desired fire time
+  # because GitHub Actions structurally delays scheduled events by 90-180 min
+  # (see daily.yml in daily-ticker-report: "GitHub routinely executes cron
+  # jobs 90–120 min after the trigger time"). With that delay, actual fire
+  # is expected at ~08:30-11:30 UTC = 10:30-13:30 Munich. Email follows ~25
+  # min later = 10:55-13:55 Munich, just inside the 14:00 target on the worst
+  # delay days.
+  #
+  # 30-min spacing preserved from v3.39.7.4 to avoid the overlapping-runs
+  # problem (cron N starting before cron N-1's commit lands → duplicate work).
+  # Mon-Sat (1-6) per user pref.
   schedule:
-    # v3.39.7.4: thinned from 7 crons (14-16 min spacing) to 4 crons
-    # (30-min spacing). Rationale:
-    #   - Each fast-tier run takes ~25 min (Layer 2 sequential Haiku calls
-    #     + Sonnet streaming + email send).
-    #   - With concurrency: cancel-in-progress=false, overlapping crons
-    #     queue rather than parallelize.
-    #   - 14-min spacing means cron N starts BEFORE cron N-1 has pushed
-    #     its commit. cron N's checkout sees stale brief_sent_dates.json,
-    #     fails idempotency, runs the full pipeline → duplicate email.
-    #   - 30-min spacing leaves a 5-min window for the prior run's commit
-    #     to propagate to origin/main before the next checkout, in
-    #     conjunction with v3.39.7.4's _refresh_from_origin_main() in
-    #     fast_tier.py for belt-and-suspenders.
-    # fast_tier.py also has:
-    #   (a) cascade gate — exits cleanly if state/deep_tier_diagnostics.json
-    #       isn't dated today (deep_tier hasn't run yet — try again next
-    #       trigger). FORCE_RUN (manual dispatch) bypasses this gate.
-    #   (b) pre-flight refresh — fetches origin/main and hard-resets the
-    #       checkout BEFORE the idempotency check.
-    #   (c) idempotency — exits cleanly if today's brief already sent
-    #       (state/brief_sent_dates.json). FORCE_RUN bypasses this too.
-    # So most triggers no-op in <30s; only the first one finding both
-    # (deep ran AND brief not sent) actually produces email + commits.
-    # Mon-Sat (1-6) per user pref.
-    #
-    # Timing target (v3.39.7.5, 2026-05-26): email by 14:30 Munich CEST.
-    # On 2026-05-26 the schedule was delayed ~1h 27min by GitHub Actions
-    # (primary cron 11:13 UTC fired at 14:10 UTC), causing email to land at
-    # 16:35 CEST instead of the 14:30 CEST target. Pulled all crons 1h 30min
-    # earlier to absorb such delays. Deep_tier was pulled the same amount.
-    # New window 09:43-11:13 UTC = 11:43-13:13 Munich CEST; email delivery
-    # 12:08-13:38 CEST most days. Even with a 1.5h GitHub delay the primary
-    # cron still delivers by ~13:38 CEST = 50 min ahead of the 14:30 target.
-    - cron: "43 9 * * 1-6"     # 09:43 UTC = 11:43 CEST — primary
-    - cron: "13 10 * * 1-6"    # 10:13 UTC = 12:13 CEST — fallback (no-ops if 09:43 succeeded)
-    - cron: "43 10 * * 1-6"    # 10:43 UTC = 12:43 CEST — safety
-    - cron: "13 11 * * 1-6"    # 11:13 UTC = 13:13 CEST — last attempt (~17 min before old 13:30 UTC US-open target moved back to fallback)
+    - cron: "3 7 * * 1-6"      # 07:03 UTC = 09:03 CEST — primary cron fallback
+    - cron: "33 7 * * 1-6"     # 07:33 UTC = 09:33 CEST — fallback (no-ops if earlier succeeded)
+    - cron: "3 8 * * 1-6"      # 08:03 UTC = 10:03 CEST — safety
+    - cron: "33 8 * * 1-6"     # 08:33 UTC = 10:33 CEST — last attempt
+
   workflow_dispatch: {}
 
 permissions:
@@ -126,6 +139,11 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
+          # v3.39.8 (2026-05-29): workflow_run fires regardless of upstream
+          # conclusion (success/failure/cancelled). We must check conclusion
+          # below — same pattern as daily-ticker-report's daily.yml.
+          WF_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WF_RUN_NAME: ${{ github.event.workflow_run.name }}
         run: |
           python3 - <<'PY'
           import json
@@ -136,10 +154,20 @@ jobs:
           today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
           force_run = os.environ.get("FORCE_RUN") == "1"
           event_name = os.environ.get("EVENT_NAME", "")
+          wf_conclusion = (os.environ.get("WF_RUN_CONCLUSION") or "").strip()
+          wf_name = (os.environ.get("WF_RUN_NAME") or "").strip()
 
           # ---- 1. Manual dispatch always runs ----
           if force_run:
               run, reason = True, f"manual_dispatch (event={event_name}, FORCE_RUN=1)"
+          # ---- 1b. workflow_run: skip if upstream deep_tier didn't succeed ----
+          # v3.39.8: deep_tier failing (e.g. push rejected by GitHub backend,
+          # as on 2026-05-27) should NOT block fast_tier from retrying later
+          # via the cron fallback. But this specific workflow_run invocation
+          # must skip because the state we need isn't on main yet.
+          elif event_name == "workflow_run" and wf_conclusion != "success":
+              run = False
+              reason = f"deep_tier_did_not_succeed (conclusion={wf_conclusion}; cron fallback will retry)"
           else:
               # ---- 2. Idempotency: brief_sent_dates.json contains today? ----
               lock_path = Path("state/brief_sent_dates.json")
@@ -177,10 +205,13 @@ jobs:
               f.write(f"reason={reason}\n")
               f.write(f"today={today}\n")
               f.write(f"event={event_name}\n")
+              f.write(f"wf_conclusion={wf_conclusion}\n")
           print(f"gate decision: run={run}")
           print(f"gate reason:   {reason}")
           print(f"today (UTC):   {today}")
           print(f"event:         {event_name}")
+          print(f"wf_conclusion: {wf_conclusion}")
+          print(f"wf_name:       {wf_name}")
           PY
 
       - name: Stop early (no-op skip)
