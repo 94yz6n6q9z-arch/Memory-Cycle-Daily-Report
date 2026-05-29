@@ -1,19 +1,36 @@
 {
   "source_id": "DART API",
   "payload": {
-    "fetched_at_iso": "2026-05-28T12:08:36.435722",
+    "fetched_at_iso": "2026-05-29T12:21:48.453761",
     "tickers": {
       "SK Hynix": {
         "corp_code": "00164779",
-        "n_disclosures": 0,
-        "n_material": 0,
-        "disclosures": []
+        "n_disclosures": 1,
+        "n_material": 1,
+        "disclosures": [
+          {
+            "report_nm": "\uae30\uc5c5\uc9c0\ubc30\uad6c\uc870\ubcf4\uace0\uc11c\uacf5\uc2dc              ",
+            "rcept_dt": "20260529",
+            "rcept_no": "20260529801972",
+            "flr_nm": "SK\ud558\uc774\ub2c9\uc2a4",
+            "is_material": true,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260529801972"
+          }
+        ]
       },
       "Samsung Electronics": {
         "corp_code": "00126380",
-        "n_disclosures": 2,
+        "n_disclosures": 3,
         "n_material": 0,
         "disclosures": [
+          {
+            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
+            "rcept_dt": "20260529",
+            "rcept_no": "20260529001627",
+            "flr_nm": "\uae40\uacbd\uc11d",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260529001627"
+          },
           {
             "report_nm": "[\uae30\uc7ac\uc815\uc815]\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
             "rcept_dt": "20260526",
@@ -49,5 +66,5 @@
       }
     }
   },
-  "fetched_at_iso": "2026-05-28T12:08:50.429562"
+  "fetched_at_iso": "2026-05-29T12:22:02.485674"
 }
