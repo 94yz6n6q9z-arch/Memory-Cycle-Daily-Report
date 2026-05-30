@@ -1,12 +1,25 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-05-29T12:21:48.451611+00:00",
+    "fetched_at_iso": "2026-05-30T09:28:20.385606+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
         "code": "000660",
         "actions": [
+          {
+            "broker_korean": "KB",
+            "broker_english": "KB Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3800000,
+            "prior_target_krw": 3000000,
+            "target_change_pct": 26.67,
+            "direction": "raised",
+            "published_date_iso": "2026-05-29",
+            "raw": "KB | 26/05/29 | 3,800,000 | 3,000,000 | 26.67 | BUY | BUY"
+          },
           {
             "broker_korean": "\uc2e0\ud55c\ud22c\uc790",
             "broker_english": "Shinhan Investment",
@@ -123,19 +136,6 @@
             "direction": "raised",
             "published_date_iso": "2026-05-18",
             "raw": "\uc720\uc9c4\ud22c\uc790 | 26/05/18 | 3,200,000 | 2,300,000 | 39.13 | STRONG BUY | STRONG BUY"
-          },
-          {
-            "broker_korean": "KB",
-            "broker_english": "KB Securities",
-            "rating": "BUY",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 3000000,
-            "prior_target_krw": 2800000,
-            "target_change_pct": 7.14,
-            "direction": "raised",
-            "published_date_iso": "2026-05-15",
-            "raw": "KB | 26/05/15 | 3,000,000 | 2,800,000 | 7.14 | BUY | BUY"
           },
           {
             "broker_korean": "\ud604\ub300\ucc28",
@@ -336,9 +336,9 @@
         "n_actions": 25,
         "summary": {
           "avg_opinion_score": 4.0,
-          "avg_target_price_krw": 2437083,
-          "avg_eps_krw": 298495,
-          "avg_per": 7.67,
+          "avg_target_price_krw": 2470417,
+          "avg_eps_krw": 298954,
+          "avg_per": 7.8,
           "num_estimating_institutions": 24
         }
       },
@@ -676,7 +676,7 @@
           "avg_opinion_score": 4.04,
           "avg_target_price_krw": 396667,
           "avg_eps_krw": 43098,
-          "avg_per": 6.95,
+          "avg_per": 7.36,
           "num_estimating_institutions": 24
         }
       },
@@ -858,11 +858,11 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 761385,
           "avg_eps_krw": 109183,
-          "avg_per": 6.08,
+          "avg_per": 6.19,
           "num_estimating_institutions": 13
         }
       }
     }
   },
-  "fetched_at_iso": "2026-05-29T12:22:30.029259"
+  "fetched_at_iso": "2026-05-30T09:29:01.828075"
 }

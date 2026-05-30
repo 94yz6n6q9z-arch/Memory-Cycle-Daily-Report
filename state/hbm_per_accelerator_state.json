@@ -3,7 +3,7 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
-    "last_aggregator_run": "2026-05-29T12:24:53Z",
+    "last_aggregator_run": "2026-05-30T09:31:11Z",
     "description": "Accelerator catalog with HBM capacity per generation. Vendor sections feed frontier_hbm computation. Auto-updated by src/analysis/dhcr_accelerator_aggregator.py.",
     "last_run_additions": 1
   },
@@ -165,6 +165,14 @@
       "release_date": "2025-09-30",
       "hbm_gb_per_chip": 160,
       "hbm_type": "HBM3e"
+    },
+    {
+      "name": "TPU v8i",
+      "vendor": "google",
+      "hbm_gb": 288,
+      "release_date": null,
+      "generation": "v8i",
+      "notes": "Inference variant with 288GB HBM3E; training variant TPU v8t has 216GB"
     }
   ],
   "non_hbm_accelerators": [

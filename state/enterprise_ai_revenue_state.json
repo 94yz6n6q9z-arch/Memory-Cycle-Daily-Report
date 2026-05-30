@@ -3,9 +3,9 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
-    "last_aggregator_run": "2026-05-29T12:24:53Z",
+    "last_aggregator_run": "2026-05-30T09:31:11Z",
     "description": "Quarterly enterprise AI revenue by category. Auto-updated by src/analysis/dhcr_revenue_aggregator.py from architecture_signals extraction stream.",
-    "last_run_additions": 0,
+    "last_run_additions": 1,
     "last_run_updates": 0
   },
   "microsoft_azure_ai": [
@@ -121,6 +121,14 @@
       "revenue_usd_b_annualized": 24.0,
       "yoy_growth_pct": 220.0,
       "confidence": "medium"
+    },
+    {
+      "quarter": "2026-Q2",
+      "revenue_usd_b": null,
+      "qoq_growth_pct": null,
+      "yoy_growth_pct": null,
+      "source_quote": "Google's new TPU lineup adopts higher HBM3E capacity for inference",
+      "source_id": "Mirae Asset Securities / 2026-05-30 / SK Hynix (000660 KS/Buy)Valuation upside remains substantial"
     }
   ],
   "oracle_ai_infra": [
