@@ -2,6 +2,25 @@ name: Memory Cycle Brief — Deep Tier (overnight)
 
 # Revision history (most recent at top — inline markers throughout the file
 # detail the specific section a revision touched):
+#   v3.39.9 (2026-05-30) — schedule: (1) pulled all crons 30 min earlier
+#                          (07:03–08:03 UTC → 06:33–07:33 UTC) so deep_tier
+#                          tends to clear GitHub's (delayed) schedule queue
+#                          before fast_tier's cron fallbacks fire; (2) trimmed
+#                          from 5 crons to 3 (06:33 / 07:03 / 07:33 UTC, 30-min
+#                          spacing) to match fast_tier's 3-cron fallback
+#                          cadence — the idempotency gate makes extra fallback
+#                          crons redundant once one run/day succeeds. On
+#                          2026-05-30 a fast_tier cron (#92) was pulled off
+#                          the queue 1 min BEFORE deep_tier (#83) because both
+#                          shared the same 07:03 UTC first cron; #92 correctly
+#                          no-op'd via its cascade gate, but the 30-min head
+#                          start removes the daily redundant pre-deep run.
+#                          Companion change: fast_tier.yml v3.39.9 (concurrency
+#                          guard + dropped its 4th cron). Korean broker note:
+#                          first cron now 15:33 KST (3 min after KRX close) on
+#                          the cron clock, but the 90–180 min GitHub delay
+#                          means actual fire is ~17:00–18:30 KST, still well
+#                          inside the broker post-close window on normal days.
 #   v3.39.8 (2026-05-29) — schedule: pulled all 5 crons another 1h 30min
 #                          earlier (08:33–09:33 UTC → 07:03–08:03 UTC) after
 #                          v3.39.7.5 deploy showed cron events firing at
@@ -36,20 +55,23 @@ name: Memory Cycle Brief — Deep Tier (overnight)
 
 on:
   schedule:
-    # v3.39.3: spread triggers + idempotency. Five attempts in a 60-minute
-    # window at odd minute marks (avoiding :00, :15, :30, :45 which are
-    # GitHub Actions' peak contention). First successful run writes
-    # state/deep_tier_diagnostics.json; later triggers see the file dated
-    # today and exit cleanly in ~10s (idempotency check in deep_tier.py).
-    # Mon-Sat (1-6) — Korean exchange and US markets active Mon-Fri,
-    # Saturday added per user pref for Saturday catch-up briefs.
+    # v3.39.3: spread triggers + idempotency. v3.39.9 trimmed to THREE
+    # attempts in a 60-minute window (was 5) at 30-min spacing, to match
+    # fast_tier's 3-cron fallback cadence. The :03/:33 minute marks avoid
+    # :00/:15/:30/:45 (GitHub Actions' peak contention). First successful
+    # run writes state/deep_tier_diagnostics.json; later triggers see the
+    # file dated today and exit cleanly in ~10s (idempotency check in
+    # deep_tier.py). Mon-Sat (1-6) — Korean exchange and US markets active
+    # Mon-Fri, Saturday added per user pref for Saturday catch-up briefs.
     #
-    # Timing: window 07:03–08:03 UTC = 09:03–10:03 Munich CEST = 16:03–17:03
+    # Timing: window 06:33–07:33 UTC = 08:33–09:33 Munich CEST = 15:33–16:33
     # KST. Cron expression is set deliberately EARLIER than the desired fire
     # time because GitHub Actions structurally delays scheduled events by
     # 90–180 min (see v3.39.8 comment below + daily.yml in daily-ticker-report
     # for empirical evidence). With that delay, actual fire is expected at
-    # ~08:30–11:00 UTC = 10:30–13:00 Munich.
+    # ~08:00–10:30 UTC = 10:00–12:30 Munich. v3.39.9 pulled this window 30 min
+    # earlier than v3.39.8 so deep_tier tends to clear the GitHub queue before
+    # fast_tier's cron fallbacks (which stayed at 07:03–08:03 UTC).
     # v3.39.8 (2026-05-29): pulled crons another 1.5h earlier (08:33-09:33 UTC
     # → 07:03-08:03 UTC) after empirically confirming GitHub Actions delays
     # SCHEDULED cron events by 90-180 min consistently (not just on outage
@@ -74,11 +96,9 @@ on:
     # still in the broker post-close publishing window for most days.
     # Yesterday (2026-05-28) and today (2026-05-29) BOTH had Mirae notes
     # published before 16:00 KST so this should not regress capture rate.
-    - cron: "3 7 * * 1-6"      # 07:03 UTC = 09:03 CEST = 16:03 KST
-    - cron: "17 7 * * 1-6"     # 07:17 UTC = 09:17 CEST = 16:17 KST
-    - cron: "33 7 * * 1-6"     # 07:33 UTC = 09:33 CEST = 16:33 KST
-    - cron: "47 7 * * 1-6"     # 07:47 UTC = 09:47 CEST = 16:47 KST
-    - cron: "3 8 * * 1-6"      # 08:03 UTC = 10:03 CEST = 17:03 KST — last safety attempt
+    - cron: "33 6 * * 1-6"     # 06:33 UTC = 08:33 CEST = 15:33 KST — primary
+    - cron: "3 7 * * 1-6"      # 07:03 UTC = 09:03 CEST = 16:03 KST — fallback
+    - cron: "33 7 * * 1-6"     # 07:33 UTC = 09:33 CEST = 16:33 KST — last safety attempt
   workflow_dispatch: {}
 
 permissions:
@@ -107,8 +127,8 @@ jobs:
       # take (checkout + python install + deps install + deep_tier.py startup
       # + internal idempotency check exit).
       #
-      # 4 daily fallback crons (10:17 / 10:33 / 10:47 / 11:03 UTC) × ~52 seconds
-      # saved per no-op × Mon-Sat = roughly 5x reduction in GitHub Actions
+      # 2 daily fallback crons (07:03 / 07:33 UTC as of v3.39.9) × ~52 seconds
+      # saved per no-op × Mon-Sat = meaningful reduction in GitHub Actions
       # minutes consumed by no-op deep-tier runs.
       #
       # Two gate conditions:

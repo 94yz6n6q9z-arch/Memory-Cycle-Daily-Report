@@ -2,6 +2,30 @@ name: Memory Cycle Brief — Fast Tier (daily delivery)
 
 # Revision history (most recent at top — inline markers throughout the file
 # detail the specific section a revision touched):
+#   v3.39.9   (2026-05-30) — DUPLICATE-RUN FIX: added a deterministic
+#                            concurrency guard to the gate (step 4). On
+#                            2026-05-30 the brief was generated and emailed
+#                            TWICE: deep_tier fires a workflow_run on every
+#                            SUCCESSFUL run (including no-op idempotency
+#                            skips → 3 events/day), plus cron fallbacks fire
+#                            independently. Multiple fast_tier runs started
+#                            within the 22-min pipeline window of the first,
+#                            all saw "brief not sent yet" (the marker is
+#                            written at run END), and all proceeded. The
+#                            native `concurrency:` group failed to serialize
+#                            them (known GitHub flakiness with mixed
+#                            workflow_run + schedule events). The new guard
+#                            queries the Actions API for other in-progress/
+#                            queued fast_tier runs and defers if any has a
+#                            lower run_number — so exactly one run survives
+#                            regardless of trigger count. Requires the new
+#                            `actions: read` permission. Fail-open.
+#                            Also: dropped the 4th cron fallback (was 08:33
+#                            UTC) — 3 fallbacks suffice now that workflow_run
+#                            is the primary path. Deep_tier crons pulled 30
+#                            min earlier (companion change, same version) so
+#                            deep_tier tends to clear the queue before the
+#                            fast_tier cron fallbacks fire.
 #   v3.39.8   (2026-05-29) — TRIGGER OVERHAUL: added workflow_run primary
 #                            trigger chained to deep_tier completion. Cron is
 #                            now a fallback only. Same architecture as
@@ -72,14 +96,15 @@ on:
   schedule:
     - cron: "3 7 * * 1-6"      # 07:03 UTC = 09:03 CEST — primary cron fallback
     - cron: "33 7 * * 1-6"     # 07:33 UTC = 09:33 CEST — fallback (no-ops if earlier succeeded)
-    - cron: "3 8 * * 1-6"      # 08:03 UTC = 10:03 CEST — safety
-    - cron: "33 8 * * 1-6"     # 08:33 UTC = 10:33 CEST — last attempt
+    - cron: "3 8 * * 1-6"      # 08:03 UTC = 10:03 CEST — safety / last attempt
 
   workflow_dispatch: {}
 
 permissions:
   contents: write  # commits state back to repo
   issues: write    # v3.38 — needed for "Create issue on critical failure" step below
+  actions: read    # v3.39.9 — concurrency guard queries the Actions API for
+                   # other in-progress/queued fast_tier runs (see gate step)
 
 concurrency:
   group: memory-cycle-brief-fast
@@ -144,6 +169,11 @@ jobs:
           # below — same pattern as daily-ticker-report's daily.yml.
           WF_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           WF_RUN_NAME: ${{ github.event.workflow_run.name }}
+          # v3.39.9 (2026-05-30): token + repo + run number for the
+          # concurrency guard's Actions API call (step 4 below).
+          GH_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GH_RUN_NUMBER: ${{ github.run_number }}
         run: |
           python3 - <<'PY'
           import json
@@ -198,6 +228,80 @@ jobs:
                   else:
                       run = True
                       reason = "ready (brief not sent today, deep tier ran today)"
+
+          # ---- 4. CONCURRENCY GUARD (v3.39.9) ----
+          # Deterministic dedup across ALL triggers: workflow_run (which fires
+          # once per SUCCESSFUL deep_tier run — including the no-op idempotency
+          # skips, so 3+ times/day), the cron fallbacks, and manual dispatch.
+          #
+          # Why this exists: GitHub's native `concurrency:` group proved
+          # unreliable. On 2026-05-30, runs #93/#95/#96/#97 all executed
+          # concurrently despite group=memory-cycle-brief-fast with
+          # cancel-in-progress=false — they should have queued. The root cause
+          # is that the idempotency marker (brief_sent_dates.json) is only
+          # written at the END of a ~22-min run, so every run that STARTS
+          # within that window sees "not sent yet" and proceeds. Result:
+          # duplicate pipelines + duplicate emails.
+          #
+          # This guard asks the Actions API which OTHER fast_tier runs are
+          # currently in_progress or queued. If any has a lower run_number
+          # than ours, an earlier run is already handling today — we defer to
+          # it and exit. Among N concurrent runs, exactly one (lowest number)
+          # survives. This does NOT depend on the flaky concurrency feature.
+          #
+          # FAIL-OPEN: if the API call errors (network/permits), we fall back
+          # to prior behaviour (native concurrency group + sent-marker check)
+          # rather than blocking the brief. Worst case on API failure is the
+          # pre-existing race, never a missed brief.
+          #
+          # Note: the sent-marker check (step 2) already handles the SEQUENTIAL
+          # case — a later run whose checkout sees today's sent marker no-ops
+          # before reaching here. This guard specifically handles the
+          # CONCURRENT case where the winner hasn't written the marker yet.
+          if run:
+              import urllib.request
+
+              repo = (os.environ.get("GH_REPO") or "").strip()
+              token = (os.environ.get("GH_API_TOKEN") or "").strip()
+              try:
+                  my_num = int(os.environ.get("GH_RUN_NUMBER") or "0")
+              except ValueError:
+                  my_num = 0
+
+              earlier_active = []
+              if repo and token and my_num:
+                  for status in ("in_progress", "queued"):
+                      url = (
+                          f"https://api.github.com/repos/{repo}/actions/"
+                          f"workflows/fast_tier.yml/runs"
+                          f"?status={status}&per_page=100"
+                      )
+                      req = urllib.request.Request(url, headers={
+                          "Authorization": f"Bearer {token}",
+                          "Accept": "application/vnd.github+json",
+                          "X-GitHub-Api-Version": "2022-11-28",
+                      })
+                      try:
+                          with urllib.request.urlopen(req, timeout=15) as resp:
+                              payload = json.loads(resp.read().decode())
+                          for r in payload.get("workflow_runs", []):
+                              n = r.get("run_number")
+                              if isinstance(n, int) and n < my_num:
+                                  earlier_active.append(n)
+                      except Exception as e:
+                          print(f"WARN: concurrency guard API call failed "
+                                f"({status}): {e}; failing open")
+              else:
+                  print("WARN: concurrency guard skipped "
+                        "(missing repo/token/run_number); failing open")
+
+              if earlier_active:
+                  run = False
+                  reason = (
+                      f"concurrency_guard: earlier fast_tier run(s) "
+                      f"{sorted(set(earlier_active))} active and lower than "
+                      f"this run #{my_num}; deferring to avoid duplicate email"
+                  )
 
           out_path = os.environ["GITHUB_OUTPUT"]
           with open(out_path, "a") as f:
