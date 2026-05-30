@@ -1,6 +1,6 @@
 {
-  "written_at_iso": "2026-05-29T11:50:41.067360+00:00",
-  "run_date": "2026-05-29",
+  "written_at_iso": "2026-05-30T09:27:41.261928+00:00",
+  "run_date": "2026-05-30",
   "summary_counts": {
     "ok": 3,
     "warn": 2,
@@ -14,14 +14,14 @@
       "source_name": "Motley Fool",
       "source_type": "transcript",
       "reached": true,
-      "items_returned": 1,
+      "items_returned": 0,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-29T11:49:38.482477+00:00",
-      "detail": "16 co. \u00b7 1 full / 0 materials-only / 14 cached / 1 nothing",
+      "timestamp": "2026-05-30T09:26:38.882080+00:00",
+      "detail": "16 co. \u00b7 0 full / 0 materials-only / 15 cached / 1 nothing",
       "skipped": false,
       "expected_empty": false,
-      "health": "ok"
+      "health": "warn"
     },
     {
       "source_name": "IR scrapers (SK Hynix / Samsung / Micron)",
@@ -30,7 +30,7 @@
       "items_returned": 0,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-29T11:49:38.482496+00:00",
+      "timestamp": "2026-05-30T09:26:38.882141+00:00",
       "detail": "3 co. \u00b7 0 full / 0 materials-only / 2 cached / 1 nothing",
       "skipped": false,
       "expected_empty": false,
@@ -40,14 +40,14 @@
       "source_name": "Yahoo Finance",
       "source_type": "transcript",
       "reached": true,
-      "items_returned": 0,
+      "items_returned": 1,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-29T11:49:38.482506+00:00",
-      "detail": "15 co. \u00b7 0 full / 0 materials-only / 15 cached / 0 nothing",
+      "timestamp": "2026-05-30T09:26:38.882161+00:00",
+      "detail": "16 co. \u00b7 1 full / 0 materials-only / 15 cached / 0 nothing",
       "skipped": false,
       "expected_empty": false,
-      "health": "warn"
+      "health": "ok"
     },
     {
       "source_name": "Mirae Asset (EN broker PDFs)",
@@ -56,7 +56,7 @@
       "items_returned": 2,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-29T11:50:15.764776+00:00",
+      "timestamp": "2026-05-30T09:27:17.144920+00:00",
       "detail": null,
       "skipped": false,
       "expected_empty": false,
@@ -69,7 +69,7 @@
       "items_returned": 4,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-05-29T11:50:41.067303+00:00",
+      "timestamp": "2026-05-30T09:27:41.261855+00:00",
       "detail": "2 transcript + 2 broker note digests",
       "skipped": false,
       "expected_empty": false,
