@@ -1,7 +1,7 @@
 {
   "source_id": "DART API",
   "payload": {
-    "fetched_at_iso": "2026-05-30T09:28:20.388563",
+    "fetched_at_iso": "2026-06-01T11:45:46.804947",
     "tickers": {
       "SK Hynix": {
         "corp_code": "00164779",
@@ -20,9 +20,25 @@
       },
       "Samsung Electronics": {
         "corp_code": "00126380",
-        "n_disclosures": 1,
-        "n_material": 0,
+        "n_disclosures": 4,
+        "n_material": 1,
         "disclosures": [
+          {
+            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
+            "rcept_dt": "20260601",
+            "rcept_no": "20260601000369",
+            "flr_nm": "\uae40\uacbd\uc11d",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260601000369"
+          },
+          {
+            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
+            "rcept_dt": "20260601",
+            "rcept_no": "20260601000001",
+            "flr_nm": "\ud558\uc9c0\ud6c8",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260601000001"
+          },
           {
             "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
             "rcept_dt": "20260529",
@@ -30,16 +46,33 @@
             "flr_nm": "\uae40\uacbd\uc11d",
             "is_material": false,
             "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260529001627"
+          },
+          {
+            "report_nm": "\uae30\uc5c5\uc9c0\ubc30\uad6c\uc870\ubcf4\uace0\uc11c\uacf5\uc2dc              ",
+            "rcept_dt": "20260601",
+            "rcept_no": "20260601800268",
+            "flr_nm": "\uc0bc\uc131\uc804\uc790",
+            "is_material": true,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260601800268"
           }
         ]
       },
       "SK Square": {
         "corp_code": "01515323",
-        "n_disclosures": 0,
-        "n_material": 0,
-        "disclosures": []
+        "n_disclosures": 1,
+        "n_material": 1,
+        "disclosures": [
+          {
+            "report_nm": "\uae30\uc5c5\uc9c0\ubc30\uad6c\uc870\ubcf4\uace0\uc11c\uacf5\uc2dc              ",
+            "rcept_dt": "20260601",
+            "rcept_no": "20260601800822",
+            "flr_nm": "LG\uc5d0\ub108\uc9c0\uc194\ub8e8\uc158",
+            "is_material": true,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260601800822"
+          }
+        ]
       }
     }
   },
-  "fetched_at_iso": "2026-05-30T09:28:32.568869"
+  "fetched_at_iso": "2026-06-01T11:46:01.181564"
 }
