@@ -1,6 +1,6 @@
 {
-  "written_at_iso": "2026-06-02T11:08:08.803304+00:00",
-  "run_date": "2026-06-02",
+  "written_at_iso": "2026-06-03T11:30:24.563075+00:00",
+  "run_date": "2026-06-03",
   "summary_counts": {
     "ok": 3,
     "warn": 2,
@@ -11,17 +11,30 @@
   },
   "statuses": [
     {
-      "source_name": "Motley Fool",
+      "source_name": "Yahoo Finance",
       "source_type": "transcript",
       "reached": true,
       "items_returned": 1,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-06-02T11:07:23.272951+00:00",
+      "timestamp": "2026-06-03T11:29:39.502950+00:00",
       "detail": "16 co. \u00b7 1 full / 0 materials-only / 14 cached / 1 nothing",
       "skipped": false,
       "expected_empty": false,
       "health": "ok"
+    },
+    {
+      "source_name": "Motley Fool",
+      "source_type": "transcript",
+      "reached": true,
+      "items_returned": 0,
+      "latency_ms": 0,
+      "error": null,
+      "timestamp": "2026-06-03T11:29:39.502984+00:00",
+      "detail": "15 co. \u00b7 0 full / 0 materials-only / 14 cached / 1 nothing",
+      "skipped": false,
+      "expected_empty": false,
+      "health": "warn"
     },
     {
       "source_name": "IR scrapers (SK Hynix / Samsung / Micron)",
@@ -30,21 +43,8 @@
       "items_returned": 0,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-06-02T11:07:23.272975+00:00",
+      "timestamp": "2026-06-03T11:29:39.502997+00:00",
       "detail": "3 co. \u00b7 0 full / 0 materials-only / 1 cached / 2 nothing",
-      "skipped": false,
-      "expected_empty": false,
-      "health": "warn"
-    },
-    {
-      "source_name": "Yahoo Finance",
-      "source_type": "transcript",
-      "reached": true,
-      "items_returned": 0,
-      "latency_ms": 0,
-      "error": null,
-      "timestamp": "2026-06-02T11:07:23.272991+00:00",
-      "detail": "15 co. \u00b7 0 full / 0 materials-only / 14 cached / 1 nothing",
       "skipped": false,
       "expected_empty": false,
       "health": "warn"
@@ -56,7 +56,7 @@
       "items_returned": 2,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-06-02T11:07:59.616738+00:00",
+      "timestamp": "2026-06-03T11:30:15.313132+00:00",
       "detail": null,
       "skipped": false,
       "expected_empty": false,
@@ -69,7 +69,7 @@
       "items_returned": 6,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-06-02T11:08:08.803215+00:00",
+      "timestamp": "2026-06-03T11:30:24.562983+00:00",
       "detail": "4 transcript + 2 broker note digests",
       "skipped": false,
       "expected_empty": false,
