@@ -1,24 +1,24 @@
 {
-  "written_at_iso": "2026-06-03T11:29:52.238706+00:00",
+  "written_at_iso": "2026-06-04T10:27:05.802917+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 1,
     "materials_only": 0,
-    "nothing": 4,
-    "already_processed": 29,
+    "nothing": 3,
+    "already_processed": 30,
     "by_company": {
-      "Micron": "nothing",
+      "Micron": "already_processed",
       "Nvidia": "already_processed",
-      "Broadcom": "already_processed",
+      "Broadcom": "full_transcript",
       "TSMC": "already_processed",
       "Applied Materials": "already_processed",
-      "Microsoft": "nothing",
+      "Microsoft": "already_processed",
       "Alphabet": "already_processed",
       "Meta": "already_processed",
       "Amazon": "already_processed",
       "Oracle": "already_processed",
       "Dell": "already_processed",
-      "HPE": "full_transcript",
+      "HPE": "already_processed",
       "ASML": "already_processed",
       "AMD": "already_processed",
       "Intel": "already_processed",
@@ -31,7 +31,6 @@
       "Samsung Electronics",
       "Micron",
       "Nvidia",
-      "Broadcom",
       "TSMC",
       "Applied Materials",
       "ASML",
@@ -52,7 +51,7 @@
       "company": "Micron",
       "ticker": "MU",
       "availability": "already_processed",
-      "source_name": "Yahoo Finance",
+      "source_name": "Motley Fool",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
@@ -67,10 +66,10 @@
     {
       "company": "Broadcom",
       "ticker": "AVGO",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Motley Fool",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 45664
     },
     {
       "company": "TSMC",
@@ -209,16 +208,16 @@
       "char_count": 0
     },
     {
-      "company": "Nvidia",
-      "ticker": "NVDA",
+      "company": "Micron",
+      "ticker": "MU",
       "availability": "already_processed",
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
-      "company": "Broadcom",
-      "ticker": "AVGO",
+      "company": "Nvidia",
+      "ticker": "NVDA",
       "availability": "already_processed",
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
@@ -251,9 +250,9 @@
     {
       "company": "Microsoft",
       "ticker": "MSFT",
-      "availability": "nothing",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
@@ -299,10 +298,10 @@
     {
       "company": "HPE",
       "ticker": "HPE",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": null,
-      "char_count": 56228
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "AMD",
