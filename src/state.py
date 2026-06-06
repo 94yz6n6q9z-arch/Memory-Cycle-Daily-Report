@@ -215,6 +215,87 @@ def load_trigger_log_24h(now_utc: Optional[datetime] = None) -> list[dict]:
     return pruned
 
 
+def collapse_trigger_log_for_display(entries: list[dict]) -> list[dict]:
+    """Collapse the 24h log to one NET transition per indicator for display.
+
+    v3.39.10. The stored 24h log keeps every individual transition (deduped
+    by (indicator_id, new_status)) so cross-rerun stability works. But for
+    the "NEW TRIGGER EVENT" banners we want each indicator shown at most
+    once, as its NET move over the window — otherwise a round-trip (e.g.
+    t3 went Not fired→Partially fired yesterday, then Partially fired→Not
+    fired today) renders as TWO contradictory banners, as seen in the
+    2026-06-06 brief.
+
+    Per indicator: take the earliest old_status and the latest new_status
+    within the window (ordered by fired_at_iso). If they are equal, the
+    indicator round-tripped back to where it started → drop it (no net
+    change to announce). Otherwise emit a single entry describing the net
+    move. Output is sorted by the latest leg's fired_at_iso for stable,
+    deterministic ordering.
+    """
+    by_indicator: dict[str, list[dict]] = {}
+    for e in entries:
+        if not isinstance(e, dict) or "indicator_id" not in e:
+            continue
+        by_indicator.setdefault(e["indicator_id"], []).append(e)
+
+    collapsed: list[dict] = []
+    for _iid, evs in by_indicator.items():
+        evs_sorted = sorted(evs, key=lambda e: e.get("fired_at_iso", ""))
+        earliest_old = evs_sorted[0].get("old_status")
+        latest = evs_sorted[-1]
+        latest_new = latest.get("new_status")
+        if earliest_old == latest_new:
+            continue  # round-trip nets to no change — nothing to announce
+        collapsed.append({
+            "indicator_id": latest.get("indicator_id"),
+            "indicator_name": latest.get("indicator_name"),
+            "tier": latest.get("tier"),
+            "old_status": earliest_old,
+            "new_status": latest_new,
+            "description": f"Status changed from '{earliest_old}' to '{latest_new}'.",
+            "fired_at_iso": latest.get("fired_at_iso", ""),
+        })
+
+    collapsed.sort(key=lambda e: e.get("fired_at_iso", ""))
+    return collapsed
+
+
+# v3.39.10 — matches a leading sentence asserting that no signals fired or
+# unfired (the contradictory opener Sonnet has produced; see Issue 1,
+# 2026-06-06). Kept at module scope so tests can exercise it directly.
+_FALSE_NO_SIGNAL_OPENER = re.compile(
+    r"^\s*no\s+(?:new\s+|tier\s+|additional\s+|further\s+)*"
+    r"signals?\b[^.;]*\b(?:fired|unfired)\b[^.;]*[.;]\s*",
+    re.IGNORECASE,
+)
+
+
+def reconcile_executive_brief_opener(
+    brief: str, signal_changed_names: list[str]
+) -> str:
+    """Strip a false "no signals fired/unfired" opener when signals changed.
+
+    v3.39.10. `signal_changed_names` must be the display names of tier-1-5
+    SIGNALS that changed status today (watch overlays — Indicators 6/7/8 —
+    excluded by the caller, since an overlay change does not make a
+    "no signals fired" claim false). If that list is non-empty and `brief`
+    opens with a blanket "no signals fired or unfired" claim, replace that
+    opening sentence with a deterministic, accurate lead. Otherwise return
+    `brief` unchanged. Pure function — no I/O, safe to unit-test.
+    """
+    if not (signal_changed_names and brief):
+        return brief
+    if not _FALSE_NO_SIGNAL_OPENER.search(brief):
+        return brief
+    n = len(signal_changed_names)
+    names = ", ".join(signal_changed_names)
+    replacement = (
+        f"{n} signal status change{'s' if n != 1 else ''} today ({names}). "
+    )
+    return _FALSE_NO_SIGNAL_OPENER.sub(replacement, brief, count=1)
+
+
 def save_trigger_log_24h(entries: list[dict]) -> None:
     """Persist the trigger event log. Caller pre-prunes to last 24h."""
     STATE_DIR.mkdir(exist_ok=True)
