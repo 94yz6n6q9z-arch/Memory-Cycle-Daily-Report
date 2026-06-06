@@ -1,6 +1,6 @@
 {
   "current": {
-    "computed_at_iso": "2026-06-06T09:12:29.632841",
+    "computed_at_iso": "2026-06-06T10:58:09.868949",
     "frontier_kv_kb_per_token": 6.9206,
     "frontier_kv_gb_per_1m_tokens": 6.6,
     "frontier_model_name": "DeepSeek V4-Pro",
@@ -161,115 +161,8 @@
     ],
     "context_volume_proposal": null
   },
-  "saved_at_iso": "2026-06-06T09:12:29.840958",
+  "saved_at_iso": "2026-06-06T10:58:10.073839",
   "recent_snapshots": [
-    {
-      "computed_at_iso": "2026-05-25T21:27:18.799301",
-      "frontier_kv_kb_per_token": 6.9206,
-      "frontier_kv_gb_per_1m_tokens": 6.6,
-      "frontier_model_name": "DeepSeek V4-Pro",
-      "frontier_model_arch": "novel:CSA-HCA",
-      "kv_band_index": 2,
-      "kv_band_name": "R3",
-      "kv_band_label": "4-16 GB/1M tok",
-      "kv_intensity": 0.5,
-      "kv_yoy_change_pct": 0.0,
-      "operative_context_tokens": 47690,
-      "operative_context_kb": 322.31,
-      "context_band_index": 1,
-      "context_band_name": "C2",
-      "context_band_label": "32-200K",
-      "context_intensity": 0.3,
-      "context_categories": [
-        {
-          "key": "consumer_chat",
-          "label": "Consumer chat",
-          "context_tokens": 11000,
-          "volume_share_pct": 32.0,
-          "contribution_tokens": 3520,
-          "confidence": "high"
-        },
-        {
-          "key": "coding_agents",
-          "label": "Coding agents",
-          "context_tokens": 100000,
-          "volume_share_pct": 8.0,
-          "contribution_tokens": 8000,
-          "confidence": "high"
-        },
-        {
-          "key": "enterprise_vertical_agents",
-          "label": "Enterprise vertical agents",
-          "context_tokens": 65000,
-          "volume_share_pct": 51.0,
-          "contribution_tokens": 33150,
-          "confidence": "low"
-        },
-        {
-          "key": "developer_raw_api",
-          "label": "Developer raw API",
-          "context_tokens": 40000,
-          "volume_share_pct": 7.0,
-          "contribution_tokens": 2800,
-          "confidence": "medium"
-        },
-        {
-          "key": "other_creative_rag",
-          "label": "Other (RAG / creative / specialized)",
-          "context_tokens": 11000,
-          "volume_share_pct": 2.0,
-          "contribution_tokens": 220,
-          "confidence": "medium"
-        }
-      ],
-      "workload_implied_cell": [
-        2,
-        1
-      ],
-      "workload_implied_zone": "LPDDR/HBM",
-      "workload_implied_zone_category": "HBM_HYBRID",
-      "market_deployed_cell": [
-        3,
-        1
-      ],
-      "market_deployed_zone": "HBM/GDDR",
-      "market_deployed_zone_category": "HBM_HYBRID",
-      "anticipation_gap_bands": 1,
-      "position_score": 52,
-      "enterprise_ai_run_rate_usd_b": 121.0,
-      "enterprise_ai_yoy_growth_pct": 215.88,
-      "nvidia_datacenter_yoy_growth_pct": 69.0,
-      "volume_index": 100.0,
-      "volume_trajectory": "bullish",
-      "hbm_bit_demand_index": 52.0,
-      "sanity_signal_substitution_news_count": 0,
-      "sanity_signal_substitution_threshold": 5,
-      "sanity_signal_hyperscaler_decode_mentions": 0,
-      "sanity_signal_hbm_price_trend": "flat",
-      "sanity_signal_lpddr_contract_direction": "no_data",
-      "sanity_check_confirms": 2,
-      "sanity_check_contradicts": 1,
-      "calibration_flag": false,
-      "status": "Not fired",
-      "status_color": "#C0DD97",
-      "status_reasoning": "Position score 52 in transition zone (30-65) but volume trajectory bullish \u2014 enterprise demand pulling toward HBM. Hold positive read.",
-      "narrative_summary": "Frontier KV: 6.9 KB/tok (6.6 GB per 1M tokens) on DeepSeek V4-Pro. Operative context (volume-weighted across 5 categories): ~48K tokens. Workload-implied cell sits in LPDDR/HBM zone; market-deployed cell (+1 Y-band anticipation premium) sits in HBM/GDDR zone. Position score: 52/100. Volume index: 100 (May 2026 = 100). Composite HBM bit demand: 52. Status: Not fired.",
-      "bull_case_summary": "BULL CASE: enterprise agentic adoption ignites. Today enterprise vertical category is 51% volume share at 65K context. If enterprise share grows to 25-30% (driven by Microsoft Copilot Enterprise, Hebbia, Harvey, Anthropic Claude Enterprise, custom F500 deployments) AND context per session grows to 3-5M as efficiency unlocks the economic frontier, operative context shifts right from C2 to C4. Combined with the +1 anticipation premium, that places market-deployed cell deep in HBM territory (score 70-85). Volume index simultaneously growing 5-10x on the enterprise expansion \u2192 composite HBM bit demand 10-15x today's baseline. This is the SK Hynix bull case quantified: efficiency \u00d7 HBM unlocks 42M-token capacity per accelerator, enterprise fills it.",
-      "bear_case_summary": "BEAR CASE: enterprise agentic stalls. KV efficiency improves on schedule (MLA + INT4 + sliding window getting frontier to ~3 KB/tok), but enterprise vertical share never breaks 10% and context plateaus around 1M. Operative context stays in C3 region while KV efficiency pulls Y-axis down to R1. Workload-implied cell lands at R1C3 (score 33, LPDDR/heterogeneous zone). Even with anticipation premium, market-deployed cell sits at R2C3 \u2014 score drops below 50, status flips to Partially fired. The market broadens to LPDDR/CXL warm tier and SSD/NAND cold tier; Samsung, Micron and Chinese suppliers gain at SK Hynix's expense. Watch for: substitution news from Cerebras / Groq / Etched winning major contracts, hyperscaler earnings explicitly mentioning decode moving off HBM, or HBM contract prices rolling over. Today's sanity check shows zero substitution evidence \u2014 the bear case is NOT materializing as of 2026-05-25.",
-      "substitution_risk_notes": [
-        "Cerebras WSE-3: estimated <1% AI compute share (Single-wafer chip with 44GB SRAM. Pure substitution case but limited share.)",
-        "Groq LPU v2: estimated <1% AI compute share (Inference-only. Uses commodity DDR for capacity tier.)",
-        "Etched Sohu: estimated <0.5% AI compute share (Speculative new entrant. Watch but not material yet.)"
-      ],
-      "operative_context_history": [
-        {
-          "date": "2026-05-25",
-          "operative_context_tokens": 47095,
-          "band": "C2"
-        }
-      ],
-      "context_volume_proposal": null
-    },
     {
       "computed_at_iso": "2026-05-26T14:13:49.296094",
       "frontier_kv_kb_per_token": 6.9206,
@@ -1617,6 +1510,168 @@
     },
     {
       "computed_at_iso": "2026-06-06T09:12:29.632841",
+      "frontier_kv_kb_per_token": 6.9206,
+      "frontier_kv_gb_per_1m_tokens": 6.6,
+      "frontier_model_name": "DeepSeek V4-Pro",
+      "frontier_model_arch": "novel:CSA-HCA",
+      "kv_band_index": 2,
+      "kv_band_name": "R3",
+      "kv_band_label": "4-16 GB/1M tok",
+      "kv_intensity": 0.5,
+      "kv_yoy_change_pct": 0.0,
+      "operative_context_tokens": 47690,
+      "operative_context_kb": 322.31,
+      "context_band_index": 1,
+      "context_band_name": "C2",
+      "context_band_label": "32-200K",
+      "context_intensity": 0.3,
+      "context_categories": [
+        {
+          "key": "consumer_chat",
+          "label": "Consumer chat",
+          "context_tokens": 11000,
+          "volume_share_pct": 32.0,
+          "contribution_tokens": 3520,
+          "confidence": "high"
+        },
+        {
+          "key": "coding_agents",
+          "label": "Coding agents",
+          "context_tokens": 100000,
+          "volume_share_pct": 8.0,
+          "contribution_tokens": 8000,
+          "confidence": "high"
+        },
+        {
+          "key": "enterprise_vertical_agents",
+          "label": "Enterprise vertical agents",
+          "context_tokens": 65000,
+          "volume_share_pct": 51.0,
+          "contribution_tokens": 33150,
+          "confidence": "low"
+        },
+        {
+          "key": "developer_raw_api",
+          "label": "Developer raw API",
+          "context_tokens": 40000,
+          "volume_share_pct": 7.0,
+          "contribution_tokens": 2800,
+          "confidence": "medium"
+        },
+        {
+          "key": "other_creative_rag",
+          "label": "Other (RAG / creative / specialized)",
+          "context_tokens": 11000,
+          "volume_share_pct": 2.0,
+          "contribution_tokens": 220,
+          "confidence": "medium"
+        }
+      ],
+      "workload_implied_cell": [
+        2,
+        1
+      ],
+      "workload_implied_zone": "LPDDR/HBM",
+      "workload_implied_zone_category": "HBM_HYBRID",
+      "market_deployed_cell": [
+        3,
+        1
+      ],
+      "market_deployed_zone": "HBM/GDDR",
+      "market_deployed_zone_category": "HBM_HYBRID",
+      "anticipation_gap_bands": 1,
+      "position_score": 52,
+      "enterprise_ai_run_rate_usd_b": 121.0,
+      "enterprise_ai_yoy_growth_pct": 215.88,
+      "nvidia_datacenter_yoy_growth_pct": 69.0,
+      "volume_index": 100.0,
+      "volume_trajectory": "bullish",
+      "hbm_bit_demand_index": 52.0,
+      "sanity_signal_substitution_news_count": 0,
+      "sanity_signal_substitution_threshold": 5,
+      "sanity_signal_hyperscaler_decode_mentions": 0,
+      "sanity_signal_hbm_price_trend": "rising",
+      "sanity_signal_lpddr_contract_direction": "no_data",
+      "sanity_check_confirms": 3,
+      "sanity_check_contradicts": 0,
+      "calibration_flag": false,
+      "status": "Not fired",
+      "status_color": "#C0DD97",
+      "status_reasoning": "Position score 52 in transition zone (30-65) but volume trajectory bullish \u2014 enterprise demand pulling toward HBM. Hold positive read.",
+      "narrative_summary": "Frontier KV: 6.9 KB/tok (6.6 GB per 1M tokens) on DeepSeek V4-Pro. Operative context (volume-weighted across 5 categories): ~48K tokens. Workload-implied cell sits in LPDDR/HBM zone; market-deployed cell (+1 Y-band anticipation premium) sits in HBM/GDDR zone. Position score: 52/100. Volume index: 100 (May 2026 = 100). Composite HBM bit demand: 52. Status: Not fired.",
+      "bull_case_summary": "BULL CASE: enterprise agentic adoption ignites. Today enterprise vertical category is 51% volume share at 65K context. If enterprise share grows to 25-30% (driven by Microsoft Copilot Enterprise, Hebbia, Harvey, Anthropic Claude Enterprise, custom F500 deployments) AND context per session grows to 3-5M as efficiency unlocks the economic frontier, operative context shifts right from C2 to C4. Combined with the +1 anticipation premium, that places market-deployed cell deep in HBM territory (score 70-85). Volume index simultaneously growing 5-10x on the enterprise expansion \u2192 composite HBM bit demand 10-15x today's baseline. This is the SK Hynix bull case quantified: efficiency \u00d7 HBM unlocks 42M-token capacity per accelerator, enterprise fills it.",
+      "bear_case_summary": "BEAR CASE: enterprise agentic stalls. KV efficiency improves on schedule (MLA + INT4 + sliding window getting frontier to ~3 KB/tok), but enterprise vertical share never breaks 10% and context plateaus around 1M. Operative context stays in C3 region while KV efficiency pulls Y-axis down to R1. Workload-implied cell lands at R1C3 (score 33, LPDDR/heterogeneous zone). Even with anticipation premium, market-deployed cell sits at R2C3 \u2014 score drops below 50, status flips to Partially fired. The market broadens to LPDDR/CXL warm tier and SSD/NAND cold tier; Samsung, Micron and Chinese suppliers gain at SK Hynix's expense. Watch for: substitution news from Cerebras / Groq / Etched winning major contracts, hyperscaler earnings explicitly mentioning decode moving off HBM, or HBM contract prices rolling over. Today's sanity check shows zero substitution evidence \u2014 the bear case is NOT materializing as of 2026-06-06.",
+      "substitution_risk_notes": [
+        "Cerebras WSE-3: estimated <1% AI compute share (Single-wafer chip with 44GB SRAM. Pure substitution case but limited share.)",
+        "Groq LPU v2: estimated <1% AI compute share (Inference-only. Uses commodity DDR for capacity tier.)",
+        "Etched Sohu: estimated <0.5% AI compute share (Speculative new entrant. Watch but not material yet.)"
+      ],
+      "operative_context_history": [
+        {
+          "date": "2026-05-25",
+          "operative_context_tokens": 47095,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-26",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-27",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-28",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-29",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-30",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-01",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-02",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-03",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-04",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-05",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-06",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        }
+      ],
+      "context_volume_proposal": null
+    },
+    {
+      "computed_at_iso": "2026-06-06T10:58:09.868949",
       "frontier_kv_kb_per_token": 6.9206,
       "frontier_kv_gb_per_1m_tokens": 6.6,
       "frontier_model_name": "DeepSeek V4-Pro",
