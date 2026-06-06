@@ -1,12 +1,25 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-06-05T10:34:41.676870+00:00",
+    "fetched_at_iso": "2026-06-06T09:10:04.634286+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
         "code": "000660",
         "actions": [
+          {
+            "broker_korean": "\ub300\uc2e0",
+            "broker_english": "Daishin Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3400000,
+            "prior_target_krw": 3400000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-06-05",
+            "raw": "\ub300\uc2e0 | 26/06/05 | 3,400,000 | 3,400,000 | 0.00 | Buy | Buy"
+          },
           {
             "broker_korean": "\uc0bc\uc131",
             "broker_english": "Samsung Securities",
@@ -19,19 +32,6 @@
             "direction": "raised",
             "published_date_iso": "2026-06-02",
             "raw": "\uc0bc\uc131 | 26/06/02 | 3,500,000 | 1,800,000 | 94.44 | BUY | BUY"
-          },
-          {
-            "broker_korean": "\ub300\uc2e0",
-            "broker_english": "Daishin Securities",
-            "rating": "Buy",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 3400000,
-            "prior_target_krw": 2500000,
-            "target_change_pct": 36.0,
-            "direction": "raised",
-            "published_date_iso": "2026-06-02",
-            "raw": "\ub300\uc2e0 | 26/06/02 | 3,400,000 | 2,500,000 | 36.00 | Buy | Buy"
           },
           {
             "broker_korean": "\uc720\uc548\ud0c0",
@@ -338,13 +338,26 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 2707917,
           "avg_eps_krw": 299156,
-          "avg_per": 7.68,
+          "avg_per": 6.92,
           "num_estimating_institutions": 24
         }
       },
       "Samsung Electronics": {
         "code": "005930",
         "actions": [
+          {
+            "broker_korean": "\ub300\uc2e0",
+            "broker_english": "Daishin Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 560000,
+            "prior_target_krw": 560000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-06-05",
+            "raw": "\ub300\uc2e0 | 26/06/05 | 560,000 | 560,000 | 0.00 | Buy | Buy"
+          },
           {
             "broker_korean": "\uc0bc\uc131",
             "broker_english": "Samsung Securities",
@@ -357,19 +370,6 @@
             "direction": "raised",
             "published_date_iso": "2026-06-02",
             "raw": "\uc0bc\uc131 | 26/06/02 | 500,000 | 300,000 | 66.67 | BUY | BUY"
-          },
-          {
-            "broker_korean": "\ub300\uc2e0",
-            "broker_english": "Daishin Securities",
-            "rating": "Buy",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 560000,
-            "prior_target_krw": 450000,
-            "target_change_pct": 24.44,
-            "direction": "raised",
-            "published_date_iso": "2026-06-02",
-            "raw": "\ub300\uc2e0 | 26/06/02 | 560,000 | 450,000 | 24.44 | Buy | Buy"
           },
           {
             "broker_korean": "\uc720\uc548\ud0c0",
@@ -676,7 +676,7 @@
           "avg_opinion_score": 4.04,
           "avg_target_price_krw": 426250,
           "avg_eps_krw": 43178,
-          "avg_per": 8.14,
+          "avg_per": 7.62,
           "num_estimating_institutions": 24
         }
       },
@@ -858,11 +858,11 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 761385,
           "avg_eps_krw": 109183,
-          "avg_per": 6.12,
+          "avg_per": 5.72,
           "num_estimating_institutions": 13
         }
       }
     }
   },
-  "fetched_at_iso": "2026-06-05T10:35:22.922639"
+  "fetched_at_iso": "2026-06-06T09:10:44.666432"
 }
