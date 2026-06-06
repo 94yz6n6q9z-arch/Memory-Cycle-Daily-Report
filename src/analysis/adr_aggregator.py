@@ -247,14 +247,23 @@ def _evaluate_sub_status(sub_key: str, sub_state: dict, phase: str) -> tuple[str
         if cs.get("f1_canceled"):
             return ("Fired", "F-1 canceled — sustained weakness")
         if cs.get("f1_filed"):
+            # v3.39.10 — a CONFIRMED F-1 filing is itself the peak-coincidence
+            # event (Part 11: SK Hynix 1995 listing → 1996 crash). It registers
+            # as at least "Partially fired" regardless of syndicate. Underwriter
+            # syndicate quality then modulates: a tier-C-only (weak) syndicate
+            # escalates to Fired (desperate issuance); tier-A/B or
+            # not-yet-disclosed stays Partially fired. Prior logic returned
+            # "Not fired" for a filed-but-unsyndicated F-1, which contradicted
+            # both the framework spec ("pending filing is Partial") and the
+            # tier-table/exec status — see the 2026-06-06 brief inconsistency.
             lead = cs.get("underwriter_lead_tier")
-            if lead == "A":
-                return ("Not fired", "F-1 filed; tier-A syndicate lead")
-            if lead == "B":
-                return ("Partially fired", "F-1 filed; tier-B syndicate lead only")
             if lead == "C":
-                return ("Fired", "F-1 filed; only tier-C underwriters")
-            return ("Not fired", "F-1 filed; awaiting syndicate disclosure")
+                return ("Fired", "F-1 filed with tier-C-only syndicate — weak/desperate issuance")
+            if lead == "A":
+                return ("Partially fired", "F-1 filed — peak-coincidence signal; tier-A syndicate lead")
+            if lead == "B":
+                return ("Partially fired", "F-1 filed — peak-coincidence signal; tier-B syndicate lead")
+            return ("Partially fired", "F-1 filed — peak-coincidence signal; syndicate pending disclosure")
         return ("Pre-event", "Awaiting F-1 — expected June-July 2026")
 
     if sub_key == "sub_8b_roadshow_demand":
