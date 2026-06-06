@@ -236,8 +236,14 @@ class TestADRAggregatorF1Detection(_AggregatorTestBase):
         self.assertEqual(state["lifecycle_phase"], "f1_filed")
         self.assertTrue(state["sub_8a_f1_filing"]["current_state"]["f1_filed"])
         self.assertEqual(state["sub_8a_f1_filing"]["current_state"]["underwriter_lead_tier"], "A")
-        # Tier-A syndicate → Not fired
-        self.assertEqual(state["sub_8a_f1_filing"]["current_status"], "Not fired")
+        # v3.39.10 — a CONFIRMED F-1 filing is itself the Part 11 peak-coincidence
+        # event, so it registers as at least "Partially fired" regardless of
+        # syndicate quality. Tier-A lead keeps it at Partially fired (healthy
+        # issuance, but the filing still fired the signal); only a tier-C-only
+        # syndicate or a cancellation escalates to "Fired". (Prior calibration
+        # returned "Not fired" for a tier-A filing — changed per the 2026-06-06
+        # exec-summary/section-4 reconciliation.)
+        self.assertEqual(state["sub_8a_f1_filing"]["current_status"], "Partially fired")
 
 
 class TestADRAggregatorInsiderSalesAccumulation(_AggregatorTestBase):
