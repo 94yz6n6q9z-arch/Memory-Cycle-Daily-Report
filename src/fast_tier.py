@@ -1107,6 +1107,42 @@ def run_fast_tier() -> int:
         except Exception as e:
             logger.warning(f"Could not apply phase override: {e}")
 
+    # v3.39.10 — INDICATOR 7/8 COMPOSITE AUTHORITY.
+    #
+    # t1_competitor_dynamics (Indicator 7) and t1_us_adr_event (Indicator 8)
+    # have deterministic aggregator composites (computed_metrics[*_snapshot])
+    # that drive their detailed cards in section 4. But their tier-table /
+    # exec-summary status comes from Layer 2 / Sonnet, which can disagree —
+    # on the 2026-06-06 brief the ADR showed "Partially fired" in the exec
+    # summary while section 4's composite said "Not fired". The COMPUTED-
+    # METRIC OVERRIDE rule (v3.39.7.3) covers forward_pe/rel_strength/capex/
+    # eps but not these two composites. Slave the assessment status to the
+    # composite so section 3, the exec summary, the banners, and section 4
+    # always agree. (These indicators are informational — outside the
+    # section-3 phase/DHCR math — so this only affects display consistency.)
+    _composite_overrides = {
+        "t1_competitor_dynamics": ("competitor_snapshot", "Indicator 7 (Competitor)"),
+        "t1_us_adr_event": ("adr_snapshot", "Indicator 8 (ADR)"),
+    }
+    for assessment in (analysis.indicator_assessments or []):
+        ind_id = getattr(assessment, "id", None)
+        if ind_id not in _composite_overrides:
+            continue
+        snapshot_key, label = _composite_overrides[ind_id]
+        snapshot = computed_metrics.get(snapshot_key)
+        if not isinstance(snapshot, dict):
+            continue  # snapshot unavailable (aggregator errored) — leave Sonnet's value
+        composite = snapshot.get("composite_status")
+        if not composite:
+            continue
+        old = getattr(assessment, "current_status", None)
+        if old != composite:
+            logger.warning(
+                f"{label} status override (Layer2/Sonnet→composite): "
+                f"{old!r} → {composite!r}"
+            )
+            assessment.current_status = composite
+
     # v3.39.7.5 — 24h ephemeral trigger event window.
     #
     # The brief used to compute "new triggers today" via Sonnet's diff of
@@ -1121,7 +1157,7 @@ def run_fast_tier() -> int:
     # "No new trigger events today" only when there have genuinely been
     # none in the last 24h.
     try:
-        from src.state import update_trigger_log_24h
+        from src.state import update_trigger_log_24h, collapse_trigger_log_for_display
         # Build prior_status_by_id from the PREVIOUS prior_state.json
         # (loaded at the top of run_fast_tier, before this run's analysis
         # gets persisted to prior_state.json by save_state below). This is
@@ -1135,6 +1171,12 @@ def run_fast_tier() -> int:
             prior_status_by_id=prior_status_by_id,
             current_assessments=analysis.indicator_assessments or [],
         )
+        # v3.39.10 — collapse to one NET transition per indicator for the
+        # banners. The stored log keeps individual transitions; this only
+        # affects display, dropping round-trips (e.g. an indicator that went
+        # Not fired→Partially fired→Not fired within 24h) that otherwise
+        # render as two contradictory "NEW TRIGGER EVENT" callouts.
+        display_entries = collapse_trigger_log_for_display(log_entries)
         # Override Sonnet's computed new_triggers_today with the log-derived
         # list. The log already covers Sonnet's case (today's transitions)
         # PLUS earlier transitions today that Sonnet wouldn't see on reruns.
@@ -1147,17 +1189,57 @@ def run_fast_tier() -> int:
                 "indicator_name": e["indicator_name"],
                 "description": e["description"],
             }
-            for e in log_entries
+            for e in display_entries
         ]
         logger.info(
-            f"Trigger event log: {len(log_entries)} entries in 24h window "
-            f"(prior Sonnet count was {len(analysis.executive_summary.new_triggers_today)})"
+            f"Trigger event log: {len(log_entries)} raw entries in 24h window, "
+            f"{len(display_entries)} after net-collapse for display"
         )
     except Exception as e:
         # Safe-fail: if the log update fails for any reason, keep Sonnet's
         # computed new_triggers_today list so the brief still renders the
         # callouts for transitions Sonnet itself detected.
         logger.warning(f"Could not update 24h trigger event log: {e}")
+
+    # v3.39.10 — EXECUTIVE-BRIEF CONTRADICTION GUARD (Issue 1, 2026-06-06).
+    #
+    # Sonnet has repeatedly opened executive_brief with a blanket "No signals
+    # fired or unfired today" even when status changes occurred — sometimes
+    # in the SAME sentence that then describes an unfire ("...; t3_relative_
+    # strength reverted to 'Not fired'"). The banners (new_triggers_today)
+    # are deterministic and authoritative. If they are non-empty but the
+    # prose leads with a "no signals fired/unfired" claim, strip that false
+    # opener and replace it with a deterministic, accurate lead. This is a
+    # render-time backstop; the Sonnet prompt also forbids the phrasing.
+    try:
+        triggers = analysis.executive_summary.new_triggers_today or []
+        brief = analysis.executive_summary.executive_brief or ""
+        # Indicators 6/7/8 are WATCH OVERLAYS — a change in one of them is
+        # NOT a "signal firing" in the framework's vocabulary, so prose like
+        # "No new signals fired today; one watch indicator updated" is
+        # legitimate and must NOT be rewritten. Only a tier-1-5 SIGNAL change
+        # makes a "no signals fired or unfired" claim false.
+        _watch_overlay_ids = {
+            "t1_competitor_dynamics",       # Indicator 7
+            "t1_us_adr_event",              # Indicator 8
+            "t1_decode_hbm_captive_ratio",  # Indicator 6 (DHCR)
+        }
+        signal_changed_names = [
+            t.get("indicator_name", t.get("indicator_id", "?"))
+            for t in triggers
+            if t.get("indicator_id") not in _watch_overlay_ids
+        ]
+        from src.state import reconcile_executive_brief_opener
+        new_brief = reconcile_executive_brief_opener(brief, signal_changed_names)
+        if new_brief != brief:
+            analysis.executive_summary.executive_brief = new_brief
+            logger.warning(
+                "executive_brief opened with a 'no signals fired/unfired' "
+                f"claim while {len(signal_changed_names)} tier-1-5 signal(s) "
+                "changed; replaced the false opener."
+            )
+    except Exception as e:
+        logger.warning(f"Could not run executive_brief contradiction guard: {e}")
 
     # ----- Step 6: Chart + email -----
     # v3.39: generate_performance_chart takes (history_baseline100, title=...).
