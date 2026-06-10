@@ -3,10 +3,10 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
-    "last_aggregator_run": "2026-06-09T10:14:52Z",
+    "last_aggregator_run": "2026-06-10T10:46:10Z",
     "description": "Quarterly enterprise AI revenue by category. Auto-updated by src/analysis/dhcr_revenue_aggregator.py from architecture_signals extraction stream.",
     "last_run_additions": 0,
-    "last_run_updates": 1
+    "last_run_updates": 2
   },
   "microsoft_azure_ai": [
     {
@@ -92,9 +92,12 @@
     {
       "quarter": "2026-Q1",
       "revenue_usd_b_annualized": 28.0,
-      "yoy_growth_pct": 165.0,
+      "yoy_growth_pct": null,
       "confidence": "medium",
-      "notes": "AWS has stepped up AI disclosure. Bedrock + Trainium + Q now broken out."
+      "notes": "AWS has stepped up AI disclosure. Bedrock + Trainium + Q now broken out.",
+      "revenue_usd_b": 20,
+      "qoq_growth_pct": null,
+      "source_quote": "Amazon's custom chip business (Trainium) saw annualized revenue run rate of over US$20bn as of 1Q26"
     }
   ],
   "google_cloud_ai": [
