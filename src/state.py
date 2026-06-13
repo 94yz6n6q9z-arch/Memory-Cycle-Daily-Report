@@ -264,9 +264,18 @@ def collapse_trigger_log_for_display(entries: list[dict]) -> list[dict]:
 # v3.39.10 — matches a leading sentence asserting that no signals fired or
 # unfired (the contradictory opener Sonnet has produced; see Issue 1,
 # 2026-06-06). Kept at module scope so tests can exercise it directly.
+#
+# v3.39.11 — regex hardened after the 2026-06-12 brief shipped with the
+# phrasing "No tier-1-5 signals fired or unfired today — all 23 indicators
+# hold their prior status; ..." which evaded the v3.39.10 regex on two
+# counts: (a) "tier-1-5" with a hyphen didn't match the rigid `tier\s+`
+# alternation; (b) the sentence ended with an em-dash (—) rather than `[.;]`.
+# The new pattern allows any non-terminator characters between "no" / "signals"
+# / "fired|unfired", and accepts em-dash and en-dash as sentence terminators.
+# The {0,N} bounds prevent runaway matches across paragraph boundaries.
 _FALSE_NO_SIGNAL_OPENER = re.compile(
-    r"^\s*no\s+(?:new\s+|tier\s+|additional\s+|further\s+)*"
-    r"signals?\b[^.;]*\b(?:fired|unfired)\b[^.;]*[.;]\s*",
+    r"^\s*no\b[^.;—–\n]{0,80}\bsignals?\b[^.;—–\n]{0,80}"
+    r"\b(?:fired|unfired)\b[^.;—–\n]{0,120}[.;—–]\s*",
     re.IGNORECASE,
 )
 

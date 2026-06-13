@@ -1055,6 +1055,32 @@ def run_fast_tier() -> int:
         logger.warning(f"Could not load transcript diffs (safe-failing): {e}")
 
     logger.info("Running Layer 3 (Sonnet) synthesis...")
+    # v3.39.11 — AUTHORITATIVE 24h trigger log. Load what's already on disk
+    # from prior runs (yesterday's transitions still inside the rolling 24h
+    # window) and pass it to Sonnet as the SOURCE OF TRUTH for the
+    # executive_brief. Pre-v3.39.11, Sonnet wrote prose based on its own
+    # diff of prior_state.json vs current evidence, then fast_tier
+    # overwrote new_triggers_today AFTER the fact — leaving the prose
+    # potentially contradicting the banners (2026-06-12: brief opened
+    # "No tier-1-5 signals fired or unfired today" while the banner showed
+    # a tier-3 unfire from the same 24h window). By loading the persisted
+    # log here and injecting it into Sonnet's prompt BEFORE prose is
+    # written, Sonnet sees the same ground truth the banners do.
+    try:
+        from src.state import load_trigger_log_24h, collapse_trigger_log_for_display
+        _persisted_log = load_trigger_log_24h()  # already pruned to last 24h
+        authoritative_24h_log_for_sonnet = collapse_trigger_log_for_display(_persisted_log)
+        logger.info(
+            f"Authoritative 24h log loaded for Sonnet prompt: "
+            f"{len(_persisted_log)} raw entries → {len(authoritative_24h_log_for_sonnet)} "
+            f"after net-collapse"
+        )
+    except Exception as e:
+        logger.warning(
+            f"Could not load 24h trigger log for Sonnet prompt (safe-failing): {e}"
+        )
+        authoritative_24h_log_for_sonnet = []
+
     analysis = analyze_with_llm(
         api_key=ANTHROPIC_API_KEY,
         performance_data=performance,
@@ -1068,6 +1094,7 @@ def run_fast_tier() -> int:
         computed_metrics=computed_metrics,
         phase_state=phase_state_for_sonnet,
         transcript_diffs=transcript_diffs_active,
+        authoritative_24h_log=authoritative_24h_log_for_sonnet,
     )
     if analysis is None:
         logger.error("Layer 3 (Sonnet) returned None; using fallback analysis")
@@ -1411,13 +1438,14 @@ def run_fast_tier() -> int:
     # Send
     try:
         # v3.39: send_email takes (subject, html_body, recipient=None).
-        # v3.39.7.1: subject gets [Not fired|Partially fired|Fired] suffix
-        # when matrix verdict is available, mirroring the badge in the
-        # indicator card. The wording matches the rest of the framework's
-        # status vocabulary (no more [Hold|Warn|Fire]).
+        # v3.39.11: subject is the date only. Earlier (v3.39.7.1) the
+        # t1_spot_decline matrix verdict was appended as "[Not fired|Partially
+        # fired|Fired]" — but that one cell value is misleading at the email
+        # subject level (it's a per-indicator status, not a brief-level
+        # summary; on 2026-06-12 the brief was tagged "[Not fired]" while a
+        # tier-3 signal had actually unfired that day, making the subject
+        # read as if nothing had happened). Removed per user request.
         subject = f"Memory Cycle Brief — {today.strftime('%a %b %d')}"
-        if cycle_verdict is not None and getattr(cycle_verdict.cell, "value", None):
-            subject += f" [{cycle_verdict.cell.value}]"
         send_email(
             subject=subject,
             html_body=html_body,
