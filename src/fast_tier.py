@@ -127,6 +127,16 @@ from src.data.finnhub import fetch_finnhub_with_retry
 from src.data.dart import fetch_dart_with_retry
 from src.config import HYPERSCALERS
 from src.analysis.signal_reasoner import reason_all_signals
+from src.analysis.prose_cache import (
+    load_prose_cache,
+    save_prose_cache,
+    seed_staggered_dates,
+    evaluate_cache,
+    apply_status_guard,
+    split_regen_ids,
+    update_cache_after_synthesis,
+    summarize_decisions,
+)
 from src.analysis.llm_summarizer import (
     analyze_with_llm,
     fallback_analysis,
@@ -1462,6 +1472,35 @@ def run_fast_tier() -> int:
     # ----- Step 7: Mark idempotent + save state for tomorrow's diff -----
     mark_brief_sent_today(today)
     save_state(analysis)
+
+    # v3.41.0 — Indicator-prose cache, SHADOW MODE (rollout step i).
+    # Runs AFTER the brief is sent, so it can never affect output. It loads the
+    # cache, seeds staggered weekly-refresh dates on first run, computes each
+    # indicator's dormancy decision (reuse vs regen) + the consistency guard,
+    # LOGS what step (ii) WOULD reuse vs regenerate, then persists fresh prose +
+    # fingerprints (bumping the weekly clock only for real rewrites, preserving
+    # seeded stagger). No behavior change yet — this validates that fingerprints
+    # flip exactly when a verdict/evidence changes and stay put otherwise, and
+    # that the stagger yields ~1/7 of cards due per day. Fully safe-failing.
+    try:
+        _assessments = analysis.indicator_assessments or []
+        if signal_reasonings and _assessments:
+            _cache = load_prose_cache()
+            _ids = [getattr(r, "signal_id", None) for r in signal_reasonings]
+            seed_staggered_dates(_cache, _ids, today=today)
+            _decisions = evaluate_cache(_cache, signal_reasonings, today=today)
+            _status_by_id = {getattr(r, "signal_id", None): getattr(r, "fired_status", None)
+                             for r in signal_reasonings}
+            apply_status_guard(_decisions, _cache, _status_by_id)
+            logger.info(f"[prose-cache SHADOW] {summarize_decisions(_decisions)}")
+            _regen, _reset = split_regen_ids(_decisions)
+            update_cache_after_synthesis(
+                _cache, _assessments, signal_reasonings,
+                regenerated_ids=_regen, clock_reset_ids=_reset, today=today,
+            )
+            save_prose_cache(_cache)
+    except Exception as e:
+        logger.warning(f"[prose-cache SHADOW] non-fatal error, skipping: {e}")
 
     duration = (datetime.now(UTC) - started_at).total_seconds()
     logger.info(f"=== FAST TIER COMPLETE in {duration:.0f}s ===")

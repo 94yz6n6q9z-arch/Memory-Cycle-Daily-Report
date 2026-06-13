@@ -45,7 +45,7 @@ from src.config import (
 from src.data.news import NewsItem
 from src.data.estimates import EstimateSnapshot
 from src.data.prices import PerformanceMetrics
-from src.diagnostics import DiagnosticsCollector
+from src.diagnostics import DiagnosticsCollector, SourceFetchStatus
 
 logger = logging.getLogger(__name__)
 
@@ -1851,17 +1851,34 @@ def sonnet_analyze(
             )
             if _succeeded.get("layer3") is not None:
                 response = _succeeded["layer3"]
-                if collector is not None:
-                    collector.record(
-                        f"Anthropic API / {SONNET_MODEL} (stage 2 analysis, BATCH)",
-                        "llm", "ok",
-                        detail=f"prompt: {len(prompt)} chars, max_tokens={SONNET_MAX_TOKENS}, batched (50% cost)",
-                        items_returned=1,
-                    )
                 logger.info("Layer 3 synthesis via batch (50% token cost)")
         except Exception as e:
             logger.warning(f"Layer 3 batch attempt failed ({e!r}); using synchronous streaming")
             response = None
+
+        # v3.40.2 — diagnostic recording moved OUT of the batch-acquisition try
+        # above and into its own non-fatal block. ROOT CAUSE of the v3.40.1
+        # Sonnet double-billing: the old code called collector.record() here
+        # with a signature it does not have (positional name/type/status +
+        # detail= + items_returned=); the real API is record(SourceFetchStatus).
+        # The resulting TypeError was caught by the batch `except` above, which
+        # set response=None and triggered a FULL-PRICE synchronous re-run — on
+        # top of the batch call that had ALREADY succeeded and been billed
+        # (~2x Sonnet cost every run). Now: correct SourceFetchStatus, and
+        # isolated so a bookkeeping error can NEVER discard an already-paid
+        # batch result and re-run Sonnet.
+        if response is not None and collector is not None:
+            try:
+                collector.record(SourceFetchStatus(
+                    source_name=f"Anthropic API / {SONNET_MODEL} (stage 2 analysis, BATCH)",
+                    source_type="llm",
+                    reached=True,
+                    items_returned=1,
+                    latency_ms=0,
+                    detail=f"prompt: {len(prompt)} chars, max_tokens={SONNET_MAX_TOKENS}, batched (50% cost)",
+                ))
+            except Exception as _rec_err:
+                logger.warning(f"Layer 3 batch diagnostic record failed (non-fatal): {_rec_err}")
 
     # Attempt 1 (synchronous streaming) — only if the batch path above did not
     # already produce a response.
