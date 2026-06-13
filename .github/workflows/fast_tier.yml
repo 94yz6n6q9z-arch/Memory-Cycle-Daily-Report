@@ -121,7 +121,13 @@ jobs:
     # for Anthropic 503 retries and other transient delays.
     # Prior history:
     #   v3.38.4: 12 → 25 (handle throttled Layer 2 + Sonnet at 24K)
-    timeout-minutes: 35
+    #   v3.40.0: 35 → 55. Layer 2 + Layer 3 now use the Message Batches API
+    #     with in-job polling (≤8 min cap each). Layer 2 batching also REMOVES
+    #     the ~2.5 min of inter-call throttle sleep the sync path needed, so a
+    #     typical run is ~25-30 min; worst case (both batches poll the full 8
+    #     min before a sync fallback) is ~41 min. 55 leaves a safety margin.
+    #     GHA-minutes impact at ~26 runs/mo stays well under the budget.
+    timeout-minutes: 55
 
     steps:
       # v3.39.2: bumped actions to their Node.js 24 versions ahead of the

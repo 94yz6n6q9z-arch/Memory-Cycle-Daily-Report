@@ -111,7 +111,12 @@ concurrency:
 jobs:
   deep-tier:
     runs-on: ubuntu-latest
-    timeout-minutes: 25  # PDF parsing + digester is slower than fast tier
+    timeout-minutes: 40  # PDF parsing + digester is slower than fast tier.
+    # v3.40.1: 25 → 40. Layer 1 digesters now use the Message Batches API with
+    # in-job polling — up to two sequential ≤8-min polls (transcripts, then
+    # broker notes) on document-heavy days, on top of scraping + any sync
+    # fallbacks. Quiet days (nothing to digest) submit no batch and finish in
+    # ~2-3 min as before. 40 leaves margin for the worst case.
 
     steps:
       - name: Checkout repo
