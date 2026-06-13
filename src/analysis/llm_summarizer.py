@@ -682,6 +682,7 @@ def build_sonnet_analysis_prompt(
     news_items: Optional[list[NewsItem]] = None,
     phase_state: Optional[dict] = None,
     transcript_diffs: Optional[list[dict]] = None,
+    authoritative_24h_log: Optional[list[dict]] = None,
 ) -> str:
     """Construct the Sonnet analysis prompt using Haiku-triaged data.
 
@@ -1280,9 +1281,55 @@ HARD INVARIANTS (enforced post-output; produce values that already satisfy):
             '    "bear_case": {{"probability_pct": 28, "peak_months_away": 0, "peak_window_start": "May 2026", "peak_window_end": "May 2026", "return_to_peak_pct": -8}},'
         )
 
+    # v3.39.11 — AUTHORITATIVE 24h transition block. Computed deterministically
+    # in fast_tier (load_trigger_log_24h + collapse) and passed in here so the
+    # prompt itself tells Sonnet the ground truth BEFORE it writes prose. Prior
+    # to this, Sonnet computed transitions via its own prior_state diff, which
+    # could miss yesterday's transitions still inside the 24h window — the
+    # 2026-06-12 brief opened with "No tier-1-5 signals fired or unfired today"
+    # while a tier-3 transition from yesterday was still in the banner list
+    # (a "today" vs "last 24h" time-frame split).
+    if authoritative_24h_log:
+        _entries_block = "\n".join(
+            f"  • Tier {e.get('tier','?')} — {e.get('indicator_id','?')} "
+            f"({e.get('indicator_name','?')}): "
+            f"{e.get('old_status','?')} → {e.get('new_status','?')} "
+            f"[at {e.get('fired_at_iso','?')}]"
+            for e in authoritative_24h_log
+        )
+        _signal_count = sum(
+            1 for e in authoritative_24h_log
+            if e.get("indicator_id") not in (
+                "t1_competitor_dynamics",       # Indicator 7 (overlay)
+                "t1_us_adr_event",              # Indicator 8 (overlay)
+                "t1_decode_hbm_captive_ratio",  # Indicator 6 (DHCR, overlay)
+            )
+        )
+        authoritative_block = f"""
+AUTHORITATIVE INDICATOR TRANSITIONS — LAST 24 HOURS (deterministic, do not contradict):
+
+The system has computed the following indicator status transitions over the last 24 hours. This list is the SOURCE OF TRUTH for the banners shown to the reader at the top of the brief. Your executive_brief and per-indicator commentary MUST be consistent with this list — do not write prose that contradicts these transitions.
+
+{_entries_block}
+
+Signal-grade (tier 1-5) transitions in this list: {_signal_count}
+
+HARD RULE: Because this list contains {len(authoritative_24h_log)} transition(s) ({_signal_count} of which are tier-1-5 signals), you may NOT open the executive_brief with any claim equivalent to "no signals fired or unfired" / "all indicators hold prior status" / "no tier-1-5 signals fired or unfired today". Such a claim would directly contradict the banners the reader sees above the brief. Instead, OPEN by naming the actual transition(s) — for example: "Relative strength (t3) reverted to 'Not fired' as the 5d spread tightened..." — then weave in the rest of today's news.
+
+If the signal-grade count is ZERO but watch overlays (Indicators 6/7/8) appear in the list, you MAY use the legitimate phrasing "no tier-1-5 signals fired/unfired today; {{N}} watch overlay(s) updated" — but you must still name those overlay changes explicitly.
+"""
+    else:
+        authoritative_block = """
+AUTHORITATIVE INDICATOR TRANSITIONS — LAST 24 HOURS (deterministic, do not contradict):
+
+No indicator transitions in the last 24 hours. You may open the executive_brief with "no signals fired or unfired today" or equivalent — that claim matches the deterministic state.
+"""
+
     prompt = f"""You are a senior memory/semiconductor cycle analyst preparing a daily institutional briefing. Use the Haiku-pre-processed news + market data + indicator framework below to produce a comprehensive structured analysis.
 
 {framework_context_block}
+
+{authoritative_block}
 
 YOUR JOB:
 1. Build the EXECUTIVE SUMMARY in the structured format below — including the consolidated `executive_brief` paragraph that anchors the brief (see detailed spec in section EXECUTIVE BRIEF SPECIFICATION below).
@@ -1635,6 +1682,7 @@ def sonnet_analyze(
     news_items: Optional[list[NewsItem]] = None,
     phase_state: Optional[dict] = None,
     transcript_diffs: Optional[list[dict]] = None,
+    authoritative_24h_log: Optional[list[dict]] = None,
 ) -> Optional[BriefAnalysis]:
     """Run Sonnet to produce the full analysis with exec summary.
 
@@ -1674,6 +1722,7 @@ def sonnet_analyze(
         news_items=news_items,
         phase_state=phase_state,
         transcript_diffs=transcript_diffs,
+        authoritative_24h_log=authoritative_24h_log,
     )
 
     # v3.39: switch from messages.create to messages.stream. Two motivations:
@@ -1973,6 +2022,7 @@ def analyze_with_llm(
     computed_metrics: Optional[dict] = None,
     phase_state: Optional[dict] = None,
     transcript_diffs: Optional[list[dict]] = None,
+    authoritative_24h_log: Optional[list[dict]] = None,
 ) -> Optional[BriefAnalysis]:
     """Two-stage LLM pipeline: Haiku triage -> Sonnet analysis.
 
@@ -2045,6 +2095,7 @@ def analyze_with_llm(
         news_items=news_items,
         phase_state=phase_state,
         transcript_diffs=transcript_diffs,
+        authoritative_24h_log=authoritative_24h_log,
     )
     return analysis
 
