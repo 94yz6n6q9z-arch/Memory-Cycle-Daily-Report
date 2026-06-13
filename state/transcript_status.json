@@ -1,11 +1,11 @@
 {
-  "written_at_iso": "2026-06-12T10:50:37.398440+00:00",
+  "written_at_iso": "2026-06-13T09:16:18.699987+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 1,
+    "full_transcript": 0,
     "materials_only": 0,
     "nothing": 3,
-    "already_processed": 31,
+    "already_processed": 32,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
@@ -16,7 +16,7 @@
       "Alphabet": "already_processed",
       "Meta": "already_processed",
       "Amazon": "already_processed",
-      "Oracle": "full_transcript",
+      "Oracle": "already_processed",
       "Dell": "already_processed",
       "HPE": "already_processed",
       "ASML": "already_processed",
@@ -291,10 +291,10 @@
     {
       "company": "Oracle",
       "ticker": "ORCL",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": null,
-      "char_count": 43359
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "Dell",
