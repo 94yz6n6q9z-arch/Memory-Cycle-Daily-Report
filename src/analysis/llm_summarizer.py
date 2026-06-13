@@ -39,6 +39,8 @@ from src.config import (
     INDICATORS,
     TOP_5_INDICATORS,
     CYCLE_BASELINE,
+    USE_BATCH_API,
+    BATCH_POLL_CAP_SECONDS,
 )
 from src.data.news import NewsItem
 from src.data.estimates import EstimateSnapshot
@@ -46,6 +48,11 @@ from src.data.prices import PerformanceMetrics
 from src.diagnostics import DiagnosticsCollector
 
 logger = logging.getLogger(__name__)
+
+# v3.40.0 — id → Indicator lookup, used to fill static card fields
+# (name/description/what_to_look_for) client-side instead of having Sonnet
+# regenerate them in its output every run (trim a).
+_INDICATOR_BY_ID = {ind.id: ind for ind in INDICATORS}
 
 
 # ============================================================
@@ -252,16 +259,32 @@ def _safe_indicator_assessment(a: dict) -> IndicatorAssessment:
         tier = int(raw_tier)
     else:
         tier = _tier_from_id(indicator_id)
+    # v3.40.0 trim (a) — fill the STATIC fields (description, what_to_look_for,
+    # name) from config rather than from Sonnet's output. They're verbatim
+    # copies of config every day; having Sonnet regenerate them wasted ~850
+    # words of output/run. The prompt now tells Sonnet to omit them. Fall back
+    # to Sonnet's value only if the id isn't in config (truncation / unknown id).
+    _cfg = _INDICATOR_BY_ID.get(indicator_id)
+    _name = (_cfg.name if _cfg else str(a.get("name", "")))
+    _description = (_cfg.description if _cfg else str(a.get("description", "")))
+    _what = (_cfg.what_to_look_for if _cfg else str(a.get("what_to_look_for", "")))
+    # v3.40.0 trim (b) — cap relevant_links to 3 per card (was unbounded;
+    # ~49 links/brief ≈ 3K output tokens). Keep the first 3 (Sonnet emits
+    # most-relevant first).
+    _links = a.get("relevant_links", [])
+    if not isinstance(_links, list):
+        _links = []
+    _links = _links[:3]
     return IndicatorAssessment(
         id=indicator_id,
         tier=tier,
-        name=str(a.get("name", "")),
-        description=str(a.get("description", "")),
-        what_to_look_for=str(a.get("what_to_look_for", "")),
+        name=_name,
+        description=_description,
+        what_to_look_for=_what,
         current_status=str(a.get("current_status", "Unknown (Sonnet output truncated)")),
         where_we_stand=str(a.get("where_we_stand", "")),
         latest_developments=str(a.get("latest_developments", "")),
-        relevant_links=a.get("relevant_links", []) if isinstance(a.get("relevant_links"), list) else [],
+        relevant_links=_links,
         change_vs_prior=a.get("change_vs_prior") if a.get("change_vs_prior") else None,
     )
 
@@ -1108,6 +1131,24 @@ def build_sonnet_analysis_prompt(
         )
         for r in signal_reasonings:
             rd = r.to_dict() if hasattr(r, "to_dict") else r
+            _status = rd.get("fired_status", "?")
+            _change = rd.get("evidence_for_change_vs_yesterday") or ""
+            _change_lower = _change.lower().strip()
+            _is_noop = (
+                not _change_lower
+                or _change_lower in ("no change", "none", "no", "n/a")
+                or _change_lower.startswith("no change")
+            )
+            # v3.40.0 input trim — a dormant signal (Not fired AND no change
+            # vs yesterday) gets a single line; Sonnet isn't writing about it
+            # and doesn't need its evidence bullets. Fired / Partially fired,
+            # or any real change, keep the full detail below.
+            if _status == "Not fired" and _is_noop:
+                layer2_text += (
+                    f"  [{rd.get('signal_id', '?')}] T{rd.get('tier', '?')} "
+                    f"{rd.get('signal_name', '?')}: Not fired (unchanged)\n\n"
+                )
+                continue
             layer2_text += (
                 f"  [{rd.get('signal_id', '?')}] T{rd.get('tier', '?')} "
                 f"{rd.get('signal_name', '?')}\n"
@@ -1121,19 +1162,8 @@ def build_sonnet_analysis_prompt(
                 layer2_text += "    Evidence for current status:\n"
                 for ev in fse[:4]:
                     layer2_text += f"      - {ev}\n"
-            change = rd.get("evidence_for_change_vs_yesterday") or ""
-            # v3.39.6: suppress noisy "no change" lines — we only render
-            # change-vs-yesterday when something actually changed. Use
-            # startswith so phrasings like "no change — still not fired"
-            # or "no change — verdict held" are also suppressed.
-            change_lower = change.lower().strip()
-            is_noop = (
-                not change_lower
-                or change_lower in ("no change", "none", "no", "n/a")
-                or change_lower.startswith("no change")
-            )
-            if change and not is_noop:
-                layer2_text += f"    Change vs yesterday: {change}\n"
+            if _change and not _is_noop:
+                layer2_text += f"    Change vs yesterday: {_change}\n"
             layer2_text += "\n"
     else:
         layer2_text += "  (signal_reasonings not threaded — running in legacy mode)\n"
@@ -1438,29 +1468,32 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
     {{
       "id": "t1_spot_decline",
       "tier": 1,
-      "name": "...",
-      "description": "...",
-      "what_to_look_for": "...",
       "current_status": "Fired | Partially fired | Not fired",
-      "where_we_stand": "1-3 sentences",
-      "latest_developments": "Markdown-formatted with embedded links",
+      "where_we_stand": "≤50 words (≤90 for the 5 deep-dive ids below). Lead with the number/status, not narrative.",
+      "latest_developments": "≤35 words. Markdown links allowed. If nothing new today, return an empty string — do NOT pad.",
       "relevant_links": [{{"title": "...", "url": "..."}}],
-      "change_vs_prior": "If status changed vs prior, describe; else null"
+      "change_vs_prior": "ONLY if status changed vs prior; else null. Omit entirely when unchanged."
     }}
   ],
-  "market_summary": "2-3 sentence overview of today's memory/semi market action",
+  "market_summary": "≤40 words on today's memory/semi market action",
   "key_news_summary": [
-    {{"headline": "...", "url": "...", "why_it_matters": "..."}}
+    {{"headline": "...", "url": "...", "why_it_matters": "≤25 words"}}
   ],
-  "cycle_position_call": "1 paragraph: where we are in cycle today, what changed since prior brief, what to watch next"
+  "cycle_position_call": "≤80 words: where we are in cycle today, what changed since prior brief, what to watch next"
 }}
 
-DEEP-DIVE DEPTH (v3.39.1): The following indicator IDs should be written with
-EXTRA depth in their `where_we_stand` and `latest_developments` fields — 2-3
-fuller paragraphs vs 1-2 sentences for the rest. The client synthesizes the
-"Top 5 deep dives" section by plucking these IDs from indicator_assessments,
-so do NOT emit a separate top_5_deep_dives array (was costing ~10K tokens
-and triggering output truncation):
+v3.40.0 OUTPUT DISCIPLINE (do NOT emit `name`, `description`, or
+`what_to_look_for` for any indicator — the system fills those from config;
+emitting them wastes output tokens and they are discarded). Cap
+`relevant_links` at 3 per indicator (most-relevant first; extras are dropped).
+Respect the word caps above — they are hard limits, not targets. The status
+pill and the numbers carry the signal; prose is supporting, not the product.
+
+DEEP-DIVE DEPTH (v3.39.1, capped v3.40.0): these 5 indicator IDs may use up to
+~90 words in `where_we_stand` (vs ≤50 for the rest) — fuller, but still tight.
+The client synthesizes the "Top 5 deep dives" section by plucking these IDs
+from indicator_assessments, so do NOT emit a separate top_5_deep_dives array
+(was costing ~10K tokens and triggering output truncation):
   t1_spot_decline, t2_capex_parabolic, t2_eps_revisions,
   t3_supplier_inventory_rebuild, t3_relative_strength
 
@@ -1789,13 +1822,53 @@ def sonnet_analyze(
             ) as stream:
                 return stream.get_final_message()
 
+    # v3.40.0 — Message Batches path for Layer 3 (50% token cost). Submit the
+    # single Sonnet call as a batch of one and poll up to the cap. On success,
+    # use that response and skip the synchronous streaming path. On any
+    # failure/timeout, `response` stays None and we fall through to the proven
+    # synchronous streaming path below (which keeps its own 529 retry + Haiku
+    # fallback). No prompt caching here — a once-daily single call has no
+    # cross-call cache reuse within the TTL, so caching would only add a write
+    # premium.
     response = None
     last_error = None
 
-    # Attempt 1: Sonnet, normal SDK retry only
-    try:
+    if USE_BATCH_API:
+        try:
+            from src.analysis.batch_client import run_batch
+            _l3_requests = [{
+                "custom_id": "layer3",
+                "params": {
+                    "model": SONNET_MODEL,
+                    "max_tokens": SONNET_MAX_TOKENS,
+                    "temperature": LLM_TEMPERATURE,
+                    "messages": [{"role": "user", "content": prompt}],
+                },
+            }]
+            _succeeded, _needs_fallback = run_batch(
+                client, _l3_requests, label="Layer 3",
+                poll_cap_seconds=BATCH_POLL_CAP_SECONDS,
+            )
+            if _succeeded.get("layer3") is not None:
+                response = _succeeded["layer3"]
+                if collector is not None:
+                    collector.record(
+                        f"Anthropic API / {SONNET_MODEL} (stage 2 analysis, BATCH)",
+                        "llm", "ok",
+                        detail=f"prompt: {len(prompt)} chars, max_tokens={SONNET_MAX_TOKENS}, batched (50% cost)",
+                        items_returned=1,
+                    )
+                logger.info("Layer 3 synthesis via batch (50% token cost)")
+        except Exception as e:
+            logger.warning(f"Layer 3 batch attempt failed ({e!r}); using synchronous streaming")
+            response = None
+
+    # Attempt 1 (synchronous streaming) — only if the batch path above did not
+    # already produce a response.
+    if response is None:
+      try:
         response = _call_sonnet_with_streaming(SONNET_MODEL)
-    except Exception as e:
+      except Exception as e:
         last_error = e
         err_str = str(e).lower()
         is_overloaded = "529" in err_str or "overloaded" in err_str

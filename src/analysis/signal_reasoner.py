@@ -339,7 +339,7 @@ Respond with a JSON object matching this schema:
 Only output the JSON object."""
 
 
-def reason_one_signal(
+def _build_l2_inputs(
     indicator: Indicator,
     digests: list[dict],
     fast_tier_news: list[dict],
@@ -347,26 +347,18 @@ def reason_one_signal(
     finnhub_data: Optional[dict],
     edgar_items: list[dict],
     computed_metrics: dict,
-    prior_status: Optional[str] = None,
-    indicator_evidence: Optional[Any] = None,  # IndicatorEvidence from src.state
-) -> Optional[SignalReasoning]:
-    """Layer 2 for one indicator.
+    prior_status: Optional[str],
+    indicator_evidence: Optional[Any],
+) -> Optional[tuple[str, dict, str]]:
+    """Gather evidence + build the Layer 2 user message for one indicator.
 
-    v3.39.7.3: optional `indicator_evidence` parameter carries the persistent
-    evidence store entry for this indicator (an IndicatorEvidence dataclass
-    from src.state). When provided, the prompt includes the full evidence_log
-    + reversal_conditions so Haiku can preserve prior fired status against
-    silence in today's news. When None, falls back to the prior behavior
-    (just the prior_status string).
+    v3.40.0 — extracted from reason_one_signal so the synchronous path and the
+    Message-Batches path build byte-identical prompts. Returns
+    ``(user_msg, ev, evidence_store_block)`` or ``None`` for DHCR (skipped —
+    direction monitor computed deterministically, not Haiku-reasoned).
     """
-    # v3.4.2 — skip DHCR (direction monitor computed deterministically from
-    # YAML, not Haiku-reasoned). Saves ~10s + reduces 529 surface area + avoids
-    # Haiku contradicting computed direction.
     if indicator.id == "t1_decode_hbm_captive_ratio":
         logger.debug(f"Layer 2 skipped for {indicator.id} — direction monitor")
-        return None
-
-    if client is None:
         return None
 
     ev = _gather_evidence_for_signal(
@@ -414,6 +406,119 @@ def reason_one_signal(
         ], default=str, indent=2),
         signal_specific_json=json.dumps(ev["signal_specific_data"], default=str, indent=2)[:8000],
     )
+    return user_msg, ev, evidence_store_block
+
+
+def _parse_l2_message(
+    indicator: Indicator,
+    resp: Any,
+    prior_status: Optional[str],
+    ev: dict,
+    evidence_store_block: str,
+    user_msg: str,
+) -> Optional[SignalReasoning]:
+    """Parse a Haiku response (sync OR batch) into a SignalReasoning + write
+    the per-call audit record. v3.40.0 — extracted from reason_one_signal so
+    both call paths share identical parsing + observability.
+    """
+    try:
+        raw = resp.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as e:
+        logger.error(f"Layer 2 JSON parse failed for {indicator.id}: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Layer 2 response parse failed for {indicator.id}: {e}")
+        return None
+
+    # v3.4.3 — Layer 2 prompt observability (per-day audit JSONL).
+    try:
+        from datetime import datetime as _dt
+        from pathlib import Path as _Path
+        audit_dir = _Path("state")
+        audit_dir.mkdir(parents=True, exist_ok=True)
+        audit_path = audit_dir / f"layer2_audit_{_dt.utcnow().strftime('%Y-%m-%d')}.jsonl"
+        audit_record = {
+            "ts": _dt.utcnow().isoformat() + "Z",
+            "signal_id": indicator.id,
+            "signal_name": indicator.name,
+            "tier": indicator.tier,
+            "prior_status": prior_status or "unknown",
+            "prompt_head_400": user_msg[:400],
+            "prompt_total_chars": len(user_msg),
+            "n_digests_relevant": len(ev["relevant_digests"]),
+            "n_news_relevant": len(ev["relevant_news"]),
+            "evidence_store_block_chars": len(evidence_store_block),
+            "verdict_fired_status": parsed.get("fired_status", "Not fired"),
+            "verdict_evidence_count": parsed.get("evidence_count", 0),
+            "verdict_convergence": parsed.get("convergence", "low"),
+            "verdict_confidence": parsed.get("confidence", "low"),
+            "verdict_consensus_direction": (parsed.get("consensus_direction") or "")[:600],
+            "verdict_evidence_for_change": (parsed.get("evidence_for_change_vs_yesterday") or "")[:400],
+            "status_transition": (
+                None if not prior_status
+                else "no_change" if prior_status == parsed.get("fired_status", "Not fired")
+                else f"{prior_status}→{parsed.get('fired_status', 'Not fired')}"
+            ),
+        }
+        with open(audit_path, "a") as f:
+            f.write(json.dumps(audit_record, default=str) + "\n")
+    except Exception as _audit_err:
+        # Observability must never break the brief — log + continue
+        logger.warning(f"Layer 2 audit log write failed for {indicator.id}: {_audit_err}")
+
+    return SignalReasoning(
+        signal_id=indicator.id,
+        signal_name=indicator.name,
+        tier=indicator.tier,
+        evidence_count=parsed.get("evidence_count", 0),
+        evidence_sources=parsed.get("evidence_sources", []),
+        consensus_direction=parsed.get("consensus_direction", ""),
+        convergence=parsed.get("convergence", "low"),
+        fired_status=parsed.get("fired_status", "Not fired"),
+        fired_status_evidence=parsed.get("fired_status_evidence", []),
+        evidence_for_change_vs_yesterday=parsed.get("evidence_for_change_vs_yesterday", "none"),
+        key_quotes_consolidated=parsed.get("key_quotes_consolidated", []),
+        confidence=parsed.get("confidence", "low"),
+        raw_evidence_dump=ev,
+    )
+
+
+def reason_one_signal(
+    indicator: Indicator,
+    digests: list[dict],
+    fast_tier_news: list[dict],
+    naver_data: Optional[dict],
+    finnhub_data: Optional[dict],
+    edgar_items: list[dict],
+    computed_metrics: dict,
+    prior_status: Optional[str] = None,
+    indicator_evidence: Optional[Any] = None,  # IndicatorEvidence from src.state
+) -> Optional[SignalReasoning]:
+    """Layer 2 for one indicator.
+
+    v3.39.7.3: optional `indicator_evidence` parameter carries the persistent
+    evidence store entry for this indicator (an IndicatorEvidence dataclass
+    from src.state). When provided, the prompt includes the full evidence_log
+    + reversal_conditions so Haiku can preserve prior fired status against
+    silence in today's news. When None, falls back to the prior behavior
+    (just the prior_status string).
+    """
+    if client is None:
+        return None
+
+    _inputs = _build_l2_inputs(
+        indicator, digests, fast_tier_news, naver_data, finnhub_data,
+        edgar_items, computed_metrics, prior_status, indicator_evidence,
+    )
+    if _inputs is None:
+        return None  # DHCR skipped — direction monitor
+    user_msg, ev, evidence_store_block = _inputs
 
     # v3.4.2 Fix A — per-signal retry-with-backoff for 529 Overloaded.
     # The May 22 03:50 run had 13/23 indicators fail with 529 because the
@@ -466,85 +571,8 @@ def reason_one_signal(
         logger.error(f"Layer 2 exhausted retries for {indicator.id}; final error: {last_error}")
         return None
 
-    try:
-        raw = resp.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-            raw = raw.strip()
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as e:
-        logger.error(f"Layer 2 JSON parse failed for {indicator.id}: {e}")
-        return None
-    except Exception as e:
-        logger.error(f"Layer 2 response parse failed for {indicator.id}: {e}")
-        return None
-
-    # v3.4.3 — Layer 2 prompt observability. Append a per-call audit record
-    # to state/layer2_audit_*.jsonl so we can later analyze what Haiku saw
-    # vs what it returned. Especially useful after the May 22 529 incidents
-    # — we want to be able to answer "what did Layer 2 see for indicator X
-    # on date Y, and what reasoning did it produce?"
-    #
-    # The file is per-day (layer2_audit_YYYY-MM-DD.jsonl) so committing it
-    # doesn't bloat the repo monotonically. Workflow commits it like the
-    # other state/ files (need to add to the commit set in fast_tier.yml).
-    try:
-        from datetime import datetime as _dt
-        from pathlib import Path as _Path
-        import os as _os
-        audit_dir = _Path("state")
-        audit_dir.mkdir(parents=True, exist_ok=True)
-        audit_path = audit_dir / f"layer2_audit_{_dt.utcnow().strftime('%Y-%m-%d')}.jsonl"
-        audit_record = {
-            "ts": _dt.utcnow().isoformat() + "Z",
-            "signal_id": indicator.id,
-            "signal_name": indicator.name,
-            "tier": indicator.tier,
-            "prior_status": prior_status or "unknown",
-            # Prompt fingerprint — first 400 chars of the user_msg, useful for
-            # diffing "did the prompt structure change between runs"
-            "prompt_head_400": user_msg[:400],
-            "prompt_total_chars": len(user_msg),
-            # Evidence inputs received
-            "n_digests_relevant": len(ev["relevant_digests"]),
-            "n_news_relevant": len(ev["relevant_news"]),
-            "evidence_store_block_chars": len(evidence_store_block),
-            # Haiku verdict
-            "verdict_fired_status": parsed.get("fired_status", "Not fired"),
-            "verdict_evidence_count": parsed.get("evidence_count", 0),
-            "verdict_convergence": parsed.get("convergence", "low"),
-            "verdict_confidence": parsed.get("confidence", "low"),
-            "verdict_consensus_direction": (parsed.get("consensus_direction") or "")[:600],
-            "verdict_evidence_for_change": (parsed.get("evidence_for_change_vs_yesterday") or "")[:400],
-            # Status transition (vs prior_status)
-            "status_transition": (
-                None if not prior_status
-                else "no_change" if prior_status == parsed.get("fired_status", "Not fired")
-                else f"{prior_status}→{parsed.get('fired_status', 'Not fired')}"
-            ),
-        }
-        with open(audit_path, "a") as f:
-            f.write(json.dumps(audit_record, default=str) + "\n")
-    except Exception as _audit_err:
-        # Observability must never break the brief — log + continue
-        logger.warning(f"Layer 2 audit log write failed for {indicator.id}: {_audit_err}")
-
-    return SignalReasoning(
-        signal_id=indicator.id,
-        signal_name=indicator.name,
-        tier=indicator.tier,
-        evidence_count=parsed.get("evidence_count", 0),
-        evidence_sources=parsed.get("evidence_sources", []),
-        consensus_direction=parsed.get("consensus_direction", ""),
-        convergence=parsed.get("convergence", "low"),
-        fired_status=parsed.get("fired_status", "Not fired"),
-        fired_status_evidence=parsed.get("fired_status_evidence", []),
-        evidence_for_change_vs_yesterday=parsed.get("evidence_for_change_vs_yesterday", "none"),
-        key_quotes_consolidated=parsed.get("key_quotes_consolidated", []),
-        confidence=parsed.get("confidence", "low"),
-        raw_evidence_dump=ev,
+    return _parse_l2_message(
+        indicator, resp, prior_status, ev, evidence_store_block, user_msg,
     )
 
 
@@ -603,6 +631,91 @@ def reason_all_signals(
             f"{sum(1 for ind in INDICATORS if ind.id in indicator_evidence_store)}/{n} indicators"
         )
 
+    # v3.40.0 — Message Batches path. Submit all (non-DHCR) indicators as one
+    # batch at 50% token cost, with the static system prompt cached across the
+    # requests. This also removes the ~2.5 min of inter-call throttle sleep the
+    # synchronous path needs for Haiku's 50k tok/min limit (batch has separate,
+    # higher limits). Any request that errors / is missing / times out falls
+    # back to the proven synchronous reason_one_signal path.
+    try:
+        from src.config import USE_BATCH_API, BATCH_POLL_CAP_SECONDS, USE_PROMPT_CACHING
+        from src.config import HAIKU_MODEL as _HAIKU_MODEL
+    except Exception:
+        USE_BATCH_API = False
+
+    if USE_BATCH_API and client is not None:
+        from src.analysis.batch_client import run_batch
+
+        # System prompt as a cacheable content block (90% off on cached reads).
+        if USE_PROMPT_CACHING:
+            _system = [{"type": "text", "text": REASONER_SYSTEM_PROMPT,
+                        "cache_control": {"type": "ephemeral"}}]
+        else:
+            _system = REASONER_SYSTEM_PROMPT
+
+        requests: list[dict] = []
+        sidecar: dict[str, tuple] = {}  # custom_id → (ind, ev, evidence_store_block, user_msg, prior_status)
+        for ind in INDICATORS:
+            prior = prior_status_map.get(ind.id)
+            built = _build_l2_inputs(
+                ind, digests, fast_tier_news, naver_data, finnhub_data,
+                edgar_items, computed_metrics, prior,
+                indicator_evidence_store.get(ind.id),
+            )
+            if built is None:
+                continue  # DHCR — skipped, same as sync path
+            user_msg, ev, evidence_store_block = built
+            requests.append({
+                "custom_id": ind.id,
+                "params": {
+                    "model": _HAIKU_MODEL,
+                    "max_tokens": 1500,
+                    "temperature": LLM_TEMPERATURE,
+                    "system": _system,
+                    "messages": [{"role": "user", "content": user_msg}],
+                },
+            })
+            sidecar[ind.id] = (ind, ev, evidence_store_block, user_msg, prior)
+
+        succeeded, needs_fallback = run_batch(
+            client, requests, label="Layer 2",
+            poll_cap_seconds=BATCH_POLL_CAP_SECONDS,
+        )
+
+        for cid, msg in succeeded.items():
+            ind, ev, evidence_store_block, user_msg, prior = sidecar[cid]
+            parsed = _parse_l2_message(ind, msg, prior, ev, evidence_store_block, user_msg)
+            if parsed is not None:
+                results.append(parsed)
+            else:
+                needs_fallback.append(cid)  # parse failed → sync re-run
+
+        # Synchronous fallback for whatever the batch didn't deliver.
+        if needs_fallback:
+            logger.info(f"Layer 2: {len(needs_fallback)} indicator(s) via synchronous fallback")
+            by_id = {ind.id: ind for ind in INDICATORS}
+            for j, cid in enumerate(needs_fallback):
+                if j > 0 and inter_call_delay_seconds > 0:
+                    time.sleep(inter_call_delay_seconds)
+                ind = by_id.get(cid)
+                if ind is None:
+                    continue
+                try:
+                    result = reason_one_signal(
+                        ind, digests, fast_tier_news, naver_data, finnhub_data,
+                        edgar_items, computed_metrics, prior_status_map.get(ind.id),
+                        indicator_evidence=indicator_evidence_store.get(ind.id),
+                    )
+                    if result is not None:
+                        results.append(result)
+                except Exception as e:
+                    logger.error(f"Layer 2 sync fallback raised for {ind.id}: {e}")
+
+        results.sort(key=lambda r: (r.tier, r.signal_id))
+        logger.info(f"Layer 2 complete (batch): {len(results)} signals reasoned")
+        return results
+
+    # ---- synchronous path (USE_BATCH_API off, or no client) ----
     for i, ind in enumerate(INDICATORS):
         # Throttle before every call except the first one
         if i > 0 and inter_call_delay_seconds > 0:

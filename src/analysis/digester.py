@@ -352,6 +352,201 @@ Only output the JSON object."""
 MAX_INPUT_CHARS = 80_000
 
 
+def _build_digest_user_msg(
+    source_id: str,
+    source_type: str,
+    published_date_iso: str,
+    title: str,
+    text: str,
+) -> Optional[tuple[str, str]]:
+    """Build the Layer 1 digester user message for one document.
+
+    v3.40.1 — extracted from digest_document so the synchronous path and the
+    Message-Batches path build byte-identical prompts. Returns
+    ``(user_msg, truncated_text)`` or ``None`` when the text is too short to
+    digest (same skip rule as the sync path).
+    """
+    if not text or len(text.strip()) < 50:
+        logger.info(f"Skipping digest for {source_id}: text too short ({len(text)} chars)")
+        return None
+    truncated = text[:MAX_INPUT_CHARS]
+    if len(text) > MAX_INPUT_CHARS:
+        logger.info(f"Truncated {source_id} from {len(text)} → {MAX_INPUT_CHARS} chars")
+    user_msg = DIGEST_USER_TEMPLATE.format(
+        source_id=source_id,
+        source_type=source_type,
+        published_date_iso=published_date_iso,
+        title=title,
+        char_count=len(truncated),
+        text=truncated,
+    )
+    return user_msg, truncated
+
+
+def _parse_digest_response(
+    resp: Any,
+    source_id: str,
+    source_type: str,
+    published_date_iso: str,
+    title: str,
+    truncated: str,
+    raw_url: Optional[str],
+) -> Optional["Digest"]:
+    """Parse a Haiku response (sync OR batch) into a Digest + run the three
+    shadow-loggers (architecture / competitor / ADR signals). v3.40.1 —
+    extracted from digest_document so both call paths share identical parsing
+    and the per-document extraction side effects.
+    """
+    try:
+        raw = resp.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as e:
+        logger.error(f"Digest JSON parse failed for {source_id}: {e}; raw={raw[:300]!r}")
+        return None
+    except Exception as e:
+        logger.error(f"Digest response parse failed for {source_id}: {e}")
+        return None
+
+    digest = Digest(
+        source_id=source_id,
+        source_type=source_type,
+        published_date_iso=published_date_iso,
+        title=title,
+        char_count_input=len(truncated),
+        key_metrics=parsed.get("key_metrics", {}),
+        signal_relevance=parsed.get("signal_relevance", []),
+        key_quotes=parsed.get("key_quotes", []),
+        target_price_action=parsed.get("target_price_action"),
+        fired_status_evidence=parsed.get("fired_status_evidence", "neutral"),
+        raw_url=raw_url,
+    )
+
+    # v3.3 — Shadow-mode extraction log for architecture signals.
+    try:
+        arch_signals = (parsed.get("key_metrics") or {}).get("architecture_signals")
+        if arch_signals and isinstance(arch_signals, dict):
+            _log_architecture_signals(
+                source_id=source_id,
+                source_type=source_type,
+                published_date_iso=published_date_iso,
+                signals=arch_signals,
+            )
+    except Exception as e:
+        logger.warning(f"Architecture-signal shadow log failed for {source_id}: {e}")
+
+    # v3.4.4.1 — Indicator 7 + 8 shadow loggers.
+    try:
+        comp_signals = (parsed.get("key_metrics") or {}).get("competitor_signals")
+        if comp_signals and isinstance(comp_signals, dict):
+            _log_indicator_signals(
+                source_id=source_id,
+                source_type=source_type,
+                published_date_iso=published_date_iso,
+                signals=comp_signals,
+                signal_key="competitor_signals",
+            )
+    except Exception as e:
+        logger.warning(f"Competitor-signal shadow log failed for {source_id}: {e}")
+
+    try:
+        adr_signals = (parsed.get("key_metrics") or {}).get("adr_signals")
+        if adr_signals and isinstance(adr_signals, dict):
+            _log_indicator_signals(
+                source_id=source_id,
+                source_type=source_type,
+                published_date_iso=published_date_iso,
+                signals=adr_signals,
+                signal_key="adr_signals",
+            )
+    except Exception as e:
+        logger.warning(f"ADR-signal shadow log failed for {source_id}: {e}")
+
+    return digest
+
+
+# ============================================================
+# v3.40.1 — Layer 1 digester batching (Message Batches API, 50% token cost).
+# ============================================================
+# Deep tier digests are independent per-document, so they batch cleanly. The
+# digest_*_results loops keep their delicate post-processing (QoQ diff, gap
+# placeholders, commentary-availability marking) untouched — only the digest
+# PRODUCTION moves to a batch. prime_digest_batch() runs one batch up front and
+# fills this cache keyed by source_id; digest_document() then returns the
+# cached Digest if present, else falls back to a live synchronous call. A
+# cache miss (batch failure, timeout, or any source_id mismatch) degrades
+# safely to the proven synchronous path — correctness is never at risk, only
+# the discount on that document.
+_DIGEST_BATCH_CACHE: dict[str, Optional["Digest"]] = {}
+_DIGEST_MISS = object()  # sentinel: "not produced by a batch" → sync fallback
+
+
+def prime_digest_batch(jobs: list[dict], *, label: str = "Layer 1") -> None:
+    """Submit `jobs` as ONE Message Batch and cache the resulting Digests by
+    source_id for digest_document() to consume.
+
+    jobs: list of digest_document-style kwargs dicts, each with at least
+        source_id / source_type / published_date_iso / title / text, and
+        optionally raw_url. Jobs whose text is too short are skipped (same rule
+        as the sync path). No-op when USE_BATCH_API is off or jobs is empty.
+    """
+    try:
+        from src.config import USE_BATCH_API, BATCH_POLL_CAP_SECONDS
+    except Exception:
+        return
+    if not USE_BATCH_API or not jobs or client is None:
+        return
+    from src.analysis.batch_client import run_batch
+
+    requests: list[dict] = []
+    sidecar: dict[str, dict] = {}  # custom_id → {built inputs + job}
+    for i, job in enumerate(jobs):
+        built = _build_digest_user_msg(
+            job["source_id"], job["source_type"], job["published_date_iso"],
+            job["title"], job.get("text", ""),
+        )
+        if built is None:
+            continue  # too short — sync path will also skip it
+        user_msg, truncated = built
+        cid = f"doc_{i}"  # Anthropic custom_id: no spaces/slashes; source_id has both
+        requests.append({
+            "custom_id": cid,
+            "params": {
+                "model": HAIKU_MODEL,
+                "max_tokens": 2000,
+                "temperature": LLM_TEMPERATURE,
+                "system": DIGEST_SYSTEM_PROMPT,
+                "messages": [{"role": "user", "content": user_msg}],
+            },
+        })
+        sidecar[cid] = {"job": job, "truncated": truncated}
+
+    if not requests:
+        return
+
+    succeeded, _needs_fallback = run_batch(
+        client, requests, label=label, poll_cap_seconds=BATCH_POLL_CAP_SECONDS,
+    )
+    for cid, msg in succeeded.items():
+        sc = sidecar[cid]
+        job = sc["job"]
+        digest = _parse_digest_response(
+            msg, job["source_id"], job["source_type"], job["published_date_iso"],
+            job["title"], sc["truncated"], job.get("raw_url"),
+        )
+        # Cache even None (parse failure) is NOT desired — leave misses to sync.
+        if digest is not None:
+            _DIGEST_BATCH_CACHE[job["source_id"]] = digest
+    logger.info(
+        f"{label}: primed {len(_DIGEST_BATCH_CACHE)} digest(s) via batch; "
+        f"remainder (if any) will digest synchronously"
+    )
+
+
 def digest_document(
     source_id: str,
     source_type: str,
@@ -364,25 +559,22 @@ def digest_document(
 
     Returns None on LLM failure (caller decides whether to retry).
     """
+    # v3.40.1 — if prime_digest_batch already produced this document via the
+    # batch endpoint, return that Digest (and consume the cache entry so a
+    # repeat call can't double-count). A cached result is valid independent of
+    # client state, so this check comes first.
+    _cached = _DIGEST_BATCH_CACHE.pop(source_id, _DIGEST_MISS)
+    if _cached is not _DIGEST_MISS:
+        return _cached
+
     if client is None:
         logger.error("Anthropic client unavailable (no API key)")
         return None
-    if not text or len(text.strip()) < 50:
-        logger.info(f"Skipping digest for {source_id}: text too short ({len(text)} chars)")
+
+    _built = _build_digest_user_msg(source_id, source_type, published_date_iso, title, text)
+    if _built is None:
         return None
-
-    truncated = text[:MAX_INPUT_CHARS]
-    if len(text) > MAX_INPUT_CHARS:
-        logger.info(f"Truncated {source_id} from {len(text)} → {MAX_INPUT_CHARS} chars")
-
-    user_msg = DIGEST_USER_TEMPLATE.format(
-        source_id=source_id,
-        source_type=source_type,
-        published_date_iso=published_date_iso,
-        title=title,
-        char_count=len(truncated),
-        text=truncated,
-    )
+    user_msg, truncated = _built
 
     # v3.4.3 — Layer 1 digester retry-with-backoff for 529 Overloaded.
     # Same audit conclusion as v3.4.2 for Sonnet and Layer 2: SDK's built-in
@@ -440,82 +632,9 @@ def digest_document(
         logger.error(f"Layer 1 exhausted retries for {source_id}; final error: {last_error}")
         return None
 
-    try:
-        raw = resp.content[0].text.strip()
-        # Strip ```json fences if model added them
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-            raw = raw.strip()
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as e:
-        logger.error(f"Digest JSON parse failed for {source_id}: {e}; raw={raw[:300]!r}")
-        return None
-    except Exception as e:
-        logger.error(f"Digest response parse failed for {source_id}: {e}")
-        return None
-
-    digest = Digest(
-        source_id=source_id,
-        source_type=source_type,
-        published_date_iso=published_date_iso,
-        title=title,
-        char_count_input=len(truncated),
-        key_metrics=parsed.get("key_metrics", {}),
-        signal_relevance=parsed.get("signal_relevance", []),
-        key_quotes=parsed.get("key_quotes", []),
-        target_price_action=parsed.get("target_price_action"),
-        fired_status_evidence=parsed.get("fired_status_evidence", "neutral"),
-        raw_url=raw_url,
+    return _parse_digest_response(
+        resp, source_id, source_type, published_date_iso, title, truncated, raw_url,
     )
-
-    # v3.3 — Shadow-mode extraction log for architecture signals.
-    # Purely additive: if architecture_signals is present in key_metrics,
-    # append to a daily log file. Failure is non-fatal. The log is consumed
-    # by v3.4 indicators (Inference Efficiency Shock / CXL Deployment / LPDDR Datacenter Ramp).
-    try:
-        arch_signals = (parsed.get("key_metrics") or {}).get("architecture_signals")
-        if arch_signals and isinstance(arch_signals, dict):
-            _log_architecture_signals(
-                source_id=source_id,
-                source_type=source_type,
-                published_date_iso=published_date_iso,
-                signals=arch_signals,
-            )
-    except Exception as e:
-        logger.warning(f"Architecture-signal shadow log failed for {source_id}: {e}")
-
-    # v3.4.4.1 — Indicator 7 + 8 shadow loggers. Same pattern: persist extracted
-    # signals to state/extraction_log_{today}.jsonl so the competitor + ADR
-    # aggregators can read them on the next fast-tier run. Failure non-fatal.
-    try:
-        comp_signals = (parsed.get("key_metrics") or {}).get("competitor_signals")
-        if comp_signals and isinstance(comp_signals, dict):
-            _log_indicator_signals(
-                source_id=source_id,
-                source_type=source_type,
-                published_date_iso=published_date_iso,
-                signals=comp_signals,
-                signal_key="competitor_signals",
-            )
-    except Exception as e:
-        logger.warning(f"Competitor-signal shadow log failed for {source_id}: {e}")
-
-    try:
-        adr_signals = (parsed.get("key_metrics") or {}).get("adr_signals")
-        if adr_signals and isinstance(adr_signals, dict):
-            _log_indicator_signals(
-                source_id=source_id,
-                source_type=source_type,
-                published_date_iso=published_date_iso,
-                signals=adr_signals,
-                signal_key="adr_signals",
-            )
-    except Exception as e:
-        logger.warning(f"ADR-signal shadow log failed for {source_id}: {e}")
-
-    return digest
 
 
 def _log_indicator_signals(
@@ -823,6 +942,35 @@ def digest_transcript_results(transcript_payload: dict) -> list[Digest]:
                             re-digesting; prior digest already in state/digests/).
     """
     digests: list[Digest] = []
+    # v3.40.1 — prime ONE Layer 1 batch for every digestable transcript result,
+    # then let the loop below consume the cached Digests (digest_document hits
+    # the cache). The source_id / title construction here MUST match the loop's
+    # exactly so cache keys line up; if it ever drifts, the loop simply falls
+    # back to a live synchronous call (safe — only the discount is lost).
+    _transcript_jobs: list[dict] = []
+    for _r in transcript_payload.get("results", []):
+        _av = _r.get("availability", "nothing")
+        _co = _r.get("company", "Unknown")
+        _ev = _r.get("event_date_iso", date.today().isoformat())
+        _sn = _r.get("source_name", "transcript source")
+        _su = _r.get("source_url")
+        _tx = _r.get("text", "") or ""
+        _sid = f"{_sn} / {_co} / {_ev}"
+        if _av == "full_transcript":
+            _transcript_jobs.append(dict(
+                source_id=_sid, source_type="earnings_transcript",
+                published_date_iso=_ev, title=f"{_co} earnings call {_ev}",
+                text=_tx, raw_url=_su,
+            ))
+        elif _av == "materials_only":
+            _transcript_jobs.append(dict(
+                source_id=_sid + " [MATERIALS ONLY — no call commentary]",
+                source_type="earnings_transcript", published_date_iso=_ev,
+                title=f"{_co} earnings materials {_ev} (commentary NOT available)",
+                text=_tx, raw_url=_su,
+            ))
+    prime_digest_batch(_transcript_jobs, label="Layer 1 transcripts")
+
     for r in transcript_payload.get("results", []):
         company = r.get("company", "Unknown")
         ticker = r.get("ticker", "")
@@ -955,6 +1103,24 @@ def digest_korean_broker_notes(broker_payloads: list[dict]) -> list[Digest]:
     non-existent subdirectory. Now sanitized with the same regex pattern
     korean_brokers uses for html_path filenames."""
     digests: list[Digest] = []
+    # v3.40.1 — prime one Layer 1 batch for all digestable broker notes (mirrors
+    # the loop's <200-char skip + source_id construction; cache miss → sync).
+    _broker_jobs: list[dict] = []
+    for _payload in broker_payloads:
+        _bn = _payload.get("broker", "Unknown Korean broker")
+        for _note in _payload.get("notes", []):
+            _tx = _note.get("extracted_text", "")
+            if not _tx or len(_tx) < 200:
+                continue
+            _pi = _note.get("published_date_iso", date.today().isoformat())
+            _ti = _note.get("title", "Untitled note")
+            _broker_jobs.append(dict(
+                source_id=f"{_bn} / {_pi} / {_ti[:60]}",
+                source_type="korean_broker_pdf", published_date_iso=_pi,
+                title=_ti, text=_tx, raw_url=_note.get("url"),
+            ))
+    prime_digest_batch(_broker_jobs, label="Layer 1 broker notes")
+
     for payload in broker_payloads:
         broker_name = payload.get("broker", "Unknown Korean broker")
         for note in payload.get("notes", []):

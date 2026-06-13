@@ -2444,9 +2444,35 @@ OPUS_MODEL = os.environ.get("OPUS_MODEL_OVERRIDE") or "claude-opus-4-7"
 #   v3.39:    16K → 24K (with streaming bypassing SDK guard) — still truncated
 #   v3.38.5:  24K → 16K (dodged SDK guard at cost of truncation)
 #   v3.38.4:  8K → 24K (handle full 22-indicator output)
-SONNET_MAX_TOKENS = 48000
+# v3.40.0 — lowered 48000 → 28000. The brief's actual Sonnet output runs
+# ~30K tokens/day (measured from billing 2026-06); with the v3.40.0 output
+# trims (static fields filled client-side, link arrays capped, per-card prose
+# capped) expected output drops to ~17-20K. 28K is a guard ceiling with
+# headroom above the trimmed target, well clear of truncation. json_repair
+# still recovers a partial dict if a heavy day ever approaches the cap.
+SONNET_MAX_TOKENS = 28000
 
 LLM_TEMPERATURE = 0.3  # low for analytical work
+
+# ============================================================
+# v3.40.0 — Message Batches API (50% token cost) for Layer 2 + Layer 3.
+# ============================================================
+# When True, Layer 2 (22 Haiku calls) and Layer 3 (1 Sonnet call) are
+# submitted to the asynchronous Message Batches API, billed at 50% of the
+# real-time rate. Each stage polls up to BATCH_POLL_CAP_SECONDS, then falls
+# back to the synchronous path (full price, but guarantees the brief ships).
+# Toggle off to revert to fully-synchronous behavior with no other change.
+USE_BATCH_API = os.environ.get("USE_BATCH_API", "true").lower() in ("1", "true", "yes")
+
+# 8-minute poll cap per batch (user-approved 2026-06-13). Bounds GitHub
+# Actions runner minutes; falls back fast when a batch is slow. Overridable
+# via env for tuning without a redeploy.
+BATCH_POLL_CAP_SECONDS = int(os.environ.get("BATCH_POLL_CAP_SECONDS", "480"))
+
+# Prompt-caching toggle (v3.40.0). Caches the static Layer 2 system prompt
+# (re-sent across the 22 calls) and the Layer 3 framework/instructions block.
+# 90% cheaper on cached input reads. Zero quality impact — byte-identical reuse.
+USE_PROMPT_CACHING = os.environ.get("USE_PROMPT_CACHING", "true").lower() in ("1", "true", "yes")
 
 
 # ============================================================

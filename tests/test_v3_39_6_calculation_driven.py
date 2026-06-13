@@ -286,12 +286,16 @@ class TestLayer2VerdictBlock(unittest.TestCase):
         self.assertIn("Not fired", prompt)
         self.assertIn("[t2_eps_revisions]", prompt)
         self.assertIn("Fired", prompt)
-        # Confidence + convergence surface so Sonnet can weight them
+        # v3.40.0 input trim: t3 is a DORMANT signal (Not fired + no change), so
+        # it renders as a single line and its evidence bullets are dropped (those
+        # numbers also live in the COMPUTED METRICS block; Sonnet isn't writing
+        # about a dormant signal). The fired/changed t2 keeps full detail.
+        self.assertIn("Not fired (unchanged)", prompt)
+        self.assertNotIn("SK Hynix 5d vs SOX: -3.21pp", prompt)  # dormant → dropped
+        # The FIRED signal keeps confidence + convergence + evidence so Sonnet
+        # can weight and quote it.
         self.assertIn("confidence: high", prompt)
         self.assertIn("convergence: high", prompt)
-        # Per-signal evidence appears — these are the specific numbers/quotes
-        # the brief should be quoting in indicator_assessments
-        self.assertIn("SK Hynix 5d vs SOX: -3.21pp", prompt)
         self.assertIn("Mirae raised SK Hynix FY27 EPS +22.5%", prompt)
         # Change-vs-yesterday surfaces only when there IS a change
         # ("no change" gets suppressed so the prompt doesn't get noisy)
