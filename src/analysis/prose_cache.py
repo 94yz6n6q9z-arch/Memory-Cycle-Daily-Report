@@ -8,10 +8,11 @@ indicators even when zero of them changed.
 
 Design (locked 2026-06-13):
   - Dormancy: an indicator's VERDICT-SHAPE fingerprint unchanged → reuse its
-    cached card. The fingerprint hashes ONLY fired_status / consensus_direction
-    / convergence (Option A, v3.41.1). evidence_count / evidence_sources /
-    confidence are EXCLUDED — they track the daily news churn, not whether the
-    verdict materially changed, and were flipping ~22/24 cards every day.
+    cached card. The fingerprint hashes ONLY fired_status (Option B, v3.41.3).
+    consensus_direction / convergence / evidence_count / evidence_sources /
+    confidence are EXCLUDED — they churn run-to-run (the news set, then the
+    supporting verdict) and were starving the reuse rate. fired_status is the
+    only field that drives the card's status pill + the banners.
   - Staggered weekly refresh: each card carries last_full_regen_date and is
     force-regenerated when >= REFRESH_DAYS since its own last full rebuild.
     First-deploy dates are SEEDED offset across the prior week so ~1/7 of the
@@ -52,7 +53,7 @@ REFRESH_DAYS = 7
 # already used the current Option-A fingerprint) are grandfathered as compatible
 # — they are NOT treated as a mismatch, so the v3.41.1→v3.41.2 boundary does not
 # re-trigger a transition. Bump this string only when the hash inputs change.
-FINGERPRINT_ALGO = "v2-verdict-shape"
+FINGERPRINT_ALGO = "v3-fired-status"
 
 # Cacheable IndicatorAssessment prose fields. Static name/description/
 # what_to_look_for are sourced from config at render time, never cached.
@@ -92,24 +93,24 @@ def save_prose_cache(cache: dict) -> None:
 
 
 def compute_fingerprint(reasoning) -> str:
-    """Option A (v3.41.1): hash only the VERDICT-SHAPE fields — fired_status,
-    consensus_direction, convergence.
+    """Option B (v3.41.3): hash ONLY fired_status.
 
-    Evidence count/sources and confidence are EXCLUDED. The daily news set
-    churns (different items fetched each day), so evidence_count/evidence_sources
-    move almost every run even when the verdict is unchanged — confirmed by the
-    2026-06-14 shadow run: 22/24 cards flagged 'fingerprint_changed' on a quiet
-    Sunday, and the ONLY reuse was the single indicator with zero evidence. A
-    card now reuses its prose while its verdict shape holds; new-but-non-verdict-
-    changing evidence is surfaced by the weekly refresh + the always-fresh exec
-    brief, not by re-writing every card daily. Empty string on error → never
-    matches a stored fingerprint → forces regeneration (safe).
+    consensus_direction and convergence were ALSO dropped (they were in the
+    Option-A v3.41.1 fingerprint). The 2026-06-14 live run showed 18/24 cards
+    flagged 'fingerprint_changed' between two same-day runs ~1.5h apart on a
+    quiet Sunday — fired_status did not change for 18 indicators that fast, so
+    direction/convergence were jittering run-to-run and starving the reuse rate
+    (only 6/24 reused → ~$0.03 saved). fired_status is the only field that
+    actually drives the card's status pill and the banners; a card now reuses
+    its prose while its FIRED STATUS holds. Drift in the supporting verdict is
+    caught by the staggered weekly refresh and the always-fresh exec brief, and
+    the consistency guard still forces regen if the cached status disagrees with
+    the current one. Empty string on error → never matches a stored fingerprint
+    → forces regeneration (safe).
     """
     try:
         parts = [
             str(getattr(reasoning, "fired_status", "")),
-            str(getattr(reasoning, "consensus_direction", "")),
-            str(getattr(reasoning, "convergence", "")),
         ]
         return hashlib.sha256("\u00a6".join(parts).encode("utf-8")).hexdigest()[:16]
     except Exception as e:

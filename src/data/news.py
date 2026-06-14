@@ -26,6 +26,7 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from typing import Optional
 from urllib.parse import quote_plus
 
@@ -1224,8 +1225,50 @@ def _safe_parse_rss_feed(
     return out
 
 
+def _parse_date_string(raw: str) -> Optional[datetime]:
+    """Parse an RSS/Atom date string to a UTC datetime using stdlib only.
+
+    Tries RFC822/RFC2822 (the standard RSS <pubDate>, via email.utils) then
+    ISO8601/Atom (datetime.fromisoformat). Naive results are assumed UTC. No
+    third-party dependency (dateutil is not in requirements)."""
+    if not raw or not isinstance(raw, str):
+        return None
+    raw = raw.strip()
+    if not raw:
+        return None
+    # RFC822 / RFC2822 — e.g. "Tue, 20 May 2026 09:30:00 +0900"
+    try:
+        dt = parsedate_to_datetime(raw)
+        if dt is not None:
+            return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError, IndexError):
+        pass
+    # ISO8601 / Atom — e.g. "2026-05-20T09:30:00+09:00" or trailing "Z" or date-only
+    iso = (raw[:-1] + "+00:00") if raw.endswith("Z") else raw
+    try:
+        dt = datetime.fromisoformat(iso)
+        return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        pass
+    return None
+
+
 def _entry_published(entry) -> Optional[datetime]:
-    """Extract a UTC datetime from a feedparser entry; return None if unavailable."""
+    """Extract a UTC datetime from a feedparser entry; return None if unavailable.
+
+    v3.41.3: fall back to parsing the RAW date string when feedparser did not
+    pre-parse it into *_parsed. feedparser only populates published_parsed /
+    updated_parsed for date formats it recognizes; Korea Herald (which carries
+    the Samsung labor / strike news) and some Google News locales emit formats
+    it skips, leaving the item UNDATED. Undated items sort to datetime.min in
+    fetch_all_news → bottom of the list → starved by the recency sort + the
+    120-item triage cap. That is why the May 20 Samsung-strike-RESOLUTION story
+    (a major SK-Hynix-positive catalyst) never reached Sonnet even after its
+    queries were added in v3.39.7.5: the items were fetched but undated, so the
+    resolving item never sorted above the older 'strike nears' items. With a
+    real date, the newest (resolving) item sorts to the top and is prioritized
+    into triage."""
+    # 1. feedparser's pre-parsed struct_time (fast path, unchanged)
     for key in ("published_parsed", "updated_parsed"):
         struct = entry.get(key)
         if struct:
@@ -1233,6 +1276,11 @@ def _entry_published(entry) -> Optional[datetime]:
                 return datetime(*struct[:6], tzinfo=timezone.utc)
             except (TypeError, ValueError):
                 continue
+    # 2. raw date-string fallback (RFC822 pubDate, then ISO8601 / Atom)
+    for key in ("published", "updated", "created", "pubDate", "date", "dc_date"):
+        dt = _parse_date_string(entry.get(key))
+        if dt is not None:
+            return dt
     return None
 
 

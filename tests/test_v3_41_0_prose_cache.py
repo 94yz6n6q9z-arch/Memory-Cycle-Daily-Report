@@ -42,12 +42,16 @@ class TestFingerprint(unittest.TestCase):
         b = fake_reasoning("t1_x", fired_status="Fired")
         self.assertNotEqual(pc.compute_fingerprint(a), pc.compute_fingerprint(b))
 
-    def test_flips_on_direction_or_convergence_change(self):
+    def test_direction_and_convergence_do_NOT_flip(self):
+        # Option B (v3.41.3): direction/convergence were jittering run-to-run and
+        # starving the reuse rate (18/24 churned on a quiet day). They are no
+        # longer in the fingerprint — only fired_status drives reuse. The
+        # consistency guard + weekly refresh catch any prose drift.
         base = fake_reasoning("t1_x", direction="neutral", convergence="low")
         diff_dir = fake_reasoning("t1_x", direction="bearish", convergence="low")
         diff_conv = fake_reasoning("t1_x", direction="neutral", convergence="high")
-        self.assertNotEqual(pc.compute_fingerprint(base), pc.compute_fingerprint(diff_dir))
-        self.assertNotEqual(pc.compute_fingerprint(base), pc.compute_fingerprint(diff_conv))
+        self.assertEqual(pc.compute_fingerprint(base), pc.compute_fingerprint(diff_dir))
+        self.assertEqual(pc.compute_fingerprint(base), pc.compute_fingerprint(diff_conv))
 
     def test_evidence_and_confidence_changes_do_NOT_flip(self):
         # Option A (v3.41.1): the daily news churn (evidence count/sources) and
