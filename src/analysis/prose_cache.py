@@ -7,12 +7,11 @@ days (most days), where today's pipeline re-writes full prose for all ~23
 indicators even when zero of them changed.
 
 Design (locked 2026-06-13):
-  - Dormancy: an indicator's STRUCTURED Layer 2 verdict fingerprint unchanged
-    → reuse its cached card. The fingerprint hashes fired_status / direction /
-    convergence / confidence / evidence_count / evidence_sources. Free-text
-    Layer 2 fields are deliberately EXCLUDED so Haiku wording jitter on quiet
-    days does not cause spurious regenerations. New evidence for an indicator
-    changes its source set / count → fingerprint flips → regenerate.
+  - Dormancy: an indicator's VERDICT-SHAPE fingerprint unchanged → reuse its
+    cached card. The fingerprint hashes ONLY fired_status / consensus_direction
+    / convergence (Option A, v3.41.1). evidence_count / evidence_sources /
+    confidence are EXCLUDED — they track the daily news churn, not whether the
+    verdict materially changed, and were flipping ~22/24 cards every day.
   - Staggered weekly refresh: each card carries last_full_regen_date and is
     force-regenerated when >= REFRESH_DAYS since its own last full rebuild.
     First-deploy dates are SEEDED offset across the prior week so ~1/7 of the
@@ -84,22 +83,24 @@ def save_prose_cache(cache: dict) -> None:
 
 
 def compute_fingerprint(reasoning) -> str:
-    """Structured-only fingerprint of a Layer 2 SignalReasoning.
+    """Option A (v3.41.1): hash only the VERDICT-SHAPE fields — fired_status,
+    consensus_direction, convergence.
 
-    Stable across Haiku free-text jitter; flips when status / direction /
-    convergence / confidence change OR the evidence SET changes (new evidence
-    => new source or higher count). Empty string on error → never matches a
-    stored fingerprint → forces regeneration (safe).
+    Evidence count/sources and confidence are EXCLUDED. The daily news set
+    churns (different items fetched each day), so evidence_count/evidence_sources
+    move almost every run even when the verdict is unchanged — confirmed by the
+    2026-06-14 shadow run: 22/24 cards flagged 'fingerprint_changed' on a quiet
+    Sunday, and the ONLY reuse was the single indicator with zero evidence. A
+    card now reuses its prose while its verdict shape holds; new-but-non-verdict-
+    changing evidence is surfaced by the weekly refresh + the always-fresh exec
+    brief, not by re-writing every card daily. Empty string on error → never
+    matches a stored fingerprint → forces regeneration (safe).
     """
     try:
-        srcs = sorted(getattr(reasoning, "evidence_sources", []) or [])
         parts = [
             str(getattr(reasoning, "fired_status", "")),
             str(getattr(reasoning, "consensus_direction", "")),
             str(getattr(reasoning, "convergence", "")),
-            str(getattr(reasoning, "confidence", "")),
-            str(getattr(reasoning, "evidence_count", "")),
-            "|".join(srcs),
         ]
         return hashlib.sha256("\u00a6".join(parts).encode("utf-8")).hexdigest()[:16]
     except Exception as e:

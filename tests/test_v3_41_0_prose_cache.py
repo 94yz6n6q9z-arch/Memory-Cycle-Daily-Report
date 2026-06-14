@@ -26,7 +26,7 @@ def fake_assessment(id, status="Not fired", where="where text", latest="",
 
 
 class TestFingerprint(unittest.TestCase):
-    def test_stable_for_same_structured_fields(self):
+    def test_stable_for_same_verdict_shape(self):
         a = fake_reasoning("t1_x", evidence_count=2, evidence_sources=["A", "B"])
         b = fake_reasoning("t1_x", evidence_count=2, evidence_sources=["B", "A"])  # order
         self.assertEqual(pc.compute_fingerprint(a), pc.compute_fingerprint(b))
@@ -35,7 +35,6 @@ class TestFingerprint(unittest.TestCase):
         a = fake_reasoning("t1_x", fse=["old wording"], kq=["q1"], change="")
         b = fake_reasoning("t1_x", fse=["totally different wording"], kq=["q2", "q3"],
                            change="some change text")
-        # free-text differs, structured identical → fingerprint must NOT change
         self.assertEqual(pc.compute_fingerprint(a), pc.compute_fingerprint(b))
 
     def test_flips_on_status_change(self):
@@ -43,10 +42,21 @@ class TestFingerprint(unittest.TestCase):
         b = fake_reasoning("t1_x", fired_status="Fired")
         self.assertNotEqual(pc.compute_fingerprint(a), pc.compute_fingerprint(b))
 
-    def test_flips_on_new_evidence(self):
-        a = fake_reasoning("t1_x", evidence_count=1, evidence_sources=["A"])
-        b = fake_reasoning("t1_x", evidence_count=2, evidence_sources=["A", "B"])
-        self.assertNotEqual(pc.compute_fingerprint(a), pc.compute_fingerprint(b))
+    def test_flips_on_direction_or_convergence_change(self):
+        base = fake_reasoning("t1_x", direction="neutral", convergence="low")
+        diff_dir = fake_reasoning("t1_x", direction="bearish", convergence="low")
+        diff_conv = fake_reasoning("t1_x", direction="neutral", convergence="high")
+        self.assertNotEqual(pc.compute_fingerprint(base), pc.compute_fingerprint(diff_dir))
+        self.assertNotEqual(pc.compute_fingerprint(base), pc.compute_fingerprint(diff_conv))
+
+    def test_evidence_and_confidence_changes_do_NOT_flip(self):
+        # Option A (v3.41.1): the daily news churn (evidence count/sources) and
+        # confidence jitter must NOT trigger a regeneration — that was the
+        # 22/24-cards-churning bug. Verdict shape identical → same fingerprint.
+        a = fake_reasoning("t1_x", evidence_count=1, evidence_sources=["A"], confidence="low")
+        b = fake_reasoning("t1_x", evidence_count=5, evidence_sources=["A", "B", "C"],
+                           confidence="high")
+        self.assertEqual(pc.compute_fingerprint(a), pc.compute_fingerprint(b))
 
 
 class TestSeedStagger(unittest.TestCase):

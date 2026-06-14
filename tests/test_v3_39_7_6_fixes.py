@@ -207,10 +207,19 @@ class TestIssue3RecencyContradictingEvents:
             big_movers=[],
             prior_state={},
         )
-        assert "RECENCY ON CONTRADICTING EVENTS" in prompt, (
-            "v3.39.7.6 issue 3 must add the RECENCY rule block to the Sonnet "
+        # v3.41.1: the rule header was de-tagged/renamed from "RECENCY ON
+        # CONTRADICTING EVENTS (v3.39.7.6)" to a neutral, investor-safe name to
+        # stop Sonnet parroting the internal rule name into prose. The rule
+        # itself is unchanged — assert on the new header AND its substance
+        # (resolve same-event contradictions by published timestamp).
+        assert "HANDLING CONFLICTING NEWS ON THE SAME EVENT" in prompt, (
+            "issue 3 must add the timestamp-resolution rule block to the Sonnet "
             "prompt. Without it, Sonnet has no instruction to resolve the "
             "Samsung strike contradiction by timestamp."
+        )
+        assert "LATEST published timestamp" in prompt, (
+            "the recency rule must still instruct resolution by the latest "
+            "published timestamp."
         )
 
     def test_prompt_stamps_timestamps_when_news_items_provided(self):

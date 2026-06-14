@@ -56,6 +56,45 @@ _INDICATOR_BY_ID = {ind.id: ind for ind in INDICATORS}
 
 
 # ============================================================
+# v3.41.1 — exec-summary / prose LEAK guard.
+# ============================================================
+# Sonnet was narrating framework MACHINERY into investor-facing prose — version
+# tags ("per v3.39.7.6"), "operative state", "cluster", "requires resolution" —
+# copied straight out of version-tagged prompt rule headers. The prompt now
+# carries an OUTPUT HYGIENE instruction and the leaked headers are de-tagged,
+# but those are best-effort; this render-time sanitizer is the DETERMINISTIC
+# backstop applied to every prose field before it reaches the reader. It is
+# deliberately conservative: it removes framework version tags and a small set
+# of internal-mechanism phrases, and leaves everything else untouched.
+import re as _re_leak
+
+_VERSION_PAREN_RE = _re_leak.compile(r'\s*\((?:per\s+)?v\d+\.\d+(?:\.\d+)*[^)]*\)', _re_leak.I)
+_VERSION_INLINE_RE = _re_leak.compile(r'[\s,;—-]*\b(?:per|see|cf\.?|under)\s+v\d+\.\d+(?:\.\d+)*\b', _re_leak.I)
+_VERSION_BARE_RE = _re_leak.compile(r'\bv\d+\.\d+(?:\.\d+)*\b')
+_JARGON_SUBS = [
+    (_re_leak.compile(r'\bper the RECENCY ON CONTRADICTING EVENTS(?:\s+rule)?\b', _re_leak.I), ''),
+    (_re_leak.compile(r'\boperative state of the world\b', _re_leak.I), 'current state'),
+    (_re_leak.compile(r'\boperative state\b', _re_leak.I), 'current state'),
+    (_re_leak.compile(r'\brequires resolution\b', _re_leak.I), 'remains unresolved'),
+]
+
+
+def _strip_internal_jargon(text):
+    """Remove framework version tags + internal-mechanism vocabulary from a
+    user-facing prose string. Non-strings pass through unchanged."""
+    if not text or not isinstance(text, str):
+        return text
+    t = _VERSION_PAREN_RE.sub('', text)       # "(v3.39.7.6)", "(per v3.4.1 ...)"
+    t = _VERSION_INLINE_RE.sub('', t)         # "... per v3.39.7.6"
+    for rgx, repl in _JARGON_SUBS:
+        t = rgx.sub(repl, t)
+    t = _VERSION_BARE_RE.sub('', t)           # any leftover bare "v3.39.7.6"
+    t = _re_leak.sub(r'\s{2,}', ' ', t)       # tidy doubled spaces
+    t = _re_leak.sub(r'\s+([,.;:])', r'\1', t)  # tidy space-before-punct
+    return t.strip()
+
+
+# ============================================================
 # Output dataclasses
 # ============================================================
 
@@ -282,10 +321,11 @@ def _safe_indicator_assessment(a: dict) -> IndicatorAssessment:
         description=_description,
         what_to_look_for=_what,
         current_status=str(a.get("current_status", "Unknown (Sonnet output truncated)")),
-        where_we_stand=str(a.get("where_we_stand", "")),
-        latest_developments=str(a.get("latest_developments", "")),
+        # v3.41.1 — strip framework version tags / mechanism vocab from prose
+        where_we_stand=_strip_internal_jargon(str(a.get("where_we_stand", ""))),
+        latest_developments=_strip_internal_jargon(str(a.get("latest_developments", ""))),
         relevant_links=_links,
-        change_vs_prior=a.get("change_vs_prior") if a.get("change_vs_prior") else None,
+        change_vs_prior=_strip_internal_jargon(a.get("change_vs_prior")) if a.get("change_vs_prior") else None,
     )
 
 
@@ -781,8 +821,7 @@ def build_sonnet_analysis_prompt(
     triage_text += (
         "Each item shows its PUBLISHED TIMESTAMP. When two items reference the\n"
         "same event with contradictory direction, the LATER timestamp is the\n"
-        "operative state of the world per the RECENCY ON CONTRADICTING EVENTS\n"
-        "rule above.\n"
+        "current state of the story; treat earlier items as background.\n"
     )
     for item in triage.relevant_news[:50]:
         url = item.get("url", "")
@@ -1410,20 +1449,22 @@ The template substitutes `[→§N]` into clickable HTML anchors. Use them libera
 
 Tone: institutional analyst, declarative, no hedging language ("might", "could", "perhaps"). State the facts as observed.
 
-RECENCY ON CONTRADICTING EVENTS (v3.39.7.6):
+OUTPUT HYGIENE — investor-facing prose: every prose field you write (executive_brief, where_we_stand, latest_developments, change_vs_prior) is read directly by an investor. NEVER expose internal framework machinery in them: no version tags ("v3.x", "per v..."), no internal rule names, and no mechanism vocabulary ("operative state", "cluster", "fingerprint", "requires resolution", "supersede", "Layer 2", "Layer 3", "tier signal"). Describe what is happening in the world and your conclusion in plain analyst language — never how the framework arrived at it.
+
+HANDLING CONFLICTING NEWS ON THE SAME EVENT:
 
 When two or more news items in today's feed reference the SAME real-world event but report contradictory direction (e.g. one says "Samsung strike to launch", another says "Samsung union calls off strike"), you MUST resolve the contradiction by published timestamp, not by item count.
 
 Operational rules:
   (a) Identify event clusters — items are in the same cluster when they reference the same company/entity AND the same event window (a strike, a wage negotiation, an earnings beat, a regulatory ruling, a deal closure, etc.).
-  (b) Within a cluster, the item with the LATEST published timestamp is the operative state of the world. Earlier items in the cluster are superseded — treat them as background context, not as current facts.
-  (c) If the cluster contains a REVERSAL (event was on, then called off; or event was averted, then re-triggered), the executive_brief MUST explicitly note the reversal. Do not write as if the older state still holds. Example: do NOT write "the Samsung 45,000-worker strike commencing May 21 tightens HBM supply" if a later item in the same cluster reports the strike was called off — the operative narrative is "the planned Samsung strike was called off one hour before launch, removing the near-term HBM supply tightening risk that was previously priced in".
+  (b) Within a cluster, the item with the LATEST published timestamp is the current state. Earlier items in the cluster are out of date — treat them as background context, not as current facts.
+  (c) If the cluster contains a REVERSAL (event was on, then called off; or event was averted, then re-triggered), the executive_brief MUST explicitly note the reversal. Do not write as if the older state still holds. Example: do NOT write "the Samsung 45,000-worker strike commencing May 21 tightens HBM supply" if a later item in the same cluster reports the strike was called off — the correct framing is "the planned Samsung strike was called off one hour before launch, removing the near-term HBM supply tightening risk that was previously priced in".
   (d) The reversal itself is news — surface it explicitly. The framework cares about state changes, not historical states.
   (e) This rule applies to the executive_brief paragraph AND to the key_news_summary block AND to per-indicator commentary. Apply it everywhere news drives narrative.
 
 This rule does NOT change the relevance filter or which items reach you — it changes how you SYNTHESIZE items that all reach you. Multiple contradicting items in your context window is the normal case for fast-moving stories; you are responsible for resolving them.
 
-VALUE-CHAIN INFERENCE (v3.39.7.9):
+VALUE-CHAIN INFERENCE:
 
 When two or more signals in today's feed are causally linked through the memory value chain, draw the chain EXPLICITLY in the executive_brief and per-indicator commentary. Reporting upstream and downstream signals as if they're independent loses the framework's core analytical value. Examples of inference chains you should draw when the evidence is present in today's brief:
 
@@ -2037,7 +2078,7 @@ def sonnet_analyze(
         # v3.39.7.5 — consolidated exec paragraph replacing the old 3-block
         # pattern (delta prose / big movers / today's market). Anchor links
         # of the form `[→§N]` are substituted into clickable HTML at render.
-        executive_brief=exec_data.get("executive_brief", ""),
+        executive_brief=_strip_internal_jargon(exec_data.get("executive_brief", "")),
     )
 
     # v3.39.1: defensive construction of IndicatorAssessment objects from the
