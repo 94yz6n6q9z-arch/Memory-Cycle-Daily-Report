@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-06-14T20:05:15.897034+00:00",
+  "saved_at_iso": "2026-06-14T20:39:52.322923+00:00",
   "executive_summary": {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
@@ -26,10 +26,10 @@
       "peak_window_end": "July 2026",
       "return_to_peak_pct": -40.0
     },
-    "delta_from_prior_text": "Indicator distribution unchanged vs prior: 4/6 T1 fired, 6/7 T2 fired (1 partial), 0/5 T3 fired, 0/4 T4 fired. No tier-1-5 status changes today \u2014 no fires, no unfires. Probability distribution holds byte-identical to prior brief per MANDATORY RECALCULATION INSTRUCTION: base 48% / bull 17% / bear 35%. Sum=100 \u2713. Hard invariants: base 48% > bear 35% \u2713; base 48% > bull 17% \u2713; base return 14% \u2265 0 \u2713; bull 44% > base 14% \u2713; bear -40% \u2264 base 14% \u2713. Bear return_to_peak_pct -40% confirmed within 4+ T1 + 6 T2 fired band (-35 to -45%) per magnitude table. Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base case peak window: September\u2013November 2026 \u2014 unchanged vs prior brief. Google-Samsung TPU sourcing and Goldman Sachs $1T CapEx forecast are directional confirmations of existing fired signals but do not change status. No probability recalculation warranted.",
+    "delta_from_prior_text": "Indicator distribution unchanged vs prior: 4/6 T1 fired, 6/7 T2 fired (1 partial), 0/5 T3 fired, 0/4 T4 fired. No tier-1-5 status changes today \u2014 no fires, no unfires. Probability distribution holds byte-identical to prior brief per MANDATORY RECALCULATION INSTRUCTION: base 48% / bull 17% / bear 35%. Sum=100. Hard invariants: base 48% > bear 35%; base 48% > bull 17%; base return 14% >= 0; bull 44% > base 14%; bear -40% <= base 14%. Bear return_to_peak_pct -40% confirmed within 4+ T1 + 6 T2 fired band (-35 to -45%) per magnitude table. Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base case peak window: September\u2013November 2026 \u2014 unchanged vs prior brief. Goldman Sachs $1T CapEx forecast and Google-Samsung TPU sourcing are directional confirmations of existing fired signals but do not change status. No probability recalculation warranted.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-5 signals fired or unfired today \u2014 all 23 indicators hold prior status [\u2192\u00a73]. Google engaged Samsung for next-gen 'Icefish' TPU component sourcing [\u2192\u00a75], a 7B/7C escalation watch for Competitor dynamics (Indicator 7, already Partially fired) that does not yet cross the EPS-impact threshold for a status change; the Samsung-Google TPU chain implies wafer allocation toward custom silicon, a directional confirmation of t2_ltas_signed and t2_capex_parabolic [\u2192\u00a74]. Goldman Sachs raised its Micron price target to $900 and forecast $1T+ AI infrastructure CapEx in 2027, naming SK Hynix and Micron as primary beneficiaries \u2014 directional confirmation of t2_eps_revisions' continued Not-fired status (SK Hynix 26 up / 0 down, Micron 6 up / 0 down in 30-day revisions) [\u2192\u00a74]. Samsung surged +7.86% [\u2192\u00a71] on the Google TPU news; Intel +6.51% and AMD +4.73% led the broader tape while Cerebras -5.54% diverged on no fundamental catalyst; SK Hynix +2.33% and Micron -1.43% split, with SK Hynix 5-day vs SOX at -5.55pp (yellow watch, not red; t3_relative_strength Not fired preserved [\u2192\u00a74]). Air Liquide committed EUR 200M to SK Hynix HBM expansion, extending the supply-chain lock-in chain that reinforces t2_ltas_signed [\u2192\u00a74]. Micron Q3 FY26 earnings June 24 remain the next binary catalyst [\u2192\u00a76]."
+    "executive_brief": "No tier-1-5 signals fired or unfired today \u2014 all 23 indicators hold prior status [\u2192\u00a73]. Samsung surged +7.86% [\u2192\u00a71] on continued AI-demand momentum and Google-Samsung Icefish TPU sourcing news, while Intel +6.51% and AMD +4.73% led the broader tape; Cerebras -5.54% diverged on no fundamental catalyst, and Micron -1.43% split from SK Hynix's +2.33% gain. Goldman Sachs raised its Micron price target to $900 and forecast $1T+ AI infrastructure CapEx in 2027, naming SK Hynix and Micron as primary beneficiaries \u2014 directional confirmation of t2_eps_revisions' continued Not-fired status (SK Hynix 26 up / 0 down, Micron 6 up / 0 down in 30-day revisions) [\u2192\u00a74]. The Google-Samsung Icefish TPU engagement is a 7B/7C escalation watch for Competitor dynamics (Indicator 7, already Partially fired) but does not cross the EPS-impact threshold for a status change; the chain runs: Google custom-silicon wafer allocation to Samsung \u2192 potential HBM sourcing shift \u2192 directional pressure on SK Hynix HBM share, reinforcing t2_ltas_signed and t2_capex_parabolic [\u2192\u00a74]. Air Liquide committed EUR 200M to SK Hynix HBM expansion, extending supply-chain lock-in consistent with t2_ltas_signed [\u2192\u00a74]. SK Hynix's 5-day vs SOX spread sits at -5.55pp \u2014 yellow watch, not red; t3_relative_strength Not fired preserved [\u2192\u00a74]. Micron Q3 FY26 earnings June 24 remain the next binary catalyst [\u2192\u00a76]."
   },
   "indicator_assessments": [
     {
@@ -552,27 +552,6 @@
         {
           "title": "TrendForce DRAM Spot Price",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
-        }
-      ],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t1_decode_hbm_captive_ratio",
-      "tier": 1,
-      "name": "Decode HBM captive ratio (efficiency \u00d7 demand)",
-      "description": "Direction monitor on whether enterprise AI demand growth is keeping pace with the supply-side capacity-creation rate (KV efficiency improvements \u00d7 HBM-per-accelerator growth). Bullish HBM when demand-pull outruns capacity creation; bearish when efficiency / HBM packing outruns demand.",
-      "what_to_look_for": "Composite direction signal from three drivers: (1) frontier KV efficiency YoY change (open-architecture models); (2) HBM-per-accelerator YoY change (NVIDIA/AMD merchant chips); (3) enterprise AI revenue YoY weighted blend across Microsoft Azure AI, AWS, Google Cloud, Oracle, NVIDIA datacenter. Watch for direction to flip from bullish to balanced or worse \u2014 would signal demand growth decelerating below efficiency gains.",
-      "current_status": "Not fired",
-      "where_we_stand": "Direction monitor \u2014 UNKNOWN confidence per computed metrics (KV efficiency and HBM-per-accelerator YoY both showing 0% change in current data). Enterprise AI run-rate YoY: +231% (MSFT+AWS+GCP+Oracle); NVIDIA datacenter YoY: +69%. Anthropic $65B raise and Google-Samsung Icefish TPU sourcing both signal sustained enterprise AI demand pull. Cerebras WSE-3 <1% compute share\u2026",
-      "latest_developments": "Google engages Samsung for Icefish TPU component per [Let's Data Science](https://news.google.com/rss/articles/CBMilAFBVV95cUxNSm1LSmx4aWFQRE16WjFib3JEMERWREVUR1JSRHl0MmV4eGtZcWpJbk5tNnlkMFgySnd4VERvdXdCTXQtbE15OVQzeDBsT0c4MHFNLU9hLU1VaWdOM0F1bzdjT0R0R0FESTVEYTJTWlZVajc1QTZEZ0pqMmVTTkhubG1aTThHM1pYNkZPVzltb0hRRG5f?oc=5) \u2014 demand-pull signal. Anthropic $65B funding [\u2192\u00a75] reinforces AI compute demand trajectory.",
-      "relevant_links": [
-        {
-          "title": "Google-Samsung Icefish TPU \u2014 Let's Data Science",
-          "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxNSm1LSmx4aWFQRE16WjFib3JEMERWREVUR1JSRHl0MmV4eGtZcWpJbk5tNnlkMFgySnd4VERvdXdCTXQtbE15OVQzeDBsT0c4MHFNLU9hLU1VaWdOM0F1bzdjT0R0R0FESTVEYTJTWlZVajc1QTZEZ0pqMmVTTkhubG1aTThHM1pYNkZPVzltb0hRRG5f?oc=5"
-        },
-        {
-          "title": "Goldman Sachs $1T+ AI CapEx \u2014 Motley Fool",
-          "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxPSFh6Nk0wNlFXZTlISGd5TTUyaXdHMjRTLVNOSXhDekM5TjBNVmo0NEtuUDI5N1M1QllBcjhHU2VBRDUtSHVTZFIyY1B2aUxkaUJhREdWdDB4T0poY24zN3ppRFkzWEZIcm1Ga2hEaXRTandaZEdiQXZDU0l4azdZR0d6ZnlBcDhoQXcwRGZmWUFfOWh1blZV?oc=5"
         }
       ],
       "change_vs_prior": null
