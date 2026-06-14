@@ -45,6 +45,15 @@ logger = logging.getLogger("memory_cycle_brief.prose_cache")
 PROSE_CACHE_FILE = Path("state/indicator_prose_cache.json")
 REFRESH_DAYS = 7
 
+# v3.41.2 — fingerprint algorithm version. Stamped into each entry on write so
+# that a FUTURE change to compute_fingerprint() logs as a clean one-line cache
+# rebuild ("fingerprint_algo_changed") instead of a misleading all-cards
+# "fingerprint_changed" churn. Entries with NO stamp (written by v3.41.1, which
+# already used the current Option-A fingerprint) are grandfathered as compatible
+# — they are NOT treated as a mismatch, so the v3.41.1→v3.41.2 boundary does not
+# re-trigger a transition. Bump this string only when the hash inputs change.
+FINGERPRINT_ALGO = "v2-verdict-shape"
+
 # Cacheable IndicatorAssessment prose fields. Static name/description/
 # what_to_look_for are sourced from config at render time, never cached.
 _PROSE_FIELDS = (
@@ -152,6 +161,12 @@ def evaluate_cache(cache: dict, reasonings: list, today: Optional[date] = None,
 
         if not entry.get(_PROSE_PRESENCE_FIELD):
             decisions[ind_id] = {"action": "regen", "reason": "no_cache"}
+        elif (entry.get("fingerprint_algo") is not None
+              and entry.get("fingerprint_algo") != FINGERPRINT_ALGO):
+            # present-but-different stamp => the hashing changed; clean rebuild.
+            # (Missing stamp is grandfathered above and falls through to the
+            # normal fingerprint comparison.)
+            decisions[ind_id] = {"action": "regen", "reason": "fingerprint_algo_changed"}
         elif not cur_fp or cur_fp != entry.get("fingerprint"):
             decisions[ind_id] = {"action": "regen", "reason": "fingerprint_changed"}
         elif age is None or age >= refresh_days:
@@ -225,6 +240,7 @@ def update_cache_after_synthesis(cache: dict, assessments: list, reasonings: lis
         for f in _PROSE_FIELDS:
             entry[f] = getattr(a, f, None)
         entry["fingerprint"] = fp_by_id.get(ind_id, "")
+        entry["fingerprint_algo"] = FINGERPRINT_ALGO
         entry["status"] = status_by_id.get(ind_id) or getattr(a, "current_status", None)
         entry["updated_date"] = t_iso
         if ind_id in clock_reset_ids:

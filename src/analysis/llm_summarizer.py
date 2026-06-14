@@ -41,11 +41,23 @@ from src.config import (
     CYCLE_BASELINE,
     USE_BATCH_API,
     BATCH_POLL_CAP_SECONDS,
+    USE_PROSE_CACHE,
 )
 from src.data.news import NewsItem
 from src.data.estimates import EstimateSnapshot
 from src.data.prices import PerformanceMetrics
 from src.diagnostics import DiagnosticsCollector, SourceFetchStatus
+from src.analysis.prose_cache import (
+    load_prose_cache,
+    save_prose_cache,
+    seed_staggered_dates,
+    evaluate_cache,
+    apply_status_guard,
+    get_cached_assessment_dict,
+    summarize_decisions,
+    update_cache_after_synthesis,
+    split_regen_ids,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -327,6 +339,127 @@ def _safe_indicator_assessment(a: dict) -> IndicatorAssessment:
         relevant_links=_links,
         change_vs_prior=_strip_internal_jargon(a.get("change_vs_prior")) if a.get("change_vs_prior") else None,
     )
+
+
+# ============================================================
+# v3.41.2 — prose-cache live support: word-cap truncation, cache→assessment
+# reconstruction, and the run-scope instruction injected into the prompt.
+# ============================================================
+_WORD_CAP_WHERE = 50          # where_we_stand, non-deep-dive (prompt: ≤50)
+_WORD_CAP_WHERE_TOP5 = 90     # where_we_stand for the 5 deep-dive ids (prompt: ≤90)
+_WORD_CAP_LATEST = 35         # latest_developments (prompt: ≤35)
+_WORD_CAP_CHANGE = 40         # change_vs_prior (short status-delta note)
+
+
+def _truncate_words(text: Optional[str], cap: int) -> Optional[str]:
+    """Backstop hard word cap (Sonnet does not reliably honor the prompt caps).
+    Cuts at a word boundary and appends an ellipsis only when over the cap.
+    Pass-through for empty / non-string."""
+    if not text or not isinstance(text, str):
+        return text
+    words = text.split()
+    if len(words) <= cap:
+        return text
+    return " ".join(words[:cap]).rstrip(",;:") + "…"
+
+
+def _truncate_assessment_prose(a: IndicatorAssessment) -> IndicatorAssessment:
+    """Enforce per-field word caps on a FRESH (Sonnet-written) card. Cached cards
+    were already capped when first written, so they are not re-truncated."""
+    where_cap = _WORD_CAP_WHERE_TOP5 if a.id in TOP_5_INDICATORS else _WORD_CAP_WHERE
+    a.where_we_stand = _truncate_words(a.where_we_stand, where_cap)
+    a.latest_developments = _truncate_words(a.latest_developments, _WORD_CAP_LATEST)
+    if a.change_vs_prior:
+        a.change_vs_prior = _truncate_words(a.change_vs_prior, _WORD_CAP_CHANGE)
+    return a
+
+
+def _assessment_from_cache(ind_id: str, cached: dict) -> IndicatorAssessment:
+    """Reconstruct an IndicatorAssessment from cached prose fields, sourcing the
+    static fields (name/description/what_to_look_for/tier) from config — exactly
+    as _safe_indicator_assessment does for fresh cards. Used for dormant cards
+    that Sonnet did not regenerate this run."""
+    cfg = _INDICATOR_BY_ID.get(ind_id)
+    links = cached.get("relevant_links") or []
+    if not isinstance(links, list):
+        links = []
+    return IndicatorAssessment(
+        id=ind_id,
+        tier=(cfg.tier if cfg else _tier_from_id(ind_id)),
+        name=(cfg.name if cfg else ind_id),
+        description=(cfg.description if cfg else ""),
+        what_to_look_for=(cfg.what_to_look_for if cfg else ""),
+        current_status=str(cached.get("current_status", "")),
+        where_we_stand=str(cached.get("where_we_stand", "")),
+        latest_developments=str(cached.get("latest_developments", "") or ""),
+        relevant_links=links[:3],
+        change_vs_prior=cached.get("change_vs_prior") or None,
+    )
+
+
+def _build_scope_instruction(regen_ids) -> str:
+    """The run-scope block injected into the prompt when the prose cache restricts
+    output to a subset of indicators. Empty string => no restriction (write all)."""
+    ids = sorted(regen_ids)
+    if not ids:
+        return (
+            "RUN SCOPE — indicator_assessments (IMPORTANT):\n"
+            "Every indicator is unchanged since the last brief and its prose is "
+            "supplied from cache. Emit an EMPTY indicator_assessments array ([]) — "
+            "do NOT write any indicator cards. You MUST still produce the "
+            "executive_brief and all executive_summary fields, plus market_summary, "
+            "key_news_summary and cycle_position_call, reflecting the full picture "
+            "across every indicator and all of today's news.\n\n"
+        )
+    id_list = ", ".join(ids)
+    return (
+        "RUN SCOPE — indicator_assessments (IMPORTANT):\n"
+        f"Only the following {len(ids)} indicator(s) changed since the last brief "
+        "and need fresh prose. Emit indicator_assessments[] entries for THESE IDS ONLY:\n"
+        f"  {id_list}\n"
+        "OMIT every other indicator entirely — do NOT emit a card, placeholder, or "
+        "empty entry for them. They are unchanged and their prose is supplied from "
+        "cache; emitting them wastes output and will be discarded. This restriction "
+        "applies ONLY to which indicator_assessments[] cards you write — the "
+        "executive_brief, market_summary, key_news_summary, cycle_position_call and "
+        "all executive_summary fields MUST still reflect the full picture across every "
+        "indicator and all of today's news.\n\n"
+    )
+
+
+def _merge_prose_cards(reasonings, fresh_assessments, reuse_ids, cache):
+    """Assemble the full indicator card set from a scoped Sonnet run:
+      - dormant ids in `reuse_ids` → reconstructed from cache,
+      - changed/due ids → the fresh Sonnet card, word-capped,
+      - a regen id Sonnet dropped → cached prose as a stopgap (never vanishes),
+      - any fresh card whose id isn't a Layer-2 indicator → kept as-is (capped).
+    Pure function over its inputs. Returns (merged_list, n_stopgap)."""
+    fresh_by_id = {a.id: a for a in fresh_assessments}
+    merged: list = []
+    handled: set = set()
+    n_stopgap = 0
+    for r in reasonings:
+        ind_id = getattr(r, "signal_id", None)
+        if not ind_id:
+            continue
+        handled.add(ind_id)
+        if ind_id in reuse_ids:
+            cached = get_cached_assessment_dict(cache, ind_id)
+            if cached:
+                merged.append(_assessment_from_cache(ind_id, cached))
+                continue
+        if ind_id in fresh_by_id:
+            merged.append(_truncate_assessment_prose(fresh_by_id[ind_id]))
+        else:
+            cached = get_cached_assessment_dict(cache, ind_id)
+            if cached:
+                merged.append(_assessment_from_cache(ind_id, cached))
+                n_stopgap += 1
+            # else: absent everywhere → drop (legacy truncation behavior)
+    for a in fresh_assessments:
+        if a.id and a.id not in handled:
+            merged.append(_truncate_assessment_prose(a))
+    return merged, n_stopgap
 
 
 def _build_case_scenario(d: dict | None) -> CaseScenario:
@@ -1799,6 +1932,53 @@ def sonnet_analyze(
         authoritative_24h_log=authoritative_24h_log,
     )
 
+    # ---- v3.41.2 prose cache: decide reuse vs regenerate BEFORE Sonnet runs ----
+    # Restrict Sonnet to writing only the cards whose verdict shape changed (or
+    # are due a weekly refresh); dormant cards are filled from cache after parse.
+    # Safe-failing: ANY error disables the cache for this run (regenerate all),
+    # so the brief always ships unchanged from legacy behavior.
+    _pc_cache = None
+    _pc_reuse_ids: set = set()
+    _pc_regen_ids: set = set()
+    _pc_reset_ids: set = set()
+    _pc_reasonings = signal_reasonings or []
+    if USE_PROSE_CACHE and _pc_reasonings:
+        try:
+            _pc_cache = load_prose_cache()
+            _reasoning_ids = [getattr(r, "signal_id", None) for r in _pc_reasonings]
+            _reasoning_ids = [i for i in _reasoning_ids if i]
+            seed_staggered_dates(_pc_cache, _reasoning_ids)
+            _decisions = evaluate_cache(_pc_cache, _pc_reasonings)
+            _status_by_id = {
+                getattr(r, "signal_id", None): getattr(r, "fired_status", None)
+                for r in _pc_reasonings
+            }
+            apply_status_guard(_decisions, _pc_cache, _status_by_id)
+            _pc_regen_ids, _pc_reset_ids = split_regen_ids(_decisions)
+            _pc_reuse_ids = {
+                i for i, d in _decisions.items()
+                if d.get("action") == "reuse" and get_cached_assessment_dict(_pc_cache, i)
+            }
+            # any "reuse" whose cache turned out unusable → force regen instead
+            for i, d in _decisions.items():
+                if d.get("action") == "reuse" and i not in _pc_reuse_ids:
+                    _pc_regen_ids.add(i)
+            logger.info(f"[prose-cache] {summarize_decisions(_decisions)}")
+            # Inject the scope restriction ONLY when it actually saves output
+            # (some cards are being reused). The replace() is a no-op if the
+            # anchor ever changes → degrades safely to "write all" (no savings).
+            if _pc_reuse_ids:
+                prompt = prompt.replace(
+                    "OUTPUT FORMAT - respond with ONLY a JSON object:",
+                    _build_scope_instruction(_pc_regen_ids)
+                    + "OUTPUT FORMAT - respond with ONLY a JSON object:",
+                    1,
+                )
+        except Exception as e:
+            logger.warning(f"[prose-cache] disabled this run (non-fatal): {e}")
+            _pc_cache = None
+            _pc_reuse_ids, _pc_regen_ids, _pc_reset_ids = set(), set(), set()
+
     # v3.39: switch from messages.create to messages.stream. Two motivations:
     #
     # (1) Bypass the SDK's client-side wall-time guard. messages.create raises
@@ -2102,13 +2282,35 @@ def sonnet_analyze(
         for a in raw_assessments
         if isinstance(a, dict) and a.get("id")
     ]
-    # Client-side top_5 synthesis from the same list (no separate Sonnet call)
-    top_5 = [a for a in assessments if a.id in TOP_5_INDICATORS]
     if len(assessments) < len(raw_assessments):
         logger.warning(
             f"Dropped {len(raw_assessments) - len(assessments)} indicator(s) "
             f"with missing or invalid id from Sonnet output."
         )
+
+    # ---- v3.41.2 prose cache: merge fresh (regen) + cached (dormant) cards ----
+    # Build the full card set: dormant cards from cache, changed/due cards from
+    # Sonnet (word-capped). A regen card missing from Sonnet's output falls back
+    # to its cached prose rather than vanishing. Safe-failing → fresh-only.
+    if _pc_cache is not None:
+        try:
+            assessments, _n_stopgap = _merge_prose_cards(
+                _pc_reasonings, assessments, _pc_reuse_ids, _pc_cache
+            )
+            if _n_stopgap:
+                logger.warning(
+                    f"[prose-cache] {_n_stopgap} regen card(s) missing from Sonnet "
+                    f"output; used cached prose as stopgap"
+                )
+            logger.info(
+                f"[prose-cache] merged {len(assessments)} cards "
+                f"({len(_pc_reuse_ids)} reused, {len(_pc_regen_ids)} regenerated)"
+            )
+        except Exception as e:
+            logger.warning(f"[prose-cache] merge failed, using fresh-only (non-fatal): {e}")
+
+    # Client-side top_5 synthesis from the (merged) list (no separate Sonnet call)
+    top_5 = [a for a in assessments if a.id in TOP_5_INDICATORS]
 
     # v3.39.7.4 — deterministic tier_status_summary override.
     # Sonnet's self-counted exec summary string has historically diverged
@@ -2124,6 +2326,20 @@ def sonnet_analyze(
             f"{sonnet_summary!r} → {deterministic_summary!r}"
         )
     exec_summary.tier_status_summary = deterministic_summary
+
+    # ---- v3.41.2 prose cache: persist fresh prose + fingerprints ----
+    # Stores prose for the regenerated ids (from the merged `assessments`) and
+    # resets the weekly clock for clock_reset_ids; reused cards are left as-is.
+    # Safe-failing — a cache write failure never blocks the brief.
+    if _pc_cache is not None:
+        try:
+            update_cache_after_synthesis(
+                _pc_cache, assessments, _pc_reasonings,
+                regenerated_ids=_pc_regen_ids, clock_reset_ids=_pc_reset_ids,
+            )
+            save_prose_cache(_pc_cache)
+        except Exception as e:
+            logger.warning(f"[prose-cache] cache update/save failed (non-fatal): {e}")
 
     return BriefAnalysis(
         executive_summary=exec_summary,

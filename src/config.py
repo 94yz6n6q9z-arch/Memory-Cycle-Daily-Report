@@ -2469,6 +2469,20 @@ USE_BATCH_API = os.environ.get("USE_BATCH_API", "true").lower() in ("1", "true",
 # via env for tuning without a redeploy.
 BATCH_POLL_CAP_SECONDS = int(os.environ.get("BATCH_POLL_CAP_SECONDS", "480"))
 
+# ============================================================
+# v3.41.2 — Layer 3 prose cache (dormancy + staggered weekly refresh).
+# ============================================================
+# When True, the Sonnet synthesis writes fresh per-indicator card prose ONLY
+# for indicators whose verdict shape changed (or are due a weekly refresh);
+# dormant cards are reused from state/indicator_prose_cache.json. This cuts the
+# dominant cost driver — Sonnet OUTPUT tokens — on quiet days. The executive
+# brief is always regenerated. Reuse is gated by a consistency guard (cached
+# status must equal the current computed status) and a valid-cache check, so
+# the worst case is muted savings, never a broken or stale-status card.
+# Toggle OFF to revert to full-regeneration behavior with no other change
+# (no scope restriction, no merge, no cache writes) — instant kill-switch.
+USE_PROSE_CACHE = os.environ.get("USE_PROSE_CACHE", "true").lower() in ("1", "true", "yes")
+
 # Prompt-caching toggle (v3.40.0). Caches the static Layer 2 system prompt
 # (re-sent across the 22 calls) and the Layer 3 framework/instructions block.
 # 90% cheaper on cached input reads. Zero quality impact — byte-identical reuse.
