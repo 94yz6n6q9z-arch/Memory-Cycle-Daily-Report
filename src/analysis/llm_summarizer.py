@@ -20,6 +20,7 @@ CHANGELOG (this file):
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import math  # v3.39.7.9 — defensive NaN guard in COMPUTED METRICS rendering
@@ -460,6 +461,40 @@ def _merge_prose_cards(reasonings, fresh_assessments, reuse_ids, cache):
         if a.id and a.id not in handled:
             merged.append(_truncate_assessment_prose(a))
     return merged, n_stopgap
+
+
+def _prune_prior_state_prose(prior_state: dict) -> dict:
+    """Return a copy of prior_state with free-text NARRATIVE fields removed.
+
+    v3.41.5. prior_state (yesterday's brief) is fed to Sonnet for change
+    DETECTION — which indicators changed status, the phase, base-case peak
+    window, scenario probabilities. All of that is STRUCTURED. Its prose
+    fields (executive_brief, per-card where_we_stand/latest_developments/
+    change_vs_prior) were ALSO dumped verbatim, which let Sonnet echo a
+    resolved story forward in today's exec brief — the weeks-old Samsung
+    strike kept leading the summary because yesterday's paragraph was handed
+    back as context every run, a self-perpetuating loop with no aging control.
+    Stripping the prose removes the echo fuel while leaving change-tracking
+    fully intact (the structured status fields the deterministic diff and the
+    peak-window/probability comparisons read are untouched). The exec brief is
+    regenerated from today's news + verdicts every run anyway, so it loses
+    nothing it legitimately needs.
+    """
+    if not isinstance(prior_state, dict):
+        return prior_state
+    pruned = copy.deepcopy(prior_state)
+    es = pruned.get("executive_summary")
+    if isinstance(es, dict):
+        for k in ("executive_brief", "delta_from_prior_text", "urgent_attention_text"):
+            es.pop(k, None)
+    cards = pruned.get("indicator_assessments")
+    if isinstance(cards, list):
+        for c in cards:
+            if isinstance(c, dict):
+                for k in ("where_we_stand", "latest_developments",
+                          "change_vs_prior", "relevant_links"):
+                    c.pop(k, None)
+    return pruned
 
 
 def _build_case_scenario(d: dict | None) -> CaseScenario:
@@ -997,9 +1032,9 @@ def build_sonnet_analysis_prompt(
             f"  Trigger: {ind.what_to_look_for}\n"
         )
 
-    prior_text = "\nPRIOR STATE (yesterday's brief - identify changes):\n"
+    prior_text = "\nPRIOR STATE (yesterday's brief — STRUCTURED fields only, for change detection):\n"
     if prior_state:
-        prior_text += json.dumps(prior_state, indent=2)
+        prior_text += json.dumps(_prune_prior_state_prose(prior_state), indent=2, default=str)
     else:
         prior_text += "(no prior state - this is the first run)\n"
 
@@ -1550,8 +1585,8 @@ Length: **HARD CAP 250 WORDS** (v3.4.1 — previous unbounded brief reached 411 
 
 Self-check before emitting: count your words. If >250, compress further. Look first for: (a) intensifiers ("dramatically", "substantially"); (b) restated context already in the indicator status pills; (c) hedges ("appears to", "seems to indicate"); (d) numerical detail that belongs in §3 / §4 cards, not the headline paragraph; (e) anchor link explanations like "see §3 for more" — the anchor itself IS the explanation.
 
-Content — cover all four themes in this order, but blend them into prose (NOT four labeled bullets):
-  (i)  Signal fires/unfires today + what drove them (cite the specific indicator and the trigger value / news that caused the change).
+Content — the brief's SPINE is developments along the signals and indicators (the memory/semi/AI thesis). Its job is to SUMMARIZE what is happening on that thesis today — not to narrate the market, and not to manufacture a cause for every price move. Blend the elements below into prose (NOT labeled bullets), in roughly this priority:
+  (i)  Signal/indicator developments — what changed (or what notably held) along the framework today, and the fresh news / trigger value behind it. This is the lead. If nothing changed, say so plainly, then lead with the most material fresh development on the thesis.
        **v3.4.9 — VOCABULARY DISCIPLINE for cards 6-8 (DHCR, Competitor, ADR):**
        Indicators 6, 7, 8 are WATCH-ONLY OVERLAYS — they do NOT count toward Tier 1's `X/6 fired` totals. A status change in one of these is an INDICATOR change, NOT a signal firing. Use this exact vocabulary:
          - For status changes in indicators 1-5: "signal fires" / "signal unfires" / "one new signal fires today" — correct.
@@ -1561,9 +1596,18 @@ Content — cover all four themes in this order, but blend them into prose (NOT 
          RIGHT: "One indicator changed status today: Competitor dynamics (Indicator 7) moved to 'Partially fired' as CXMT enters DDR5..." OR "No new tier-1-5 signals fired today; one watch overlay (Competitor dynamics, Indicator 7) updated to 'Partially fired' as CXMT enters DDR5..."
        The reason for the distinction: the T1 firing count is the institutional read for "are we in peak"; mixing watch-overlay status changes into that signal triggers false-positive reads.
        **v3.39.10 — "NO SIGNALS FIRED" IS A CONDITIONAL CLAIM:** You may write "no signals fired or unfired today" (or any equivalent blanket no-change claim) ONLY when ZERO tier-1-5 signals changed status in EITHER direction. If ANY tier-1-5 signal fired OR unfired today — including a reversion to 'Not fired' — that phrasing is FALSE and FORBIDDEN. Do NOT open with "no signals fired or unfired" and then describe a signal change in the same paragraph (e.g. "No signals fired or unfired today; t3_relative_strength reverted to 'Not fired'" is a self-contradiction and will be overwritten at render time). Lead instead with the actual change: "Relative strength (t3) reverted to 'Not fired' as ...". A change in a watch overlay (Indicators 6/7/8) alone does NOT make the tier-1-5 claim false — those are overlays, not signals — but state the overlay change explicitly rather than burying it.
-  (ii) Big news from today's feed. PRIORITIZE items that align with a framework signal even when they don't formally fire it. Example: a single-firm "Sell SK Hynix" rating doesn't fire t2_insider_sales (which requires actual insider transactions), but in a market of 26-up / 0-down EPS revisions it IS the first sell-side dissent — a psychological inflection the framework cares about deeply. Surface these as "directional confirmation of [signal name]" or "first dissent from the [signal name] consensus".
-  (iii) Big movers today — name 2-4 specific tickers with their 1D % moves. Focus on those that diverge from the broader semi tape (especially the memory pure-plays).
-  (iv) Macro / AI / semiconductor backdrop news that impacts the trade (Fed decisions, China export controls, NVIDIA orders, AI CapEx announcements, etc).
+  (ii) Fresh news bearing on a signal — PRIORITIZE items that align with a framework signal even when they don't formally fire it. Example: a single-firm "Sell SK Hynix" rating doesn't fire t2_insider_sales (which requires actual insider transactions), but in a market of 26-up / 0-down EPS revisions it IS the first sell-side dissent — a psychological inflection the framework cares about deeply. Surface these as "directional confirmation of [signal name]" or "first dissent from the [signal name] consensus".
+  (iii) Notable moves — name specific tickers with 1D % moves WHEN the move carries thesis information. A memory pure-play DIVERGING from the semi tape is signal — lead with it. A broad co-move, where the memory names rise/fall in step with NVDA/AVGO/TSM/the SOX, is NOT a stock-specific event: report it as market-wide and route it per DRIVERS & ATTRIBUTION below; do NOT pin it on any single name's micro story.
+  (iv) Macro — a macro development (rates, inflation, the Fed, oil, major geopolitics, China export policy, AI-capex commitments) earns a mention ONLY when it has a credible transmission channel INTO one of our indicators. When it does, NAME the channel, not just the headline — e.g. easing inflation / a pulled-forward rate-cut path re-rates tech and lifts the memory names, which bears on relative-strength-vs-SOX (t3) and the forward multiple (t2_pe_compressed), while cheaper capital supports hyperscaler capex (t2). A market-wide move with NO read-through to an indicator is noted as macro and dropped — it is backdrop, not a framework development.
+
+DRIVERS & ATTRIBUTION (v3.41.5):
+  - SUMMARIZE; do not fabricate a driver. For a routine move, or a broad/market-wide move, state what happened and (where relevant) route it to the indicator it touches — do NOT invent a stock-specific cause.
+  - Attribute a specific cause to a specific move ONLY when there is fresh, same-day news in today's feed that supports it. No fresh supporting item → state the move without a "because".
+  - Never explain a broad, market-wide move with a single company's micro story. When the whole basket moves together, the driver is the market or a macro factor, not the name — trace it to the indicator it touches (iv) rather than attaching it to whichever company is convenient.
+
+NO STALE CARRYOVER (v3.41.5):
+  - The brief covers TODAY. Do NOT re-narrate a prior-day story unless there is fresh, same-day news about it in today's feed. A story that resolved days or weeks ago is not today's news and must not lead — or even appear in — the summary absent a fresh development.
+  - Yesterday's framing is not evidence. Anchor on today's news and the computed verdicts, never on how the thesis happened to be described in a previous brief.
 
 FORBIDDEN VOCABULARY (v3.4.1):
 The word "Reversed" is BANNED in all output fields — `executive_brief`, `new_triggers_today`, `change_vs_prior`, `where_we_stand`, `latest_developments`. Use "Not fired" for reversals. If an indicator transitioned from "Fired" to "Not fired", phrase it as: "t2_X reverted to 'Not fired' after [reason]" — NEVER "Status changed from 'Fired' to 'Reversed'". This is a hard rule — any output containing "Reversed" will be post-processed to "Not fired" at render time, but writing it correctly the first time avoids ambiguity.
@@ -1634,7 +1678,7 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
     "new_triggers_today": [
       {{"tier": 2, "indicator_id": "...", "indicator_name": "...", "description": "..."}}
     ],
-    "executive_brief": "5-8 sentence consolidated paragraph per EXECUTIVE BRIEF SPECIFICATION above. Cover all 4 themes (signal changes, big news with directional-signal prioritization, big movers, macro). Use anchor links of the form [→§N] for cross-references.",
+    "executive_brief": "5-8 sentence consolidated paragraph per EXECUTIVE BRIEF SPECIFICATION above. Lead with signal/indicator developments; summarize what's happening on the thesis (do NOT fabricate a driver for routine or broad/market-wide moves); bring in macro only when it has a channel into an indicator; no stale carryover. Use anchor links of the form [→§N] for cross-references.",
 {json_example_case_block}
     "delta_from_prior_text": "Legacy field (v3.39.7.5: no longer rendered, but keep emitting for back-compat / observability). Short description of probability/peak-window shifts vs prior brief."
   }},
