@@ -84,3 +84,50 @@ class TestEntryPublished:
         newer = _entry_published({"published": "Wed, 21 May 2026 08:00:00 +0900"})
         assert older is not None and newer is not None
         assert newer > older  # resolution (newer) now sorts to the top
+
+
+class TestDateutilFallback:
+    """v3.41.4 — dateutil catches exotic formats that feedparser + the stricter
+    stdlib parsers (email.utils RFC822, datetime.fromisoformat) all reject."""
+
+    def test_slash_separated(self):
+        assert _parse_date_string("2026/05/20 09:30") == datetime(2026, 5, 20, 9, 30, tzinfo=timezone.utc)
+
+    def test_month_name_with_ampm(self):
+        assert _parse_date_string("May 20, 2026 9:30 AM") == datetime(2026, 5, 20, 9, 30, tzinfo=timezone.utc)
+
+    def test_day_month_year_words(self):
+        assert _parse_date_string("20 May 2026") == datetime(2026, 5, 20, 0, 0, tzinfo=timezone.utc)
+
+    def test_dot_separated(self):
+        assert _parse_date_string("2026.05.20") == datetime(2026, 5, 20, 0, 0, tzinfo=timezone.utc)
+
+    def test_pure_prose_is_rejected_not_fuzzy_matched(self):
+        # fuzzy=False — must not extract a date out of arbitrary prose
+        assert _parse_date_string("definitely not a date ###") is None
+
+
+class TestUnparseableObservability:
+    """v3.41.4 — when a date string is present but nothing can parse it, log a
+    WARNING surfacing the exact format; stay silent for genuinely dateless items."""
+
+    def test_unparseable_date_logs_warning(self, caplog):
+        import logging
+        with caplog.at_level(logging.WARNING):
+            result = _entry_published({"published": "definitely not a date ###", "title": "Samsung labor"})
+        assert result is None
+        assert any("UNPARSEABLE date" in r.message for r in caplog.records)
+
+    def test_no_date_field_stays_silent(self, caplog):
+        import logging
+        with caplog.at_level(logging.WARNING):
+            result = _entry_published({"title": "no date field at all"})
+        assert result is None
+        assert not any("UNPARSEABLE" in r.message for r in caplog.records)
+
+    def test_parseable_date_no_warning(self, caplog):
+        import logging
+        with caplog.at_level(logging.WARNING):
+            result = _entry_published({"published": "Tue, 20 May 2026 09:30:00 +0900"})
+        assert result is not None
+        assert not any("UNPARSEABLE" in r.message for r in caplog.records)

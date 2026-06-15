@@ -34,6 +34,14 @@ import feedparser
 import requests
 from bs4 import BeautifulSoup
 
+# v3.41.4 — guarded import: dateutil is the lenient final fallback for feed dates
+# (see _parse_date_string). Guarded so the module still loads if the dependency
+# is somehow absent — in that case we simply fall back to RFC822 + ISO8601 only.
+try:
+    from dateutil import parser as _dateutil_parser
+except ImportError:  # pragma: no cover
+    _dateutil_parser = None
+
 from src.diagnostics import DiagnosticsCollector
 
 logger = logging.getLogger(__name__)
@@ -1226,11 +1234,13 @@ def _safe_parse_rss_feed(
 
 
 def _parse_date_string(raw: str) -> Optional[datetime]:
-    """Parse an RSS/Atom date string to a UTC datetime using stdlib only.
+    """Parse an RSS/Atom date string to a UTC datetime.
 
-    Tries RFC822/RFC2822 (the standard RSS <pubDate>, via email.utils) then
-    ISO8601/Atom (datetime.fromisoformat). Naive results are assumed UTC. No
-    third-party dependency (dateutil is not in requirements)."""
+    Tries, in order: RFC822/RFC2822 (the standard RSS <pubDate>, via email.utils),
+    ISO8601/Atom (datetime.fromisoformat), then python-dateutil's lenient parser
+    as a final fallback for exotic formats that the stricter stdlib parsers (and
+    feedparser itself) reject. Naive results are assumed UTC. Returns None only
+    when every parser fails."""
     if not raw or not isinstance(raw, str):
         return None
     raw = raw.strip()
@@ -1250,6 +1260,17 @@ def _parse_date_string(raw: str) -> Optional[datetime]:
         return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     except (TypeError, ValueError):
         pass
+    # python-dateutil — lenient catch-all for whatever the feed actually emits.
+    # fuzzy=False so it won't extract a date out of arbitrary prose (must be a
+    # date string). default fills only missing sub-fields (irrelevant for a
+    # full pubDate).
+    if _dateutil_parser is not None:
+        try:
+            dt = _dateutil_parser.parse(raw)
+            if dt is not None:
+                return dt.astimezone(timezone.utc) if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except (ValueError, OverflowError, TypeError):
+            pass
     return None
 
 
@@ -1276,11 +1297,25 @@ def _entry_published(entry) -> Optional[datetime]:
                 return datetime(*struct[:6], tzinfo=timezone.utc)
             except (TypeError, ValueError):
                 continue
-    # 2. raw date-string fallback (RFC822 pubDate, then ISO8601 / Atom)
+    # 2. raw date-string fallback (RFC822 → ISO8601 → dateutil, all in _parse_date_string)
+    unparsed = None
     for key in ("published", "updated", "created", "pubDate", "date", "dc_date"):
-        dt = _parse_date_string(entry.get(key))
+        raw = entry.get(key)
+        dt = _parse_date_string(raw)
         if dt is not None:
             return dt
+        if unparsed is None and isinstance(raw, str) and raw.strip():
+            unparsed = (key, raw.strip())
+    # 3. v3.41.4 observability: a date string WAS present but nothing could parse
+    #    it (even dateutil). Surface the exact format so a parser can be added —
+    #    this is the signal that confirms whether a given source is still landing
+    #    UNDATED. Genuinely dateless entries (no date field at all) stay silent.
+    if unparsed is not None:
+        logger.warning(
+            f"_entry_published: UNPARSEABLE date {unparsed[0]}={unparsed[1]!r} "
+            f"(title: {str(entry.get('title') or '?')[:80]}) — item lands undated; "
+            f"add a date format if this recurs"
+        )
     return None
 
 

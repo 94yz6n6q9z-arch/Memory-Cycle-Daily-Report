@@ -55,5 +55,13 @@ json-repair>=0.39.0,<1.0
 # v3.4.4 (their first ship). One-line fix.
 PyYAML>=6.0
 
+# v3.41.4 — python-dateutil: final fallback in _entry_published (src/data/news.py)
+# for feed date formats that neither feedparser nor stdlib (email.utils RFC822 /
+# datetime.fromisoformat ISO8601) can parse. Korea Herald (Samsung labor news)
+# items were arriving UNDATED → sorted to the bottom → starved by the triage cap,
+# so the Samsung-strike-RESOLUTION story never reached Sonnet. dateutil's parser
+# is far more lenient and catches whatever exotic format the feed emits.
+python-dateutil>=2.8
+
 # Optional: for FMP analyst estimates augmentation
 # (already covered by requests)
