@@ -1,35 +1,42 @@
 {
-  "saved_at_iso": "2026-06-17T11:44:00.902813+00:00",
+  "saved_at_iso": "2026-06-18T11:08:52.385360+00:00",
   "executive_summary": {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
-    "tier_status_summary": "T1: 4/6 fired | T2: 6/7 fired (1 partial) | T3: 0/5 fired | T4: 0/4 fired",
-    "new_triggers_today": [],
+    "tier_status_summary": "T1: 4/6 fired | T2: 5/7 fired | T3: 0/5 fired | T4: 0/4 fired",
+    "new_triggers_today": [
+      {
+        "tier": 2,
+        "indicator_id": "t2_pe_compressed",
+        "indicator_name": "Forward P/E compressed to 3-5x",
+        "description": "Status changed from 'Partially fired' to 'Not fired'."
+      }
+    ],
     "base_case": {
-      "probability_pct": 48.0,
+      "probability_pct": 50.0,
       "peak_months_away": 5.0,
       "peak_window_start": "September 2026",
       "peak_window_end": "November 2026",
-      "return_to_peak_pct": 14.0
+      "return_to_peak_pct": 16.0
     },
     "bull_case": {
-      "probability_pct": 17.0,
+      "probability_pct": 19.0,
       "peak_months_away": 12.0,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q2 2027",
       "return_to_peak_pct": 44.0
     },
     "bear_case": {
-      "probability_pct": 35.0,
+      "probability_pct": 31.0,
       "peak_months_away": 0.0,
       "peak_window_start": "June 2026",
       "peak_window_end": "July 2026",
-      "return_to_peak_pct": -40.0
+      "return_to_peak_pct": -38.0
     },
-    "delta_from_prior_text": "No indicator status changes today \u2014 zero tier-1-5 signals fired or unfired. Probability distribution preserved byte-identical to prior brief: base 48% / bull 17% / bear 35%. Bear return_to_peak_pct held at -40%, consistent with 4+ T1 fired band (-35 to -45%, calibrated to historical average drawdown of -43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base case peak window unchanged vs yesterday at September\u2013November 2026.",
+    "delta_from_prior_text": "Indicator distribution shifted vs prior: t2_pe_compressed transitioned from Partially fired \u2192 Not fired (Samsung P/E 6.6x > 6x threshold per Mirae Asset June 16-18). Applied Rule B (Tier 2 unfires): bear -3pp (35\u219231), bull +2pp (17\u219219), base extends peak ~1mo and return_to_peak_pct restores ~2pp (14\u219216). T2 fired count drops from 6 to 5. Bear case magnitude band: 4 T1 + 5 T2 fired = late escalation regime; bear return_to_peak_pct -38% within the -35 to -45% band (calibrated to historical average drawdown: -43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base case peak window unchanged at Sep-Nov 2026.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-5 signals fired or unfired today; the framework's signal distribution is unchanged from yesterday's brief. The dominant thesis development is SK Hynix's confirmed Nasdaq ADR listing targeting July [\u2192\u00a73], with multiple sources corroborating the timeline and a $66B shareholder return program \u2014 the ADR indicator (Partially fired) remains on watch for F-1 roadshow and 424B pricing data that would escalate it [\u2192\u00a74]. Competitor dynamics (Indicator 7, Partially fired) face a fresh challenge: Tom's Hardware reports Chinese memory vendors \u2014 Corsair, HP, Dell \u2014 adopting CXMT and YMTC DDR5 silicon, a directional escalation of the 7A sub-indicator even absent a formal Tier-1 OEM win [\u2192\u00a74]. Separately, AMD's acquisition of MEXT for NAND-as-DRAM technology and the 36Kr report on AMD/Apple flash-memory-to-replace-DRAM architectures are early-stage directional signals bearing on the HBM captive-ratio monitor [\u2192\u00a73]. On the sell side, Seeking Alpha published a Micron rating downgrade on cycle-timing grounds \u2014 the first explicit sell-side dissent in a market of 26-up/0-down SK Hynix EPS revisions, a directional confirmation of t2_eps_revisions to watch [\u2192\u00a73]. Daiwa raised SK Hynix to 3.6M KRW and Nomura issued a supercycle call with a 4M KRW target, while today's tape saw SK Hynix +5.84% diverge sharply from broad semi weakness (INTC -8.45%, AMD -7.30%, MU -6.18%) \u2014 memory pure-plays outperforming the SOX basket, keeping t3_relative_strength firmly Not fired [\u2192\u00a71]."
+    "executive_brief": "1 signal status change today (Forward P/E compressed to 3-5x). one Tier 2 indicator changed status: t2_pe_compressed reverted to 'Not fired' as Samsung's forward P/E rose to 6.6x per three consecutive Mirae Asset reports (June 16-18), crossing the 6x reversal threshold and reducing the fired T2 count from 6 to 5 [\u2192\u00a73]. The dominant development on the thesis is SK Hynix's +6.51% surge to a record high [\u2192\u00a71], driven by the company's official shipment of 12-layer HBM4E samples to NVIDIA \u2014 a product-cycle confirmation that reinforces the HBM demand chain and supports the still-unfired t2_eps_revisions signal, where 38 analysts carry zero downward revisions [\u2192\u00a73]. Samsung's planned strike was averted via a tentative management-union wage deal (latest timestamp June 17 14:29 UTC supersedes the earlier strike-launch report), removing the near-term HBM/DRAM supply-tightening risk that had been flagged [\u2192\u00a75]. Five broker actions \u2014 Daiwa raising SK Hynix to KRW 3.6M, Goldman Sachs doubling Micron's target to $1,500, Hana lifting both names \u2014 extend the unbroken 26-up/0-down revision streak, directionally confirming t2_eps_revisions remains unfired [\u2192\u00a74]. DDR5 spot ticked up +1.32% to $46.00, holding at the rolling 12-week peak and keeping t1_spot_decline at 'Not fired' [\u2192\u00a73]. The US blacklist delay on CXMT eases near-term competitive pressure on the commodity DDR5 node but does not alter the Competitor dynamics overlay's 'Partially fired' status [\u2192\u00a74]. Peak window remains Q3-Q4 2026 base case; the t2_pe_compressed reversion is a mild bullish recalibration [\u2192\u00a72]."
   },
   "indicator_assessments": [
     {
@@ -153,7 +160,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot at $45.32 (+0.00% vs rolling 12w peak $45.32 set 2026-06-21). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 78d old). Synthetic adjusted: 59.4% central (range 57-62%). Adjustments: tone -5.4pp (5 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot at $45.54 (+0.00% vs rolling 12w peak $45.54 set 2026-06-21). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 79d old). Synthetic adjusted: 59.4% central (range 57-62%). Adjustments: tone -5.4pp (5 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "DDR5 16Gb spot $44.833 (+0.37%), DDR4 $67.00 (+1.13%) per [TrendForce](https://www.trendforce.com/price/dram/dram_spot) \u2014 data 57.6h stale; both at or near recent peaks. Matrix cell R1\u00d7C1 preserved.",
       "relevant_links": [
         {
@@ -315,24 +322,24 @@
       "name": "Forward P/E compressed to 3-5x",
       "description": "Forward P/E compresses on PEAK earnings denominator \u2014 bearish, not bullish. Already fired for SK Hynix and Samsung.",
       "what_to_look_for": "SK Hynix forward FY27 P/E below 5x (currently 3.7x \u2014 fired). Micron below 8x (currently 7-12x). Samsung below 6x (currently 5.3x \u2014 fired).",
-      "current_status": "Partially fired",
-      "where_we_stand": "Computed verdict: Partially fired. SK Hynix Fwd P/E: 5.24x at 2,150,000 KRW (+2.33%) \u2014 above 5x threshold (SK Hynix sub-indicator not fired). Samsung Fwd P/E: 5.61x at 322,500 KRW (+7.86%) \u2014 below 6x threshold (Samsung sub-indicator fired). Micron Fwd P/E: 8.75x at $981.61 \u2014 above 8x threshold. Full fire requires\u2026",
-      "latest_developments": "SK Hynix Fwd P/E 5.24x (+2.33%); Samsung Fwd P/E 5.61x (+7.86%); Micron Fwd P/E 8.75x per [Yahoo Finance](https://finance.yahoo.com/quote/000660.KS). Goldman Sachs Micron PT $900 per [Finanztrends](https://news.google.com/rss/articles/CBMijgFBVV95cUxQa2wweGlVNzBqRTQ2RFV0VEJOMURtS2d0ZndoblVWdHFYcHZhaVZ2REMwaTI0Y0IwYlE1Tk9PSHU4emxwUnVNUDBURmhHS0JEOWNqbk9lb1kyNVZmLWdCNUl5NDNzNHFORUlYRkg4Z2M0Q0tMbDNabzRsVjlCcW91SjUyb0lUYVpsSXJOVFlR?oc=5).",
+      "current_status": "Not fired",
+      "where_we_stand": "Samsung forward P/E: 6.6x (Mirae Asset, June 16-18, 2026) \u2014 above the 6x reversal threshold, triggering transition from Partially fired to Not fired. SK Hynix forward P/E: 6.49x (Yahoo Finance FY+1 consensus, 38 analysts). Micron forward P/E: 9.10x \u2014 above the 8x threshold. All three names now trade above their\u2026",
+      "latest_developments": "Mirae Asset (June 16-18) maintained Samsung target KRW 550,000 with 'full-stack advantage' framing; Samsung P/E 6.6x now above 6x threshold. [Mirae Asset](https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340485)",
       "relevant_links": [
         {
-          "title": "SK Hynix \u2014 Yahoo Finance",
-          "url": "https://finance.yahoo.com/quote/000660.KS"
+          "title": "Mirae Asset \u2014 Samsung Electronics full-stack advantage (June 18)",
+          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340485"
         },
         {
-          "title": "Samsung \u2014 Yahoo Finance",
-          "url": "https://finance.yahoo.com/quote/005930.KS"
+          "title": "SK Hynix analyst target KRW 1.85M",
+          "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1WdkY2WTRYSlRidDRnS3otUHEtNkdIT1l1WTF2V2xTdkl3cDlOVjNYQTJzYkJqaFFOeFJrakpzbXVSeTVGNXA3dEFJX3V6bmpGdTlWZHpZWWxUbTNyRzNQRE5oRWFvQjVHOHc5YnpaUzUyNDdl"
         },
         {
-          "title": "Micron \u2014 Yahoo Finance",
-          "url": "https://finance.yahoo.com/quote/MU"
+          "title": "Daiwa raises SK Hynix target to KRW 3.6M, Buy",
+          "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE1lVTZTN0RmR3lrY21aaDZxU0VHU2haSVFSanV2VmJnLW03VEtucVNlVkVUdnlLQVRSeDE1ZDZ5bU9XdHp4N3lRRURsb2JMVzV1endCalJfUnc1eGgzZ25ialQzMNIBY0FVX3lxTE1lVTZTN0RmR3lrY21aaDZxU0VHU2haSVFSanV2VmJnLW03VEtucVNlVkVUdnlLQVRSeDE1ZDZ5bU9XdHp4N3lRRURsb2JMVzV1endCalJfUnc1eGgzZ25ialQzMA"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status transitioned from Partially fired \u2192 Not fired. Samsung forward P/E rose to 6.6x (Mirae Asset, June 16-18), crossing the 6x reversal threshold. Reversal condition met: 'Any of the three names trades above its threshold: SK Hynix >5x OR Samsung\u2026"
     },
     {
       "id": "t2_spot_contract_spread",
