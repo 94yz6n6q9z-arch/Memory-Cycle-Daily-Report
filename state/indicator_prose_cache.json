@@ -1,280 +1,245 @@
 {
   "cards": {
     "t1_competitor_dynamics": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Partially fired",
-      "where_we_stand": "Indicator 7 (Competitor dynamics) remains Partially fired \u2014 watch-only overlay, NOT counted in T1 6-signal firing total. Sub-indicator 7B (Samsung HBM4E) Partially fired since 2026-05-22 (~10% EPS impact; Samsung ~28\u201330% Nvidia HBM4/4E share). Google Icefish TPU sourcing from Samsung (June 14) is a 7B/7C escalation watch: if Samsung secures primary\u2026",
-      "latest_developments": "Google engages Samsung for Icefish TPU per [Let's Data Science](https://news.google.com/rss/articles/CBMilAFBVV95cUxNSm1LSmx4aWFQRE16WjFib3JEMERWREVUR1JSRHl0MmV4eGtZcWpJbk5tNnlkMFgySnd4VERvdXdCTXQtbE15OVQzeDBsT0c4MHFNLU9hLU1VaWdOM0F1bzdjT0R0R0FESTVEYTJTWlZVajc1QTZEZ0pqMmVTTkhubG1aTThHM1pYNkZPVzltb0hRRG5f?oc=5) \u2014 7B/7C escalation watch; no EPS-impact threshold crossed. SK Hynix + TSMC AI memory per [TradingKey](https://news.google.com/rss/articles/CBMipAFBVV95cUxPSmhLRHBJWmVfMVpKbTR4ckxzejBiSWk2TTdjblNrYzdMY3Q0dHlBU3I3U3JEdEF3MWhTa09xOHR4bURpNHVTOW15LXhvNG05YVktNmNCZjlxSlBubm1JRm9oYk5FWUhVcjBUWnZENzl0TjBHc1BOZ0JSNjFseHlFSTZlOE1BZFBFY0VZRnhFbTZyRFc1MkRmM3Zob0kzdVhHTnFPRg?oc=5) \u2014 partial competitive offset.",
+      "where_we_stand": "Sub-indicator 7B (Samsung HBM4 share at Nvidia) remains Partially fired since 2026-05-22; cumulative EPS impact ~11.5%. Today's news adds two incremental data points: Samsung's Global Strategy Meeting confirmed pursuit of long-term HBM supply accords with Nvidia and Google (Devdiscourse, theinvestor.co.kr), and CXMT ramp coverage (Maeil Kyungje, 2026-06-21) describes aggressive DDR5\u2026",
+      "latest_developments": "Samsung confirmed HBM long-term supply accords with Nvidia + Google at Global Strategy Meeting. [CXMT ramp](https://news.google.com/rss/articles/CBMiU0FVX3lxTE9WeDJNVFRXQzUySUN0ZGNlRDY1UVRuaVVyalNwbTZ1T00xWnRMZ19aMm13VTBRTFlGM1ZHRVVLU0huVHc2UEswUXNrSk1zWnZlVGhZ) adds commodity DDR5 supply pressure; no OEM Tier-1 win reported.",
       "relevant_links": [
         {
-          "title": "Google-Samsung Icefish TPU \u2014 Let's Data Science",
-          "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxNSm1LSmx4aWFQRE16WjFib3JEMERWREVUR1JSRHl0MmV4eGtZcWpJbk5tNnlkMFgySnd4VERvdXdCTXQtbE15OVQzeDBsT0c4MHFNLU9hLU1VaWdOM0F1bzdjT0R0R0FESTVEYTJTWlZVajc1QTZEZ0pqMmVTTkhubG1aTThHM1pYNkZPVzltb0hRRG5f?oc=5"
+          "title": "Samsung HBM strategy at global meeting",
+          "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1ZLWgyZ2dSWDAtc2xNZzlzVXNsRGJJTTFCekV2MEZjbzVlWEJoV1piX1dwNUFwNmozX2ZvWVNYTnNoS0VtZ1dwbm41RUVOa2lvYU1XSUNvMWNCZw"
         },
         {
-          "title": "SK Hynix + TSMC customized AI memory \u2014 TradingKey",
-          "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPSmhLRHBJWmVfMVpKbTR4ckxzejBiSWk2TTdjblNrYzdMY3Q0dHlBU3I3U3JEdEF3MWhTa09xOHR4bURpNHVTOW15LXhvNG05YVktNmNCZjlxSlBubm1JRm9oYk5FWUhVcjBUWnZENzl0TjBHc1BOZ0JSNjFseHlFSTZlOE1BZFBFY0VZRnhFbTZyRFc1MkRmM3Zob0kzdVhHTnFPRg?oc=5"
+          "title": "CXMT ramps output, catches up to Samsung and SK Hynix",
+          "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE9WeDJNVFRXQzUySUN0ZGNlRDY1UVRuaVVyalNwbTZ1T00xWnRMZ19aMm13VTBRTFlGM1ZHRVVLU0huVHc2UEswUXNrSk1zWnZlVGhZ"
         },
         {
-          "title": "TrendForce \u2014 HBM4 strategies diverge",
-          "url": "https://www.trendforce.com/news/2026/04/15/news-hbm4-strategies-diverge-samsung-reportedly-chases-80-1c-dram-yield-while-sk-hynix-trims-shipments-by-30/"
+          "title": "Samsung targets Nvidia and Google with new long-term HBM deals",
+          "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQM0ZwV3B0ZnpBcVl0dUJUUTZUQzduc1dEakdEV1lWRXBzQmZaMFU0bDBEOTlCMk5DSy1KZWpzd0tsTUlsZnRlcXFYaEVfUTZlLXlMXzd2WXJCdkpSRVkzb3R3YjgzOW40aF9SR1oxSlE0bXI1X2JvTGxWNUNrdW9PcmlQX0ZubW9VTzM0"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "status": "Partially fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t1_demand_destruction": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Fired",
-      "where_we_stand": "IDC PC shipment forecast \u20132.4% to \u201311.3% for 2026 (April 15, 2026) and Counterpoint smartphone \u20132% \u2014 quarterly persistence. No new IDC/Counterpoint/Gartner revision in today's feed. Samsung + SK Hynix Q2 operating profit projected >150 trillion won reflects AI server demand offsetting PC/smartphone weakness \u2014 does not reverse the IDC/Counterpoint\u2026",
+      "where_we_stand": "Fired since April 2026. IDC PC shipment forecast -2.4% to -11.3% for 2026 (April 15 print) crosses the -5% trigger. Counterpoint smartphone forecast -2% (April 2026) remains below 0%. No IDC, Counterpoint, or Gartner upgrade published today. Reversal requires an explicit upward revision to above-threshold levels \u2014 absent from today's\u2026",
       "latest_developments": "",
-      "relevant_links": [
-        {
-          "title": "Mirae Asset \u2014 Samsung Electronics June 12 2026",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340331"
-        }
-      ],
+      "relevant_links": [],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Fired",
-      "where_we_stand": "Google TurboQuant (March 24, 2026): 6x KV-cache compression, 8x speedup on H100 \u2014 permanent persistence. No new independent algorithmic breakthrough with quantified \u22652x memory-per-token reduction in today's feed. Anthropic's $65B funding round and interest in Microsoft Maia custom silicon are compute-architecture watches but do not meet the lab-blog/arXiv sourcing threshold.",
-      "latest_developments": "Anthropic hits $965B valuation with $65B funding per [MSN](https://news.google.com/rss/articles/CBMi8AFBVV95cUxPVWtZU3BmNEZ2UTFmQ2drcGtFWE9aN19sdXFsN19ETXhOOVF2MVcyUHpsTDRvd1ZnT2JHeXZtZUpId2pvM1FQbWllMlhMM0VDQmYtVkdnZVhndDlGbHZ3VWZrZkpsQXlHajJ4YnZPd0RidXJZcEZvM0NPNTlmMGtrVUlHUEYzRExpd1JNdXpLVjJsMzJqWVFEaVBpT3NpRkdUb3JLeHFPSWVDVUFLUXhIaE11eEhxTkQ2d0RNVHpBU1FrMDZkRkRRT1NRNExGU2F3SGU5bjRYbXBTQWkyZ1hvRGE3X0VFd3pCVjNoZHpTUUg?oc=5) \u2014 compute demand signal; does not alter Fired status from TurboQuant.",
+      "where_we_stand": "Fired permanently since March 24, 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup on H100). Published algorithmic technique cannot be unannounced. No new efficiency breakthrough in today's feed. SanDisk HBF/HBM stacking patent (TrendForce, 2026-06-22) is architectural context, not a memory-per-token efficiency event meeting the >2x trigger.",
+      "latest_developments": "[SanDisk HBF+HBM stacking patent](https://news.google.com/rss/articles/CBMi6wFBVV95cUxQWGp6cmNNb1JnS0hVSU1VLTJSWXE5UHpNZk5qazEwWUgwNkxlWnI0NWtIMnlVTUNSSXphUmpJNFJ5MnF0dlZjSU93NnFjXzhodkRpbE5QdTZCMTl4Nk40UWNYMjFud0dod2ZObnh0dk9QMGZGajR5bTQxVTFaaUJYTU9rYTNBUTlMa2o0SmtXclVUMmNJLUlWSWFwbGRrN05jay16cXc3TmpCSk9vR3A5Rm5fQ2xXVHNocFk5a0JvT2Zvbm9hcUdaak9xcDlmRjh4QmY3Nk5HLTJXSVNrVnYtUkhZVW5ac1NtcVpz) is architectural context only; does not meet the >2x memory-per-token trigger.",
       "relevant_links": [
         {
-          "title": "Anthropic $65B funding \u2014 MSN",
-          "url": "https://news.google.com/rss/articles/CBMi8AFBVV95cUxPVWtZU3BmNEZ2UTFmQ2drcGtFWE9aN19sdXFsN19ETXhOOVF2MVcyUHpsTDRvd1ZnT2JHeXZtZUpId2pvM1FQbWllMlhMM0VDQmYtVkdnZVhndDlGbHZ3VWZrZkpsQXlHajJ4YnZPd0RidXJZcEZvM0NPNTlmMGtrVUlHUEYzRExpd1JNdXpLVjJsMzJqWVFEaVBpT3NpRkdUb3JLeHFPSWVDVUFLUXhIaE11eEhxTkQ2d0RNVHpBU1FrMDZkRkRRT1NRNExGU2F3SGU5bjRYbXBTQWkyZ1hvRGE3X0VFd3pCVjNoZHpTUUg?oc=5"
-        },
-        {
-          "title": "Anthropic + Microsoft Maia \u2014 CoinCentral",
-          "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPRm9EM09vZE5LNmNGaDFqZDBJbUdRX0g1ejd1TXhySThrWXpnSW9KWmsxTkhfM2tuSFhVaDRwY0NRajFYNFdVT3lOaVpDQ2oyVm9ncGdFVERnRTU2MjEyanBfLTloa1pTOUhUX1U3RUQyOFFSUkpFNUFSUnU4TVdzZHhLNTVqZVJEZHdWdS1PeF8xWjhFbnJwdnZSY2xMZw?oc=5"
+          "title": "SanDisk HBF + HBM stacking patent (TrendForce)",
+          "url": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxQWGp6cmNNb1JnS0hVSU1VLTJSWXE5UHpNZk5qazEwWUgwNkxlWnI0NWtIMnlVTUNSSXphUmpJNFJ5MnF0dlZjSU93NnFjXzhodkRpbE5QdTZCMTl4Nk40UWNYMjFud0dod2ZObnh0dk9QMGZGajR5bTQxVTFaaUJYTU9rYTNBUTlMa2o0SmtXclVUMmNJLUlWSWFwbGRrN05jay16cXc3TmpCSk9vR3A5Rm5fQ2xXVHNocFk5a0JvT2Zvbm9hcUdaak9xcDlmRjh4QmY3Nk5HLTJXSVNrVnYtUkhZVW5ac1NtcVpz"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t1_lead_times": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
-      "where_we_stand": "LPDDR5X lead times 26\u201339 weeks (evidence store May 9, 2026) \u2014 no contraction below 26-week trigger. HBM3E delivery slots committed through 2026; SK Hynix 'sold out through next year.' No lead-time contraction evidence in today's feed. Anti-trigger: NVIDIA Vera CPU memory config cut highlights persistent LPDRAM supply constraints.",
-      "latest_developments": "",
+      "where_we_stand": "Not fired. LPDDR5X lead times remain 26\u201339 weeks (above the <26-week trigger). HBM3E delivery slots remain sold out through 2026 per TrendForce and multiple sell-side sources. No earnings call or broker PDF today reports lead-time contraction below trigger. Multiple sources confirm HBM sold-out status, which is the opposite of lead-time\u2026",
+      "latest_developments": "[Micron HBM sold out through 2026](https://news.google.com/rss/articles/CBMiiAJBVV95cUxPTmtmTW4xSmZhZ0xhdkNlTWtVSm1laEp1ckUyT084X0hHY0M2MEJkanFUQWZUTW5jOWtCVGVYeXlEaFk0MkZVSUYta1pGTlB0VjZJY0JpSTZ0bnlFOUpUTjZhWWdtbzltTnB6dkx3R1FZWGVpenpYZkh1Rnc1VlpFM0FBMDFnV3pobGZGRGFYREM2Uk9rZjFyNmF5NHROUW1SOVpDT2NuRF82cHJYLWp1aTB5QkdoRmtKb19kSlU1dmJ6bjZycGlNWVQ4cTkwWnVZWm1qTXZpa0NLVWtacWxVYnRNdDlOdWVpWVQ4SUpoemxhNkFZeXdvbjZtZkhoUFdLUmNBVkZVN3Y) confirms no slot availability \u2014 lead times remain extended.",
       "relevant_links": [
         {
-          "title": "TrendForce \u2014 NVIDIA Vera LPDRAM constraints",
-          "url": "https://www.trendforce.com/WeeklyResearch/Post/2/12731.html"
+          "title": "Micron HBM sold out through 2026, datacenter revenue +150%",
+          "url": "https://news.google.com/rss/articles/CBMiiAJBVV95cUxPTmtmTW4xSmZhZ0xhdkNlTWtVSm1laEp1ckUyT084X0hHY0M2MEJkanFUQWZUTW5jOWtCVGVYeXlEaFk0MkZVSUYta1pGTlB0VjZJY0JpSTZ0bnlFOUpUTjZhWWdtbzltTnB6dkx3R1FZWGVpenpYZkh1Rnc1VlpFM0FBMDFnV3pobGZGRGFYREM2Uk9rZjFyNmF5NHROUW1SOVpDT2NuRF82cHJYLWp1aTB5QkdoRmtKb19kSlU1dmJ6bjZycGlNWVQ4cTkwWnVZWm1qTXZpa0NLVWtacWxVYnRNdDlOdWVpWVQ4SUpoemxhNkFZeXdvbjZtZkhoUFdLUmNBVkZVN3Y"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t1_oem_inventory": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Fired",
-      "where_we_stand": "TrendForce Q3 2025: supplier ~2\u20133 weeks, OEM ~10 weeks (7-week gap) \u2014 quarterly persistence. Reversal condition (buyer inventory <5w OR supplier >5w) not met. NVIDIA Vera CPU memory config cut reinforces lean supplier inventory. No new buyer-side inventory data in today's feed. Next re-check: June 30, 2026 (Q2 earnings).",
+      "where_we_stand": "Fired since Q3 2025 TrendForce print: supplier inventory ~2\u20133 weeks, OEM/buyer inventory ~10 weeks (7-week gap), meeting the stitched trigger (both sides confirmed). Reversal requires buyer inventory falling below 5 weeks OR supplier inventory rising above 5 weeks. No TrendForce update in today's feed contradicts the recorded state. Quarterly persistence\u2026",
       "latest_developments": "",
-      "relevant_links": [
-        {
-          "title": "TrendForce \u2014 NVIDIA Vera LPDRAM constraints",
-          "url": "https://www.trendforce.com/WeeklyResearch/Post/2/12731.html"
-        }
-      ],
+      "relevant_links": [],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t1_price_cuts_no_demand": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Fired",
-      "where_we_stand": "TrendForce April 28, 2026: 'DDR4 price cuts failed to revive purchasing activity' \u2014 quarterly persistence, no reversal. DDR5 16Gb spot $44.833 (+0.37%), new 12-week peak \u2014 DDR5 anti-trigger intact. Mirae Asset (June 12): 'Memory prices rising more sharply than expected.' Reversal requires explicit TrendForce/DigiTimes statement that price cuts ARE reviving\u2026",
-      "latest_developments": "",
+      "where_we_stand": "Fired since TrendForce April 28, 2026: 'DDR4 price cuts failed to revive purchasing activity.' Reversal requires explicit evidence that price cuts ARE reviving demand. Today's DDR5 spot print (+0.36%) and DDR4 spot (+0.90%) show modest upward movement \u2014 not demand-destruction language. However, no explicit reversal statement from TrendForce or DigiTimes\u2026",
+      "latest_developments": "[DDR5 spot +0.36%, DDR4 +0.90%](https://www.trendforce.com/price/dram/dram_spot) \u2014 modest upward drift, not a reversal of demand-destruction language on DDR5.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot",
+          "title": "TrendForce DRAM Spot Price 2026-06-22",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t1_spot_decline": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 \u00d7 Col 1). DDR5 16Gb spot $44.833 (+0.37%), at or near rolling 12-week peak set June 14; 0% drawdown from peak. Contract anchor: Q2 2026 +58\u201363% QoQ (TrendForce March 31, 75d old). Synthetic adjusted: ~58.9% central (range 56\u201361%). Adjustments: tone \u20136.5pp (4 sources, weight 0.4); spot_lead +5.0pp (1 source, weight 0.2). Row 1 (\u2265+30% contract QoQ) \u00d7 Col 1 (at peak spot) = Not fired. No firing condition met \u2014 hold full position. DDR4 spot $67.00 (+1.13%) also at recent highs. Mirae Asset (June 12)\u2026",
-      "latest_developments": "DDR5 16Gb spot $44.833 (+0.37%), DDR4 $67.00 (+1.13%) per [TrendForce](https://www.trendforce.com/price/dram/dram_spot) \u2014 data 57.6h stale; both at or near recent peaks. Matrix cell R1\u00d7C1 preserved.",
+      "where_we_stand": "Matrix cell: Row 1 \u00d7 Col 1 \u2014 Not fired. DDR5 16Gb 4800/5600 spot at $46.17 (+0.36% today), exactly at the rolling 12-week peak set 2026-06-28 (0% drawdown from peak \u2192 Col 1). Contract anchor: Q2 2026 +58\u201363% QoQ (TrendForce, March 31, 2026). Synthetic contract row estimate places us firmly in R1 (\u2265+30% QoQ). R1\u00d7C1 = Not fired; hold full position. DDR4 spot +0.90% to $69.75 \u2014 legacy node strength does not affect the DDR5 matrix. No spot deterioration; no firing condition approached.",
+      "latest_developments": "[DDR5 spot $46.17 +0.36%](https://www.trendforce.com/price/dram/dram_spot) \u2014 at 12-week peak, no drawdown. Matrix remains R1\u00d7C1 Not fired.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price",
+          "title": "TrendForce DRAM Spot Price 2026-06-22",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
         },
         {
-          "title": "Mirae Asset \u2014 Samsung Electronics June 12 2026",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340331"
-        },
-        {
-          "title": "Mirae Asset \u2014 SK Hynix June 12 2026",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340335"
+          "title": "TrendForce Micron Earnings Preview: HBM, CapEx focus",
+          "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPV29NdEdmVTAzYm9hRGxKX0JUb0owTHpJc2ZEbXBVTVpJRDBvc3VtcVBfNXN4MXBqVGJQbmtGYzZlaFlPT3haZ2twcDhrRGc3VFp4NExlcXpDdDBIbWNXa2lMSi1MR0hvNmFuNFNidzdIelJ1Q1ZMdnZOck1LVWxWOTllSkc4NWFaMHlzdy1PMEN6ajFrYkQ3bkR5eDBoa3p5bGUtM19oclM5TFBlVTVsaWU2eV93T0xFdTlYdnFHYmRuUQ"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t1_us_adr_event": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Partially fired",
-      "where_we_stand": "F-1 filing confirmed (Layer 2 June 6 transition). SK Hynix targets August Nasdaq listing after Nvidia pact; Wall Street banks tightening leverage (June 13). ADR timeline: SEC approval late June \u2192 roadshow July \u2192 pricing August. Estimated raise: $9.6\u201314B (~2.4% dilution, ~17.4M new shares). Peak-coincidence escalation to Fired requires ADR\u2026",
-      "latest_developments": "SK Hynix targets August Nasdaq listing per [AD HOC NEWS](https://news.google.com/rss/articles/CBMiywFBVV95cUxOSmhWaTRrZkdnUjJPUTlxT3N2SEpnaFRTc3JHRnFBM1NQUDkwS1BMRmpjTF8zc0U1SmV2NUtXYUhIcUNRX25WS1BGRXRpSGREVWc0aXVWeHpJQkotNWZpNGdpTVlTUlExR25sUUZ5TmRPRDZPT1hnUWdRb2w0LTBiN1JmR0JxTGZzYy1BSlQ5bHRrdVNkWDVFOEdVYy1MM0lmSFBYV2dqY0ZSbkFRS0hWX3JfdDFxVVpWcXllQVFqTWREVGtrZEF5UlFPMA?oc=5). Four-fab roadmap + Nasdaq landing per [AD HOC NEWS](https://news.google.com/rss/articles/CBMiyAFBVV95cUxPY1NjWFlZam5PT01hekN4cG03WlExaE1Nc2lSSEg5cHAwbGZIc1ZEVTlFaWFzWER4SDFpWE05ZktHcGZjNTA3b1pKdW5aSDdjNDd6QjkyaGtwR2t2alZpcGFsbUp2RDNaMm5JZUFvMWlCNWJ2elpCalhXc1A0VTRfczFBLVk2MXZEUW53QXFNMzhxYTlBWFRyQzkwM1lRdnBmV1p0S3pkc0NMekhFNjhacmV0elRmWEpTQUZlNHZZQmlQQ0xuMnE5ZA?oc=5).",
+      "where_we_stand": "Partially fired since F-1 filing confirmed 2026-06-06. Today's Seoul Economic Daily reports SK Hynix targeting up to $20B via US listing \u2014 materially above the prior $9.6\u201314B estimate \u2014 alongside a stated 40 trillion KRW AI capex commitment. Roadshow demand language, 424B pricing discount, and insider sales >$10M remain unreported.\u2026",
+      "latest_developments": "[SK Hynix ADR raise revised to up to $20B](https://news.google.com/rss/articles/CBMioAFBVV95cUxQN1Zrb2xaWjFiZ24xVTlkNllvVktGUXZMUDFzSm0zcVYzM1BYTng0cmZuU3dxN0hZWDgxQzFKQXZmQ3FFWlRmRkUxcHpyUGdITjNDMmFXNUJpOUxuaVI5MU40MXN6dXZFTEkzU3RlTWNKQ3BpaW50T2txWkNpanRxUGFaYmhnajVHQ2RCQUVxNzc2a3Ztb3dKNGlGODZrOE1O) \u2014 larger than prior estimate; roadshow and pricing data still pending.",
       "relevant_links": [
         {
-          "title": "SK Hynix August Nasdaq listing \u2014 AD HOC NEWS",
-          "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxOSmhWaTRrZkdnUjJPUTlxT3N2SEpnaFRTc3JHRnFBM1NQUDkwS1BMRmpjTF8zc0U1SmV2NUtXYUhIcUNRX25WS1BGRXRpSGREVWc0aXVWeHpJQkotNWZpNGdpTVlTUlExR25sUUZ5TmRPRDZPT1hnUWdRb2w0LTBiN1JmR0JxTGZzYy1BSlQ5bHRrdVNkWDVFOEdVYy1MM0lmSFBYV2dqY0ZSbkFRS0hWX3JfdDFxVVpWcXllQVFqTWREVGtrZEF5UlFPMA?oc=5"
-        },
-        {
-          "title": "Mirae Asset \u2014 SK Hynix June 12 2026",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340335"
-        },
-        {
-          "title": "SK Hynix roadmap + Nasdaq \u2014 AD HOC NEWS",
-          "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxPY1NjWFlZam5PT01hekN4cG03WlExaE1Nc2lSSEg5cHAwbGZIc1ZEVTlFaWFzWER4SDFpWE05ZktHcGZjNTA3b1pKdW5aSDdjNDd6QjkyaGtwR2t2alZpcGFsbUp2RDNaMm5JZUFvMWlCNWJ2elpCalhXc1A0VTRfczFBLVk2MXZEUW53QXFNMzhxYTlBWFRyQzkwM1lRdnBmV1p0S3pkc0NMekhFNjhacmV0elRmWEpTQUZlNHZZQmlQQ0xuMnE5ZA?oc=5"
+          "title": "SK Hynix to raise up to $20B via US listing, 40T KRW AI capex",
+          "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQN1Zrb2xaWjFiZ24xVTlkNllvVktGUXZMUDFzSm0zcVYzM1BYTng0cmZuU3dxN0hZWDgxQzFKQXZmQ3FFWlRmRkUxcHpyUGdITjNDMmFXNUJpOUxuaVI5MU40MXN6dXZFTEkzU3RlTWNKQ3BpaW50T2txWkNpanRxUGFaYmhnajVHQ2RCQUVxNzc2a3Ztb3dKNGlGODZrOE1O"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "status": "Partially fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t2_capex_parabolic": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Fired",
-      "where_we_stand": "Fired since January 15, 2026. Aggregate hyperscaler CapEx/OCF 2q rolling mean: 80.1% \u2014 well above 50% full-fire threshold. Oracle Q4 FY26 (June 12): FY27 net CapEx $70B, GPU utilization 97.5% \u2014 first Q2-cycle print confirming no CapEx cut. Goldman Sachs projects AI infrastructure CapEx $1T+ in 2027 (June 14); Air Liquide EUR 200M committed to SK Hynix HBM expansion. Value-chain inference: Goldman $1T forecast \u2192 NVIDIA/custom-silicon backlog \u2192 HBM order book \u2192 SK Hynix revenue 2\u20134 quarters out. Google-Samsung Icefish TPU sourcing adds a new hyperscaler-to-memory-maker CapEx flow. Next threshold\u2026",
-      "latest_developments": "Goldman Sachs: AI infrastructure CapEx $1T+ in 2027 per [Motley Fool](https://news.google.com/rss/articles/CBMilwFBVV95cUxPSFh6Nk0wNlFXZTlISGd5TTUyaXdHMjRTLVNOSXhDekM5TjBNVmo0NEtuUDI5N1M1QllBcjhHU2VBRDUtSHVTZFIyY1B2aUxkaUJhREdWdDB4T0poY24zN3ppRFkzWEZIcm1Ga2hEaXRTandaZEdiQXZDU0l4azdZR0d6ZnlBcDhoQXcwRGZmWUFfOWh1blZV?oc=5). Air Liquide EUR 200M for SK Hynix HBM expansion per [MSN](https://news.google.com/rss/articles/CBMiugFBVV95cUxOcG1OeWJoNC15SW1SUDlUZnk1XzAzdko2RUd3YkZONU9rU0hlSmxZLWRrMTRldGdXbmpZVHQyamlHaUdmcWxpaGdjaklfZVhHYmVRdmE1ekcyR05UUGNNcnBMenRPVTRNODhLRV9KcEZqSkNnSndIS1k1UHhmWFRIdkVWeEFvWFF4aTRleHZxaTZSVE1PV3VXMExURHFMSWxXRkU2Q09HTzFUY0w3V3MxY29HbzlUN3JWNlE?oc=5).",
+      "where_we_stand": "Fired. Hyperscaler 2026 aggregate CapEx consensus $725B+ (Jan 2026 evidence); Big Three memory CapEx >2x 2024 levels. SK Hynix today confirmed 40 trillion KRW (~$29B) AI capex commitment alongside the $20B ADR raise (Seoul Economic Daily). Micron's 2026 output described as 'spoken for' with Bechtel construction underway. Next threshold: MSFT/GOOGL/META/AMZN Q2 2026 earnings (Jul 22\u201324) \u2014 2027 CapEx guidance above 2026 = bull confirm; flat/down = bear catalyst.",
+      "latest_developments": "[SK Hynix 40T KRW AI capex](https://news.google.com/rss/articles/CBMioAFBVV95cUxQN1Zrb2xaWjFiZ24xVTlkNllvVktGUXZMUDFzSm0zcVYzM1BYTng0cmZuU3dxN0hZWDgxQzFKQXZmQ3FFWlRmRkUxcHpyUGdITjNDMmFXNUJpOUxuaVI5MU40MXN6dXZFTEkzU3RlTWNKQ3BpaW50T2txWkNpanRxUGFaYmhnajVHQ2RCQUVxNzc2a3Ztb3dKNGlGODZrOE1O) + [Micron 2026 output spoken for, Bechtel construction](https://news.google.com/rss/articles/CBMivAFBVV95cUxQaGRpeFBhMzFoTkxObVhGOVJRWmRTZm5WelN3R2VjMVpMeWhGZWt4NjJMaG5ELXJaaFcyZDhNbTdYLTBhMHdFMzdySFQ1WmwwcU5YTzFuT1FaRWtlRXJnUXNjc2k3R0pOVUJFSW9yZnZQQlFPSlRMcmlyY2wxOWNmSzJXVmZGcnVLdUZObTM2a0ctVGtvUDF2eHhqNXdMbURqRUdzREsxYlZNclBPQnZCSVZfeW11OWpQaFpzNQ).",
       "relevant_links": [
         {
-          "title": "Goldman Sachs $1T+ AI CapEx \u2014 Motley Fool",
-          "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxPSFh6Nk0wNlFXZTlISGd5TTUyaXdHMjRTLVNOSXhDekM5TjBNVmo0NEtuUDI5N1M1QllBcjhHU2VBRDUtSHVTZFIyY1B2aUxkaUJhREdWdDB4T0poY24zN3ppRFkzWEZIcm1Ga2hEaXRTandaZEdiQXZDU0l4azdZR0d6ZnlBcDhoQXcwRGZmWUFfOWh1blZV?oc=5"
+          "title": "SK Hynix $20B ADR + 40T KRW AI capex commitment",
+          "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQN1Zrb2xaWjFiZ24xVTlkNllvVktGUXZMUDFzSm0zcVYzM1BYTng0cmZuU3dxN0hZWDgxQzFKQXZmQ3FFWlRmRkUxcHpyUGdITjNDMmFXNUJpOUxuaVI5MU40MXN6dXZFTEkzU3RlTWNKQ3BpaW50T2txWkNpanRxUGFaYmhnajVHQ2RCQUVxNzc2a3Ztb3dKNGlGODZrOE1O"
         },
         {
-          "title": "Air Liquide EUR 200M SK Hynix HBM \u2014 MSN",
-          "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxOcG1OeWJoNC15SW1SUDlUZnk1XzAzdko2RUd3YkZONU9rU0hlSmxZLWRrMTRldGdXbmpZVHQyamlHaUdmcWxpaGdjaklfZVhHYmVRdmE1ekcyR05UUGNNcnBMenRPVTRNODhLRV9KcEZqSkNnSndIS1k1UHhmWFRIdkVWeEFvWFF4aTRleHZxaTZSVE1PV3VXMExURHFMSWxXRkU2Q09HTzFUY0w3V3MxY29HbzlUN3JWNlE?oc=5"
+          "title": "Micron 2026 output spoken for, Bechtel construction",
+          "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxQaGRpeFBhMzFoTkxObVhGOVJRWmRTZm5WelN3R2VjMVpMeWhGZWt4NjJMaG5ELXJaaFcyZDhNbTdYLTBhMHdFMzdySFQ1WmwwcU5YTzFuT1FaRWtlRXJnUXNjc2k3R0pOVUJFSW9yZnZQQlFPSlRMcmlyY2wxOWNmSzJXVmZGcnVLdUZObTM2a0ctVGtvUDF2eHhqNXdMbURqRUdzREsxYlZNclBPQnZCSVZfeW11OWpQaFpzNQ"
         },
         {
-          "title": "Oracle Q4 FY26 earnings call",
-          "url": "https://finance.yahoo.com/quote/ORCL/earnings/ORCL-Q4-2026-earnings_call-592465.html"
+          "title": "TrendForce Micron Earnings Preview: HBM, CapEx",
+          "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPV29NdEdmVTAzYm9hRGxKX0JUb0owTHpJc2ZEbXBVTVpJRDBvc3VtcVBfNXN4MXBqVGJQbmtGYzZlaFlPT3haZ2twcDhrRGc3VFp4NExlcXpDdDBIbWNXa2lMSi1MR0hvNmFuNFNidzdIelJ1Q1ZMdnZOck1LVWxWOTllSkc4NWFaMHlzdy1PMEN6ajFrYkQ3bkR5eDBoa3p5bGUtM19oclM5TFBlVTVsaWU2eV93T0xFdTlYdnFHYmRuUQ"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t2_eps_revisions": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
-      "where_we_stand": "Computed verdict: Not fired. SK Hynix FY+1: 26 up / 0 down (30d); Fwd P/E 5.24x at 2,150,000 KRW (+2.33%). Micron FY+1: 6 up / 0 down (30d); Fwd P/E 8.75x at $981.61. Samsung FY+1: 22 up / 3 down; Fwd P/E 5.61x. Goldman Sachs raised Micron price target to $900 (June 14) \u2014 directional confirmation of continued upward revision momentum. 'Why is Micron stock falling today? A new warning points to an early peak' is the third consecutive contrarian cycle-peak commentary in a 26-up / 0-down SK Hynix revision\u2026",
-      "latest_developments": "Goldman Sachs raises Micron PT to $900 per [Finanztrends](https://news.google.com/rss/articles/CBMijgFBVV95cUxQa2wweGlVNzBqRTQ2RFV0VEJOMURtS2d0ZndoblVWdHFYcHZhaVZ2REMwaTI0Y0IwYlE1Tk9PSHU4emxwUnVNUDBURmhHS0JEOWNqbk9lb1kyNVZmLWdCNUl5NDNzNHFORUlYRkg4Z2M0Q0tMbDNabzRsVjlCcW91SjUyb0lUYVpsSXJOVFlR?oc=5). 'Early peak' warning per [MSN](https://news.google.com/rss/articles/CBMipwFBVV95cUxQX3RKb2JXNXllVFBWdDRadl95MWI4SHliVFRmMW1WOUR2Vk1wdm5KSm1jV3VveXJncnhBZXQyRm9VcURFMzA3N3FfcXpwTGNWRE9neHg0ZUVTWUlvckNoWXZqV2Fad2MyREFVY3N1TFFLcDJ2eFJjbnhlUWRZLV9QaEZ1cF9jcVFieU5qV3RQQ01HVTlzX3RIYWVHbXlSYUJhOW14enBrdw?oc=5) \u2014 third contrarian voice; directional watch only.",
+      "where_we_stand": "Not fired. SK Hynix: 26 upward EPS revisions vs 0 downward in the past 30 days; FY+1 EPS consensus KRW 413,579 across 38 analysts. Micron: 6 upward vs 0 downward; FY+1 EPS $117.95 across 40 analysts. Samsung: 22 up vs 3 down. Trigger requires >5 analysts revising DOWN in a single month with <3 revising up \u2014 not approached. Bernstein raised targets on all three names today. Barron's published the first mainstream caution that memory pricing 'won't rise forever' \u2014 directional confirmation of the watch, but not a formal EPS\u2026",
+      "latest_developments": "[Bernstein raises targets on SK Hynix, Micron, Samsung](https://news.google.com/rss/articles/CBMiVEFVX3lxTFBzQnE2NXVnV3FOZXZidzNtZFJCVWI4aDVJVGxZU3RFbjVfT21VdFVHRjhEdjQ5aGJXSWx1YjZ1RG5FRjA3OFVNSmlWQVZFRzA0VmNLRg). [Barron's first sell-side caution](https://news.google.com/rss/articles/CBMimwFBVV95cUxOZ29BdUE0clAxclc5UEpqdzB3UUVkMUp5TDJ6dFpTYS1mRzEwd1cwYWROTjN6SXNpTDNGU1dGbmlvVllWLTUySkNHUWFRUi12M3ZHT2U0WnJ6TFV1S0h2ZXVNb1VtNUUwLUZnX1M3MkV2U3VRZEZVc2JHRWpITlpCX2o3cTJvYmhQS0duajdnTVVCNzZidEZyZldMNA) \u2014 directional confirmation of the revision watch.",
       "relevant_links": [
         {
-          "title": "Goldman Sachs raises Micron PT to $900 \u2014 Finanztrends",
-          "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxQa2wweGlVNzBqRTQ2RFV0VEJOMURtS2d0ZndoblVWdHFYcHZhaVZ2REMwaTI0Y0IwYlE1Tk9PSHU4emxwUnVNUDBURmhHS0JEOWNqbk9lb1kyNVZmLWdCNUl5NDNzNHFORUlYRkg4Z2M0Q0tMbDNabzRsVjlCcW91SjUyb0lUYVpsSXJOVFlR?oc=5"
+          "title": "Bernstein raises targets on SK Hynix, Micron, Samsung",
+          "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTFBzQnE2NXVnV3FOZXZidzNtZFJCVWI4aDVJVGxZU3RFbjVfT21VdFVHRjhEdjQ5aGJXSWx1YjZ1RG5FRjA3OFVNSmlWQVZFRzA0VmNLRg"
         },
         {
-          "title": "Micron early peak warning \u2014 MSN",
-          "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQX3RKb2JXNXllVFBWdDRadl95MWI4SHliVFRmMW1WOUR2Vk1wdm5KSm1jV3VveXJncnhBZXQyRm9VcURFMzA3N3FfcXpwTGNWRE9neHg0ZUVTWUlvckNoWXZqV2Fad2MyREFVY3N1TFFLcDJ2eFJjbnhlUWRZLV9QaEZ1cF9jcVFieU5qV3RQQ01HVTlzX3RIYWVHbXlSYUJhOW14enBrdw?oc=5"
+          "title": "Barron's: Analyst warns memory chips won't rise forever",
+          "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOZ29BdUE0clAxclc5UEpqdzB3UUVkMUp5TDJ6dFpTYS1mRzEwd1cwYWROTjN6SXNpTDNGU1dGbmlvVllWLTUySkNHUWFRUi12M3ZHT2U0WnJ6TFV1S0h2ZXVNb1VtNUUwLUZnX1M3MkV2U3VRZEZVc2JHRWpITlpCX2o3cTJvYmhQS0duajdnTVVCNzZidEZyZldMNA"
         },
         {
-          "title": "Micron Q3 FY26 earnings preview \u2014 Motley Fool",
-          "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxOcXBqbURyOWlzRlVjR1lVdXNFWmpXem1hdi0yVDJES0dCM0g0MmVINXJ0dFRJcUVVV3NfdEhjR2QtcW10VHVISU44eW5XVDNlTG9iZFZaRGU1ck1OSHBDSUlhV3o4R1NXX2phZ3l1T0E2V2M3aVg0YWZUS2RWSWNoZTJZNGZYZFhvOGd0dnMxU3phS1FSWTl3Rw?oc=5"
+          "title": "Wall Street boosts Samsung, SK Hynix targets",
+          "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxONUttb3Y5T29wSXludDZBRTFZVHpSXzI0SWxuNVZFNkozdFlNZVpCb0JZUnU3RUduTlFwT1duRWl5SlY0QWZKU054dzE2VXJucU9mZGVwOE9LV0RCbWV5M2dvVmlEcmdTVVZna0dHM3cwR3MzcXlnMUMyT3hXOTBLMExqQXBqVVRTOXllb2pR"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t2_hyperscaler_capex_revenue": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Fired",
-      "where_we_stand": "Computed verdict: Fired (confidence: high). Aggregate 2q rolling mean CapEx/OCF: 80.1% \u2014 well above 50% full-fire threshold. Per-company 2q rolling means: MSFT 74.9%, GOOGL 65.5%, META 59.0%, AMZN 121.2%. Amazon Q1 2026 single-quarter: 169.8% \u2014 severe strain matching 2021\u201322 cycle-peak range. Goldman Sachs $1T+ AI infrastructure CapEx forecast (June 14)\u2026",
-      "latest_developments": "Goldman Sachs: AI infrastructure CapEx $1T+ in 2027 per [Motley Fool](https://news.google.com/rss/articles/CBMilwFBVV95cUxPSFh6Nk0wNlFXZTlISGd5TTUyaXdHMjRTLVNOSXhDekM5TjBNVmo0NEtuUDI5N1M1QllBcjhHU2VBRDUtSHVTZFIyY1B2aUxkaUJhREdWdDB4T0poY24zN3ppRFkzWEZIcm1Ga2hEaXRTandaZEdiQXZDU0l4azdZR0d6ZnlBcDhoQXcwRGZmWUFfOWh1blZV?oc=5). Aggregate 2q mean 80.1%; AMZN Q1 2026 single-quarter 169.8% per computed metrics.",
-      "relevant_links": [
-        {
-          "title": "Goldman Sachs $1T+ AI CapEx \u2014 Motley Fool",
-          "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxPSFh6Nk0wNlFXZTlISGd5TTUyaXdHMjRTLVNOSXhDekM5TjBNVmo0NEtuUDI5N1M1QllBcjhHU2VBRDUtSHVTZFIyY1B2aUxkaUJhREdWdDB4T0poY24zN3ppRFkzWEZIcm1Ga2hEaXRTandaZEdiQXZDU0l4azdZR0d6ZnlBcDhoQXcwRGZmWUFfOWh1blZV?oc=5"
-        },
-        {
-          "title": "Oracle Q4 FY26 earnings call",
-          "url": "https://finance.yahoo.com/quote/ORCL/earnings/ORCL-Q4-2026-earnings_call-592465.html"
-        }
-      ],
+      "where_we_stand": "Fired. Aggregate 2-quarter rolling mean CapEx/OCF across MSFT/GOOGL/AMZN/META = 80.1% \u2014 well above the 50% full-fire threshold and the 40% historical crash-year mean. Amazon's 2q rolling mean = 121.2% (single-company strain overlay triggered). Per-company: MSFT 74.9%, GOOGL 65.5%, META 59.0%, AMZN 121.2%. Reversal requires mean <40% for two consecutive quarters\u2026",
+      "latest_developments": "No new hyperscaler CapEx print today. Next update: MSFT Jul 22, GOOGL Jul 22, META Jul 23, AMZN Jul 24 Q2 2026 earnings.",
+      "relevant_links": [],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t2_insider_sales": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Fired",
-      "where_we_stand": "Micron CEO Mehrotra Form 4 sale (2026-03-15): permanent persistence to 2027-03-15. Micron Form 4 insider transaction filed 2026-06-11 (SEC EDGAR 23:13 UTC) \u2014 additional insider transaction reinforces Fired status. DART material disclosures: 0 across SK Hynix and Samsung today. 91 days elapsed since triggering transaction; 12-month window not yet expired.",
-      "latest_developments": "Micron Form 4 insider transaction filed 2026-06-11 per [SEC EDGAR](https://www.sec.gov/Archives/edgar/data/723125/000179875726000006/0001798757-26-000006-index.htm) \u2014 reinforces Fired. DART: 0 disclosures across SK Hynix and Samsung today.",
+      "where_we_stand": "Fired. Mehrotra (Micron CEO) Form 4 sale March 15, 2026 \u2014 permanent persistence until March 15, 2027 aging window. Today's SEC EDGAR Form 4 filing (June 11, 2026) was reviewed; no new C-suite or board sales with transaction code S and value >$1M detected. DART API shows 0 material disclosures\u2026",
+      "latest_developments": "[SEC EDGAR Form 4 June 11](https://www.sec.gov/Archives/edgar/data/723125/000179875726000006/0001798757-26-000006-index.htm) \u2014 no new qualifying insider sale detected. DART: 0 disclosures.",
       "relevant_links": [
         {
-          "title": "Micron Form 4 filing 2026-06-11 \u2014 SEC EDGAR",
+          "title": "SEC EDGAR Micron Form 4 filing 2026-06-11",
           "url": "https://www.sec.gov/Archives/edgar/data/723125/000179875726000006/0001798757-26-000006-index.htm"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t2_ltas_signed": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Fired",
-      "where_we_stand": "HBM3E sold out through 2026 (permanent persistence). Mirae Asset (June 12): SK Hynix multi-year supply agreement with Nvidia confirmed, covering HBM. Air Liquide EUR 200M committed to SK Hynix HBM expansion (June 14) \u2014 third-party capital lock-in reinforcing LTA dependency. Google-Samsung Icefish TPU sourcing (June 14) adds a new hyperscaler\u2026",
-      "latest_developments": "Air Liquide EUR 200M for SK Hynix HBM expansion per [MSN](https://news.google.com/rss/articles/CBMiugFBVV95cUxOcG1OeWJoNC15SW1SUDlUZnk1XzAzdko2RUd3YkZONU9rU0hlSmxZLWRrMTRldGdXbmpZVHQyamlHaUdmcWxpaGdjaklfZVhHYmVRdmE1ekcyR05UUGNNcnBMenRPVTRNODhLRV9KcEZqSkNnSndIS1k1UHhmWFRIdkVWeEFvWFF4aTRleHZxaTZSVE1PV3VXMExURHFMSWxXRkU2Q09HTzFUY0w3V3MxY29HbzlUN3JWNlE?oc=5). Google-Samsung Icefish TPU sourcing per [Let's Data Science](https://news.google.com/rss/articles/CBMilAFBVV95cUxNSm1LSmx4aWFQRE16WjFib3JEMERWREVUR1JSRHl0MmV4eGtZcWpJbk5tNnlkMFgySnd4VERvdXdCTXQtbE15OVQzeDBsT0c4MHFNLU9hLU1VaWdOM0F1bzdjT0R0R0FESTVEYTJTWlZVajc1QTZEZ0pqMmVTTkhubG1aTThHM1pYNkZPVzltb0hRRG5f?oc=5) \u2014 new hyperscaler commitment.",
+      "where_we_stand": "Fired. HBM3E sold out through 2026; SK Hynix HBM4 LTAs with Nvidia in place. Today: Samsung confirmed pursuit of long-term HBM supply accords with Nvidia and Google at its Global Strategy Meeting (Devdiscourse). SK Hynix LTA visibility cited by Hanwha as basis for target upgrade. No LTA cancellation, buyer pull-out\u2026",
+      "latest_developments": "[Samsung long-term HBM accords with Nvidia + Google](https://news.google.com/rss/articles/CBMiiwFBVV95cUxQM0ZwV3B0ZnpBcVl0dUJUUTZUQzduc1dEakdEV1lWRXBzQmZaMFU0bDBEOTlCMk5DSy1KZWpzd0tsTUlsZnRlcXFYaEVfUTZlLXlMXzd2WXJCdkpSRVkzb3R3YjgzOW40aF9SR1oxSlE0bXI1X2JvTGxWNUNrdW9PcmlQX0ZubW9VTzM0). [SK Hynix LTA visibility cited by Hanwha](https://news.google.com/rss/articles/CBMilAFBVV95cUxQVzRmdFZOM0YwRnB5WU56ZkxtazE4a2w5dGpjRUlqSE5obDZiTGppdTBxcXJSWmZmOUROellaTFlGcnc5aVJBbzlYa202cFp3cWtBU0ZyeEl0dXBUYUZSeTFvbklhRzdVRjBIdUZ1Z1BhNlM3ZDhSS015SUpJeVVaX3hjdHdiZUYzdHhkcjNLell2RzBV).",
       "relevant_links": [
         {
-          "title": "Air Liquide EUR 200M SK Hynix HBM \u2014 MSN",
-          "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxOcG1OeWJoNC15SW1SUDlUZnk1XzAzdko2RUd3YkZONU9rU0hlSmxZLWRrMTRldGdXbmpZVHQyamlHaUdmcWxpaGdjaklfZVhHYmVRdmE1ekcyR05UUGNNcnBMenRPVTRNODhLRV9KcEZqSkNnSndIS1k1UHhmWFRIdkVWeEFvWFF4aTRleHZxaTZSVE1PV3VXMExURHFMSWxXRkU2Q09HTzFUY0w3V3MxY29HbzlUN3JWNlE?oc=5"
+          "title": "Samsung targets Nvidia and Google with new long-term HBM deals",
+          "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQM0ZwV3B0ZnpBcVl0dUJUUTZUQzduc1dEakdEV1lWRXBzQmZaMFU0bDBEOTlCMk5DSy1KZWpzd0tsTUlsZnRlcXFYaEVfUTZlLXlMXzd2WXJCdkpSRVkzb3R3YjgzOW40aF9SR1oxSlE0bXI1X2JvTGxWNUNrdW9PcmlQX0ZubW9VTzM0"
         },
         {
-          "title": "Mirae Asset \u2014 SK Hynix June 12 2026",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340335"
+          "title": "Hanwha lifts SK Hynix target on AI-fueled stability, LTA visibility",
+          "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxQVzRmdFZOM0YwRnB5WU56ZkxtazE4a2w5dGpjRUlqSE5obDZiTGppdTBxcXJSWmZmOUROellaTFlGcnc5aVJBbzlYa202cFp3cWtBU0ZyeEl0dXBUYUZSeTFvbklhRzdVRjBIdUZ1Z1BhNlM3ZDhSS015SUpJeVVaX3hjdHdiZUYzdHhkcjNLell2RzBV"
         },
         {
-          "title": "TrendForce \u2014 HBM4 strategies diverge",
-          "url": "https://www.trendforce.com/news/2026/04/15/news-hbm4-strategies-diverge-samsung-reportedly-chases-80-1c-dram-yield-while-sk-hynix-trims-shipments-by-30/"
+          "title": "SK Hynix LTA commentary (Maeil Kyungje)",
+          "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTFB1Z2FDcy1DVkxlM053STZTaXc3UlgtbnpvNEdfZEdRWmJFTHIxdFdQdEtBTlU2Z3M1UVRYNHRoUFVsVUVxclNGMmg5dUw4NVU"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t2_pe_compressed": {
@@ -303,78 +268,57 @@
       "fingerprint_algo": "v3-fired-status"
     },
     "t2_spot_contract_spread": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Fired",
-      "where_we_stand": "DDR4 spot/contract inversion fired 2026-04-01 \u2014 live persistence, no reversal. DDR5 16Gb spot: $44.833 (+0.37% today), at new 12-week peak. Mirae Asset (June 12): server DRAM contract +50\u201355% QoQ Q2 2026 \u2014 DDR5 contract still rising strongly above spot. Samsung HBM4 logic-die prices +40\u201350% (TrendForce) \u2014 premium segment contract prices\u2026",
-      "latest_developments": "DDR5 spot $44.833 (+0.37%) per [TrendForce](https://www.trendforce.com/price/dram/dram_spot). Samsung HBM4 logic-die prices +40\u201350% per [TrendForce](https://www.trendforce.com/news/2026/04/14/news-samsung-reportedly-lifts-hbm4-logic-die-prices-by-40-50-amid-ai-boom-4nm-at-full-capacity/) \u2014 DDR4 inversion intact.",
+      "where_we_stand": "Fired. DDR4 spot/contract inversion recorded April 1, 2026 (live persistence). DDR4 spot today $69.75 (+0.90%); DDR5 spot $46.17 (+0.36%). DDR5 spot remains below DDR5 server contract (Q2 2026 contract +58\u201363% QoQ implies contract well above spot). Spread narrowing toward zero on DDR5 is the next escalation watch. No reversal evidence\u2026",
+      "latest_developments": "[DDR5 spot $46.17, DDR4 spot $69.75](https://www.trendforce.com/price/dram/dram_spot) \u2014 both up modestly; DDR4 inversion persists, DDR5 spread watch continues.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price",
+          "title": "TrendForce DRAM Spot Price 2026-06-22",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
-        },
-        {
-          "title": "TrendForce \u2014 Samsung HBM4 logic-die price hike",
-          "url": "https://www.trendforce.com/news/2026/04/14/news-samsung-reportedly-lifts-hbm4-logic-die-prices-by-40-50-amid-ai-boom-4nm-at-full-capacity/"
-        },
-        {
-          "title": "Mirae Asset \u2014 Samsung Electronics June 12 2026",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340331"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t3_contract_decline": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
-      "where_we_stand": "Q2 2026 contracts projected +58\u201363% QoQ (TrendForce March 31). Mirae Asset (June 12): server DRAM contract +50\u201355% QoQ Q2 2026, DRAM ASP +279% YoY \u2014 strongly rising. Mobile DRAM contract prices accelerating relative to Q1 2026. Samsung HBM4 logic-die prices +40\u201350% (TrendForce). DDR5 spot at new 12-week peak ($44.833). No\u2026",
-      "latest_developments": "Mirae Asset (June 12): server DRAM +50\u201355% QoQ Q2 2026 per [Mirae Asset](https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340331). Samsung HBM4 logic-die +40\u201350% per [TrendForce](https://www.trendforce.com/news/2026/04/14/news-samsung-reportedly-lifts-hbm4-logic-die-prices-by-40-50-amid-ai-boom-4nm-at-full-capacity/) \u2014 dominant anti-trigger.",
-      "relevant_links": [
-        {
-          "title": "Mirae Asset \u2014 Samsung Electronics June 12 2026",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340331"
-        },
-        {
-          "title": "TrendForce \u2014 Samsung HBM4 logic-die price hike",
-          "url": "https://www.trendforce.com/news/2026/04/14/news-samsung-reportedly-lifts-hbm4-logic-die-prices-by-40-50-amid-ai-boom-4nm-at-full-capacity/"
-        },
-        {
-          "title": "TrendForce DRAM Spot Price",
-          "url": "https://www.trendforce.com/price/dram/dram_spot"
-        }
-      ],
+      "where_we_stand": "Not fired. Q2 2026 DDR5 server contract projected +58\u201363% QoQ (TrendForce, March 31, 2026). No TrendForce monthly report showing MoM contract decline published today. No HBM contract renegotiation downward reported. Micron June 24 earnings is the next event that could surface contract-direction commentary.",
+      "latest_developments": "",
+      "relevant_links": [],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t3_eps_miss_guidance": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
-      "where_we_stand": "Most recent beats: SK Hynix Q1 2026 at 48.8%, Micron Q2 2026 at 41.86% \u2014 both well above <10% trigger. Samsung + SK Hynix projected to exceed 150 trillion won in Q2 operating profit. Goldman Sachs Micron PT $900 confirms continued upward trajectory. Micron Q3 FY26 earnings June 24 is\u2026",
-      "latest_developments": "'Early peak' warning per [MSN](https://news.google.com/rss/articles/CBMipwFBVV95cUxQX3RKb2JXNXllVFBWdDRadl95MWI4SHliVFRmMW1WOUR2Vk1wdm5KSm1jV3VveXJncnhBZXQyRm9VcURFMzA3N3FfcXpwTGNWRE9neHg0ZUVTWUlvckNoWXZqV2Fad2MyREFVY3N1TFFLcDJ2eFJjbnhlUWRZLV9QaEZ1cF9jcVFieU5qV3RQQ01HVTlzX3RIYWVHbXlSYUJhOW14enBrdw?oc=5) \u2014 directional watch only. Micron earnings June 24 per [Motley Fool](https://news.google.com/rss/articles/CBMimAFBVV95cUxOcXBqbURyOWlzRlVjR1lVdXNFWmpXem1hdi0yVDJES0dCM0g0MmVINXJ0dFRJcUVVV3NfdEhjR2QtcW10VHVISU44eW5XVDNlTG9iZFZaRGU1ck1OSHBDSUlhV3o4R1NXX2phZ3l1T0E2V2M3aVg0YWZUS2RWSWNoZTJZNGZYZFhvOGd0dnMxU3phS1FSWTl3Rw?oc=5).",
+      "where_we_stand": "Not fired. Prior beats: SK Hynix Q1 +48.8%, Micron Q2 +41.86%. Trigger: beat <10% or first miss. Micron June 24 earnings is the live test \u2014 pre-print consensus frames ~1,000% YoY profit growth, 81% gross margins, HBM sold out. A beat-narrowing or guidance-only raise (no beat) would be the first\u2026",
+      "latest_developments": "[Micron June 24 earnings preview](https://news.google.com/rss/articles/CBMiwgFBVV95cUxPV29NdEdmVTAzYm9hRGxKX0JUb0owTHpJc2ZEbXBVTVpJRDBvc3VtcVBfNXN4MXBqVGJQbmtGYzZlaFlPT3haZ2twcDhrRGc3VFp4NExlcXpDdDBIbWNXa2lMSi1MR0hvNmFuNFNidzdIelJ1Q1ZMdnZOck1LVWxWOTllSkc4NWFaMHlzdy1PMEN6ajFrYkQ3bkR5eDBoa3p5bGUtM19oclM5TFBlVTVsaWU2eV93T0xFdTlYdnFHYmRuUQ) \u2014 HBM, CapEx, margin focus. Beat-vs-guidance-raise is the live t3 test.",
       "relevant_links": [
         {
-          "title": "Micron Q3 FY26 earnings preview \u2014 Motley Fool",
-          "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxOcXBqbURyOWlzRlVjR1lVdXNFWmpXem1hdi0yVDJES0dCM0g0MmVINXJ0dFRJcUVVV3NfdEhjR2QtcW10VHVISU44eW5XVDNlTG9iZFZaRGU1ck1OSHBDSUlhV3o4R1NXX2phZ3l1T0E2V2M3aVg0YWZUS2RWSWNoZTJZNGZYZFhvOGd0dnMxU3phS1FSWTl3Rw?oc=5"
+          "title": "TrendForce Micron Earnings Preview",
+          "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPV29NdEdmVTAzYm9hRGxKX0JUb0owTHpJc2ZEbXBVTVpJRDBvc3VtcVBfNXN4MXBqVGJQbmtGYzZlaFlPT3haZ2twcDhrRGc3VFp4NExlcXpDdDBIbWNXa2lMSi1MR0hvNmFuNFNidzdIelJ1Q1ZMdnZOck1LVWxWOTllSkc4NWFaMHlzdy1PMEN6ajFrYkQ3bkR5eDBoa3p5bGUtM19oclM5TFBlVTVsaWU2eV93T0xFdTlYdnFHYmRuUQ"
         },
         {
-          "title": "Micron early peak warning \u2014 MSN",
-          "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQX3RKb2JXNXllVFBWdDRadl95MWI4SHliVFRmMW1WOUR2Vk1wdm5KSm1jV3VveXJncnhBZXQyRm9VcURFMzA3N3FfcXpwTGNWRE9neHg0ZUVTWUlvckNoWXZqV2Fad2MyREFVY3N1TFFLcDJ2eFJjbnhlUWRZLV9QaEZ1cF9jcVFieU5qV3RQQ01HVTlzX3RIYWVHbXlSYUJhOW14enBrdw?oc=5"
+          "title": "Micron sold-out HBM books and 81% gross margins",
+          "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxNX2tPQ3NDeXlBWS1ZY3RsUGZrMzZncWc3dUN0bEJoQTgtbUtDNk9lQzJGb09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNWmRMMFl5djY2WDhGdDBZeHJRSExiQ3NaT09NbGVXaEtNW"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t3_relative_strength": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
       "where_we_stand": "Computed metrics (authoritative): SK Hynix 5d vs SOX: \u20135.55pp \u2014 yellow watch, above \u201310pp red threshold, NOT fired. Micron 5d vs SOX: +4.19pp (well above \u201310pp red threshold). DRAM ETF 5d vs SMH: +7.70pp (DRAM 16.53%, SMH 8.82%). Overall fired (red): False. Today's session: Samsung +7.86%, Intel +6.51%, AMD +4.73% \u2014 broad semi tape strongly up. SK Hynix +2.33% today narrows the 5d gap slightly; yellow watch at \u20135.55pp would need to cross \u201310pp to fire. Not fired status sustained. Aligns with evidence store entry (2026-06-11 Layer 2 transition Fired\u2026",
       "latest_developments": "Computed (June 14): SK Hynix 5d vs SOX: \u20135.55pp \u2014 yellow watch; Not fired preserved. Micron 5d vs SOX: +4.19pp. DRAM ETF 5d vs SMH: +7.70pp. Samsung +7.86%, AMD +4.73%, Intel +6.51% today [\u2192\u00a71].",
@@ -395,11 +339,11 @@
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t3_supplier_inventory_rebuild": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
       "where_we_stand": "SK Hynix and Micron at 2\u20133 weeks per evidence store (May 9, 2026) \u2014 record-low supplier inventory. NVIDIA Vera CPU memory config cut highlights persistent LPDRAM supply constraints \u2014 demand-side pull keeping inventory lean. SK Hynix targets 3x wafer output by 2034 with 4 new fabs and adds 2,152 employees \u2014 capacity expansion underway but not yet inventory-building. Value-chain inference: LPDRAM supply constraints + HBM4 LTA commitments \u2192 supplier inventory stays at 2\u20133 weeks \u2192 trigger (4+ weeks) pushed further out. Next key data: Micron Q3 FY26 earnings June 24\u2026",
       "latest_developments": "SK Hynix DRAM capacity to triple by 2034 per [Notebookcheck](https://news.google.com/rss/articles/CBMiwgFBVV95cUxQTjRNNUM0WTZpWDBFUldISl81NmJPVEZyb1JobTdwaE9kM3V0VlE3b0x6dUstQms2S0NQZHNRYW1KTUJMSllua2ZGbDZwc1JiYnBZWW44VG9VN2JVcXRPS2hkMU1hWjVFbTlXNXUxdy10UElORFM2N2RwTmVTTUx2VWdCVmJoY211ODhBY2pseXU4UEJRRE94TkZhZW9ibzFlWEZadmRianBlV20wOGo0Smc2N21vNTBQSkFTNU5FSnR6UQ?oc=5). Air Liquide EUR 200M HBM expansion \u2014 capacity build-out, not inventory signal.",
@@ -420,11 +364,11 @@
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t3_wfe_orders_crack": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
       "where_we_stand": "ASML \u20131.89% today; AMAT +2.64% today \u2014 both holding well, anti-trigger for order weakness. SK Hynix weighs supplier price hikes as HBM boom lifts equipment makers (Digitimes June 13) \u2014 WFE cost inflation signal, anti-trigger. SK Hynix targets 3x wafer output by 2034 with 4 new fabs \u2014 WFE demand\u2026",
       "latest_developments": "SK Hynix weighs supplier price hikes as HBM boom lifts equipment makers per [Digitimes via Google News](https://news.google.com/rss/articles/CBMikgFBVV95cUxQUnppTTRpZkliNXY4TUl3U2FDZk5pWXRJekktTkJOVElrem4yYUdPXzFNTk5FMHMxaHI1LTZSMVdIV3NjT2M2RjlQNzg4TlpnbmNjejdnYmROZVBVaEVkMXNjZ252M2ticWRSX1BiOWVKZ2cyc2hjRER2Rkh5YzlOS1E1b3RkN0ZmVkhtRzBPYmhkQQ?oc=5) \u2014 WFE cost inflation, anti-trigger.",
@@ -437,11 +381,11 @@
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t4_capex_slashed": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
       "where_we_stand": "SK Hynix targets 3x wafer output by 2034, 4 new fabs, 375-layer NAND at year-end (June 14). SK Hynix adds 2,152 employees (June 14). Air Liquide EUR 200M committed to SK Hynix HBM expansion (June 14). Samsung weighs new chip packaging facility in South Korea. No company-initiated CapEx reduction or\u2026",
       "latest_developments": "SK Hynix four-fab roadmap + 375-layer NAND per [AD HOC NEWS](https://news.google.com/rss/articles/CBMiyAFBVV95cUxPY1NjWFlZam5PT01hekN4cG03WlExaE1Nc2lSSEg5cHAwbGZIc1ZEVTlFaWFzWER4SDFpWE05ZktHcGZjNTA3b1pKdW5aSDdjNDd6QjkyaGtwR2t2alZpcGFsbUp2RDNaMm5JZUFvMWlCNWJ2elpCalhXc1A0VTRfczFBLVk2MXZEUW53QXFNMzhxYTlBWFRyQzkwM1lRdnBmV1p0S3pkc0NMekhFNjhacmV0elRmWEpTQUZlNHZZQmlQQ0xuMnE5ZA?oc=5). Air Liquide EUR 200M HBM expansion \u2014 CapEx expansion intact.",
@@ -458,11 +402,11 @@
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t4_guidance_cuts": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
       "where_we_stand": "No guidance cut language in any source. Mirae Asset (June 12) revised Samsung FY26 operating profit UP. Samsung + SK Hynix projected to exceed 150 trillion won in Q2 operating profit. Goldman Sachs Micron PT $900 \u2014 opposite of guidance cut conditions. Next Micron earnings: June 24, 2026.",
       "latest_developments": "Goldman Sachs Micron PT $900 per [Finanztrends](https://news.google.com/rss/articles/CBMijgFBVV95cUxQa2wweGlVNzBqRTQ2RFV0VEJOMURtS2d0ZndoblVWdHFYcHZhaVZ2REMwaTI0Y0IwYlE1Tk9PSHU4emxwUnVNUDBURmhHS0JEOWNqbk9lb1kyNVZmLWdCNUl5NDNzNHFORUlYRkg4Z2M0Q0tMbDNabzRsVjlCcW91SjUyb0lUYVpsSXJOVFlR?oc=5) \u2014 no guidance cut language.",
@@ -475,11 +419,11 @@
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t4_layoffs": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
       "where_we_stand": "Samsung chip workers could receive bonuses worth ~$400,000 amid AI boom (June 13) \u2014 bonus approval after legal challenge, opposite of layoff conditions. SK Hynix adds 2,152 employees (June 14) \u2014 workforce expansion. No formal layoff or fab idling announcement from any Big Three.",
       "latest_developments": "Samsung bonus ~$400K per [MSN](https://news.google.com/rss/articles/CBMi5AJBVV95cUxOREV1eThrUUcwVTNIT2w1eXkxRjB5ajBzNmRsZk1MZ2hHNUlfdEhYMm81V1QzZk1hTU5lbUpxZ3ZYcWcydUVaSWNsMXdfdUR6TUpfTHVSbEd6M0g3ZmVKVnJ4bEJaMllWOFItNkdmRGdRQVlEWlBuM2pjOXFuX01oNmwxVUlhMmVHLWlhbDZaeHhDMzZCdjRxTnowTmNRQU1HYm9uNlZGM1gtb0NaWjAyRUJsT1pSdG5qa1pzQnRiRVQzLVotMjhNRG4yY1REYmc3SGQ1WU1IYlFvWUIxVHpkcjNuZW91WkM1R256Qjk0VDZFUkRkdEVsT3hPUGw2eTBCU09QM1BZeEpSUGlaQzVwdEZFUjdoV1JuNC15dWdaenFuVmRzaTNqdnp3bUE0OGR5SHp4WG1URzlvSXZWMUVobFJRRndXZzY0S3hfclZ1SjVIMnpFcU5tN3YxcmVvaFpEemdURQ?oc=5) \u2014 anti-trigger. SK Hynix +2,152 employees per [Korea Herald](https://www.koreaherald.com/article/10771107).",
@@ -496,11 +440,11 @@
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     },
     "t4_yoy_asp_negative": {
-      "last_full_regen_date": "2026-06-14",
+      "last_full_regen_date": "2026-06-22",
       "current_status": "Not fired",
       "where_we_stand": "Mirae Asset (June 12): Samsung DRAM ASP +279% YoY 2026, NAND +250% YoY. SK Hynix DRAM ASP +188% YoY FY26. DDR5 16Gb spot $44.833 (+0.37%), new 12-week peak. Samsung HBM4 logic-die prices +40\u201350% (TrendForce). All ASP prints strongly positive. Earliest plausible firing: H2 2027.",
       "latest_developments": "Goldman Sachs names SK Hynix and Micron in $1T AI CapEx thesis per [Motley Fool](https://news.google.com/rss/articles/CBMilwFBVV95cUxPSFh6Nk0wNlFXZTlISGd5TTUyaXdHMjRTLVNOSXhDekM5TjBNVmo0NEtuUDI5N1M1QllBcjhHU2VBRDUtSHVTZFIyY1B2aUxkaUJhREdWdDB4T0poY24zN3ppRFkzWEZIcm1Ga2hEaXRTandaZEdiQXZDU0l4azdZR0d6ZnlBcDhoQXcwRGZmWUFfOWh1blZV?oc=5) \u2014 ASP trajectory intact.",
@@ -521,7 +465,7 @@
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-06-14",
+      "updated_date": "2026-06-22",
       "fingerprint_algo": "v3-fired-status"
     }
   }
