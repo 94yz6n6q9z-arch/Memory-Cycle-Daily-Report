@@ -1,10 +1,10 @@
 {
-  "written_at_iso": "2026-06-23T10:12:19.701218+00:00",
+  "written_at_iso": "2026-06-24T10:00:35.996642+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 0,
+    "full_transcript": 1,
     "materials_only": 0,
-    "nothing": 3,
+    "nothing": 2,
     "already_processed": 32,
     "by_company": {
       "Micron": "already_processed",
@@ -22,7 +22,7 @@
       "ASML": "already_processed",
       "AMD": "already_processed",
       "Intel": "already_processed",
-      "Cerebras": "nothing",
+      "Cerebras": "full_transcript",
       "SK Hynix": "already_processed",
       "Samsung Electronics": "already_processed"
     },
@@ -171,10 +171,10 @@
     {
       "company": "Cerebras",
       "ticker": "CBRS",
-      "availability": "nothing",
-      "source_name": "Motley Fool",
-      "note": "No transcript links found on Motley Fool quote page for CBRS. Either no recent transcripts indexed, or Motley Fool changed the quote page structure \u2014 selector may need review.",
-      "char_count": 0
+      "availability": "full_transcript",
+      "source_name": "Yahoo Finance",
+      "note": null,
+      "char_count": 45567
     },
     {
       "company": "SK Hynix",
