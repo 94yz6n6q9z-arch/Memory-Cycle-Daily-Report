@@ -1,12 +1,12 @@
 {
   "source_id": "DART API",
   "payload": {
-    "fetched_at_iso": "2026-06-24T10:01:24.667984",
+    "fetched_at_iso": "2026-06-25T09:56:32.503535",
     "tickers": {
       "SK Hynix": {
         "corp_code": "00164779",
-        "n_disclosures": 4,
-        "n_material": 1,
+        "n_disclosures": 5,
+        "n_material": 2,
         "disclosures": [
           {
             "report_nm": "\uc8fc\uc694\uc0ac\ud56d\ubcf4\uace0\uc11c(\ud574\uc678\uc99d\uad8c\uc2dc\uc7a5\uc8fc\uad8c\ub4f1\uc0c1\uc7a5\uacb0\uc815)",
@@ -33,6 +33,14 @@
             "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260624000511"
           },
           {
+            "report_nm": "\uc9c0\uc18d\uac00\ub2a5\uacbd\uc601\ubcf4\uace0\uc11c\ub4f1\uad00\ub828\uc0ac\ud56d(\uc790\uc728\uacf5\uc2dc)              ",
+            "rcept_dt": "20260625",
+            "rcept_no": "20260625800489",
+            "flr_nm": "SK\ud558\uc774\ub2c9\uc2a4",
+            "is_material": true,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260625800489"
+          },
+          {
             "report_nm": "\uc99d\uad8c\uc608\ud0c1\uc99d\uad8c(DR)\ubc1c\ud589\uacb0\uc815              ",
             "rcept_dt": "20260624",
             "rcept_no": "20260624800801",
@@ -44,9 +52,17 @@
       },
       "Samsung Electronics": {
         "corp_code": "00126380",
-        "n_disclosures": 3,
+        "n_disclosures": 4,
         "n_material": 0,
         "disclosures": [
+          {
+            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
+            "rcept_dt": "20260625",
+            "rcept_no": "20260625000389",
+            "flr_nm": "\uae40\uc6a9\ucc2c",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260625000389"
+          },
           {
             "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
             "rcept_dt": "20260622",
@@ -81,5 +97,5 @@
       }
     }
   },
-  "fetched_at_iso": "2026-06-24T10:01:36.619318"
+  "fetched_at_iso": "2026-06-25T09:56:42.759999"
 }
