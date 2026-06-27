@@ -1,5 +1,39 @@
 # Memory Cycle Brief — Changelog
 
+> Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
+
+## v3.41.6 (2026-06-27) — Demand-destruction coverage + awareness, and the US price-staleness bug
+
+Five fixes, all diagnosed from production brief screenshots (the June 25 Apple/OEM memory-price-hike wave being absent, the demand-destruction card frozen on April text, and the Saturday brief showing Thursday's US prices for a subset of tickers).
+
+### #1 — Downstream-demand coverage lane (`src/config.py`, `GOOGLE_NEWS_QUERIES`)
+
+The query set was memory/Korea/inference-tilted and never looked at the end market, so the June 25 Apple/Microsoft/Sony price-hike story (devices repriced to offset the memory squeeze) was entirely absent from the brief. Added 13 queries in three groups: (a) OEM price pass-through / memory-reduction workarounds (Apple/PC/smartphone/consumer-electronics pricing, content reduction); (b) the authoritative shipment-forecast sources (IDC / Counterpoint / Gartner / Canalys — the quantity confirm); (c) the sell-side estimate-revision transmission (SK Hynix / Micron EPS cuts — the peak-caller). 66 → 79 queries.
+
+### #2 — Un-freeze fired indicators on fresh evidence (`src/analysis/prose_cache.py`, `llm_summarizer.py`)
+
+The dormancy fingerprint hashes only `fired_status`, so a long-fired indicator was reused verbatim every day even as its story escalated — the status pill stayed right while `latest_developments` went stale (demand-destruction fired since April, blank on the June OEM price-hike wave). New `apply_news_freshness_guard` flips a dormant card to regen when its `evidence_count` has *increased* versus the count stored when the card was last built (net-new evidence = fresh material news). Only an increase triggers; erring toward regen is the safe direction (a spurious regen costs a cent; a missed one ships a stale card on an escalating story). `evidence_count` is now stored as the per-card baseline in `update_cache_after_synthesis`. Pre-v3.41.6 cache entries (no baseline) stay reuse and pick one up on their next regen. Wired after `apply_status_guard` in the fast-tier cache-decision block.
+
+### #3 — Broaden the `t1_demand_destruction` trigger (`src/config.py`)
+
+The trigger watched only the *lagging* quantity edge (shipment-forecast cuts — already fired). Added the *leading* price-pass-through edge and OEM workarounds (raising end-prices, removing entry configs, cutting content, node substitution, delaying refresh) as intensifying evidence on the already-fired signal, plus trigger patterns (incl. "RAMageddon", memory-cost pass-through) and OEM sources (Apple/Microsoft/Sony/Dell, Canalys). Fixed the inverted "reducing content" framing — a memory-content *increase* (iPhone → 12GB for on-device AI) is not a reversal; the destruction shows up in unit demand and price elasticity.
+
+### #4 — Forward transmission watch (`src/analysis/llm_summarizer.py`, value-chain inference)
+
+Added the demand-destruction → peak-caller chain to the Sonnet DEMAND CASCADES block so the brief is predictive, not just a re-note of a fired signal: OEM price pass-through → sell-side models the revenue/EPS hit → first SK Hynix/Micron estimate cut (`t2_eps_revisions` flips from all-up consensus) → multiple compresses (`t2_pe_compressed`) → only later, capex moderation. The brief now names what to watch *next* on the chain — the estimate-revision flip, **not** capex (capex is the last domino, not the next).
+
+### #5 — US price-staleness repair (`src/data/prices.py`), peer-relative and holiday-robust
+
+Root cause of the Saturday brief showing Thursday's MU/AMAT/ASML prices while NVDA was current: the batch `yf.download` returned a stale last bar for a *subset* of US tickers, and the only freshness guard was KRX-scoped (`_repair_stale_krx_tickers`, .KS/.KQ only) — US names had none, so `calculate_performance`'s `.dropna().iloc[-1]` served the stale bar as current with no flag, and the whole row's 1D reflected the prior session. New `_repair_stale_us_tickers` + `_refetch_us_ticker_latest` compare each US ticker only against its *own market's peers* (US equities share the NYSE/Nasdaq calendar): a laggard relative to its peers gets refetched (single-ticker yfinance → FMP). **Calendar-free by construction** — on a genuine US market holiday every US name shares the same latest bar, nothing looks stale, nothing fires; holidays move the peer baseline rather than tripping a false alarm, so there is no holiday table to maintain. Accepted limitation: uniform staleness across the *entire* US group is not covered (the observed bug is a partial subset, which this catches exactly). The working KRX repair is untouched.
+
+### Tests
+
+`tests/test_v3_41_6_dd_and_prices.py` — 11 tests (freshness-guard flip/keep/baseline/non-reuse; US repair refetches only the stale peer, no false flag on uniform staleness, excludes KRX + indices; DD trigger + query assertions; transmission-chain assertion). Full suite 1187 passed / 36 pre-existing baseline failures; zero regressions. (A 37th failure seen in the dev sandbox was a mocked-HTML parser test failing only on unpinned bs4/lxml — the sandbox lacked the pinned `requirements.txt` — not a code change.)
+
+### Not in this release
+
+Macro name-the-driver lane (CNBC Markets / Yahoo markets + macro queries, §-linked, gated by the v3.41.5 exec-brief spec) — slated for v3.41.7.
+
 ## v3.8.6 (2026-05-25) — Anchor catalog + maturity-degradation (no more floor)
 
 The v3.8.5 production run revealed that asking Sonnet to compute KV values

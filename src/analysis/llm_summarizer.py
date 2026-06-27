@@ -54,6 +54,7 @@ from src.analysis.prose_cache import (
     seed_staggered_dates,
     evaluate_cache,
     apply_status_guard,
+    apply_news_freshness_guard,
     get_cached_assessment_dict,
     summarize_decisions,
     update_cache_after_synthesis,
@@ -1653,6 +1654,7 @@ When two or more signals in today's feed are causally linked through the memory 
   - Hyperscaler ups AI CapEx guidance (Tier C) → NVIDIA / AMD / Broadcom backlog increases (Tier B) → SK Hynix HBM revenue 1-2 quarters out → memory pure-play earnings beat / guidance raise.
   - AI lab signs multi-billion infrastructure deal (OpenAI / Anthropic) → chip designer capacity commitment (Cerebras / NVIDIA) → memory order book → DRAM/HBM cycle support.
   - Conversely a hyperscaler CapEx cut warning → downstream HBM order moderation 6-12 months out → bearish for the cycle peak timing.
+  - DEMAND-DESTRUCTION INTENSIFICATION → PEAK-CALLER TRANSMISSION (the chain that actually times the stock peak): OEM price pass-through (device makers — Apple, Microsoft, Sony — raising end-prices or cutting memory content to offset memory costs) is the LEADING edge of demand destruction. It transmits forward as: price pass-through → sell-side models the revenue/EPS hit to the memory makers → FIRST SK Hynix/Micron estimate cut (t2_eps_revisions flips from all-up consensus to first dissent) → forward multiple compresses (t2_pe_compressed) → only LATER, capex moderation (t2_capex_parabolic). When demand-destruction news intensifies, say so AND name what to watch next on this chain — the estimate-revision flip is the next domino, NOT capex (capex is the last to turn; makers keep building until they can't deny it). Frame it forward: "demand destruction is intensifying at the end market via OEM price pass-through; watching for transmission into SK Hynix/Micron estimate revisions (first sell-side dissent) — capex moderation is the later, lagging confirmation." This keeps the brief predictive, not just a re-note of an already-fired signal.
 
   COMPETITIVE / SUBSTITUTION:
   - CXMT / ChangXin capacity milestone or yield improvement → commodity DDR4/DDR5 oversupply risk → Samsung/SK Hynix spot pricing pressure on those nodes. State the timing: short-term impact (1-3mo) on spot, medium-term (3-9mo) on contract.
@@ -1998,6 +2000,8 @@ def sonnet_analyze(
                 for r in _pc_reasonings
             }
             apply_status_guard(_decisions, _pc_cache, _status_by_id)
+            # v3.41.6 — un-freeze dormant cards that got fresh evidence today
+            apply_news_freshness_guard(_decisions, _pc_cache, _pc_reasonings)
             _pc_regen_ids, _pc_reset_ids = split_regen_ids(_decisions)
             _pc_reuse_ids = {
                 i for i, d in _decisions.items()

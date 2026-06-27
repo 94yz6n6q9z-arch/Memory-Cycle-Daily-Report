@@ -122,6 +122,11 @@ def fetch_price_history(
         out, tickers, fmp_api_key=fmp_api_key, collector=collector,
     )
 
+    # v3.41.6: repair stale US tickers (peer-relative, holiday-robust)
+    out = _repair_stale_us_tickers(
+        out, tickers, fmp_api_key=fmp_api_key, collector=collector,
+    )
+
     return out
 
 
@@ -285,6 +290,165 @@ def _repair_stale_krx_tickers(
             t.items_returned = repairs_succeeded
             t.detail = (
                 f"{repairs_succeeded}/{repairs_attempted} KRX tickers repaired. "
+                + " | ".join(repair_details)
+            )
+
+    return history
+
+
+# ============================================================
+# v3.41.6 — US/EU staleness repair (peer-relative, holiday-robust)
+# ============================================================
+# The KRX repair above was the first fix for yfinance partial-batch
+# staleness, but it was scoped to .KS/.KQ only. US-listed names (MU,
+# AMAT, ASML, NVDA, hyperscalers) had NO freshness guard, so when the
+# batch yf.download returned a stale last bar for a SUBSET of US tickers
+# (observed 2026-06-27: NVDA fresh, MU/AMAT/ASML a session behind), the
+# stale bar passed straight through calculate_performance's .iloc[-1]
+# and rendered as current — a whole row one session stale, invisible.
+#
+# This guard is deliberately CALENDAR-FREE. Rather than computing an
+# "expected US session" (which would need the full NYSE/Nasdaq holiday
+# calendar to avoid false-flagging every Thanksgiving / July 4, and
+# US/KRX holidays differ so a global expected-session is wrong), it
+# compares each US ticker only against ITS OWN MARKET'S PEERS. US
+# equities share the NYSE/Nasdaq calendar, so if any peer has a fresher
+# bar, the laggards should too — and the laggards get refetched. On a
+# genuine US market holiday, every US name shares the same latest bar,
+# nothing looks stale relative to peers, and nothing fires. Holidays
+# move the peer baseline rather than tripping a false alarm.
+#
+# Limitation (accepted): if the ENTIRE US group is uniformly stale (all
+# names a session behind), peer-relative finds nothing — that rarer
+# failure mode is not covered here. The observed bug is a partial subset,
+# which this catches exactly.
+
+
+def _refetch_us_ticker_latest(
+    symbol: str,
+    expected_ts: pd.Timestamp,
+    fmp_api_key: Optional[str] = None,
+) -> Optional[dict]:
+    """Re-pull a single US ticker's latest close, targeting expected_ts.
+
+    The observed failure is a partial BATCH — yfinance had the fresh bar
+    (it served it to peers), the batch just didn't populate it for this
+    symbol. A single-ticker re-download usually resolves it. Falls back
+    to FMP's ticker-agnostic /quote endpoint if yfinance is still short.
+    Returns {price, asof, source} or None.
+    """
+    # 1. single-ticker yfinance re-download (short window)
+    try:
+        df = yf.download(
+            tickers=symbol, period="5d", interval="1d",
+            auto_adjust=True, progress=False,
+        )
+        if df is not None and not df.empty and "Close" in df:
+            close = df["Close"].dropna()
+            if not close.empty:
+                last_ts = pd.Timestamp(close.index[-1]).normalize()
+                if last_ts >= expected_ts:
+                    val = close.iloc[-1]
+                    # single-ticker frame can return a 1-col DataFrame
+                    if hasattr(val, "iloc"):
+                        val = val.iloc[0]
+                    return {
+                        "price": float(val),
+                        "asof": last_ts.isoformat(),
+                        "source": "yfinance-single",
+                    }
+    except Exception as e:
+        logger.warning(f"yfinance single re-download failed for {symbol}: {e}")
+
+    # 2. FMP /quote — the endpoint is ticker-agnostic (works for US too),
+    #    reusing the same helper the KRX path uses.
+    quote = _fetch_krx_quote_from_fmp(symbol, fmp_api_key) if fmp_api_key else None
+    if quote is not None:
+        return quote
+
+    return None
+
+
+def _repair_stale_us_tickers(
+    history: pd.DataFrame,
+    tickers: dict[str, str],
+    fmp_api_key: Optional[str] = None,
+    collector: Optional[DiagnosticsCollector] = None,
+) -> pd.DataFrame:
+    """Peer-relative staleness repair for US-listed tickers.
+
+    US group = symbols that are NOT KRX (.KS/.KQ) and NOT indices (^...).
+    Within the group, the freshest last-valid-bar date is the peer
+    baseline; any ticker older than the baseline is stale relative to its
+    market and gets refetched (single-ticker yfinance → FMP). Calendar-free
+    by construction (see module note above). Mutates and returns history.
+    """
+    us_tickers = {
+        name: symbol for name, symbol in tickers.items()
+        if not (symbol.endswith(".KS") or symbol.endswith(".KQ"))
+        and not symbol.startswith("^")
+    }
+    if len(us_tickers) < 2:
+        return history  # need peers to compare against
+
+    # last-valid-bar date per US ticker present in history
+    last_dates: dict[str, pd.Timestamp] = {}
+    for name in us_tickers:
+        if name not in history.columns:
+            continue
+        series = history[name].dropna()
+        if len(series) == 0:
+            continue
+        last_dates[name] = pd.Timestamp(series.index[-1]).normalize()
+
+    if len(last_dates) < 2:
+        return history
+
+    baseline_ts = max(last_dates.values())
+
+    repairs_attempted = 0
+    repairs_succeeded = 0
+    repair_details = []
+
+    for name, symbol in us_tickers.items():
+        latest_ts = last_dates.get(name)
+        if latest_ts is None or latest_ts >= baseline_ts:
+            continue  # fresh relative to peers
+
+        repairs_attempted += 1
+        days_stale = (baseline_ts - latest_ts).days
+        logger.warning(
+            f"US ticker {symbol} ({name}) stale vs peers: "
+            f"latest={latest_ts.date()}, peer baseline={baseline_ts.date()} "
+            f"({days_stale}d behind). Refetching."
+        )
+
+        fresh = _refetch_us_ticker_latest(symbol, baseline_ts, fmp_api_key)
+        if fresh is None:
+            prev = history[name].dropna().iloc[-1]
+            logger.error(
+                f"Could not repair stale {symbol} via yfinance or FMP — "
+                f"keeping value {prev:.2f} from {latest_ts.date()}. "
+                f"Brief will display this stale value."
+            )
+            repair_details.append(f"{symbol}: failed (refetch exhausted)")
+            continue
+
+        history.loc[baseline_ts, name] = fresh["price"]
+        history = history.sort_index()
+        repairs_succeeded += 1
+        logger.info(
+            f"Repaired {symbol} via {fresh['source']}: latest close = "
+            f"{fresh['price']:.2f} (was {history[name].dropna().iloc[-2]:.2f} "
+            f"from {latest_ts.date()})"
+        )
+        repair_details.append(f"{symbol}: repaired via {fresh['source']}")
+
+    if repairs_attempted > 0 and collector is not None:
+        with collector.track("US staleness repair", "internal") as t:
+            t.items_returned = repairs_succeeded
+            t.detail = (
+                f"{repairs_succeeded}/{repairs_attempted} US tickers repaired. "
                 + " | ".join(repair_details)
             )
 

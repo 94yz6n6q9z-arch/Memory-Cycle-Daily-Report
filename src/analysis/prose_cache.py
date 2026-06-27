@@ -193,6 +193,40 @@ def apply_status_guard(decisions: dict, cache: dict, current_status_by_id: dict)
     return decisions
 
 
+def apply_news_freshness_guard(decisions: dict, cache: dict, reasonings: list) -> dict:
+    """v3.41.6 — un-freeze a dormant card when fresh evidence arrived.
+
+    The dormancy fingerprint hashes ONLY fired_status, so a long-fired
+    indicator is reused verbatim every day even as its story escalates — the
+    status pill stays right while latest_developments goes stale (observed:
+    demand-destruction fired since April, blank on the June OEM price-hike
+    wave). This guard flips such a card to 'regen' when its evidence_count has
+    INCREASED versus the count stored when the card was last built — i.e. net
+    new evidence (fresh material news) hit the indicator.
+
+    Only an increase triggers; equal/decrease keeps the reuse. Erring toward
+    regen is the safe direction: a spurious regen costs ~a cent and just
+    refreshes prose, whereas a missed one ships a stale card on an escalating
+    story. Cards with no stored baseline (pre-v3.41.6 entries) stay reuse and
+    pick up a baseline on their next regen.
+    """
+    by_id = {getattr(r, "signal_id", None): r for r in reasonings}
+    for ind_id, dec in decisions.items():
+        if dec.get("action") != "reuse":
+            continue
+        r = by_id.get(ind_id)
+        if r is None:
+            continue
+        cur = getattr(r, "evidence_count", None)
+        cached = (cache.get(ind_id) or {}).get("evidence_count")
+        if isinstance(cur, int) and isinstance(cached, int) and cur > cached:
+            decisions[ind_id] = {
+                "action": "regen",
+                "reason": f"new_evidence(count {cached}->{cur})",
+            }
+    return decisions
+
+
 def get_cached_assessment_dict(cache: dict, ind_id: str) -> Optional[dict]:
     """Return the cached prose fields for an indicator (or None if absent)."""
     entry = cache.get(ind_id)
@@ -225,12 +259,13 @@ def update_cache_after_synthesis(cache: dict, assessments: list, reasonings: lis
     if clock_reset_ids is None:
         clock_reset_ids = set(regenerated_ids)
     t_iso = _today(today).isoformat()
-    fp_by_id, status_by_id = {}, {}
+    fp_by_id, status_by_id, evcount_by_id = {}, {}, {}
     for r in reasonings:
         rid = getattr(r, "signal_id", None)
         if rid:
             fp_by_id[rid] = compute_fingerprint(r)
             status_by_id[rid] = getattr(r, "fired_status", None)
+            evcount_by_id[rid] = getattr(r, "evidence_count", None)
 
     assess_by_id = {getattr(a, "id", None): a for a in assessments}
     for ind_id in regenerated_ids:
@@ -243,6 +278,12 @@ def update_cache_after_synthesis(cache: dict, assessments: list, reasonings: lis
         entry["fingerprint"] = fp_by_id.get(ind_id, "")
         entry["fingerprint_algo"] = FINGERPRINT_ALGO
         entry["status"] = status_by_id.get(ind_id) or getattr(a, "current_status", None)
+        # v3.41.6 — evidence_count baseline for the news-freshness guard. A
+        # later run with MORE evidence for this id means fresh material news
+        # arrived → the card un-freezes even if fired_status is unchanged.
+        ev = evcount_by_id.get(ind_id)
+        if isinstance(ev, int):
+            entry["evidence_count"] = ev
         entry["updated_date"] = t_iso
         if ind_id in clock_reset_ids:
             entry["last_full_regen_date"] = t_iso

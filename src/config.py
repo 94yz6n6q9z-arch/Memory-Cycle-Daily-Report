@@ -390,20 +390,34 @@ INDICATORS: list[Indicator] = [
         tier=1,
         name="PC / smartphone / server demand cuts",
         short_label="PC/smartphone cuts",
-        description="IDC, Counterpoint, Gartner revise forecasts down. Authoritative single-source signals.",
+        description="IDC, Counterpoint, Gartner revise forecasts down (the quantity signal) PLUS the leading price-pass-through edge — OEMs raising end-device prices or cutting memory content to offset memory costs.",
         what_to_look_for=(
-            "IDC PC shipment forecast revised to -5% or worse for 2026 (current -2.4 to "
-            "-11.3% — already fired). Counterpoint smartphone <0% (current -2%). Gartner "
-            "data center server forecast cut."
+            "QUANTITY (firing condition, already met): IDC PC shipment forecast revised to "
+            "-5% or worse for 2026 (current -2.4 to -11.3% — already fired). Counterpoint "
+            "smartphone <0% (current -2%). Gartner data center server forecast cut. "
+            "LEADING / INTENSIFICATION (signal already fired — these DEEPEN it, they are the "
+            "early end-market tell before forecast cuts widen): OEMs raising end-device prices "
+            "to offset memory costs (Apple, Microsoft, Sony, Nintendo, Dell, Valve), removing "
+            "low-spec/entry configurations, cutting memory content per device, substituting "
+            "cheaper nodes, or delaying refresh cycles. NOTE: holding a price point by cutting "
+            "memory content AND raising price to hold content are BOTH demand-destruction "
+            "mechanisms — do not read a memory-content INCREASE (e.g. iPhone to 12GB for on-device "
+            "AI) as a reversal; the destruction shows up in unit demand and price elasticity."
         ),
         sources=["IDC press releases", "Counterpoint Research", "Gartner press releases",
-                 "Reuters / Bloomberg via Google News"],
+                 "Reuters / Bloomberg via Google News",
+                 "OEM pricing announcements (Apple, Microsoft, Sony, Dell)", "Canalys"],
         trigger_patterns=[
             "IDC revised", "IDC lowered", "IDC cut forecast",
             "Counterpoint revised", "Counterpoint cut",
             "Gartner revised", "Gartner cut",
             "PC shipments revised down", "smartphone shipments revised down",
             "server forecast cut", "data center forecast lowered",
+            # v3.41.6 — leading price-pass-through / OEM-workaround patterns
+            "raises prices memory", "price hike memory", "memory cost pass-through",
+            "raising prices chip costs", "removes base configuration",
+            "reduces memory content", "RAMageddon", "memory costs margins",
+            "delays refresh", "cheaper memory node",
         ],
         trigger_numeric={
             "pc_shipment_forecast_yoy_pct": {"trigger_below": -5.0},
@@ -411,8 +425,16 @@ INDICATORS: list[Indicator] = [
         },
         cadence="Single press release from primary source (IDC/Counterpoint/Gartner) sufficient",
         stitching=(
-            "These three firms are authoritative — single press release fires the signal. "
-            "News coverage from Reuters/Bloomberg/CNBC corroborates timing but isn't required."
+            "These three firms are authoritative — single press release fires the signal "
+            "(already fired). News coverage from Reuters/Bloomberg/CNBC corroborates timing "
+            "but isn't required. The price-pass-through edge (OEMs raising prices / cutting "
+            "content to offset memory costs) is the LEADING manifestation — it appears before "
+            "shipment-forecast cuts widen, and is the early tell that demand destruction is "
+            "INTENSIFYING toward the transmission that actually calls the peak: OEM price "
+            "pass-through → sell-side models the revenue/EPS hit → first SK Hynix/Micron "
+            "estimate cut (t2_eps_revisions flips from all-up consensus) → multiple compresses "
+            "(t2_pe_compressed) → only later, capex moderation. Watch the estimate-revision "
+            "transmission first; capex degradation is the last domino, not the next one."
         ),
     ),
 
@@ -1902,6 +1924,31 @@ GOOGLE_NEWS_QUERIES = [
     "OpenAI public listing",
     "Anthropic IPO",
     "Anthropic public listing",
+    # v3.41.6 — DOWNSTREAM DEMAND-DESTRUCTION LANE.
+    # The June 25 2026 Apple/Microsoft/Sony price-hike story (devices
+    # repriced to offset the memory squeeze) was entirely absent from the
+    # brief: the framework-keyword queries above are memory/Korea/inference
+    # tilted and never look at the END market. These catch (a) OEM price
+    # pass-through and memory-reduction workarounds — the LEADING edge of
+    # t1_demand_destruction, (b) the authoritative shipment-forecast sources
+    # (the quantity confirm), and (c) the sell-side estimate-revision
+    # transmission that actually calls the peak (DD → SK Hynix/Micron EPS cuts).
+    # (a) OEM price pass-through / memory-reduction workarounds
+    "Apple raises prices memory chip cost",
+    "PC laptop price increase memory shortage",
+    "smartphone price hike memory cost",
+    "memory shortage consumer electronics prices",
+    "DRAM NAND price increase device makers",
+    "OEM memory content reduction",
+    # (b) shipment-forecast sources (quantity confirm)
+    "IDC PC shipment forecast revised",
+    "Counterpoint smartphone shipment forecast",
+    "Gartner PC server shipment forecast",
+    "Canalys PC smartphone shipments",
+    # (c) estimate-revision transmission (the peak-caller)
+    "SK Hynix earnings estimate revision",
+    "Micron revenue EPS estimate cut",
+    "memory maker margin demand destruction",
 ]
 
 
