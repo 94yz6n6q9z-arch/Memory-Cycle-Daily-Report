@@ -1,13 +1,13 @@
 {
-  "written_at_iso": "2026-06-27T09:15:00.379389+00:00",
+  "written_at_iso": "2026-06-29T11:32:59.386256+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 1,
+    "full_transcript": 0,
     "materials_only": 0,
     "nothing": 2,
-    "already_processed": 32,
+    "already_processed": 33,
     "by_company": {
-      "Micron": "full_transcript",
+      "Micron": "already_processed",
       "Nvidia": "already_processed",
       "Broadcom": "already_processed",
       "TSMC": "already_processed",
@@ -211,10 +211,10 @@
     {
       "company": "Micron",
       "ticker": "MU",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": null,
-      "char_count": 31694
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "Nvidia",
