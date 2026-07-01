@@ -45,22 +45,30 @@
       "evidence_count": 0
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-06-29",
+      "last_full_regen_date": "2026-07-01",
       "current_status": "Fired",
-      "where_we_stand": "Fired permanently since Mar 24 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup). Today's news adds DeepSeek DSpark (speculative decoding, 85% V4 speedup) as corroborating ecosystem evidence. Liquid AI on-device inference and Nvidia efficiency initiatives also cited in today's feed. The DHCR direction monitor (t1_decode_hbm_captive_ratio) remains UNKNOWN on composite capacity-creation\u2026",
-      "latest_developments": "DeepSeek DSpark speculative decoding: V4 up to 85% faster. [Link](https://news.google.com/rss/articles/CBMixgFBVV95cUxNRVRFbTltV1I2R2hYbGNmc2ZSdWhCczVWRFdCT0JJc3hoNFJNVjhhM3hyZG1nT000dGJRWGw4eHRUY3lLY2NleTR1VXRlZ1l0VzZtSFZpQ1AzY3JmdktaQ2dncjFhV18tM3pEMDFKbGV5WXhZRGo0RldsT1lueFZnOXBRTTJVNlJJTEptNlJtUzBrYldLUHF6U1VTVUtjS2Z5VFp0VjRGQjNGTjFma0V1ODViY0xSOENxeEtTYXhWSXJRYlVVYnc). Permanent fired status \u2014 no retraction condition exists.",
+      "where_we_stand": "Fired since March 24, 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup \u2014 permanent persistence). Today adds three independent corroborating events: (1) OpenAI announced inference cost cut of ~50% via disaggregated serving architecture; (2) NVIDIA TensorRT-LLM reduced DeepSeek v4 token costs 5x through pure Blackwell software tuning; (3) DeepSeek DSpark\u2026",
+      "latest_developments": "OpenAI halved inference costs via disaggregated serving; NVIDIA cut DeepSeek v4 token costs 5x via TensorRT-LLM software; DeepSeek DSpark added KV-cache compression. [OpenAI](https://news.google.com/rss/articles/CBMiiAFBVV95cUxOVFZORHRMNWVZUEZlY3ZGSG5WWThTUG1OUjhDYlBnMVBid1U0QTNIM0lUdF9McVV0YkRrS1FGejM4UWs1MWNUaVBRRmRKQkgzVXEwQlRzc0RmQ1FIeUhZQlVSOU1mczlaMFJNQ1o0eDNCOGJqN0puZ002eVdqTTFJVmNJakZpQ0lu) | [NVIDIA](https://news.google.com/rss/articles/CBMidEFVX3lxTFB2S0VYc09jV0xvVDdrbUFFQzhuR1pNeXVxWS1RMURWd09IV253UEVJRHdHSFdHTUp2eHZMbldEWDgwQ1NWTkE1cUJXTGQ0WWlRdjdVdmZyUDhFNi1zYlZiTlFLaUEzWjRiYTFaYWRwQzQ3R2lp) | [DeepSeek DSpark](https://news.google.com/rss/articles/CBMilwFBVV95cUxPa1dpN0FSYlM1Uk5jQzJqYVR6c1lXbEdsX0labnF6ekZKMVptMUw2OHhOTWFwMm5YQnlpaW9DNUd2eXg1bFNaLUI3MUhXYTBrWUxSVHhMOEFzWk1sZTE2LU9SVExZelh4bjl1TDlKUXBYMURIRUJDV1NIejU4Tk5ZZXNYZktWWVJzWlhDaHp3R1hOU0luVzc0)",
       "relevant_links": [
         {
-          "title": "DeepSeek DSpark \u2014 speculative decoding 85% speedup",
-          "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNRVRFbTltV1I2R2hYbGNmc2ZSdWhCczVWRFdCT0JJc3hoNFJNVjhhM3hyZG1nT000dGJRWGw4eHRUY3lLY2NleTR1VXRlZ1l0VzZtSFZpQ1AzY3JmdktaQ2dncjFhV18tM3pEMDFKbGV5WXhZRGo0RldsT1lueFZnOXBRTTJVNlJJTEptNlJtUzBrYldLUHF6U1VTVUtjS2Z5VFp0VjRGQjNGTjFma0V1ODViY0xSOENxeEtTYXhWSXJRYlVVYnc"
+          "title": "OpenAI Slashes Inference Costs in Half",
+          "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxOVFZORHRMNWVZUEZlY3ZGSG5WWThTUG1OUjhDYlBnMVBid1U0QTNIM0lUdF9McVV0YkRrS1FGejM4UWs1MWNUaVBRRmRKQkgzVXEwQlRzc0RmQ1FIeUhZQlVSOU1mczlaMFJNQ1o0eDNCOGJqN0puZ002eVdqTTFJVmNJakZpQ0lu"
+        },
+        {
+          "title": "NVIDIA Slashes DeepSeek v4 Token Costs By Up To 5x",
+          "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxPNlg1TERfeFBUZzdJUTlwUWljQUNiY3hvUEhEUjI0Zi1BOTYtQWw3bTcyVVFHZ1FfY0NzSjZxX3lvNXg5eFh1NWdhaXZWbWxYZy1RS0ozak9YOXpxN1oxWDl6MWRwVTU5a1pUd1pNZWpJYkNENFZwMGVlUURCQTlWRElfOHJ0eGppS1U1X1pJNXNrT0hXaGxJUWdkd9IBoAFBVV95cUxOckZXcVVQc0RwRFRtRHhLUUJzNDF2Y2pDbHo3THduWml0cmZkWmg0WXdmTkM4VU5qdEN1SnZtQ01BSmpGRzc1VkMzVGNyYlhrcG8wYUZKMUtJWmxiNmp0UlR2ZHh0V0h6a19fYllKYzlMWHM3WXNUQy1YUUxnVG1zMlF5a1RaSUlNNlFteWl4YnpDVC0zZDJreTEtTkZmcDU2"
+        },
+        {
+          "title": "DeepSeek DSpark KV-cache compression (Motley Fool)",
+          "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxPa1dpN0FSYlM1Uk5jQzJqYVR6c1lXbEdsX0labnF6ekZKMVptMUw2OHhOTWFwMm5YQnlpaW9DNUd2eXg1bFNaLUI3MUhXYTBrWUxSVHhMOEFzWk1sZTE2LU9SVExZelh4bjl1TDlKUXBYMURIRUJDV1NIejU4Tk5ZZXNYZktWWVJzWlhDaHp3R1hOU0luVzc0"
         }
       ],
-      "change_vs_prior": null,
+      "change_vs_prior": "Status confirmed Fired (permanent persistence since March 24, 2026). Today's OpenAI, NVIDIA, and DeepSeek publications add 3 new corroborating sources, broadening the efficiency-shock from a single-lab event to an industry-wide pattern. No status change \u2014 signal remains Fired.",
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-06-29",
+      "updated_date": "2026-07-01",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 5
+      "evidence_count": 7
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-06-29",
