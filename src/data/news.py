@@ -1851,16 +1851,16 @@ LPDDR_KEYWORD_RE_v3413 = re.compile(r"\bLPDDR\d?[A-Z]*\b", re.IGNORECASE)
 # "QoQ increase", "price hike of X%"
 LPDDR_RISING_PATTERNS_v3413 = [
     re.compile(
-        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:expected to\s+)?(?:grow|rise|surge|increase|climb|jump|hike|up)\s+(?:by\s+)?(?:approximately\s+|around\s+|~\s*)?(\d+(?:\.\d+)?)\s*%",
+        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:expected to\s+)?(?:grow|grew|rise|rose|surge|surged|increase|increased|climb|climbed|jump|jumped|soar|soared|double|doubled|triple|tripled|hike|hiked|up)\s+(?:by\s+)?(?:approximately\s+|around\s+|~\s*)?(\d+(?:\.\d+)?)(?:\s*(?:[-\u2013]|to)\s*\d+(?:\.\d+)?)?\s*%",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?:price\s+hike|price\s+increase|QoQ\s+(?:growth|rise|increase))\s+(?:of\s+|by\s+|approximately\s+|~\s*)?(\d+(?:\.\d+)?)\s*%[^.]{0,50}?LPDDR",
+        r"(?:price\s+hike|price\s+increase|QoQ\s+(?:growth|rise|increase))\s+(?:of\s+|by\s+|approximately\s+|~\s*)?(\d+(?:\.\d+)?)(?:\s*(?:[-\u2013]|to)\s*\d+(?:\.\d+)?)?\s*%[^.]{0,50}?LPDDR",
         re.IGNORECASE,
     ),
     # Directional only ("expected to grow") with no magnitude — assign None
     re.compile(
-        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:expected to\s+)?(?:grow|rise|surge|increase|climb|jump)",
+        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:expected to\s+)?(?:grow|grew|rise|rose|surge|surged|increase|increased|climb|climbed|jump|jumped|soar|soared|double|doubled|triple|tripled)",
         re.IGNORECASE,
     ),
 ]
@@ -1869,7 +1869,7 @@ LPDDR_RISING_PATTERNS_v3413 = [
 # "roll over", "weakness"
 LPDDR_FALLING_PATTERNS_v3413 = [
     re.compile(
-        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:expected to\s+)?(?:decline|fall|drop|correct|decrease|down|slip)\s+(?:by\s+)?(?:approximately\s+|around\s+|~\s*)?(\d+(?:\.\d+)?)\s*%",
+        r"LPDDR[\dA-Z]*\s+(?:[\w,]+\s+){0,8}?(?:expected to\s+)?(?:decline|declined|fall|fell|drop|dropped|correct|corrected|decrease|decreased|down|slip|slipped|slid|tumble|tumbled)\s+(?:by\s+)?(?:approximately\s+|around\s+|~\s*)?(\d+(?:\.\d+)?)(?:\s*(?:[-\u2013]|to)\s*\d+(?:\.\d+)?)?\s*%",
         re.IGNORECASE,
     ),
     re.compile(
@@ -2019,7 +2019,15 @@ def _extract_release_date_from_url_v3413(url: str) -> Optional[str]:
 
 
 LPDDR_PARSER_NO_MATCH_SENTINEL_FILE = "state/lpddr_scraper_consecutive_parser_no_match.json"
-LPDDR_PARSER_NO_MATCH_SENTINEL_THRESHOLD = 3
+# v3.41.8: raised 3 -> 75. TrendForce states LPDDR contract DIRECTIONS only in
+# its ~quarterly memory-price-outlook releases (1Q in early Feb, 2Q in late
+# Mar, etc.); between them, recent DRAM articles mention LPDDR with no price
+# direction, which is a legitimate parser_no_match, not a bug. A quarter is
+# ~63 weekday runs, so a threshold of 3 false-alarmed for ~6 weeks straight.
+# 75 only trips if the gap exceeds a full quarter — i.e. a new outlook came and
+# went WITHOUT being parsed, which would indicate a genuine source/phrasing
+# change. The next outlook resets the sentinel when its direction is extracted.
+LPDDR_PARSER_NO_MATCH_SENTINEL_THRESHOLD = 75
 
 
 def _load_lpddr_sentinel_v3413() -> int:
@@ -2174,21 +2182,34 @@ def scrape_trendforce_lpddr_contract(
                     _save_lpddr_sentinel_v3413(sentinel_count)
                     if sentinel_count >= LPDDR_PARSER_NO_MATCH_SENTINEL_THRESHOLD:
                         t.detail = (
-                            f"BUG SUSPECTED: {sentinel_count} consecutive parser_no_match runs. "
-                            f"{r.pages_with_lpddr_keywords}/{r.pages_checked} pages "
-                            f"mention LPDDR but regex didn't match. Sample: '{r.sample_text_when_unparsed[:120]}...'"
+                            f"STALE: no LPDDR contract-direction extracted in "
+                            f"{sentinel_count} runs (> a quarter). "
+                            f"{r.pages_with_lpddr_keywords}/{r.pages_checked} recent pages "
+                            f"mention LPDDR but state no price direction. TrendForce publishes "
+                            f"LPDDR directions ~quarterly, so a gap this long suggests its outlook "
+                            f"phrasing changed or LPDDR pricing moved behind the members-only "
+                            f"contract-price page — worth a manual check. Sample: "
+                            f"'{r.sample_text_when_unparsed[:120]}...'"
                         )
-                        # Re-raise as warning at error-equivalent severity
-                        # so the collector marks the row as ERROR not OK
+                        # Surface as ERROR via the collector only after a gap
+                        # longer than TrendForce's ~quarterly outlook cadence —
+                        # at that point a genuine source/phrasing change is the
+                        # likely cause (a normal between-outlook gap resets well
+                        # before this). This is NOT a per-run regex failure.
                         raise RuntimeError(
-                            f"LPDDR scraper: {sentinel_count} consecutive parser_no_match "
-                            f"runs — regex likely needs update. Last sample: {r.sample_text_when_unparsed[:200]}"
+                            f"LPDDR scraper: no contract-direction extracted in "
+                            f"{sentinel_count} runs (> a quarter) — verify TrendForce's "
+                            f"outlook phrasing / source. Last sample: "
+                            f"{r.sample_text_when_unparsed[:200]}"
                         )
                     else:
                         t.detail = (
-                            f"parser_no_match ({sentinel_count}/{LPDDR_PARSER_NO_MATCH_SENTINEL_THRESHOLD}): "
-                            f"{r.pages_with_lpddr_keywords}/{r.pages_checked} pages mention LPDDR "
-                            f"but regex didn't match. Sample: '{r.sample_text_when_unparsed[:120]}...'"
+                            f"no LPDDR direction this run "
+                            f"({sentinel_count}/{LPDDR_PARSER_NO_MATCH_SENTINEL_THRESHOLD} "
+                            f"since last extraction): {r.pages_with_lpddr_keywords}/"
+                            f"{r.pages_checked} recent pages mention LPDDR without a price "
+                            f"direction — normal between TrendForce's ~quarterly outlooks. "
+                            f"Sample: '{r.sample_text_when_unparsed[:120]}...'"
                         )
                 elif r.status == "fetch_failed":
                     t.detail = f"fetch_failed: {r.error or 'unknown'}"

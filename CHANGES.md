@@ -2,6 +2,49 @@
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
 
+## v3.41.8 (2026-06-30) — LPDDR contract-direction scraper: kill the false alarm, widen the regex
+
+The LPDDR direction scraper had been throwing `RuntimeError: … regex likely needs update` every run (45 consecutive `parser_no_match`). Investigation against live TrendForce content showed the regex was **not** broken — the built-in diagnosis was wrong.
+
+### Root cause
+
+`scrape_trendforce_lpddr_contract` scans the ~20 most recent TrendForce DRAM-category articles and regex-extracts an LPDDR price *direction* (rising/falling/flat + magnitude). TrendForce states LPDDR directions only in its **~quarterly** memory-price-outlook releases (1Q early Feb, 2Q late March, 3Q ~now). Between outlooks, recent DRAM articles mention LPDDR constantly in HBM/server commentary **without** a price direction — a legitimate `parser_no_match`, not a bug. The sentinel escalated to `RuntimeError("regex likely needs update")` after just **3** consecutive `parser_no_match` runs, assuming near-daily directions; against a quarterly cadence (~63 weekday runs) that false-alarmed for ~6 weeks straight. (The error was caught downstream, so it never broke the brief — but it logged a traceback every run and mislabeled the scraper as broken.)
+
+### Fixes (validated against live TrendForce text)
+
+1. **Sentinel threshold 3 → 75** — quarter-aware. A normal between-outlook gap (~63 runs) no longer trips it; the next outlook resets the counter when its direction is extracted. The escalation now fires only if a gap exceeds a full quarter — i.e. a new outlook came and went *without* being parsed, which would indicate a genuine source/phrasing change. Messages reworded (the regex isn't the suspect; the source/phrasing is).
+2. **Regex widened** — two real gaps found against live phrasings: (a) past-tense direction verbs (TrendForce writes "LPDDR5X pricing **rose** 58-63%", "contract prices **surged** ~90%"; the list had only present tense) — now includes grew/rose/surged/climbed/jumped/soared/doubled/tripled and the falling equivalents; (b) **range magnitudes** ("58-63%", "90-95%" are TrendForce's norm) — now captured (low end of the range) instead of failing the single-number pattern. Passing mentions ("…server DRAM such as LPDDR…") and revenue stats ("revenue 91.4% QoQ") correctly remain non-signals.
+
+### Tests
+
+`tests/test_v3_41_8_lpddr_scraper.py` — 9 tests (range + past-tense extraction, single/range surge, directional "double", falling range; passing-mention and revenue-stat correctly not signals; threshold quarter-aware). Existing `test_v3_4_13_lpddr_scraper.py` still 32/32 (widening is additive). Full suite: zero regression (59 unchanged fixture-dependent failures, +9 new passes). No new dependency.
+
+### Not done (deliberately)
+
+A bigger option exists — re-source LPDDR direction from TrendForce's dedicated Mobile DRAM / LPDDR contract-price page for always-current data instead of scanning aging news articles — but that page may be members-only and needs its own HTML validation. Deferred unless the news-article path proves insufficient.
+
+## v3.41.7 (2026-06-30) — News-section robustness: a malformed Sonnet-JSON break no longer blanks Section 5
+
+A June 30 brief rendered Section 5 as "No major news items selected" despite 54 triaged-relevant items, and the regenerated Micron card showed a dangling "([link" with no URL. Both trace to one cause, which the prose-cache made silent.
+
+### Root cause
+
+Sonnet's JSON output broke mid-generation — an inline markdown link in a prose field produced an unterminated string at ~char 4166. `json_repair` salvaged the fields emitted *before* the break (the exec summary and a partial `t2_eps_revisions` card) and dropped everything after it. `key_news_summary` sits late in the object, so it was the first casualty → empty Section 5. The dangling "([link" is the literal break point. The prose-cache supplied 23 of 24 indicator cards from cache, so the only visible damage was the news section plus the one card that regenerated this run — turning what used to be an obvious total-failure-to-fallback event into a silent, localized one.
+
+### Fixes
+
+1. **Section-5 safety net** (`llm_summarizer.py`, new `_news_fallback_from_triage` + assembly-site wiring) — when Sonnet's `key_news_summary` is empty, populate Section 5 from the Haiku triage's already-scored `relevant_news` (title/url + its one-line takeaway as `why_it_matters`). Faithful, not degraded — the triage output is already in hand. Logs `[news-fallback] …` at WARNING when it fires, so a future occurrence shows up in the run log instead of being silent.
+2. **Forbid inline links in prose** (Sonnet prompt) — the schema previously said `latest_developments: "…Markdown links allowed."`, sanctioning the exact construct that broke the JSON. Now every URL goes in the structured `relevant_links` / `key_news_summary[].url` fields only, and an explicit OUTPUT HYGIENE rule forbids inline/parenthetical links in any prose field. Removes the break cause and fixes the dangling-link rendering (structured links already render as proper clickable tags).
+3. **Emit `key_news_summary` (and `market_summary`) before `indicator_assessments`** (schema reorder) — so a mid-card JSON break can no longer drop the news block even if one slips through.
+
+### Tests
+
+`tests/test_v3_41_7_news_fallback.py` — 9 tests (fallback maps triaged items with takeaway, falls back to raw feed, empty when no news, skips title-less items, respects top_n, prefers triage over raw; prompt asserts `key_news_summary` precedes `indicator_assessments` and the inline-link prohibition is present / "Markdown links allowed" removed). Regression-checked by running the full suite on both the modified tree and the unmodified v3.41.6 base under identical conditions — identical 59 fixture-dependent failures in untouched files, +9 new passes. No new dependency.
+
+### Not in this release
+
+The LPDDR direction scraper is throwing `parser_no_match` every run (stale regex) — caught and non-blocking, tracked separately. Macro name-the-driver lane still pending.
+
 ## v3.41.6 (2026-06-27) — Demand-destruction coverage + awareness, and the US price-staleness bug
 
 Five fixes, all diagnosed from production brief screenshots (the June 25 Apple/OEM memory-price-hike wave being absent, the demand-destruction card frozen on April text, and the Saturday brief showing Thursday's US prices for a subset of tickers).

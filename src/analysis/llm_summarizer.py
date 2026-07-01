@@ -1629,6 +1629,8 @@ Tone: institutional analyst, declarative, no hedging language ("might", "could",
 
 OUTPUT HYGIENE — investor-facing prose: every prose field you write (executive_brief, where_we_stand, latest_developments, change_vs_prior) is read directly by an investor. NEVER expose internal framework machinery in them: no version tags ("v3.x", "per v..."), no internal rule names, and no mechanism vocabulary ("operative state", "cluster", "fingerprint", "requires resolution", "supersede", "Layer 2", "Layer 3", "tier signal"). Describe what is happening in the world and your conclusion in plain analyst language — never how the framework arrived at it.
 
+OUTPUT HYGIENE — URLs and links: every source link goes in a STRUCTURED field only — the per-indicator `relevant_links` array ({{"title": "...", "url": "..."}}) or `key_news_summary[].url`. NEVER write a URL or a markdown/parenthetical link such as "([label](https://...))" inline inside any prose field (executive_brief, market_summary, where_we_stand, latest_developments, change_vs_prior, cycle_position_call). An inline link in prose breaks the JSON output mid-string — everything after it is lost, including the news block — and even when it parses it renders as raw text, not a clickable link. The prose states the claim; the structured field carries the link.
+
 HANDLING CONFLICTING NEWS ON THE SAME EVENT:
 
 When two or more news items in today's feed reference the SAME real-world event but report contradictory direction (e.g. one says "Samsung strike to launch", another says "Samsung union calls off strike"), you MUST resolve the contradiction by published timestamp, not by item count.
@@ -1684,20 +1686,20 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
 {json_example_case_block}
     "delta_from_prior_text": "Legacy field (v3.39.7.5: no longer rendered, but keep emitting for back-compat / observability). Short description of probability/peak-window shifts vs prior brief."
   }},
+  "market_summary": "≤40 words on today's memory/semi market action",
+  "key_news_summary": [
+    {{"headline": "...", "url": "...", "why_it_matters": "≤25 words"}}
+  ],
   "indicator_assessments": [
     {{
       "id": "t1_spot_decline",
       "tier": 1,
       "current_status": "Fired | Partially fired | Not fired",
       "where_we_stand": "≤50 words (≤90 for the 5 deep-dive ids below). Lead with the number/status, not narrative.",
-      "latest_developments": "≤35 words. Markdown links allowed. If nothing new today, return an empty string — do NOT pad.",
+      "latest_developments": "≤35 words. No inline URLs or markdown links — cite sources in relevant_links. If nothing new today, return an empty string — do NOT pad.",
       "relevant_links": [{{"title": "...", "url": "..."}}],
       "change_vs_prior": "ONLY if status changed vs prior; else null. Omit entirely when unchanged."
     }}
-  ],
-  "market_summary": "≤40 words on today's memory/semi market action",
-  "key_news_summary": [
-    {{"headline": "...", "url": "...", "why_it_matters": "≤25 words"}}
   ],
   "cycle_position_call": "≤80 words: where we are in cycle today, what changed since prior brief, what to watch next"
 }}
@@ -1919,6 +1921,47 @@ NOW THE DATA:
 {triage_text}
 """
     return prompt
+
+
+def _news_fallback_from_triage(
+    triage: NewsTriage,
+    news_items: Optional[list[NewsItem]] = None,
+    top_n: int = 8,
+) -> list[dict]:
+    """Build a Section-5 news list from Haiku-triaged items.
+
+    v3.41.7 — safety net for when Sonnet's curated `key_news_summary` comes
+    back empty. The dominant cause is a malformed-JSON break (unterminated
+    string) mid-output: json_repair salvages the fields BEFORE the break and
+    drops everything after it, and key_news_summary sits late in the object,
+    so it is the first casualty. Rather than render an empty news section when
+    relevant news plainly exists, fall back to the Haiku triage's
+    `relevant_news` — already filtered to the memory/semi-relevant subset with
+    a one-line takeaway per item, so this is faithful, not degraded. Prefers
+    triage.relevant_news; last-resorts to the raw feed.
+    """
+    out: list[dict] = []
+    for item in (getattr(triage, "relevant_news", None) or [])[:top_n]:
+        title = (item.get("title") or "").strip()
+        if not title:
+            continue
+        out.append({
+            "headline": title,
+            "url": (item.get("url") or "").strip() or "#",
+            "why_it_matters": (item.get("summary") or "").strip(),
+        })
+    if out:
+        return out
+    for n in (news_items or [])[:top_n]:
+        title = (getattr(n, "title", "") or "").strip()
+        if not title:
+            continue
+        out.append({
+            "headline": title,
+            "url": (getattr(n, "url", "") or "").strip() or "#",
+            "why_it_matters": "",
+        })
+    return out
 
 
 def sonnet_analyze(
@@ -2389,13 +2432,27 @@ def sonnet_analyze(
         except Exception as e:
             logger.warning(f"[prose-cache] cache update/save failed (non-fatal): {e}")
 
+    # v3.41.7 — Section-5 safety net. If Sonnet's key_news_summary is empty
+    # (typically because a malformed-JSON break dropped it — it sits late in
+    # the object), fall back to the Haiku-triaged relevant_news so the news
+    # section is never blank when relevant news exists.
+    _key_news = parsed.get("key_news_summary") or []
+    if not _key_news:
+        _key_news = _news_fallback_from_triage(triage, news_items)
+        if _key_news:
+            logger.warning(
+                "[news-fallback] Sonnet key_news_summary empty/lost; "
+                f"populated Section 5 from {len(_key_news)} Haiku-triaged "
+                "items instead (likely a JSON-break dropping the field)."
+            )
+
     return BriefAnalysis(
         executive_summary=exec_summary,
         big_movers=big_movers,
         indicator_assessments=assessments,
         top_5_deep_dives=top_5,
         market_summary=parsed.get("market_summary", ""),
-        key_news_summary=parsed.get("key_news_summary", []),
+        key_news_summary=_key_news,
         cycle_position_call=parsed.get("cycle_position_call", ""),
     )
 
