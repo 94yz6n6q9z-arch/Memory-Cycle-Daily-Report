@@ -2,6 +2,25 @@
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
 
+## v3.41.9 (2026-07-01) — Earnings coverage-echo guard: week-old prints stop leading the exec brief
+
+Six consecutive briefs (June 25 → July 1) led the executive summary with "the dominant development is Micron's Q3 print" — an event from ~June 24. Raul's requirement: day-of and a day or two of aftermath is fine; a recap on D+4 that restates the beat adds zero information and must not lead — but a genuinely incremental fact tied to the print (an analyst raising a PT on D+2) is legitimate news on its day and must NOT be suppressed.
+
+### Root cause
+
+Not stale caching — each day's paragraph was freshly generated (different angle each day: the print itself, the session move, the CEO quote). Three factors combined: (i) news items carry a **publish** date, not an **event** date — a blowout quarter throws off fresh-dated coverage (analyst notes, recaps, CEO-interview write-ups) for a week+, and every one of those cleared the freshness cutoff as "today's news"; (ii) the v3.41.5 NO STALE CARRYOVER rule permits re-narrating a story when there is "fresh, same-day news about it" — which a fresh-dated recap of an old event technically satisfies; the rule's definition of fresh conflated a fresh *article* with a fresh *event*; (iii) the one component that knows the difference — the v3.5.0 event-dedup log (`state/event_log.json`, live, populated by `signal_scoring.py`, explicitly built to collapse "8-10 items all reporting the SAME earnings call" into one dated event) — fed only `t2_eps_revisions`. Sonnet never saw it.
+
+### Fixes
+
+1. **Events block in the Sonnet prompt** (`_build_known_earnings_events_block`, llm_summarizer.py) — renders the event log's earnings events from the last 14 days: ticker, earnings date, **age**, write-up count, and a FRESH/STALE tag (STALE once age > `EARNINGS_LEAD_FRESH_DAYS`, new config constant, default 2), plus a DIVERGENCE FLAGGED note when a later write-up contradicts the initial read (the log's existing `divergence_flagged` — a verdict reversal is deterministically marked lead-eligible). Auto-loads the log when the caller doesn't pass one; renders nothing on quiet stretches. Injected after the news triage in `build_sonnet_analysis_prompt` (new optional `event_log` param, no caller changes).
+2. **EARNINGS ECHO prompt rule** (appended to NO STALE CARRYOVER) — three tiers keyed on *new attributable fact*, not "references the earnings": **leads** = the company discloses a new figure/decision, OR a named party takes a new action with a concrete value (analyst raises/cuts a PT to a stated level, rating change, estimate revision, first sell-side dissent, flagged reversal) — the new fact is the action, so it's legitimately today's news; **does not lead** = recaps/round-ups restating the beat, and the Nth same-direction confirmation once that direction is consensus (it feeds the t2_eps_revisions count, it doesn't re-lead). Concrete test in the rule: "Morgan Stanley raises Micron's PT to $200 from $160" leads on its day; "Micron had a great quarter" four days later does not.
+
+Scope: earnings events only (the only observed instance of the failure). Prompt-side guard — a strong default, not a render-time hard gate; if it proves insufficient in production, the escalation path is a render-time check that regenerates when the lead maps to a STALE print.
+
+### Tests
+
+`tests/test_v3_41_9_earnings_echo.py` — 12 tests (STALE/FRESH tagging incl. the boundary day, divergence note + ordering, non-earnings keys ignored, lookback/future/unparsable-date exclusion, empty/None log, newest-first, config sanity; prompt carries the block with correct ages, block absent on empty log, rule text with the analyst-action LEADS clause present). Full suite: 59 failed / 1195 passed — identical failure set to the v3.41.8 baseline (59/1183), +12 new passes, zero failures in touched code. No new dependency.
+
 ## v3.41.8 (2026-06-30) — LPDDR contract-direction scraper: kill the false alarm, widen the regex
 
 The LPDDR direction scraper had been throwing `RuntimeError: … regex likely needs update` every run (45 consecutive `parser_no_match`). Investigation against live TrendForce content showed the regex was **not** broken — the built-in diagnosis was wrong.

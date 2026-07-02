@@ -2746,6 +2746,13 @@ CYCLE_MATRIX_WEIGHTS = {
 CYCLE_MATRIX_SIGNALS_LOOKBACK_WEEKS = 4
 CYCLE_MATRIX_ROLLING_PEAK_WINDOW_WEEKS = 12
 
+# v3.41.9 — earnings coverage-echo guard. An earnings print may LEAD the
+# executive brief on the day it lands plus this many days of aftermath;
+# beyond that, further coverage of the same print is echo and must not lead
+# absent a genuinely new attributable fact (see EARNINGS ECHO rule in the
+# Sonnet prompt). 2 = day-of + next day + one more day of aftermath.
+EARNINGS_LEAD_FRESH_DAYS = 2
+
 # Cost control: max number of Haiku extractions per pipeline run
 CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN = 10
 

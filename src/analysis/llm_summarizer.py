@@ -43,6 +43,7 @@ from src.config import (
     USE_BATCH_API,
     BATCH_POLL_CAP_SECONDS,
     USE_PROSE_CACHE,
+    EARNINGS_LEAD_FRESH_DAYS,
 )
 from src.data.news import NewsItem
 from src.data.estimates import EstimateSnapshot
@@ -498,6 +499,84 @@ def _prune_prior_state_prose(prior_state: dict) -> dict:
     return pruned
 
 
+def _build_known_earnings_events_block(
+    event_log: Optional[dict],
+    today=None,
+    fresh_days: int = EARNINGS_LEAD_FRESH_DAYS,
+    lookback_days: int = 14,
+) -> str:
+    """Render recent earnings events from state/event_log.json for the Sonnet prompt.
+
+    v3.41.9 — the coverage-echo guard's data feed. The exec brief kept leading
+    with Micron's Q3 print for a full week: every day's feed carried fresh-DATED
+    articles about the same week-old event (analyst notes, recaps, CEO-interview
+    write-ups), each of which satisfied the v3.41.5 "fresh same-day news"
+    exception by publish date. Sonnet had no way to know the print was one
+    event, already featured, N echoes deep — the v3.5.0 event log knows exactly
+    that but fed only t2_eps_revisions. This block surfaces it: one line per
+    recent earnings event with its date, AGE, echo count, and a FRESH/STALE tag
+    (STALE once age > fresh_days), plus a divergence note when a later write-up
+    contradicts the initial read (a verdict reversal is a NEW fact and
+    lead-eligible). The EARNINGS ECHO prompt rule tells Sonnet how to act on it.
+
+    Earnings events only (keys `<ticker>:earnings_call:<quarter>`), last
+    `lookback_days` days, newest first. Returns "" when there is nothing to
+    show — the block simply doesn't appear on quiet stretches.
+    """
+    from datetime import date as _date
+
+    if not event_log or not isinstance(event_log, dict):
+        return ""
+    if today is None:
+        today = _date.today()
+
+    rows = []
+    for key, entry in event_log.items():
+        if ":earnings_call:" not in key or not isinstance(entry, dict):
+            continue
+        date_iso = entry.get("event_date_iso") or ""
+        try:
+            event_date = _date.fromisoformat(str(date_iso)[:10])
+        except (ValueError, TypeError):
+            continue  # unparsable date — can't age it, skip
+        age = (today - event_date).days
+        if age < 0 or age > lookback_days:
+            continue
+        ticker = key.split(":", 1)[0]
+        n_obs = entry.get("n_observations", 1)
+        rows.append((event_date, age, ticker, key.rsplit(":", 1)[-1], n_obs,
+                     bool(entry.get("divergence_flagged"))))
+
+    if not rows:
+        return ""
+
+    rows.sort(key=lambda r: r[0], reverse=True)
+    lines = [
+        "\nEARNINGS EVENTS ALREADY IN THE RECORD (coverage-echo guard — see the "
+        "EARNINGS ECHO rule):"
+    ]
+    for event_date, age, ticker, quarter, n_obs, diverged in rows:
+        day_word = "day" if age == 1 else "days"
+        tag = (
+            "FRESH — within the lead window; may lead."
+            if age <= fresh_days
+            else "STALE — past the lead window; do NOT lead absent a genuinely "
+                 "new attributable fact (EARNINGS ECHO rule)."
+        )
+        lines.append(
+            f"  - {ticker} earnings {event_date.isoformat()} ({quarter}) — "
+            f"{age} {day_word} ago, {n_obs} write-up{'s' if n_obs != 1 else ''} "
+            f"logged. {tag}"
+        )
+        if diverged:
+            lines.append(
+                "    DIVERGENCE FLAGGED: a later write-up contradicts the "
+                "initial read — a verdict reversal is a NEW fact and is "
+                "lead-eligible."
+            )
+    return "\n".join(lines) + "\n"
+
+
 def _build_case_scenario(d: dict | None) -> CaseScenario:
     """Construct a CaseScenario from a dict, handling both the new field
     name (return_to_peak_pct) and the pre-v3.39 name (upside_to_peak_pct).
@@ -915,6 +994,7 @@ def build_sonnet_analysis_prompt(
     phase_state: Optional[dict] = None,
     transcript_diffs: Optional[list[dict]] = None,
     authoritative_24h_log: Optional[list[dict]] = None,
+    event_log: Optional[dict] = None,
 ) -> str:
     """Construct the Sonnet analysis prompt using Haiku-triaged data.
 
@@ -1038,6 +1118,18 @@ def build_sonnet_analysis_prompt(
         prior_text += json.dumps(_prune_prior_state_prose(prior_state), indent=2, default=str)
     else:
         prior_text += "(no prior state - this is the first run)\n"
+
+    # v3.41.9 — earnings coverage-echo guard: surface the v3.5.0 event log's
+    # recent earnings events (date, age, echo count, FRESH/STALE) so Sonnet
+    # can tell a new event from the 43rd write-up of a week-old print.
+    # Auto-loads from state when not passed (None); pass {} to mean "no events".
+    if event_log is None:
+        try:
+            from src.state import load_event_log
+            event_log = load_event_log()
+        except Exception:
+            event_log = {}
+    earnings_events_text = _build_known_earnings_events_block(event_log)
 
     # v3.39.5: Build the deep-tier digests block (Layer 1 output from
     # overnight Haiku digestion of earnings transcripts and Korean broker
@@ -1610,6 +1702,20 @@ NO STALE CARRYOVER (v3.41.5):
   - The brief covers TODAY. Do NOT re-narrate a prior-day story unless there is fresh, same-day news about it in today's feed. A story that resolved days or weeks ago is not today's news and must not lead — or even appear in — the summary absent a fresh development.
   - Yesterday's framing is not evidence. Anchor on today's news and the computed verdicts, never on how the thesis happened to be described in a previous brief.
 
+EARNINGS ECHO — new information vs repackaging (v3.41.9):
+An earnings print is a SINGLE event, and a fresh publish date on an article does NOT make an old event today's news. After a print has appeared in a prior brief, ask of every item referencing it: does it carry a NEW, ATTRIBUTABLE fact, or does it only restate what was already known? Consult the EARNINGS EVENTS ALREADY IN THE RECORD block (below the news) — it lists each recent print with its age, write-up count, and a FRESH/STALE tag.
+
+  LEADS — something that did not exist in yesterday's information set:
+    • the COMPANY discloses a new figure or decision tied to the print — revised guidance, a newly disclosed number, a buyback, a capex change, a customer/product commitment; OR
+    • a specific NAMED party takes a NEW action with a concrete value — an analyst raises/cuts a price target to a stated level, changes a rating, revises an estimate; the first sell-side dissent in a one-sided consensus; or a verdict reversal (the events block flags these as DIVERGENCE).
+    In these cases the new fact is the ACTION or FIGURE, not the print itself — it is legitimately today's news even though it references last week's earnings, and it may lead on ITS day.
+
+  DOES NOT LEAD — coverage echo, no new attributable fact (route to §5 as background at most):
+    • recaps, explainers, and round-ups restating the beat with no new party, action, or number ("Micron had a great quarter", "analysts remain bullish on the print");
+    • the Nth same-direction confirmation once that direction is already the established consensus — it adds to the revision COUNT (t2_eps_revisions), it does not re-lead the brief.
+
+  Concrete test: new named actor + new value/decision = information; restatement of the known result = echo. "Morgan Stanley raises Micron's price target to $200 from $160" leads on its day; "Micron had a great quarter" four days after the print does not. A print tagged STALE in the events block must NOT lead absent one of the LEADS conditions above; when nothing qualifies, lead with what actually changed today — a signal transition, a genuinely new event, or the most material new item on the thesis.
+
 FORBIDDEN VOCABULARY (v3.4.1):
 The word "Reversed" is BANNED in all output fields — `executive_brief`, `new_triggers_today`, `change_vs_prior`, `where_we_stand`, `latest_developments`. Use "Not fired" for reversals. If an indicator transitioned from "Fired" to "Not fired", phrase it as: "t2_X reverted to 'Not fired' after [reason]" — NEVER "Status changed from 'Fired' to 'Reversed'". This is a hard rule — any output containing "Reversed" will be post-processed to "Not fired" at render time, but writing it correctly the first time avoids ambiguity.
 
@@ -1919,6 +2025,7 @@ NOW THE DATA:
 {layer2_text}
 {qoq_text}
 {triage_text}
+{earnings_events_text}
 """
     return prompt
 
