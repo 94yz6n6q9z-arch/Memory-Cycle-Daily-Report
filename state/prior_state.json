@@ -1,13 +1,13 @@
 {
-  "saved_at_iso": "2026-07-01T10:47:37.363831+00:00",
+  "saved_at_iso": "2026-07-02T10:11:54.882931+00:00",
   "executive_summary": {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
     "tier_status_summary": "T1: 4/6 fired | T2: 6/7 fired | T3: 0/5 fired | T4: 0/4 fired",
     "new_triggers_today": [],
     "base_case": {
-      "probability_pct": 52.0,
-      "peak_months_away": 5.0,
+      "probability_pct": 50.0,
+      "peak_months_away": 4.0,
       "peak_window_start": "September 2026",
       "peak_window_end": "November 2026",
       "return_to_peak_pct": 18.0
@@ -20,16 +20,16 @@
       "return_to_peak_pct": 44.0
     },
     "bear_case": {
-      "probability_pct": 28.0,
+      "probability_pct": 30.0,
       "peak_months_away": 0.0,
       "peak_window_start": "June 2026",
       "peak_window_end": "July 2026",
       "return_to_peak_pct": -38.0
     },
-    "delta_from_prior_text": "No indicator status changes today; probabilities held byte-identical to prior brief (base 52%, bull 20%, bear 28%). Bear return_to_peak_pct remains -38%, consistent with the 4+ T1 / 5+ T2 fired band (-35 to -45%) calibrated to historical SK Hynix peak-to-trough average (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49%). Base case peak window unchanged vs yesterday at September\u2013November 2026.",
+    "delta_from_prior_text": "No indicator status changes today; signal distribution unchanged at T1: 4/6, T2: 6/7, T3: 0/5, T4: 0/4. No probability recalculation required per mandatory recalculation rule (zero status changes). Bear case held at -38% return_to_peak_pct, consistent with 4+ T1 + 6 T2 fired regime (historical band: -35 to -45%; calibrated to mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base case peak window unchanged vs yesterday. Bear probability nudged +2pp to 30% (from 28%) reflecting today's -14.57% SK Hynix single-session move as a bear-scenario intensifier without a formal signal change; base trimmed -2pp to 50% to maintain sum=100.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-through-4 signals fired or unfired today; the indicator distribution is unchanged from yesterday at T1: 4/6, T2: 6/7, T3: 0/5, T4: 0/4 [\u2192\u00a73]. The dominant fresh development is Micron's blowout quarter \u2014 CEO Sanjay Mehrotra attributed the ongoing memory shortage partly to customers 'driving a hard bargain on price,' a candid admission that demand-destruction price pressure is already embedded in the supply chain [\u2192\u00a75], directionally reinforcing the fired t1_demand_destruction and t1_price_cuts_no_demand signals. Simultaneously, OpenAI, NVIDIA (TensorRT-LLM, 5x token-cost reduction), and DeepSeek (DSpark KV-cache compression) each published inference efficiency advances this week, adding corroboration to the already-fired t1_efficiency_shock without changing its permanent-fired status [\u2192\u00a74]. Apple is reported sourcing CXMT DRAM as Samsung prices soar \u2014 a concrete Tier-1 OEM substitution event that deepens the competitor-dynamics overlay (Indicator 7, Partially fired) and, if confirmed at scale, would accelerate the CXMT DDR5 OEM-win trigger [\u2192\u00a74]. SK Hynix filed an amended F-1 with the SEC (antitrust risk disclosure added), advancing the ADR process (Indicator 8, Partially fired) toward the roadshow phase [\u2192\u00a74]. Samsung's union is demanding consultation on the Honam investment plan; no production disruption confirmed yet, so no supply-tightening chain is drawn. HSBC raised its Micron target for the fifth consecutive time, while one analyst issued a rare sell call \u2014 the first visible sell-side dissent in a market of 26-up / 0-down SK Hynix revisions, a directional early signal for t2_eps_revisions [\u2192\u00a73]. Base-case peak window holds at September\u2013November 2026 [\u2192\u00a72]."
+    "executive_brief": "No tier-1-through-5 signals fired or unfired today; the framework count holds at T1: 4/6, T2: 6/7, T3: 0/5. The dominant development is a broad, market-wide selloff \u2014 SK Hynix -14.57%, Micron -10.57%, Samsung -9.06%, ASML -7.36%, AMAT -9.97% \u2014 attributed by the tape to an OpenAI inference cost-reduction announcement that reignited efficiency-shock concerns [\u2192\u00a73]; this is directional confirmation of t1_efficiency_shock (already Fired since March 2026), not a new signal. Two fresh efficiency items deepen that read: Dnotitia STAR-KV (20x KV cache compression, ICML 2026 spotlight) and Nvidia TensorRT-LLM (5x token-cost reduction on DeepSeek V4) [\u2192\u00a74]. Simultaneously, Samsung and SK Hynix announced a combined $252.5B HBM packaging fab commitment in Chungcheong \u2014 reinforcing t2_capex_parabolic (Fired) and extending the supply-glut risk into 2028 [\u2192\u00a73]. SK Hynix filed an amended F-1/A on SEC EDGAR (June 30), adding antitrust litigation risk disclosure; the ADR indicator (Partially fired) advances toward its full-fire condition [\u2192\u00a74]. Forward P/E for SK Hynix now computes at 4.96x on today's depressed price \u2014 approaching but not yet breaching the 5x threshold that would formally re-confirm t2_pe_compressed; Micron at 6.90x remains above its 8x trigger [\u2192\u00a73]. EPS revisions remain 26-up / 0-down for SK Hynix and 6-up / 0-down for Micron \u2014 t2_eps_revisions stays Not fired, the single most important missing signal [\u2192\u00a73]."
   },
   "indicator_assessments": [
     {
@@ -81,23 +81,23 @@
       "description": "Algorithmic or architectural improvement reducing memory-per-token by >2x. TurboQuant-class shocks. The cycle-breaking risk.",
       "what_to_look_for": "Major announcement from Google / OpenAI / Anthropic / Meta / DeepSeek / Mistral. Specific phrases: 'KV cache compression', 'inference efficiency 2x+', 'memory footprint reduction', 'quantization breakthrough'. Source must be official lab blog, arXiv, or 3+ mainstream tech publications within 48 hours.",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup \u2014 permanent persistence). Today adds three independent corroborating events: (1) OpenAI announced inference cost cut of ~50% via disaggregated serving architecture; (2) NVIDIA TensorRT-LLM reduced DeepSeek v4 token costs 5x through pure Blackwell software tuning; (3) DeepSeek DSpark\u2026",
-      "latest_developments": "OpenAI halved inference costs via disaggregated serving; NVIDIA cut DeepSeek v4 token costs 5x via TensorRT-LLM software; DeepSeek DSpark added KV-cache compression. [OpenAI](https://news.google.com/rss/articles/CBMiiAFBVV95cUxOVFZORHRMNWVZUEZlY3ZGSG5WWThTUG1OUjhDYlBnMVBid1U0QTNIM0lUdF9McVV0YkRrS1FGejM4UWs1MWNUaVBRRmRKQkgzVXEwQlRzc0RmQ1FIeUhZQlVSOU1mczlaMFJNQ1o0eDNCOGJqN0puZ002eVdqTTFJVmNJakZpQ0lu) | [NVIDIA](https://news.google.com/rss/articles/CBMidEFVX3lxTFB2S0VYc09jV0xvVDdrbUFFQzhuR1pNeXVxWS1RMURWd09IV253UEVJRHdHSFdHTUp2eHZMbldEWDgwQ1NWTkE1cUJXTGQ0WWlRdjdVdmZyUDhFNi1zYlZiTlFLaUEzWjRiYTFaYWRwQzQ3R2lp) | [DeepSeek DSpark](https://news.google.com/rss/articles/CBMilwFBVV95cUxPa1dpN0FSYlM1Uk5jQzJqYVR6c1lXbEdsX0labnF6ekZKMVptMUw2OHhOTWFwMm5YQnlpaW9DNUd2eXg1bFNaLUI3MUhXYTBrWUxSVHhMOEFzWk1sZTE2LU9SVExZelh4bjl1TDlKUXBYMURIRUJDV1NIejU4Tk5ZZXNYZktWWVJzWlhDaHp3R1hOU0luVzc0)",
+      "where_we_stand": "Fired since March 24, 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup). Today adds two independent corroborating events: (1) Dnotitia STAR-KV \u2014 up to 20x KV cache compression, accepted as ICML 2026 spotlight paper, exceeding the 2x multiplier trigger by 10x; (2) Nvidia TensorRT-LLM \u2014 5x token-cost reduction on DeepSeek\u2026",
+      "latest_developments": "Dnotitia STAR-KV (20x KV cache compression, ICML 2026 spotlight) and Nvidia TensorRT-LLM (5x token-cost reduction on DeepSeek V4) published today, deepening the already-Fired efficiency-shock evidence base. OpenAI cost-breakthrough news drove the broad memory selloff.",
       "relevant_links": [
         {
-          "title": "OpenAI Slashes Inference Costs in Half",
-          "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxOVFZORHRMNWVZUEZlY3ZGSG5WWThTUG1OUjhDYlBnMVBid1U0QTNIM0lUdF9McVV0YkRrS1FGejM4UWs1MWNUaVBRRmRKQkgzVXEwQlRzc0RmQ1FIeUhZQlVSOU1mczlaMFJNQ1o0eDNCOGJqN0puZ002eVdqTTFJVmNJakZpQ0lu"
+          "title": "Dnotitia STAR-KV \u2014 20x KV Cache Compression (ICML 2026 Spotlight)",
+          "url": "https://news.google.com/rss/articles/CBMi9AFBVV95cUxNMjlSNFNsV3p1d2FvMGtxN3BfS2VYc2U1ei1OTlYyOXhxTVZiRUpXMVYyaHdXM2wzUGtnODB1QWZOc001S1JNX0pCZkxxY2lRVmVYREhya1JXeF9ZcXVrOGppSFpfNVZMOFVNWmJoSG1FcEJQSUdmZ3JfVFRJTEZfLTdPLWVXZi1lbjJVT3Z6VV9ORk1wRHZhVVd4bnBreFNFQ0ZwSGdKSG5Yc2FTek9TeFU2NXpYd3Q2bWdWZzFWQ2J5MWxKQ184ajk1Q05SSV9CN3hIckVOYmNzZ3JlV2JncGxuN0pLVm4zUXdCdVFlZlFyai0z"
         },
         {
-          "title": "NVIDIA Slashes DeepSeek v4 Token Costs By Up To 5x",
-          "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxPNlg1TERfeFBUZzdJUTlwUWljQUNiY3hvUEhEUjI0Zi1BOTYtQWw3bTcyVVFHZ1FfY0NzSjZxX3lvNXg5eFh1NWdhaXZWbWxYZy1RS0ozak9YOXpxN1oxWDl6MWRwVTU5a1pUd1pNZWpJYkNENFZwMGVlUURCQTlWRElfOHJ0eGppS1U1X1pJNXNrT0hXaGxJUWdkd9IBoAFBVV95cUxOckZXcVVQc0RwRFRtRHhLUUJzNDF2Y2pDbHo3THduWml0cmZkWmg0WXdmTkM4VU5qdEN1SnZtQ01BSmpGRzc1VkMzVGNyYlhrcG8wYUZKMUtJWmxiNmp0UlR2ZHh0V0h6a19fYllKYzlMWHM3WXNUQy1YUUxnVG1zMlF5a1RaSUlNNlFteWl4YnpDVC0zZDJreTEtTkZmcDU2"
+          "title": "Nvidia TensorRT-LLM reduces DeepSeek V4 token costs 5x",
+          "url": "https://news.google.com/rss/articles/CBMi8wFBVV95cUxQNndMQUF5NVJ4UzZoRGFmU3pEVmpBQmFoQ2JxbkxLTHBxdkJlekdnY1BaendOcDNhSnRVRnFoS2oxNmZpSGpkOEFFS2VkNVZ1VU5YTi1MdjEtSXh1Y0tuMV9PMkV6aVJBRnpYME9OUFRBTjhuZjhzWjYzNEZZX25GVXNQSzRJVU1kNVNKVWpnV3puUlhjUG05OUtVNGVqV21RTk1wQ3hHYjBjbks0OUVkRnNEY2YtWWxmUjZ1OXJPQnpkdUNlckE3cjd3U0ZpS0k1QTVvVXU0VFh1YndZZUFPbHlpYWtaRHRYRXpBUi1FdnNUSVU"
         },
         {
-          "title": "DeepSeek DSpark KV-cache compression (Motley Fool)",
-          "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxPa1dpN0FSYlM1Uk5jQzJqYVR6c1lXbEdsX0labnF6ekZKMVptMUw2OHhOTWFwMm5YQnlpaW9DNUd2eXg1bFNaLUI3MUhXYTBrWUxSVHhMOEFzWk1sZTE2LU9SVExZelh4bjl1TDlKUXBYMURIRUJDV1NIejU4Tk5ZZXNYZktWWVJzWlhDaHp3R1hOU0luVzc0"
+          "title": "OpenAI cost breakthrough triggers global chip stock selloff",
+          "url": "https://news.google.com/rss/articles/CBMiqAJBVV95cUxNTURCUm15blRRX2EtZFhBUERjRkVWNTktODhQOFhWeFA2bGNYeUFxOXZySi1fRDZ6X3BDOE9Zb3NNNHRlZEV3X1c3bGdHbHBOSmc4aDdEcnJic0pXZG5QYjlzcTRXZTE4R3NyMHNVcXY2aXZhZFYxTEt6NGpaYk84N1Z6blU2OXV5RTZNVzZjbW5hTjh4LWtNb2JWOXNiYzBKTDBVczBsRjVjeW52RUxUZS1YMEk1dUlEcjJROUxFZGpVYkZCRHFOelE3QzJDbFFpOFpJMWRZTUlRcmwtRWdpa3hhSnpqUnFEV0RKZ2J1TjVncmpPTXFWTkJFalVkalpyTkstcHNBRDkwNWV3N243cm9WX1JKVHlLR3pibFIyc0xqRXNWblFIbw"
         }
       ],
-      "change_vs_prior": "Status confirmed Fired (permanent persistence since March 24, 2026). Today's OpenAI, NVIDIA, and DeepSeek publications add 3 new corroborating sources, broadening the efficiency-shock from a single-lab event to an industry-wide pattern. No status change \u2014 signal remains Fired."
+      "change_vs_prior": "Status unchanged at Fired. Two new corroborating efficiency events (Dnotitia STAR-KV 20x, Nvidia TensorRT-LLM 5x) added to evidence base today; signal density deepens without a status change."
     },
     {
       "id": "t1_lead_times",
@@ -152,7 +152,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot at $46.80 (+0.00% vs rolling 12w peak $46.80 set 2026-07-05). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 92d old). Synthetic adjusted: 62.8% central (range 60-65%). Adjustments: tone +3.1pp (8 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot at $46.77 (+0.00% vs rolling 12w peak $46.77 set 2026-07-05). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 93d old). Synthetic adjusted: 62.9% central (range 60-65%). Adjustments: tone +3.6pp (7 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "TrendForce spot print Jun 29: DDR5 $46.733 (flat), DDR4 $72.988 (+0.93%). [TrendForce](https://www.trendforce.com/price/dram/dram_spot). Mirae Samsung note revises DDR5 Q3/Q4 2026 forecasts up 10\u201314%.",
       "relevant_links": [
         {
@@ -294,23 +294,23 @@
       "description": "Forward P/E compresses on PEAK earnings denominator \u2014 bearish, not bullish. Already fired for SK Hynix and Samsung.",
       "what_to_look_for": "SK Hynix forward FY27 P/E below 5x (currently 3.7x \u2014 fired). Micron below 8x (currently 7-12x). Samsung below 6x (currently 5.3x \u2014 fired).",
       "current_status": "Fired",
-      "where_we_stand": "SK Hynix fwd FY27 P/E: 6.88x (price KRW 291,700 / FY27 EPS est KRW 423,814 \u2014 computed from today's data). The 5x full-fire threshold is not yet crossed, but the stock's +11.29% single-session surge compressed the multiple sharply from yesterday's ~7.8x. Samsung fwd P/E: 6.06x (below 6x threshold \u2014 fired).\u2026",
-      "latest_developments": "SK Hynix +11.29% today compresses fwd P/E to 6.88x. Mirae Asset raises SK Hynix target to KRW 4,200,000 ([Mirae Asset](https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340726)), citing bullish HBM pricing and revised-up 2027 operating profit \u2014 which lifts the EPS denominator\u2026",
+      "where_we_stand": "SK Hynix forward FY27 P/E: 4.96x (price 2,187,000 KRW / FY+1 EPS est 440,656 KRW) \u2014 at the 5x threshold boundary; the prior brief cited 3.7x, suggesting the stock has re-rated upward before today's -14.57% session. At today's close, SK Hynix sits just below 5x, keeping the Fired status intact.\u2026",
+      "latest_developments": "Today's broad selloff (SK Hynix -14.57%, Micron -10.57%) pushed Micron's forward P/E to 6.90x, now below the 8x trigger. SK Hynix at 4.96x and Samsung at 4.57x remain firmly in the compressed zone. All three\u2026",
       "relevant_links": [
         {
-          "title": "Mirae Asset: SK Hynix ADR listing confirmed, target KRW 4.2M",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2340726"
+          "title": "SK Hynix analyst targets \u2014 Seoul Economic Daily",
+          "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxONlZFS2RjbmdXUEo2S1lyQ1hiVnF4TUlBNjBza3huOWZtaVEtYzRTLWloWFpzaE9qR0RyS2FWQl9MVUJ1UjhfYXdHQWlHMTBZQVhqY0NjeEQ1d2dtMGNDRGI1Y1NCX2RlU2Ffd0RFT1UzcmprTGdPT2FzX2VWanlYb2xIQ0RKRjBmZWVOa0gtWC0wd3NseHBQSE1R"
         },
         {
-          "title": "Bloomberg: SK Hynix surges 12% on US listing plan",
-          "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxNT3ZkZnpMaXdrTkdpYjBxN3h6QlAxMWJ3RGQyVHFVOEI0U3VmNGlQanpCbzk4Z1pxWWc0TmJwbTB5bVFXMFdObkNKektXME9TT3I3bDRocjRZWm94NzcxREVMT3ZLOWlRbzktcm1JOGRwZWpoRmtJSk5USVdWWEo2X1E0QUg2ZHViblhNVmtQelh1VG1iVHRQZS1TZ2dNdVRla2hJQ3FqVEVJNWpoRzdJ"
+          "title": "Micron Price Prediction \u2014 analyst forecast flags pullback",
+          "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxPWk51ZVVpOVpoQVA3U2VoVzlidVdDOUhnQjJMSkM5OFN2LXlGbWh4dlNhTmplWXZHby15eDFQd082dG9Jb3pIcHluR19WSTdrOW9Vek50bTlZaHNlbEpuWHZVM0FxNUNqeU5KN21xNVNNNmNHSGVXdHJwMlVkQ2czSTRlay1MY2xyWXc"
         },
         {
-          "title": "TrendForce: Micron profit surges 15-fold, HBM4 revenue >$1B",
-          "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxQVEFwUFQ2TFlEeG5oSW9Wbl9OWWc4Qno3MG53MFpFbTY5ZG0xSDdkYkR0LWR2c2pXSXhYaEhZaDk1cmZEMFE5c0g1VnFJRmhYRUlKckl6NlhyZHFRSUM4dkN0VklGcUNkVnZHcEtqTTVNNmdmVXl2WTEwTHNiUF83cFFVbEtBb0trc2pRdVd5NzZvcENmNnNUamRPbmpUQmllWVVVMEpZc0ZRTHBXdnZpVG1XbFhDVmNyRkdQOQ"
+          "title": "Top analysts set Micron stock target after surge \u2014 TheStreet",
+          "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxOYUNKYnljNjB4UXZaaFlTbUh6ZUM2YmZqT041SXJhN3loWHJMY2JlZ0FmVW01WnRucEN6cTRvSVZLRTJONGdqa3dkRFE2V0o5OWNmQ3RGNlVGOTlHbFlCZ2pycnNXWFNwVjh5SVVkM1hqUG5nUm5rSy1nNE4xaHBkdWlSNk5xZVFiVUVPNkJScDg2aUhzY3RJT1l3b1I"
         }
       ],
-      "change_vs_prior": "t2_pe_compressed moved from 'Not fired' to 'Fired'. SK Hynix fwd P/E compressed to 6.88x (above 5x full-fire threshold but below prior ~7.8x) on today's +11.29% surge; Samsung at 6.06x (below 6x threshold). Computed metrics override prior Layer 2 'Not fired'\u2026"
+      "change_vs_prior": "Status unchanged at Fired. Micron's forward P/E declined to 6.90x on today's -10.57% session, now below the 8x trigger \u2014 all three major memory names simultaneously in compressed-multiple territory for the first time."
     },
     {
       "id": "t2_spot_contract_spread",
