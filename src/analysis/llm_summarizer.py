@@ -2568,6 +2568,133 @@ def sonnet_analyze(
 # Top-level pipeline
 # ============================================================
 
+# v3.41.10 — Section-4 card news feed. The Indicator 7 (Competitor) and
+# Indicator 8 (ADR) cards render a deterministic "Latest developments" line
+# from sub["recent_news"] — a field NOTHING in the pipeline ever populated
+# (consumer with no producer since v3.4.4), so both cards printed the
+# "No new developments today" filler on every brief ever sent, even when the
+# same brief's exec summary and §5 carried an obviously relevant story
+# (observed Jul 6: CXMT DDR5-8000+ validation in exec + §5, card 7 blank;
+# the F-1/A amendment in §5, card 8 blank). This is the producer: it takes
+# the Haiku triage's indicator_relevance map (news → indicator ids) and
+# attaches the mapped items to the snapshot dicts, routing to sub-indicators
+# by keyword with a card-level fallback so nothing mapped is dropped.
+
+_COMPETITOR_SUB_ROUTES: list[tuple[str, tuple[str, ...]]] = [
+    ("7A", ("cxmt",)),
+    ("7B", ("samsung",)),   # Samsung HBM4/4E threat — any Samsung-competitive item
+    ("7C", ("micron",)),
+    ("7D", ("hbf", "solidigm", "high bandwidth flash", "high-bandwidth flash")),
+]
+
+_ADR_SUB_ROUTES: list[tuple[str, tuple[str, ...]]] = [
+    ("8A", ("f-1", "f‑1", "edgar", "filing", "amendment", "prospectus")),
+    ("8B", ("roadshow", "bookbuild", "book-build", "investor demand", "order book")),
+    ("8C", ("priced at", "prices its", "pricing day", "offering priced")),
+    ("8D", ("insider", "stake sale", "share sale by")),
+]
+
+
+def _route_to_sub(text: str, routes: list[tuple[str, tuple[str, ...]]]) -> Optional[str]:
+    low = text.lower()
+    for sub_id, keywords in routes:
+        if any(k in low for k in keywords):
+            return sub_id
+    return None
+
+
+def attach_triage_news_to_snapshots(
+    triage: NewsTriage,
+    news_items: Optional[list[NewsItem]],
+    competitor_snapshot: Optional[dict],
+    adr_snapshot: Optional[dict],
+    per_sub_cap: int = 2,
+    card_cap: int = 3,
+) -> None:
+    """Populate sub/card `recent_news` on the two Section-4 snapshot dicts.
+
+    Mutates the snapshot dicts in place (they are the same objects
+    fast_tier later passes to build_email_html, so the attachment flows to
+    the template with no signature changes). Items come from
+    triage.relevant_news, selected via triage.indicator_relevance for
+    t1_competitor_dynamics / t1_us_adr_event; each attaches as
+    {"title", "url", "date"} with the date resolved from the raw NewsItem
+    (matched by URL) when available. Quiet days — no mapped items — leave
+    the snapshots untouched, so the template's filler line stays and is
+    then true. Never raises: any malformed input degrades to a no-op.
+    """
+    by_index: dict[int, dict] = {}
+    for item in (getattr(triage, "relevant_news", None) or []):
+        idx = item.get("index")
+        if isinstance(idx, int):
+            by_index[idx] = item
+
+    url_to_date: dict[str, str] = {}
+    for n in (news_items or []):
+        url = (getattr(n, "url", "") or "").strip()
+        pub = getattr(n, "published", None)
+        if url and pub:
+            url_to_date[url] = str(pub)[:10]
+
+    relevance = getattr(triage, "indicator_relevance", None) or {}
+
+    def _attach(indicator_id: str, snapshot: Optional[dict],
+                routes: list[tuple[str, tuple[str, ...]]]) -> None:
+        if not isinstance(snapshot, dict):
+            return
+        indices = relevance.get(indicator_id) or []
+        subs = snapshot.get("subs") or []
+        subs_by_id = {}
+        for s in subs:
+            if isinstance(s, dict):
+                sid = s.get("sub_id") or s.get("id")
+                if sid:
+                    subs_by_id[str(sid)] = s
+        seen_urls: set = set()
+        n_attached = 0
+        for idx in indices:
+            item = by_index.get(idx)
+            if not item:
+                continue
+            title = (item.get("title") or "").strip()
+            if not title:
+                continue
+            url = (item.get("url") or "").strip()
+            if url and url in seen_urls:
+                continue
+            entry = {
+                "title": title,
+                "url": url,
+                "date": url_to_date.get(url, ""),
+            }
+            sub_id = _route_to_sub(f"{title} {item.get('summary', '')}", routes)
+            target_sub = subs_by_id.get(sub_id) if sub_id else None
+            if target_sub is not None:
+                bucket = target_sub.setdefault("recent_news", [])
+                if len(bucket) >= per_sub_cap:
+                    continue
+                bucket.append(entry)
+            else:
+                bucket = snapshot.setdefault("recent_news", [])
+                if len(bucket) >= card_cap:
+                    continue
+                bucket.append(entry)
+            if url:
+                seen_urls.add(url)
+            n_attached += 1
+        if n_attached:
+            logger.info(
+                f"[card-news] attached {n_attached} triage-mapped item(s) to "
+                f"{indicator_id} snapshot"
+            )
+
+    try:
+        _attach("t1_competitor_dynamics", competitor_snapshot, _COMPETITOR_SUB_ROUTES)
+        _attach("t1_us_adr_event", adr_snapshot, _ADR_SUB_ROUTES)
+    except Exception as e:  # never let card decoration break the analysis
+        logger.warning(f"[card-news] attach failed (non-fatal): {e}")
+
+
 def analyze_with_llm(
     api_key: str,
     performance_data: list[PerformanceMetrics],
@@ -2630,6 +2757,20 @@ def analyze_with_llm(
             f"Haiku triage: {len(triage.relevant_news)} relevant news | "
             f"{len(triage.broker_actions)} broker actions | "
             f"{len(triage.trendforce_commentary)} price commentary items"
+        )
+
+    # v3.41.10 — feed the Section-4 deterministic cards (Indicator 7 / 8):
+    # attach triage-mapped news to the competitor / ADR snapshot dicts so the
+    # cards' "Latest developments" line reflects today's relevant items. The
+    # dicts inside computed_metrics are the same objects fast_tier passes to
+    # the template, so this flows to the email without signature changes; it
+    # runs regardless of whether Sonnet later succeeds.
+    if computed_metrics:
+        attach_triage_news_to_snapshots(
+            triage,
+            news_items,
+            computed_metrics.get("competitor_snapshot"),
+            computed_metrics.get("adr_snapshot"),
         )
 
     n_digests = len(digests) if digests else 0

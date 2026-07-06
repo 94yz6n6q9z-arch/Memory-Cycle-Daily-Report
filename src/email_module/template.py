@@ -226,12 +226,22 @@ def build_email_html(
     # statuses and tier_status_summary line. Field still on ExecutiveSummary
     # dataclass for back-compat (won't break prior_state load); just not rendered.
 
-    # 0b. 🚨 Relative strength banner — fires when any of 3 sub-triggers breach
-    if rel_strength_verdict and rel_strength_verdict.get("overall_fired"):
+    # 0b. 🚨 Relative strength banner — v3.41.10: transition-day only. Renders
+    # when the sub-triggers breach AND t3_relative_strength has a transition in
+    # the 24h display log (same clock as the NEW TRIGGER EVENT pill). Ongoing
+    # red status stays visible in §3 and the t3 card; the banner no longer
+    # persists day after day while the signal remains fired.
+    if (
+        rel_strength_verdict
+        and rel_strength_verdict.get("overall_fired")
+        and _indicator_in_24h_trigger_log(es, "t3_relative_strength")
+    ):
         parts.append(_build_relative_strength_banner(rel_strength_verdict))
 
-    # 0c. 🚨 EPS Revisions Watch banner — fires when canonical Tier 2 signal moves
-    if eps_scoring_verdict:
+    # 0c. 🚨 EPS Revisions Watch banner — v3.41.10: same transition-day gate
+    # (this block had the identical persistent-status bug, latent until the
+    # signal first fires).
+    if eps_scoring_verdict and _indicator_in_24h_trigger_log(es, "t2_eps_revisions"):
         overall = eps_scoring_verdict.get("overall_status", "Not fired")
         if overall in ("FIRED", "EARLY_WARNING"):
             parts.append(_build_eps_revisions_banner(eps_scoring_verdict))
@@ -779,17 +789,23 @@ def _build_competitor_section4_card(comp: Optional[dict]) -> str:
     )
 
     # Where we stand — composite read + per-sub status in prose
+    # v3.41.10 — key fix: subs are asdict(SubIndicatorState) with fields
+    # `sub_id` / `current_state_summary`; this loop read `id` / `summary`,
+    # so every line rendered "?" for the id and a dangling ": ;" where the
+    # (real, populated) summary should be. Read the producer's keys with the
+    # old names as fallback, and only emit the colon when there is a summary.
     sub_lines = []
     for sub in subs:
-        sub_id = sub.get("id", "?")
-        sub_name = sub.get("display_name", sub.get("name", "?"))
+        sub_id = sub.get("sub_id") or sub.get("id") or "?"
+        sub_name = sub.get("display_name") or sub.get("name") or "?"
         sub_status = sub.get("status", "Not fired")
-        sub_summary = sub.get("summary", "")
+        sub_summary = sub.get("current_state_summary") or sub.get("summary") or ""
         eps_impact = sub.get("estimated_eps_impact_pct")
         eps_text = f" (~{eps_impact:.1f}% EPS impact)" if eps_impact is not None else ""
         sub_lines.append(
             f"<strong>{html.escape(sub_id)} {html.escape(sub_name)}</strong> — "
-            f"{html.escape(sub_status)}{eps_text}: {html.escape(sub_summary)}"
+            f"{html.escape(sub_status)}{eps_text}"
+            + (f": {html.escape(sub_summary)}" if sub_summary else "")
         )
 
     where_we_stand_parts = []
@@ -823,7 +839,7 @@ def _build_competitor_section4_card(comp: Optional[dict]) -> str:
     for sub in subs:
         recent = sub.get("recent_news", []) or []
         if recent:
-            sub_id = sub.get("id", "?")
+            sub_id = sub.get("sub_id") or sub.get("id") or "?"
             # Take the top 1-2 most relevant news items per sub
             for item in recent[:2]:
                 title = item.get("title", "")
@@ -834,6 +850,16 @@ def _build_competitor_section4_card(comp: Optional[dict]) -> str:
                         f"{html.escape(title)}"
                         + (f" ({html.escape(date)})" if date else "")
                     )
+    # v3.41.10 — card-level items (triage-mapped news that didn't route to a
+    # specific sub) render without a sub prefix, before the quiet-day filler.
+    for item in (comp.get("recent_news") or [])[:3]:
+        title = item.get("title", "")
+        date = item.get("date", "")
+        if title:
+            dev_lines.append(
+                f"{html.escape(title)}"
+                + (f" ({html.escape(date)})" if date else "")
+            )
     if not dev_lines:
         dev_lines.append("No new developments today across the four sub-indicators.")
     parts.append(
@@ -851,6 +877,13 @@ def _build_competitor_section4_card(comp: Optional[dict]) -> str:
             if url and url not in seen:
                 link_urls.append((title, url))
                 seen.add(url)
+    # v3.41.10 — card-level recent_news URLs too
+    for item in (comp.get("recent_news") or [])[:3]:
+        url = item.get("url")
+        title = item.get("title", "source")
+        if url and url not in seen:
+            link_urls.append((title, url))
+            seen.add(url)
     # Always include some canonical sources for context
     canonical = [
         ("DRAMeXchange", "https://www.dramexchange.com/"),
@@ -1108,24 +1141,39 @@ def _build_adr_section4_card(adr: Optional[dict]) -> str:
         )
     if reasoning:
         where_we_stand_parts.append(html.escape(reasoning))
+    # v3.41.10 — same producer/consumer key fix as the competitor card: subs
+    # are asdict(ADRSubState) with `sub_id` / `current_state_summary`.
     sub_lines = []
     for sub in subs:
-        sub_id = sub.get("id", "?")
-        sub_name = sub.get("display_name", sub.get("name", "?"))
+        sub_id = sub.get("sub_id") or sub.get("id") or "?"
+        sub_name = sub.get("display_name") or sub.get("name") or "?"
         sub_status = sub.get("status", "Not fired")
-        sub_summary = sub.get("summary", "")
+        sub_summary = sub.get("current_state_summary") or sub.get("summary") or ""
         sub_lines.append(
             f"<strong>{html.escape(sub_id)} {html.escape(sub_name)}</strong> — "
-            f"{html.escape(sub_status)}: {html.escape(sub_summary)}"
+            f"{html.escape(sub_status)}"
+            + (f": {html.escape(sub_summary)}" if sub_summary else "")
         )
     if sub_lines:
         where_we_stand_parts.append("Sub-indicators: " + "; ".join(sub_lines) + ".")
     if calendar:
-        cal_str = "; ".join(
-            f"{html.escape(e.get('date', '?'))}: {html.escape(e.get('description', ''))}"
-            for e in calendar[:3]
-        )
-        where_we_stand_parts.append(f"Upcoming milestones: {cal_str}.")
+        # v3.41.10 — milestones are asdict(ADRCalendarMilestone) with fields
+        # `date_window` / `event`; this read `date` / `description`, so every
+        # milestone rendered as the literal "?: " while the real yaml content
+        # was discarded. Read the producer's keys (old names as fallback) and
+        # skip entries with neither populated.
+        cal_items = []
+        for e in calendar[:3]:
+            when = e.get("date_window") or e.get("date") or ""
+            what = e.get("event") or e.get("description") or ""
+            if not (when or what):
+                continue
+            cal_items.append(
+                f"{html.escape(when or '?')}: {html.escape(what)}" if what
+                else html.escape(when)
+            )
+        if cal_items:
+            where_we_stand_parts.append(f"Upcoming milestones: {'; '.join(cal_items)}.")
     if academic:
         ac_summary = academic.get("summary") or academic.get("notes", "")
         if ac_summary:
@@ -1142,13 +1190,23 @@ def _build_adr_section4_card(adr: Optional[dict]) -> str:
         for item in recent[:2]:
             title = item.get("title", "")
             date = item.get("date", "")
-            sub_id = sub.get("id", "?")
+            sub_id = sub.get("sub_id") or sub.get("id") or "?"
             if title:
                 dev_lines.append(
                     f"<strong>{html.escape(sub_id)}:</strong> "
                     f"{html.escape(title)}"
                     + (f" ({html.escape(date)})" if date else "")
                 )
+    # v3.41.10 — card-level items (triage-mapped news that didn't route to a
+    # specific sub) render without a sub prefix, before the quiet-day filler.
+    for item in (adr.get("recent_news") or [])[:3]:
+        title = item.get("title", "")
+        date = item.get("date", "")
+        if title:
+            dev_lines.append(
+                f"{html.escape(title)}"
+                + (f" ({html.escape(date)})" if date else "")
+            )
     if not dev_lines:
         dev_lines.append("No new developments today across the four sub-indicators.")
     parts.append(
@@ -1166,6 +1224,13 @@ def _build_adr_section4_card(adr: Optional[dict]) -> str:
             if url and url not in seen:
                 link_urls.append((title, url))
                 seen.add(url)
+    # v3.41.10 — card-level recent_news URLs too
+    for item in (adr.get("recent_news") or [])[:3]:
+        url = item.get("url")
+        title = item.get("title", "source")
+        if url and url not in seen:
+            link_urls.append((title, url))
+            seen.add(url)
     canonical = [
         ("SEC EDGAR — SK Hynix F-1 watch", "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=sk+hynix"),
         ("Korea Exchange — SK Hynix disclosures", "https://kind.krx.co.kr/"),
@@ -3037,6 +3102,34 @@ def _build_calendar_section(events: list[dict]) -> str:
 # ============================================================
 # Sharpened banners: relative strength + EPS revisions watch
 # ============================================================
+
+def _indicator_in_24h_trigger_log(es, indicator_id: str) -> bool:
+    """v3.41.10 — True iff `indicator_id` has a transition in today's display log.
+
+    Gate for the top-of-brief status banners (relative-strength RED FIRE, EPS
+    revisions). Those banners were rendered on raw signal STATUS — as long as
+    t3_relative_strength stayed at red severity the 🚨 banner squatted at the
+    top of every brief (observed: fired Fri Jul 3, still showing Mon Jul 6
+    while the exec summary correctly said "No new trigger events today").
+    The NEW TRIGGER EVENT pill uses the 24h trigger log (v3.39.7.5) and
+    therefore vanished on schedule; the banners were never wired to the same
+    clock. This helper checks the same collapsed log the pill renders
+    (es.new_triggers_today), so banner and pill now share transition-day
+    semantics: shown the day of the transition (and on intraday reruns within
+    24h), gone the next day even if the signal stays fired — ongoing status
+    remains visible in the §3 table and the indicator card. A genuine
+    re-transition (drops out, re-enters) logs a new event and re-shows the
+    banner.
+    """
+    try:
+        entries = getattr(es, "new_triggers_today", None) or []
+        return any(
+            isinstance(t, dict) and t.get("indicator_id") == indicator_id
+            for t in entries
+        )
+    except Exception:
+        return False
+
 
 def _build_relative_strength_banner(verdict: dict) -> str:
     """Render the relative-strength banner. v3.39: two severity levels.

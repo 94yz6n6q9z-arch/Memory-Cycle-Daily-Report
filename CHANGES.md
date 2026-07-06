@@ -2,6 +2,26 @@
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
 
+## v3.41.10 (2026-07-06) — Banner transition-gating, Section-4 card news feed, and producer/consumer key fixes
+
+Three defects from the July 3–6 briefs, all display-layer, one release.
+
+### 1. 🚨 RELATIVE STRENGTH RED FIRE banner persisted for days
+
+Fired Friday July 3 and still sat at the top of Monday July 6's brief while the exec summary correctly said "No new trigger events today." **Root cause:** the banner rendered on raw signal *status* (`overall_fired`) — as long as t3_relative_strength stayed at red severity it showed every day. The NEW TRIGGER EVENT pill uses the 24h trigger log (v3.39.7.5) and therefore vanished on schedule; the banner was never wired to the same clock. (The identical pp values across the three days were legitimate, not stale data — v3.4.6.2 aligns each pair onto common trading days, and with US markets closed Friday July 3 every pair's last common bar was Thursday July 2 in both runs.) **Fix:** both the relative-strength banner and the EPS-revisions banner (which had the identical latent bug, unfired to date) are now gated on the collapsed 24h trigger log — shown the day of the transition and on intraday reruns within 24h, gone the next day even while the signal stays fired; ongoing status remains in the §3 table and the indicator card. A genuine re-transition logs a new event and re-shows the banner.
+
+### 2. Cards 7/8 "Latest developments" never showed anything
+
+July 6: CXMT's DDR5-8000+ validation led the exec summary and sat in §5 while card 7 said "No new developments today"; the F-1/A amendment did the same against card 8. **Root cause:** both cards render a deterministic developments line from `sub["recent_news"]` — a field **nothing in the pipeline ever populated** (consumer with no producer since v3.4.4). Both cards have printed the filler on every brief ever sent. **Fix:** new `attach_triage_news_to_snapshots` (llm_summarizer.py), called right after Haiku triage in `analyze_with_llm`: takes the triage's `indicator_relevance` map for `t1_competitor_dynamics` / `t1_us_adr_event`, routes items to sub-indicators by keyword (CXMT→7A, Samsung→7B, Micron→7C, HBF/Solidigm→7D; F-1/EDGAR/filing→8A, roadshow→8B, offering-priced→8C, insider→8D) with a card-level fallback so nothing mapped is dropped; attaches {title, url, date} (date resolved from the raw NewsItem by URL), capped 2/sub and 3/card, URL-deduped, never raises. The snapshot dicts inside `computed_metrics` are the same objects fast_tier passes to the template, so it flows to the email with zero signature changes and runs regardless of Sonnet's outcome. Quiet days leave the snapshots untouched — the filler stays and is then true. Card-level items render without a sub prefix; their URLs join the links row.
+
+### 3. Producer/consumer key mismatches ("?" ids, dangling ": ;", "?: ; ?: ; ?: .")
+
+The cards' prose "Sub-indicators:" sentences read `id`/`summary` while the producers emit `sub_id`/`current_state_summary` — so every line showed "?" for the id and a dangling colon while **real, populated summaries** (`_build_sub_7a_summary` etc.) were silently discarded. The ADR "Upcoming milestones" line read `date`/`description` while `ADRCalendarMilestone` emits `date_window`/`event` — every milestone rendered as the literal "?: " while the yaml content was thrown away. **Fix:** template reads the producer's keys (old names kept as fallback), emits the colon only when a summary exists, and skips milestone entries with no content. The sub-card boxes already used the correct keys and are unchanged; `_legacy` card builders deliberately untouched.
+
+### Tests
+
+`tests/test_v3_41_10_cards_and_banners.py` — 11 tests (routing incl. dates + card-level fallback, caps + URL dedup, None/empty no-ops, card 7/8 rendering with real summaries and milestones and no placeholder garbage, quiet-day filler + no dangling colon, milestone skip-when-empty, gate true only on transition day + None-safe, source-level assertion that both banner call sites consult the gate). Full suite: 59 failed / 1206 passed — identical failure distribution to the v3.41.9 baseline (59/1195), +11 new passes; the touched-file failures were additionally proven pre-existing by running the same test files on the untouched v3.41.9 tree — identical failing test IDs. No new dependency, no new state.
+
 ## v3.41.9 (2026-07-01) — Earnings coverage-echo guard: week-old prints stop leading the exec brief
 
 Six consecutive briefs (June 25 → July 1) led the executive summary with "the dominant development is Micron's Q3 print" — an event from ~June 24. Raul's requirement: day-of and a day or two of aftermath is fine; a recap on D+4 that restates the beat adds zero information and must not lead — but a genuinely incremental fact tied to the print (an analyst raising a PT on D+2) is legitimate news on its day and must NOT be suppressed.
