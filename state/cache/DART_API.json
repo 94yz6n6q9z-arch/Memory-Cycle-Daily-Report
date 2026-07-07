@@ -1,7 +1,7 @@
 {
   "source_id": "DART API",
   "payload": {
-    "fetched_at_iso": "2026-07-06T11:15:24.378076",
+    "fetched_at_iso": "2026-07-07T10:11:30.719507",
     "tickers": {
       "SK Hynix": {
         "corp_code": "00164779",
@@ -36,9 +36,33 @@
       },
       "Samsung Electronics": {
         "corp_code": "00126380",
-        "n_disclosures": 1,
-        "n_material": 0,
+        "n_disclosures": 4,
+        "n_material": 2,
         "disclosures": [
+          {
+            "report_nm": "\uc8fc\uc694\uc0ac\ud56d\ubcf4\uace0\uc11c(\uc790\uae30\uc8fc\uc2dd\ucc98\ubd84\uacb0\uc815)",
+            "rcept_dt": "20260707",
+            "rcept_no": "20260707000403",
+            "flr_nm": "\uc0bc\uc131\uc804\uc790",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260707000403"
+          },
+          {
+            "report_nm": "\uae30\uc5c5\uc124\uba85\ud68c(IR)\uac1c\ucd5c(\uc548\ub0b4\uacf5\uc2dc)              ",
+            "rcept_dt": "20260707",
+            "rcept_no": "20260707800015",
+            "flr_nm": "\uc0bc\uc131\uc804\uc790",
+            "is_material": true,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260707800015"
+          },
+          {
+            "report_nm": "\uc5f0\uacb0\uc7ac\ubb34\uc81c\ud45c\uae30\uc900\uc601\uc5c5(\uc7a0\uc815)\uc2e4\uc801(\uacf5\uc815\uacf5\uc2dc)              ",
+            "rcept_dt": "20260707",
+            "rcept_no": "20260707800004",
+            "flr_nm": "\uc0bc\uc131\uc804\uc790",
+            "is_material": true,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260707800004"
+          },
           {
             "report_nm": "\ucd5c\ub300\uc8fc\uc8fc\ub4f1\uc18c\uc720\uc8fc\uc2dd\ubcc0\ub3d9\uc2e0\uace0\uc11c              ",
             "rcept_dt": "20260706",
@@ -51,11 +75,28 @@
       },
       "SK Square": {
         "corp_code": "01515323",
-        "n_disclosures": 0,
-        "n_material": 0,
-        "disclosures": []
+        "n_disclosures": 2,
+        "n_material": 2,
+        "disclosures": [
+          {
+            "report_nm": "\uae30\uc5c5\uc124\uba85\ud68c(IR)\uac1c\ucd5c(\uc548\ub0b4\uacf5\uc2dc)              ",
+            "rcept_dt": "20260707",
+            "rcept_no": "20260707800086",
+            "flr_nm": "LG\uc5d0\ub108\uc9c0\uc194\ub8e8\uc158",
+            "is_material": true,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260707800086"
+          },
+          {
+            "report_nm": "\uc5f0\uacb0\uc7ac\ubb34\uc81c\ud45c\uae30\uc900\uc601\uc5c5(\uc7a0\uc815)\uc2e4\uc801(\uacf5\uc815\uacf5\uc2dc)              ",
+            "rcept_dt": "20260707",
+            "rcept_no": "20260707800074",
+            "flr_nm": "LG\uc5d0\ub108\uc9c0\uc194\ub8e8\uc158",
+            "is_material": true,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260707800074"
+          }
+        ]
       }
     }
   },
-  "fetched_at_iso": "2026-07-06T11:15:35.527785"
+  "fetched_at_iso": "2026-07-07T10:11:42.643952"
 }
