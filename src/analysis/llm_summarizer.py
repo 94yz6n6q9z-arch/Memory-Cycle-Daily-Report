@@ -44,6 +44,7 @@ from src.config import (
     BATCH_POLL_CAP_SECONDS,
     USE_PROSE_CACHE,
     EARNINGS_LEAD_FRESH_DAYS,
+    USE_STRUCTURED_TRIAGE,
 )
 from src.data.news import NewsItem
 from src.data.estimates import EstimateSnapshot
@@ -823,6 +824,102 @@ class BriefAnalysis:
 # Stage 1: Haiku news pre-processing
 # ============================================================
 
+# v3.41.11 — JSON Schema for the structured-outputs triage call. Passed as
+# output_config.format so the API's grammar-constrained decoder can only emit
+# schema-valid JSON: the unescaped-quote/raw-newline class that broke triage
+# at chars 6839, 13926, and 28384 becomes impossible at the sampler level.
+# Design constraints (per structured-outputs docs): additionalProperties
+# false everywhere, fixed keys only, no recursion. Note there is NO
+# `indicator_relevance` map here — dynamic keys don't fit a fixed schema, and
+# the map died to truncation on Jul 9 precisely because it trailed the
+# output. Routing instead travels INSIDE each item (`indicators` array), so
+# every item that arrives carries its own routing; the aggregate map is
+# derived in code by _merge_indicator_relevance.
+TRIAGE_JSON_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "relevant_news": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "index": {"type": "integer"},
+                    "title": {"type": "string"},
+                    "url": {"type": "string"},
+                    "source": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "indicators": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["index", "title", "url", "source", "summary", "indicators"],
+            },
+        },
+        "broker_actions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "ticker": {"type": "string"},
+                    "broker": {"type": "string"},
+                    "action": {"type": "string"},
+                    "detail": {"type": "string"},
+                    "source_url": {"type": "string"},
+                },
+                "required": ["ticker", "broker", "action", "detail", "source_url"],
+            },
+        },
+        "trendforce_commentary": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "product": {"type": "string"},
+                    "price_level": {"type": "string"},
+                    "move": {"type": "string"},
+                    "language": {"type": "string"},
+                    "source_url": {"type": "string"},
+                },
+                "required": ["product", "price_level", "move", "language", "source_url"],
+            },
+        },
+    },
+    "required": ["relevant_news", "broker_actions", "trendforce_commentary"],
+}
+
+
+def _merge_indicator_relevance(parsed: dict) -> tuple[dict, int]:
+    """Build the indicator→news-indices map from BOTH sources.
+
+    v3.41.11 — routing now travels inside each relevant_news item as an
+    `indicators` array (survives partial output item-by-item; enforced by the
+    structured schema). The legacy free-form path may still also emit the
+    aggregate `indicator_relevance` map. This merges the two — map first,
+    item tags unioned in — so every downstream consumer (Sonnet prompt,
+    Section-4 card attach) keeps reading one map regardless of which call
+    path produced the triage. Returns (merged_map, n_item_tags_merged).
+    """
+    merged: dict[str, list[int]] = {}
+    for ind, idxs in (parsed.get("indicator_relevance") or {}).items():
+        if isinstance(ind, str) and isinstance(idxs, list):
+            merged[ind] = [i for i in idxs if isinstance(i, int)]
+    n_tags = 0
+    for item in (parsed.get("relevant_news") or []):
+        if not isinstance(item, dict):
+            continue
+        idx = item.get("index")
+        for ind in (item.get("indicators") or []):
+            if not isinstance(ind, str) or not ind:
+                continue
+            bucket = merged.setdefault(ind, [])
+            if isinstance(idx, int) and idx not in bucket:
+                bucket.append(idx)
+                n_tags += 1
+    return merged, n_tags
+
+
 def build_haiku_triage_prompt(news_items: list[NewsItem]) -> str:
     """Prompt Haiku to triage and categorize the news feed."""
 
@@ -848,7 +945,7 @@ YOUR TASKS:
 1. Filter: Identify the news items relevant to memory/semiconductor cycle (SK Hynix, Micron, Samsung, ASML, AMAT, NVIDIA, Broadcom, TSMC, hyperscaler CapEx, DRAM/NAND/HBM prices, AI inference efficiency). Discard everything else.
 2. Broker actions: Extract any analyst broker actions (upgrades, downgrades, target price changes, estimate revisions). Action types: "upgrade", "downgrade", "target_raised", "target_cut", "estimate_raised", "estimate_cut".
 3. TrendForce / price commentary: Extract any DRAM, NAND, HBM, or memory pricing commentary. Pull out specific price levels, percentage moves, and demand language ("buyers cautious", "price cuts not stimulating demand", etc).
-4. Indicator mapping: For each remaining relevant news item, list which indicator IDs it informs.
+4. Indicator mapping: tag EVERY relevant news item inline via its `indicators` array with the indicator IDs it informs (use the exact IDs from the list above; empty array if none apply). Also return the aggregate `indicator_relevance` map.
 
 OUTPUT FORMAT — STRICT REQUIREMENTS:
 - Your entire response must be a single valid JSON object.
@@ -860,19 +957,20 @@ OUTPUT FORMAT — STRICT REQUIREMENTS:
 
 JSON SCHEMA:
 {{
+  "indicator_relevance": {{
+    "t1_spot_decline": [5, 12, 23],
+    "t2_eps_revisions": [3, 17],
+    "t1_us_adr_event": [7]
+  }},
   "relevant_news": [
-    {{"index": 5, "title": "...", "url": "...", "source": "...", "summary": "1-line takeaway"}}
+    {{"index": 5, "title": "...", "url": "...", "source": "...", "summary": "1-line takeaway", "indicators": ["t1_spot_decline"]}}
   ],
   "broker_actions": [
     {{"ticker": "MU", "broker": "Mizuho", "action": "target_raised", "detail": "$545 -> $740", "source_url": "..."}}
   ],
   "trendforce_commentary": [
     {{"product": "DDR5 16Gb spot", "price_level": "$39", "move": "+0.34%", "language": "...", "source_url": "..."}}
-  ],
-  "indicator_relevance": {{
-    "t1_spot_decline": [5, 12, 23],
-    "t2_eps_revisions": [3, 17]
-  }}
+  ]
 }}
 
 Be aggressive about filtering. If an item is not directly about memory/semi cycle, discard it.
@@ -901,6 +999,40 @@ def haiku_triage_news(
     client = Anthropic(api_key=api_key)
     prompt = build_haiku_triage_prompt(news_items)
 
+    # v3.41.11 — structured-outputs call. output_config.format compiles
+    # TRIAGE_JSON_SCHEMA into a grammar that constrains decoding: the model
+    # cannot emit JSON-breaking characters (the char-6839/13926/28384 class).
+    # Passed via extra_body so any SDK >=0.39 works. If the API rejects the
+    # parameter or the call errors, fall back to the legacy free-form call
+    # within the same run — the brief never depends on the new path.
+    triage_path = "legacy"
+
+    def _create(structured: bool):
+        kwargs = dict(
+            model=HAIKU_MODEL,
+            max_tokens=HAIKU_MAX_TOKENS,
+            temperature=LLM_TEMPERATURE,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        if structured:
+            kwargs["extra_body"] = {
+                "output_config": {
+                    "format": {"type": "json_schema", "schema": TRIAGE_JSON_SCHEMA}
+                }
+            }
+        return client.messages.create(**kwargs)
+
+    def _call_with_fallback():
+        if USE_STRUCTURED_TRIAGE:
+            try:
+                return _create(True), "structured"
+            except Exception as e:
+                logger.warning(
+                    f"[triage] structured-output call failed ({e}); "
+                    f"falling back to legacy free-form call"
+                )
+        return _create(False), "legacy"
+
     response = None
     try:
         if collector is not None:
@@ -908,26 +1040,26 @@ def haiku_triage_news(
                 f"Anthropic API / {HAIKU_MODEL} (stage 1 triage)",
                 "llm",
             ) as t:
-                response = client.messages.create(
-                    model=HAIKU_MODEL,
-                    max_tokens=HAIKU_MAX_TOKENS,
-                    temperature=LLM_TEMPERATURE,
-                    messages=[{"role": "user", "content": prompt}],
-                )
+                response, triage_path = _call_with_fallback()
                 # items_returned = #news items the model successfully classified
                 # (estimated from input volume; actual count set after parse)
                 t.items_returned = len(news_items)
-                t.detail = f"input: {len(news_items)} news items"
+                t.detail = f"input: {len(news_items)} news items ({triage_path})"
         else:
-            response = client.messages.create(
-                model=HAIKU_MODEL,
-                max_tokens=HAIKU_MAX_TOKENS,
-                temperature=LLM_TEMPERATURE,
-                messages=[{"role": "user", "content": prompt}],
-            )
+            response, triage_path = _call_with_fallback()
     except Exception as e:
         logger.error(f"Haiku triage call failed: {e}")
         return None
+
+    stop_reason = getattr(response, "stop_reason", None)
+    logger.info(f"[triage] path={triage_path} stop_reason={stop_reason}")
+    if stop_reason == "max_tokens":
+        logger.warning(
+            "[triage] response hit max_tokens — output truncated by the length "
+            "cap (structured mode guarantees format, not completeness); "
+            "item-level `indicators` tags preserve routing for every item "
+            "that did arrive"
+        )
 
     raw = _strip_code_fence(response.content[0].text)
     # v3.38.4: two-stage parse. Stdlib json first (fast path for valid output);
@@ -961,6 +1093,8 @@ def haiku_triage_news(
             )
             return None
 
+    _relevance_merged = _log_triage_relevance(parsed, triage_path)
+
     return NewsTriage(
         relevant_news=parsed.get("relevant_news", []),
         # v3.4.8 — Defensive BrokerAction construction. The previous
@@ -973,8 +1107,22 @@ def haiku_triage_news(
             BrokerAction, parsed.get("broker_actions", []), "broker_actions"
         ),
         trendforce_commentary=parsed.get("trendforce_commentary", []),
-        indicator_relevance=parsed.get("indicator_relevance", {}),
+        # v3.41.11 — map ∪ item-level `indicators` tags. The structured path
+        # emits only item tags (no dynamic-key map in the schema); the legacy
+        # path may emit both. Merging here keeps every downstream consumer
+        # on one map.
+        indicator_relevance=_relevance_merged,
     )
+
+
+def _log_triage_relevance(parsed: dict, triage_path: str) -> dict:
+    merged, n_tags = _merge_indicator_relevance(parsed)
+    n_mappings = sum(len(v) for v in merged.values())
+    logger.info(
+        f"[triage] indicator_relevance: {len(merged)} indicators / "
+        f"{n_mappings} mappings (item-tags merged: {n_tags}, path={triage_path})"
+    )
+    return merged
 
 
 # ============================================================
@@ -2588,11 +2736,30 @@ _COMPETITOR_SUB_ROUTES: list[tuple[str, tuple[str, ...]]] = [
 ]
 
 _ADR_SUB_ROUTES: list[tuple[str, tuple[str, ...]]] = [
-    ("8A", ("f-1", "f‑1", "edgar", "filing", "amendment", "prospectus")),
+    ("8A", ("f-1", "f‑1", "424b", "edgar", "filing", "amendment", "prospectus",
+            "listing", "nasdaq", "oversubscri", "spo")),
     ("8B", ("roadshow", "bookbuild", "book-build", "investor demand", "order book")),
     ("8C", ("priced at", "prices its", "pricing day", "offering priced")),
     ("8D", ("insider", "stake sale", "share sale by")),
 ]
+
+# v3.41.11 — card-level SELECTORS for the keyword floor. When the relevance
+# map yields nothing for a card (map lost to a break, or Haiku didn't tag),
+# these decide which relevant_news items belong to the card at all. They are
+# deliberately NARROW — unambiguous, card-specific vocabulary only. Bare
+# "samsung"/"micron" are intentionally ABSENT: those names blanket the
+# memory feed and would flood card 7 with earnings/pricing noise; they stay
+# router-only (used to place an item already selected by relevance/keywords
+# into a sub), never selectors.
+_COMPETITOR_CARD_SELECTORS: tuple[str, ...] = (
+    "cxmt", "hbf", "solidigm", "high bandwidth flash", "high-bandwidth flash",
+)
+_ADR_CARD_SELECTORS: tuple[str, ...] = (
+    "f-1", "f‑1", "424b", "edgar", "prospectus", "adr",
+    "nasdaq listing", "us listing", "secondary offering", "spo", "oversubscri",
+    "roadshow", "bookbuild", "insider sale", "insider selling",
+    "priced at", "offering priced",
+)
 
 
 def _route_to_sub(text: str, routes: list[tuple[str, tuple[str, ...]]]) -> Optional[str]:
@@ -2610,7 +2777,7 @@ def attach_triage_news_to_snapshots(
     adr_snapshot: Optional[dict],
     per_sub_cap: int = 2,
     card_cap: int = 3,
-) -> None:
+) -> dict:
     """Populate sub/card `recent_news` on the two Section-4 snapshot dicts.
 
     Mutates the snapshot dicts in place (they are the same objects
@@ -2637,62 +2804,91 @@ def attach_triage_news_to_snapshots(
             url_to_date[url] = str(pub)[:10]
 
     relevance = getattr(triage, "indicator_relevance", None) or {}
+    stats: dict[str, dict] = {}
 
     def _attach(indicator_id: str, snapshot: Optional[dict],
-                routes: list[tuple[str, tuple[str, ...]]]) -> None:
-        if not isinstance(snapshot, dict):
-            return
-        indices = relevance.get(indicator_id) or []
-        subs = snapshot.get("subs") or []
-        subs_by_id = {}
-        for s in subs:
-            if isinstance(s, dict):
-                sid = s.get("sub_id") or s.get("id")
-                if sid:
-                    subs_by_id[str(sid)] = s
-        seen_urls: set = set()
+                routes: list[tuple[str, tuple[str, ...]]],
+                selectors: tuple[str, ...]) -> None:
+        rel_indices = [
+            i for i in (relevance.get(indicator_id) or []) if isinstance(i, int)
+        ]
+        # v3.41.11 — keyword floor. When the relevance map has nothing for
+        # this card (map lost to an output break, or Haiku didn't tag),
+        # select candidates deterministically from the already-triaged
+        # relevant_news using the card's narrow selector vocabulary. This is
+        # the path that would have pinned "SK Hynix $28B Nasdaq listing …
+        # F-1/A filed" to card 8 on Jul 9 regardless of the broken map.
+        kw_indices: list[int] = []
+        if not rel_indices:
+            for item in (getattr(triage, "relevant_news", None) or []):
+                if not isinstance(item, dict):
+                    continue
+                text = f"{item.get('title', '')} {item.get('summary', '')}".lower()
+                if any(k in text for k in selectors):
+                    idx = item.get("index")
+                    if isinstance(idx, int):
+                        kw_indices.append(idx)
+        indices = rel_indices or kw_indices
         n_attached = 0
-        for idx in indices:
-            item = by_index.get(idx)
-            if not item:
-                continue
-            title = (item.get("title") or "").strip()
-            if not title:
-                continue
-            url = (item.get("url") or "").strip()
-            if url and url in seen_urls:
-                continue
-            entry = {
-                "title": title,
-                "url": url,
-                "date": url_to_date.get(url, ""),
-            }
-            sub_id = _route_to_sub(f"{title} {item.get('summary', '')}", routes)
-            target_sub = subs_by_id.get(sub_id) if sub_id else None
-            if target_sub is not None:
-                bucket = target_sub.setdefault("recent_news", [])
-                if len(bucket) >= per_sub_cap:
+        if isinstance(snapshot, dict):
+            subs = snapshot.get("subs") or []
+            subs_by_id = {}
+            for s in subs:
+                if isinstance(s, dict):
+                    sid = s.get("sub_id") or s.get("id")
+                    if sid:
+                        subs_by_id[str(sid)] = s
+            seen_urls: set = set()
+            for idx in indices:
+                item = by_index.get(idx)
+                if not item:
                     continue
-                bucket.append(entry)
-            else:
-                bucket = snapshot.setdefault("recent_news", [])
-                if len(bucket) >= card_cap:
+                title = (item.get("title") or "").strip()
+                if not title:
                     continue
-                bucket.append(entry)
-            if url:
-                seen_urls.add(url)
-            n_attached += 1
-        if n_attached:
-            logger.info(
-                f"[card-news] attached {n_attached} triage-mapped item(s) to "
-                f"{indicator_id} snapshot"
-            )
+                url = (item.get("url") or "").strip()
+                if url and url in seen_urls:
+                    continue
+                entry = {
+                    "title": title,
+                    "url": url,
+                    "date": url_to_date.get(url, ""),
+                }
+                sub_id = _route_to_sub(f"{title} {item.get('summary', '')}", routes)
+                target_sub = subs_by_id.get(sub_id) if sub_id else None
+                if target_sub is not None:
+                    bucket = target_sub.setdefault("recent_news", [])
+                    if len(bucket) >= per_sub_cap:
+                        continue
+                    bucket.append(entry)
+                else:
+                    bucket = snapshot.setdefault("recent_news", [])
+                    if len(bucket) >= card_cap:
+                        continue
+                    bucket.append(entry)
+                if url:
+                    seen_urls.add(url)
+                n_attached += 1
+        # v3.41.11 — ALWAYS log, including the zero case. The Jul 9 failure
+        # was invisible precisely because this only spoke on success.
+        logger.info(
+            f"[card-news] {indicator_id}: relevance={len(rel_indices)} "
+            f"keyword={len(kw_indices)} attached={n_attached}"
+        )
+        stats[indicator_id] = {
+            "relevance": len(rel_indices),
+            "keyword": len(kw_indices),
+            "attached": n_attached,
+        }
 
     try:
-        _attach("t1_competitor_dynamics", competitor_snapshot, _COMPETITOR_SUB_ROUTES)
-        _attach("t1_us_adr_event", adr_snapshot, _ADR_SUB_ROUTES)
+        _attach("t1_competitor_dynamics", competitor_snapshot,
+                _COMPETITOR_SUB_ROUTES, _COMPETITOR_CARD_SELECTORS)
+        _attach("t1_us_adr_event", adr_snapshot,
+                _ADR_SUB_ROUTES, _ADR_CARD_SELECTORS)
     except Exception as e:  # never let card decoration break the analysis
         logger.warning(f"[card-news] attach failed (non-fatal): {e}")
+    return stats
 
 
 def analyze_with_llm(

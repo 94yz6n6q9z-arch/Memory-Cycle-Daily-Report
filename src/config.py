@@ -2449,6 +2449,17 @@ HAIKU_MODEL = os.environ.get("HAIKU_MODEL_OVERRIDE") or "claude-haiku-4-5"
 # in llm_summarizer.py covers the case where output IS valid but malformed.
 HAIKU_MAX_TOKENS = 16000
 
+# v3.41.11 — Stage-1 triage uses the API's structured-outputs mode
+# (output_config.format with a JSON schema; GA for claude-haiku-4-5).
+# Grammar-constrained decoding makes malformed JSON (the unescaped-quote
+# class that broke runs at chars 6839, 13926, 28384) impossible at the
+# sampler level: the model cannot emit a token sequence that violates the
+# schema. Kill switch: set False to force the legacy free-form JSON call.
+# The structured call also falls back to legacy automatically within the
+# run if the API rejects it (e.g. older endpoint), so flipping this is a
+# convenience, not a rescue requirement.
+USE_STRUCTURED_TRIAGE = True
+
 # Stage 2 — mid-tier reasoning model for tier classification, probability
 # synthesis, exec summary composition. Currently resolves to Sonnet 4.6;
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for

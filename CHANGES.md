@@ -2,6 +2,25 @@
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
 
+## v3.41.11 (2026-07-09) — Structured-outputs triage: the malformed-JSON class dies at the source; routing travels per item; keyword floor + full observability
+
+The July 9 brief repeated the card-8 disconnect v3.41.10 was meant to fix — "No new developments today" while §5 led with the $28B Nasdaq listing story. The run log proved the mechanism in three lines: the Haiku triage's free-form JSON broke mid-output (`Unterminated string at char 28384`), `json_repair` recovered the fields before the break (51 relevant_news items), and `indicator_relevance` — the LAST field in the triage schema — was dropped wholesale. The v3.41.10 attach depended entirely on that map, received `{}`, attached nothing, and logged nothing. Third occurrence of the character-breaks-JSON class in this repo (chars 6839/13926 in May's triage; char 4166 in June's Sonnet output = the v3.41.7 empty-§5).
+
+### Fixes
+
+1. **Structured outputs on the triage call.** `haiku_triage_news` now passes `TRIAGE_JSON_SCHEMA` via `output_config.format` (GA on the Claude API for claude-haiku-4-5; grammar-constrained decoding — the sampler cannot emit a token sequence that violates the schema, so the unescaped-quote/raw-newline class becomes impossible rather than unlikely). Sent via `extra_body` so the pinned SDK (`anthropic>=0.39`) needs no upgrade. Kill switch `USE_STRUCTURED_TRIAGE` (config, default True) plus automatic in-run fallback to the legacy free-form call if the API rejects the parameter — the brief never depends on the new path. Logs `[triage] path=structured|legacy stop_reason=...` every run and warns explicitly on `max_tokens` (structured mode guarantees format, not completeness).
+2. **Routing travels inside each item.** Every `relevant_news` item now carries its own `indicators` array (schema-required on the structured path; requested in the legacy prompt too). The aggregate map is DERIVED — `_merge_indicator_relevance` unions the legacy map (when present) with the item tags — so all downstream consumers keep reading one map, and any partial output preserves routing for every item that arrived. No critical field trails the response anymore; the legacy prompt's schema example additionally moves `indicator_relevance` to the front (the v3.41.7 reorder lesson applied to the triage schema).
+3. **Keyword floor.** When the map yields nothing for a card, candidates are selected deterministically from the already-triaged `relevant_news` via narrow card-specific selector vocabularies (`_ADR_CARD_SELECTORS`: f-1/424b/edgar/prospectus/adr/nasdaq listing/oversubscribed/roadshow/insider sale/…; `_COMPETITOR_CARD_SELECTORS`: cxmt/hbf/solidigm/…). Bare "samsung"/"micron" are deliberately absent — they blanket the memory feed and stay router-only (placing an already-selected item into a sub), never selectors, so "Micron beats earnings" cannot flood card 7. The Jul 9 headline ("… Nasdaq listing 7x oversubscribed, F-1/A filed") pins to 8A through this floor even with a dead map. The 8A router vocabulary is broadened accordingly (listing/nasdaq/oversubscribed/spo).
+4. **Observability.** `[card-news] <indicator>: relevance=N keyword=K attached=M` logs EVERY run including zeros (the Jul 9 failure was invisible precisely because the old line only spoke on success); the attach returns a per-card stats dict; `[triage] indicator_relevance: X indicators / Y mappings (item-tags merged: Z, path=…)` sizes the map each run.
+
+### Tests
+
+`tests/test_v3_41_11_structured_triage.py` — 13 tests (schema constrained + item routing required + no dynamic-key map; merge from tags/union/dedupe/garbage-filtered; mocked API: structured call carries the schema in extra_body, structured failure falls back to legacy in-run, flag-off goes straight to legacy; legacy prompt map-first + inline-tag instruction; keyword floor pins the Jul 9 listing and CXMT, bare-Micron never selected, relevance-present skips the floor; stats returned even for None snapshots). Prior-release tests in the same module (v3.41.7/9/10) all still green. Full suite: 59 failed / 1219 passed — identical fixture-failure distribution to the v3.41.10 baseline (59/1206), +13 new passes. No dependency or pin change.
+
+### Follow-up candidate (not in this release)
+
+Give the Sonnet Layer-3 call the same structured-outputs treatment — that permanently retires the failure class that blanked §5 on June 30 (v3.41.7's fallback would become vestigial). Bigger schema, batch-path interplay, its own validation run: proposed as v3.41.12.
+
 ## v3.41.10 (2026-07-06) — Banner transition-gating, Section-4 card news feed, and producer/consumer key fixes
 
 Three defects from the July 3–6 briefs, all display-layer, one release.
