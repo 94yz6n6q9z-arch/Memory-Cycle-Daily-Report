@@ -2,6 +2,34 @@
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
 
+## v3.41.13 (2026-07-10) — The news_article extraction lane: every language-borne event field finally has a producer
+
+Companion to v3.41.12. The extraction schema declared `source_type="news_article"` from day one and both aggregators were written to consume it — but no producer ever existed. This release builds it: `src/analysis/news_event_extractor.py`, one structured-output Haiku call per fast run (the v3.41.11 grammar-constrained pattern from day one — a malformed reply is impossible) over the day's already-fetched news, extracting ONLY the news-native event fields and writing extraction-log entries in the exact shape the existing aggregators read, immediately before they run — so news-borne events reach the state machines in the same run.
+
+Coverage: ADR — f1_canceled, underwriter_syndicate, roadshow_active, demand_classification, pricing_day/discount/final_size (backup to the deterministic detector, which stays authoritative for machine-readable facts), insider_sale_event. Competitor — us_export_controls_easing_event, cxmt_oem_mainstream_win, samsung_hbm4e_announcement, amd_samsung_hbm4_supply_mou, jedec_hbf_spec_ratified, sk_hynix_solidigm_hbf_integration, sandisk_kioxia_hbf_milestone, hbf_hyperscaler_design_win, hbf_hot_tier_displacement.
+
+Design guarantees: `USE_NEWS_EVENT_EXTRACTOR` kill switch (config, default True); fail-quiet — any API error, missing key, or empty feed skips the lane for the run with a logged reason and no fallback (the deterministic detector and the rest of the pipeline are unaffected); prompt demands explicitly-stated facts only, nulls otherwise; entries carry tier-aware source labels (reuters/bloomberg/korean_press/...), same-day dedup by source_id+group; `[event-extract] entries=N dedup_skipped=K stop_reason=...` logged every run including zeros. Cost ~$0.01–0.03/run. Known remaining gap unchanged from v3.41.12: Form 4 / DART structured insider parsers (8D relies on news language until built).
+
+### Tests
+
+`tests/test_v3_41_13_news_event_extractor.py` — 8 tests (schema constrained + nullable groups; mocked structured call sends the schema; conversion strips nulls and carries aggregator shape/source labels; f1_canceled round-trips through the real ADR aggregator; out-of-range index + all-null groups skipped; API failure quiet-skips writing nothing; dedup on rerun; flag/key/news skips). Combined suite for v3.41.12+13: 59 failed / 1238 passed — identical fixture-failure set, +19 new passes over the v3.41.11 baseline. No dependency change.
+
+## v3.41.12 (2026-07-10) — Deterministic ADR event detection: the state machine finally hears the event it was built for
+
+The ADR listing priced ($149/ADR, $26.5B, 7x oversubscribed) and listed while Indicator 8 sat at "Partially fired / Pricing day None". Root cause was structural: the extraction log — the only input to the ADR (and competitor) state machines — had a single producer, the deep-tier digester, whose entire document diet is earnings transcripts + broker PDFs. The v3.4.4.1 comments claimed four feeders existed (EDGAR F-1 detection, roadshow-language coverage, 424B pricing, Form 4 + DART insider sales); none were ever built. Every event-native field was starved by design.
+
+### Fix
+
+New `src/analysis/adr_filing_detector.py`, run in the FAST tier on the news items already fetched, immediately before the ADR aggregator — deterministic legs for the facts that are machine-readable facts:
+- **EDGAR form types** from the `[FILING]` titles: F-1 / F-1/A → `f1_filed`; RW/withdrawal → `f1_canceled` (= Fired); **424B\*** → `pricing_day` = filing date (authoritative).
+- **Headline regexes** (ADR-context-guarded so "raises $10B for HBM capacity" and "Micron raises guidance" don't trigger): "raises US$26.5 billion" → `final_size_usd_b`; "priced … at $149" → pricing_day fallback when no 424B yet + price as evidence; "7x oversubscribed" / "books multiple times covered" → demand strong; "weak demand / undersubscribed" → weak.
+
+Entries are written in the exact shape `adr_aggregator._apply_extractions` already reads (top-level `adr_signals` + `date` + `source: sec_edgar`), same-day deduped by `source_id`, never raising, with an `[adr-detect]` summary logged every run including zeros. Effect verified end-to-end against the real aggregator: the Jul-10 feed advances the lifecycle to **trading**, and with t3_relative_strength fired within 30 days the peak-coincidence gate (`trading/completed + late Phase 4`) escalates the composite to **Fired** — the 1995-pattern signal the indicator exists for. The two ghost comments (digester schema, fast_tier) are corrected, and CLAUDE.md now carries a field→feeder map so no consumer can silently lack a producer again. Form 4 / DART insider parsers remain unbuilt (8D's structured feed — noted, not hidden); arbitrary news language beyond these regexes is the news_article LLM lane (v3.41.13).
+
+### Tests
+
+`tests/test_v3_41_12_adr_detector.py` — 11 tests (form-type mapping incl. RW→canceled and 6-K→none; the full Jul-10 scenario round-tripped through the real aggregator to phase=trading; priced-headline pricing_day fallback; capex/guidance guards; weak-demand; dedup on rerun; empty/None no-ops; aggregator-shape assertions; t3-fired → late-Phase-4 True; escalation-condition wiring). Full-suite regression below with v3.41.13.
+
 ## v3.41.11 (2026-07-09) — Structured-outputs triage: the malformed-JSON class dies at the source; routing travels per item; keyword floor + full observability
 
 The July 9 brief repeated the card-8 disconnect v3.41.10 was meant to fix — "No new developments today" while §5 led with the $28B Nasdaq listing story. The run log proved the mechanism in three lines: the Haiku triage's free-form JSON broke mid-output (`Unterminated string at char 28384`), `json_repair` recovered the fields before the break (51 relevant_news items), and `indicator_relevance` — the LAST field in the triage schema — was dropped wholesale. The v3.41.10 attach depended entirely on that map, received `{}`, attached nothing, and logged nothing. Third occurrence of the character-breaks-JSON class in this repo (chars 6839/13926 in May's triage; char 4166 in June's Sonnet output = the v3.41.7 empty-§5).

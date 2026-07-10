@@ -2460,6 +2460,16 @@ HAIKU_MAX_TOKENS = 16000
 # convenience, not a rescue requirement.
 USE_STRUCTURED_TRIAGE = True
 
+# v3.41.13 — fast-tier news_article extraction lane (the producer the
+# v3.4.4.1 design promised). One structured-output Haiku call per run over
+# the day's news, extracting ONLY the news-native event fields (ADR events +
+# competitor events) into extraction-log entries with
+# source_type="news_article". Deterministic facts (EDGAR forms, pricing
+# regexes) stay with adr_filing_detector — this lane covers arbitrary
+# language. Kill switch; on any API failure the lane skips the run and logs
+# (no legacy fallback — the deterministic detector is unaffected).
+USE_NEWS_EVENT_EXTRACTOR = True
+
 # Stage 2 — mid-tier reasoning model for tier classification, probability
 # synthesis, exec summary composition. Currently resolves to Sonnet 4.6;
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for

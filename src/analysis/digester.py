@@ -262,9 +262,11 @@ do not infer or speculate. Use null for unknown.
 
   // v3.4.4.1 — Indicator 8 (US ADR / SPO event) extraction fields
   // Only populated when the document explicitly references SK Hynix ADR
-  // / SPO event progression. SEC EDGAR atom feed already detects F-1
-  // filings directly (no LLM extraction needed for that); Layer 1
-  // covers news coverage during roadshow/pricing/insider-sales windows.
+  // / SPO event progression. v3.41.12 reality check: EDGAR form types and
+  // pricing/size/demand headlines are detected DETERMINISTICALLY in the
+  // fast tier (adr_filing_detector) — this LLM block covers only what a
+  // transcript/broker document states in prose; the news_article lane
+  // (v3.41.13) covers arbitrary news language.
   "adr_signals": {{
     "f1_filed": null or true,                                  // SEC EDGAR F-1 detected (or news confirms filing)
     "f1_canceled": null or true,                               // F-1 filed then offering pulled (= Fired)

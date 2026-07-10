@@ -816,10 +816,29 @@ def run_fast_tier() -> int:
         computed_metrics["competitor_error_message"] = msg
 
     # v3.4.4 — Indicator 8 (US ADR / SPO event) composite snapshot.
-    # v3.4.4.1: aggregator step added — reads accumulated Layer 1 extraction
-    # logs (SEC EDGAR F-1 detection, roadshow demand language, 424B pricing,
-    # Form 4 + DART insider sales) and updates state/adr_state.json BEFORE
-    # the snapshot is computed.
+    # v3.41.12 — deterministic ADR event detection runs FIRST, on the news
+    # items already fetched this run: EDGAR form types ([FILING] F-1 / F-1/A /
+    # RW / 424B*) and pricing/size/demand headline regexes emit extraction-log
+    # entries in the aggregator's shape. (The v3.4.4.1 comment previously here
+    # claimed EDGAR detection, roadshow-language, 424B pricing, and Form 4 /
+    # DART insider feeds already existed — none did; the log's only producer
+    # was the transcript-only deep-tier digester. The deterministic legs now
+    # exist; the language-fuzzy legs arrive via the news_article extractor
+    # lane. Form 4 / DART parsers remain unbuilt.)
+    try:
+        from src.analysis.adr_filing_detector import detect_and_log_adr_events
+        detect_and_log_adr_events(news_items)
+    except Exception as e:
+        logger.error(f"ADR deterministic detector failed (non-fatal): {e}", exc_info=True)
+    # v3.41.13 — the news_article LLM lane: one structured-output Haiku pass
+    # over the run's news, extracting the language-fuzzy event fields (ADR +
+    # competitor) into extraction-log entries BEFORE the aggregators read the
+    # log, so news-borne events reach the state machines in the same run.
+    try:
+        from src.analysis.news_event_extractor import extract_and_log_news_events
+        extract_and_log_news_events(ANTHROPIC_API_KEY, news_items)
+    except Exception as e:
+        logger.error(f"News event extractor failed (non-fatal): {e}", exc_info=True)
     try:
         from src.analysis.adr_aggregator import aggregate_adr_extractions
         aggregate_adr_extractions()  # updates state/adr_state.json
