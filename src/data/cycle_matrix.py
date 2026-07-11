@@ -893,14 +893,24 @@ def _generate_narrative(
         MatrixCell.FIRE: "Fired — exit substantial portion or full position.",
     }[cell]
 
+    # v3.41.14 — the spot phrase previously printed weekly_mean_current as
+    # "spot at $X" and the week-ENDING date as "peak set <date>" — on a
+    # Saturday that produced "spot at $47.34 ... peak set 2026-07-12"
+    # (tomorrow) while the chart annotated the raw print $47.80. Three
+    # numbers, one series, zero labels. Now: the RAW latest print leads with
+    # its real date; the weekly mean stays (it is the matrix's actual band
+    # input — unchanged math) but is labeled as such, and the peak date is
+    # labeled as the week-ending it is.
     spot_phrase = (
-        f"DDR5 16Gb 4800/5600 spot at ${spot.weekly_mean_current:.2f} "
-        f"({spot.drawdown_pct:+.2f}% vs rolling {ROLLING_PEAK_WINDOW_WEEKS}w peak "
-        f"${spot.rolling_peak_price:.2f}"
+        f"DDR5 16Gb 4800/5600 spot ${spot.current_session_avg:.2f} "
+        f"({spot.as_of_date.isoformat()} print). Matrix basis (weekly means): "
+        f"current wk ${spot.weekly_mean_current:.2f}, "
+        f"{spot.drawdown_pct:+.2f}% vs rolling {ROLLING_PEAK_WINDOW_WEEKS}w "
+        f"wk-peak ${spot.rolling_peak_price:.2f}"
     )
     if spot.rolling_peak_date is not None:
-        spot_phrase += f" set {spot.rolling_peak_date.isoformat()}"
-    spot_phrase += f"). {spot.weeks_since_peak}w since last new peak."
+        spot_phrase += f" (wk ending {spot.rolling_peak_date.isoformat()})"
+    spot_phrase += f". {spot.weeks_since_peak}w since last new peak."
 
     if contract.has_anchor:
         contract_phrase = (

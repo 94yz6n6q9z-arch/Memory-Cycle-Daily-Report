@@ -150,11 +150,25 @@ def _apply_extractions(state: dict, entries: list[dict]) -> tuple[dict, list[str
 
         if sigs.get("f1_filed") is True:
             f1_filed_observed = True
-            fdate = entry.get("date") or entry.get("extracted_at")
+            # v3.41.14 — the FILING date, not the extraction date. Entries
+            # re-observing the same F-1 (the form sits in EDGAR's 30-day
+            # feed, so the deterministic detector re-emits daily) previously
+            # overwrote f1_filing_date with each run's timestamp — the June
+            # 12 filing displayed as "filed <this morning>". Prefer the
+            # entry's published date, and only ever move the recorded date
+            # EARLIER: the first filing date wins.
+            fdate = (
+                entry.get("published_date_iso")
+                or entry.get("date")
+                or entry.get("extracted_at")
+            )
             if fdate:
-                state.setdefault("sub_8a_f1_filing", {}).setdefault("current_state", {})[
-                    "f1_filing_date"
-                ] = fdate
+                cs = state.setdefault("sub_8a_f1_filing", {}).setdefault(
+                    "current_state", {}
+                )
+                existing = cs.get("f1_filing_date")
+                if not existing or str(fdate) < str(existing):
+                    cs["f1_filing_date"] = fdate
 
         if sigs.get("f1_canceled") is True:
             f1_canceled_observed = True

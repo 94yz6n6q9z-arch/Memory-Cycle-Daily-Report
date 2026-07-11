@@ -2,6 +2,26 @@
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
 
+## v3.41.14 (2026-07-11) — Spot-display coherence + peak-coincidence finally sees the tier signals + F-1 date fix
+
+Three defects from the July 11 brief, two of them the direct blockers Raul flagged.
+
+### 1. One card, three DDR5 prices ($47.34 / $47.067 / $47.80) — display defect, not data corruption
+
+The cycle-matrix narrative printed the **weekly mean** as "spot at $47.34" and the pandas **week-ending date** as "peak set 2026-07-12" (a Sunday — tomorrow, on a Saturday run), while its own chart annotated the raw daily print $47.80. The $47.067 line is the (prose-cache-served) card text quoting the 07-08 print item. The weekly aggregation is the matrix's documented, intentional band input (config: "mean of session_avg by week") — the math is untouched. **Fix (display):** the narrative now leads with the raw latest print and its real date — "spot $47.80 (2026-07-11 print)" — keeps the weekly mean explicitly labeled "Matrix basis (weekly means): current wk $47.34", and labels the peak date as the week-ending it is ("wk-peak $47.34 (wk ending 2026-07-12)"). This narrative flows into both the matrix snapshot box AND the t1 card's where_we_stand (the v3.39.7 deterministic override), so the fresh raw number now appears wherever the stale/ambiguous one did; the chart's raw annotations now match the headline number.
+
+### 2. ADR: phase=trading but "No peak-coincidence escalation active"
+
+The escalation gate received **only the DHCR snapshot** — its own comment admitted "we don't have tier_assessments yet at this point in the pipeline" — so with DHCR >40 it could never fire on tier signals: on listing day, 6/7 fired Tier-2s and a fired Tier-3 were invisible to it. Compounding: the function read assessments via getattr, which silently ignores dict-shaped inputs. **Fix:** prior-day indicator statuses (prior_state's `indicator_assessments` — a valid input for a trailing-30-day test, loaded via fast_tier's own `load_prior_state`) are passed in; the reader accepts dicts and objects; and `[peak-coincidence] dhcr_score=… t2_fired=… t3_fired=… → cycle_phase_4_late=…` is logged every run. With yesterday's statuses (T2 6/7 fired, t3 fired), the gate evaluates True → phase trading → **composite escalates to Fired** on the next run.
+
+### 3. "F-1 filed 2026-07-11T08:25:33Z" — the filing date regressed to this morning
+
+Every f1 re-observation (the form sits in EDGAR's 30-day feed, so the v3.41.12 detector re-emits daily) overwrote `f1_filing_date` with the entry's **extraction** timestamp. **Fix:** prefer `published_date_iso`, and only ever move the recorded date **earlier** — the first filing date wins. June 12 stays June 12.
+
+### Tests
+
+`tests/test_v3_41_14_spot_and_escalation.py` — 7 tests (narrative leads raw + labels weekly basis + no misleading forms, missing-peak-date path; dict and object assessments count, thresholds; call-site source assertion; f1 published-preferred + earliest-wins both directions). Full suite: 59 failed / 1245 passed — byte-identical failure distribution to the canonical baseline, +7 new passes. No dependency change.
+
 ## v3.41.13 (2026-07-10) — The news_article extraction lane: every language-borne event field finally has a producer
 
 Companion to v3.41.12. The extraction schema declared `source_type="news_article"` from day one and both aggregators were written to consume it — but no producer ever existed. This release builds it: `src/analysis/news_event_extractor.py`, one structured-output Haiku call per fast run (the v3.41.11 grammar-constrained pattern from day one — a malformed reply is impossible) over the day's already-fetched news, extracting ONLY the news-native event fields and writing extraction-log entries in the exact shape the existing aggregators read, immediately before they run — so news-borne events reach the state machines in the same run.

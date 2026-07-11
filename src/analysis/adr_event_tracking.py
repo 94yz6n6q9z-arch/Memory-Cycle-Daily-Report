@@ -305,17 +305,27 @@ def cycle_phase_4_late_from_indicators(
       - DHCR position score in warning band (≤40)
       - ≥3 Tier 2 indicators fired in trailing 30 days
       - Any Tier 3 indicator fired in trailing 30 days
+
+    v3.41.14 — accepts BOTH attribute-style assessments and plain dicts
+    (prior_state's indicator_assessments round-trip through JSON as dicts;
+    getattr on a dict silently returned the default, making every dict
+    assessment invisible to this check).
     """
+    def _field(a, name, default=None):
+        if isinstance(a, dict):
+            return a.get(name, default)
+        return getattr(a, name, default)
+
     if dhcr_snapshot and dhcr_snapshot.get("position_score", 100) <= 40:
         return True
     if tier_assessments is None:
         return False
     n_tier2_fired = sum(
         1 for a in tier_assessments
-        if getattr(a, "tier", 0) == 2 and getattr(a, "current_status", "") == STATUS_FIRED
+        if _field(a, "tier", 0) == 2 and _field(a, "current_status", "") == STATUS_FIRED
     )
     n_tier3_fired = sum(
         1 for a in tier_assessments
-        if getattr(a, "tier", 0) == 3 and getattr(a, "current_status", "") == STATUS_FIRED
+        if _field(a, "tier", 0) == 3 and _field(a, "current_status", "") == STATUS_FIRED
     )
     return n_tier2_fired >= 3 or n_tier3_fired >= 1

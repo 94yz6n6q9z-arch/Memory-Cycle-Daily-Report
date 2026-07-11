@@ -851,13 +851,36 @@ def run_fast_tier() -> int:
             cycle_phase_4_late_from_indicators,
         )
         from dataclasses import asdict
-        # cycle_phase_4_late used for peak-coincidence escalation.
-        # We don't have tier_assessments yet at this point in the pipeline,
-        # so just pass the DHCR snapshot if available (covers the most
-        # diagnostic Phase 4 signal). Tier signal corroboration is added
-        # in a future revision when Layer 2 runs before this step.
+        # v3.41.14 — the escalation previously received ONLY the DHCR
+        # snapshot ("we don't have tier_assessments yet at this point"), so
+        # with DHCR >40 it could never fire on tier signals: on ADR listing
+        # day the phase reached `trading` while 6/7 Tier-2s and a fired
+        # Tier-3 were invisible to the gate → "No peak-coincidence
+        # escalation active". Yesterday's indicator statuses (prior_state)
+        # are a valid input for a trailing-30-day test and ARE available
+        # here — load them.
+        _prior_assessments = []
+        try:
+            _prior_assessments = (load_prior_state() or {}).get(
+                "indicator_assessments"
+            ) or []
+        except Exception as _e:
+            logger.warning(f"[peak-coincidence] prior-state load failed: {_e}")
         cycle_late = cycle_phase_4_late_from_indicators(
+            tier_assessments=_prior_assessments,
             dhcr_snapshot=computed_metrics.get("dhcr_snapshot"),
+        )
+        _t2 = sum(1 for a in _prior_assessments
+                  if isinstance(a, dict) and a.get("tier") == 2
+                  and a.get("current_status") == "Fired")
+        _t3 = sum(1 for a in _prior_assessments
+                  if isinstance(a, dict) and a.get("tier") == 3
+                  and a.get("current_status") == "Fired")
+        _dhcr = (computed_metrics.get("dhcr_snapshot") or {}).get("position_score")
+        logger.info(
+            f"[peak-coincidence] dhcr_score={_dhcr} t2_fired={_t2} "
+            f"t3_fired={_t3} (prior-day statuses, n={len(_prior_assessments)}) "
+            f"→ cycle_phase_4_late={cycle_late}"
         )
         adr_snapshot = compute_adr_snapshot(cycle_phase_4_late=cycle_late)
         if adr_snapshot is not None:
