@@ -1,41 +1,10 @@
 {
-  "saved_at_iso": "2026-07-14T08:55:03.017239+00:00",
+  "saved_at_iso": "2026-07-15T09:03:42.777595+00:00",
   "executive_summary": {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
     "tier_status_summary": "T1: 4/6 fired | T2: 6/7 fired (1 partial) | T3: 2/5 fired (1 partial) | T4: 0/4 fired",
-    "new_triggers_today": [
-      {
-        "tier": 1,
-        "indicator_id": "t1_us_adr_event",
-        "indicator_name": "US ADR / SPO event tracking",
-        "description": "Status changed from 'Partially fired' to 'Fired'."
-      },
-      {
-        "tier": 3,
-        "indicator_id": "t3_eps_miss_guidance",
-        "indicator_name": "EPS miss or beat narrowing on still-rising guidance",
-        "description": "Status changed from 'Not fired' to 'Partially fired'."
-      },
-      {
-        "tier": 1,
-        "indicator_id": "t1_competitor_dynamics",
-        "indicator_name": "Competitor dynamics (CXMT, Samsung HBM4, Micron, HBF)",
-        "description": "Status changed from 'Partially fired' to 'Fired'."
-      },
-      {
-        "tier": 2,
-        "indicator_id": "t2_eps_revisions",
-        "indicator_name": "Forward FY27/FY28 EPS revision direction \u2014 THE canonical Tier 2 signal",
-        "description": "Status changed from 'Not fired' to 'Partially fired'."
-      },
-      {
-        "tier": 3,
-        "indicator_id": "t3_relative_strength",
-        "indicator_name": "Memory pure-plays underperform SOX",
-        "description": "Status changed from 'Not fired' to 'Fired'."
-      }
-    ],
+    "new_triggers_today": [],
     "base_case": {
       "probability_pct": 47.0,
       "peak_months_away": 3.0,
@@ -57,10 +26,10 @@
       "peak_window_end": "August 2026",
       "return_to_peak_pct": -43.0
     },
-    "delta_from_prior_text": "Indicator distribution shifted vs prior: t3_relative_strength transitioned Not fired \u2192 Fired (new Tier 3 fire). Applied Rule A (Tier 3 fires): bear +5pp (28\u219233, then capped; net bear 33\u219236pp after rounding to maintain sum=100), bull -2pp (19\u219217), base peak_months_away unchanged at 3mo, base return_to_peak_pct trimmed ~2pp (10\u21928). Bear return_to_peak_pct held at -43% per historical calibration band (4+ T1 OR 5+ T2 fired = -35 to -45%; any T3 fired = -40 to -50%; anchored to historical average drawdown -43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). ADR completion concurrent with Tier 3 firing is the peak-coincidence escalation pattern per framework; bear probability elevated accordingly. Sum check: 47+17+36=100. Invariants: base(47)>bear(36)>bull(17) \u2014 PASS; base return\u22650 \u2014 PASS; bull(50)>base(8)>bear(-43) \u2014 PASS.",
+    "delta_from_prior_text": "No indicator status changes today \u2014 probability distribution unchanged vs prior brief. Base 47% / Bull 17% / Bear 36% preserved. Bear return_to_peak_pct held at -43%, calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base case peak window unchanged vs yesterday (August\u2013October 2026, 3 months away). CXMT IPO scale and Mirae's second consecutive forecast cut are incremental bearish inputs but do not individually cross a threshold requiring recalibration.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "One new Tier 3 signal fires today: relative strength (t3_relative_strength) crossed the red threshold as SK Hynix's 5-day spread vs SOX hit -16.97pp, driven by the SK Hynix Q2 earnings miss that sent the ADR down ~10% [\u2192\u00a74]. That miss also sustains t3_eps_miss_guidance at Partially fired \u2014 beat magnitude collapsed from 48.8% in Q1 to a miss, the first such reversal this cycle [\u2192\u00a73]. The ADR event (t1_us_adr_event) completed at $26.5B, the largest Korean capital raise in history, confirming the peak-coincidence pattern [\u2192\u00a74]. Against this, Mirae Asset maintained its KRW 4.2M target, citing 40+ consecutive days of DDR5/DDR4 spot price gains and a $2.1T combined hyperscaler order backlog up 38% QoQ \u2014 t1_spot_decline remains Not fired [\u2192\u00a73]. CXMT is on track to match Micron's DRAM manufacturing capacity this year, adding commodity DDR5 supply pressure that reinforces t1_competitor_dynamics at Partially fired [\u2192\u00a74]. Morgan Stanley raised Amazon and Meta 2027 CapEx estimates, a bull confirmation for t2_capex_parabolic [\u2192\u00a73]. The simultaneous firing of a Tier 3 signal concurrent with ADR completion is the peak-coincidence escalation pattern the framework flags as high-conviction; base case peak window holds at Q3\u2013Q4 2026 [\u2192\u00a72]."
+    "executive_brief": "No tier-1-5 signals fired or unfired today; the indicator distribution is unchanged from yesterday's brief. The dominant development is SK Hynix's 424B4 final prospectus filing and ADR pricing, with Barclays initiating coverage at $330 (implying ~100% upside from ADR pricing) \u2014 directional confirmation of the ADR peak-coincidence overlay [\u2192\u00a73] already at 'Partially fired'. Mirae Asset maintained its \u20a94.2M target while cutting its Q2 2026 operating profit forecast 12%, the second consecutive downward revision \u2014 incremental pressure on t2_eps_revisions [\u2192\u00a73], which remains 'Partially fired' pending broader analyst follow-through. CXMT's $8.5\u20139.8B IPO (Asia's largest chip listing of 2026) is the most material competitive development: fresh capital at scale accelerates Chinese DDR5 commodity supply, reinforcing the competitor-dynamics overlay [\u2192\u00a73] at 'Partially fired' and tightening the timeline for spot-price pressure on Samsung and SK Hynix's non-HBM nodes [\u2192\u00a74]. ASML's Q2 earnings confirmed memory revenue +75% YoY with 2027 order books described as 'nearly full' \u2014 WFE orders remain Not fired [\u2192\u00a73], a bullish structural read. DDR5 16Gb spot printed $48.57, at its rolling 12-week peak for the 40th-plus consecutive session; the price matrix stays Not fired [\u2192\u00a74]. Today's broad Korean memory rally (SK Hynix +8.83%, Samsung +6.27%) moved in step with the ADR pricing event and Barclays initiation \u2014 a market-wide re-rating, not a stock-specific micro story [\u2192\u00a71]."
   },
   "indicator_assessments": [
     {
@@ -70,23 +39,23 @@
       "description": "Structural overlay on SK Hynix premium thesis: pressure from Chinese commodity DRAM (CXMT), Samsung HBM4/HBM4E share gains at Nvidia, Micron HBM catch-up, and HBF (High Bandwidth Flash) substitution risk. Status calibrated to estimated EPS impact via price \u00d7 volume mechanics, not raw market share. The Part 14 dual-threat scenario (CXMT + Samsung simultaneously) is the worst-case overlay on cycle peak (-30 to -45% combined; -60 to -75% with peak-window coincidence).",
       "what_to_look_for": "Per-sub-indicator EPS-impact thresholds in data/competitor_thresholds.yaml. Headline triggers: 7A CXMT DDR5 mainstream Tier-1 OEM win; 7B SK Hynix Nvidia HBM4 share <50% OR HBM gross margin <60%; 7C Micron wins primary Vera Rubin SKU at SK Hynix's expense; 7D 2+ hyperscaler HBF design wins displacing hot-tier HBM AND SK Hynix behind on HBF roadmap.",
       "current_status": "Fired",
-      "where_we_stand": "Cumulative EPS impact ~11.5% (below Fired threshold of \u226520%). Sub-trigger 7B (Samsung HBM4/4E ~28-30% Nvidia qualification share) remains active since 2026-05-22. CXMT DDR5 pricing pressure confirmed by Mirae Asset (2026-07-14); no mainstream Tier-1 OEM win (7A not fired). CXMT is now on track to match Micron's full DRAM manufacturing capacity\u2026",
-      "latest_developments": "CXMT capacity parity with Micron reported (TechPowerUp, 2026-07-13). Mirae Asset (2026-07-14) confirms CXMT DDR5 pricing pressure but no Tier-1 OEM win. Samsung HBM5 hiring blitz and CXL push noted; no HBM4 share collapse data disclosed.",
+      "where_we_stand": "Sub-indicator 7B (Samsung HBM4 qualification at Nvidia) remains Partially fired (~10% EPS impact). CXMT's $8.5\u20139.8B IPO \u2014 Asia's largest chip listing of 2026 \u2014 is the session's most material competitive development: fresh capital at this scale accelerates Chinese DDR5 commodity supply on a 6\u201312 month lag. CXMT publicly claims DDR5\u2026",
+      "latest_developments": "CXMT $8.5\u20139.8B IPO priced on STAR Market; company claims DDR5 parity with Samsung/SK Hynix. Mirae (Jul 15) flags CXMT pricing pressure. No Tier-1 OEM win confirmed.",
       "relevant_links": [
         {
-          "title": "CXMT to match Micron DRAM capacity \u2014 TechPowerUp",
-          "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxOdEVYUnBRTkRaSEZmVWRMei1CcTZxVGx3cDJMOHNycmFqTTNCWVdxeW9lMU9FN0ViTjBhVjJKWnBnV1ZIMk1jbEpjMzJvTS1uM3pnN0xsUjVCaVBVTnE0d1gtY2prck9LZ0FacHdRR1ZCVG10V2Jjc1RScDNKdU1qR1pmN1FpUnFXNU5hOTU4SmhfMG9WWWpobURWUU8tWE9kRUk5RGY0V2ZyZw"
+          "title": "CXMT $8.5B IPO \u2014 Nikkei Asia",
+          "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNT0RTaDhDOWFlR00yaDBrNWVNNHhkMV9fb3RCVVc3dE1LcGMxeUZ5Nmwzdl9CZlphWlY2MWlIUmJ6V2l6VmVvRUVoNTE5RUNJdUJvYlFlUW8wd1ZsUlBSQjN0ekZXajlrWTAzMjZWYVZSckpxa1BHOHpObGlkakdhdElyY3dMNzJQTTdabzdtVm1jMlFGcFRzb3EtaFBxY2I0amc"
         },
         {
-          "title": "Mirae Asset SK Hynix report 2026-07-14",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
+          "title": "CXMT DDR5 parity claim",
+          "url": "https://news.google.com/rss/articles/CBMiO0FVX3lxTE5SN2lBcVdxYzBSR3MwX1lJSlRXakJxQmt5NThYX1NMSnlZSGVjcEc0a3dsLVd5ZGl6dS1B"
         },
         {
-          "title": "Samsung HBM5 hiring blitz + CXL push",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5SblpZcXhha3BSTzU0QXoxUk9sRnVoQ1d4WHBHWGhtN016azF1Q2ZjOXVMZXVjM0wxSXMtYkpucmhEVy1GOUx2VVd6M2ZxUm13bHdxcFlEWXR6bmRraEdGa2FLODBJZEFqenhXLU1lVlRwRllXUmc"
+          "title": "CXMT $4.3B IPO HBM framing \u2014 DigiTimes",
+          "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxOdjlwU2lJTlJ1TXktamQ0b0JwRXN1U1BSRjMtNjdjZmxDSFA4VU9Hb0doTGtSYkYzWURvbTcxc3diVXJ5OTdfckE5WW5sRk9HWEVzSFRBNUpYRHdUeTdxMnB5ZDg1dzRxS1hFQmxXOGVVZFRPR0tYTjBNdjdrbmtpTmNyWm8"
         }
       ],
-      "change_vs_prior": "No status change (Partially fired preserved). New evidence: CXMT capacity parity milestone (2026-07-13) adds to commodity DDR5 oversupply risk; Mirae Asset confirms pricing pressure channel. No reversal conditions met."
+      "change_vs_prior": "Status reverted to 'Partially fired' from 'Fired' per Layer 2 verdict (Jul 15). Yesterday's brief recorded 'Fired' based on Jul 14 Layer 2 transition; today's Layer 2 reassessment finds cumulative EPS impact below 20% Fired threshold \u2014 CXMT 7A (no\u2026"
     },
     {
       "id": "t1_demand_destruction",
@@ -188,16 +157,16 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $48.50 (2026-07-14 print). Matrix basis (weekly means): current wk $48.42, +0.00% vs rolling 12w wk-peak $48.42 (wk ending 2026-07-19). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 105d old). Synthetic adjusted: 51.1% central (range 49-54%). Adjustments: tone +4.0pp (10 src, weight 0.4); supplier -30.0pp (1 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
-      "latest_developments": "TrendForce spot print 2026-07-08: DDR5 16Gb $47.067 (flat), DDR4 $76.925 (-0.32%). Mirae Asset primary-source note flags price moderation beginning \u2014 not yet a matrix trigger but a leading directional input.",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $48.57 (2026-07-15 print). Matrix basis (weekly means): current wk $48.47, +0.00% vs rolling 12w wk-peak $48.47 (wk ending 2026-07-19). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 106d old). Synthetic adjusted: 51.1% central (range 49-54%). Adjustments: tone +4.1pp (11 src, weight 0.4); supplier -30.0pp (1 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "latest_developments": "TrendForce Jul 15 spot print: DDR5 $48.57 (+0.14%), DDR4 $78.63 (+0.32%). Mirae confirms 40+ consecutive days of spot strength. Matrix remains Not fired.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price 2026-07-08",
+          "title": "TrendForce DRAM Spot \u2014 Jul 15",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
         },
         {
-          "title": "Mirae Asset Samsung Note \u2014 'memory price increases starting to moderate'",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341073"
+          "title": "Mirae Asset SK Hynix report Jul 15",
+          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
         }
       ],
       "change_vs_prior": null
@@ -234,23 +203,23 @@
       "description": "Memory makers' and hyperscalers' CapEx growing parabolic \u2014 building 2027-28 supply glut. ALREADY FIRED on aggregate; watch for 2027 guidance direction at Jul prints.",
       "what_to_look_for": "Big Three combined CapEx >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B (fired). NEW threshold: any of MSFT/GOOG/META/AMZN/ORCL guides 2027 CapEx ABOVE 2026 at Q2 2026 earnings prints. Bull confirm if above; bear catalyst if flat/down.",
       "current_status": "Fired",
-      "where_we_stand": "Fired since 2025. Aggregate hyperscaler 2026 CapEx consensus $725B (+77% YoY). Micron today announced $250B+ US investment commitment (\u226540% DRAM, NY fab ramp 2027-28) \u2014 the single largest memory-maker capex pledge on record. TSMC raised 2027 capex guidance at its Q2 analyst meeting. Mirae Asset (Jul 8-10) confirms HBM4 production expansion constraining conventional memory supply, reinforcing the capacity-overbuild thesis for 2027-28. No reversal conditions met (no capex cuts, no fab cancellations). The 2027 guidance direction at Q2 hyperscaler prints (MSFT/GOOG/META/AMZN, due mid-July) is the next binary: above 2026 = bull\u2026",
-      "latest_developments": "Micron $250B US capex pledge (Bloomberg, Jul 9) is the dominant new item. TSMC 2027 capex raise (MSN) adds equipment-side confirmation. Mirae Asset (Jul 10) notes HBM4 expansion constraining conventional supply.",
+      "where_we_stand": "Fired since Jan 2026. ASML Q2 2026 (Jul 15): memory revenue +75% YoY, FY2026 guidance raised to \u20ac43\u201345B, 65 EUV systems shipped, 30% EUV capacity expansion planned 2027\u201328, 2027 order book 'nearly full.' Mirae (Jul 14\u201315): hyperscaler combined backlog $2.1T (+24% QoQ); SK Hynix two-year revenue backlog $656B (+38% QoQ). Gaon Cable supply deal confirms Yongin cluster expansion underway. Amazon CapEx/OCF 2q-rolling: 121.2% \u2014 single-company strain overlay active. Aggregate hyperscaler CapEx/OCF mean: 80.1% (vs 50% full-fire threshold). No reversal condition (capex cut or fab cancellation) detected. Next watch: Q2 2026\u2026",
+      "latest_developments": "ASML Q2 confirms memory CapEx acceleration: +75% revenue, 2027 orders secured. Gaon Cable Yongin deal (Jul 15) confirms SK Hynix fab buildout. Hyperscaler CapEx/OCF aggregate 80.1%.",
       "relevant_links": [
         {
-          "title": "Bloomberg: Micron Boosts US Spending to $250B",
-          "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxOXzRDQ1lqdkFMUGNtYjlIeVFkN05CWEFVTXlrN19CcTYtN014RFdCNlN2UUZpQmFnUkNodGhvdW5GZGh0RDNyS1hGTzQ3VXVhbkgyN3ZtSDRILTZON094VnFGMUF6VVBuVW0yOWZ4c1dtTEl0SWNzM3JCTUJ6MHJNWkhjNUE2czRyeVN1V0Q0YUlwaVVsaUdVazY3eGlwbzF3UkE3QTIyd1hPdXVva3d3"
+          "title": "ASML Q2 2026 earnings call",
+          "url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-704580.html"
         },
         {
-          "title": "Mirae Asset: Samsung Stay the Course (Jul 10)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341073"
+          "title": "Gaon Cable SK Hynix Yongin supply deal",
+          "url": "https://www.koreatimes.co.kr/business/companies/20260715/gaon-cable-to-supply-power-distribution-cables-to-sk-hynixs-yongin-chip-cluster"
         },
         {
-          "title": "DigiTimes: Micron $250B Memory Push Sharpens Three-Way Race",
-          "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxPeDJ1THZQUjBqcXh4ZHl5dHIzRDJhMUxfVVpaT0J0R0t0b0Q4dnE1c3VHaEFJQVg4RTdWdEhldVFHQzJSSF9KY1lFcFV3aW5OaWllOHFHMTZlV0RDTEluQmdIZ05uSXI5UVZUWHItVEx2WHMySDNEMjV6aG03WEM1MXc1TXRUU3NvS25ONFU2S19LdHZv"
+          "title": "Mirae Asset SK Hynix Jul 15",
+          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
         }
       ],
-      "change_vs_prior": "New corroborating evidence: Micron $250B US capex pledge (Jul 9, Bloomberg) is the largest single memory-maker capex commitment on record, deepening the 2027-28 supply-glut risk. Status preserves Fired; no reversal conditions met."
+      "change_vs_prior": null
     },
     {
       "id": "t2_eps_revisions",
@@ -305,16 +274,12 @@
       "description": "C-suite or board sales \u2014 material insider activity. Coverage is COMPREHENSIVE: Micron via SEC EDGAR Form 4 (US standard); SK Hynix + Samsung Electronics + SK Square via DART (Korean regulatory equivalent). Korean entities don't file SEC Form 4 \u2014 DART is the canonical source for them.",
       "what_to_look_for": "FOR MICRON: Form 4 filings via SEC EDGAR atom feed showing C-suite (CEO Mehrotra, CFO Murphy) or board sales with transaction code S, value >$1M. FOR SK HYNIX (corp_code 00164779): DART API disclosure types B (material event), D (ownership change), I (audit-related) \u2014 captures executive/board sales, stake reductions by major holders, board changes. FOR SAMSUNG ELECTRONICS (00126380): Same DART disclosure types as SK Hynix. Already fired Mar 2026 (Mehrotra Micron sales).",
       "current_status": "Fired",
-      "where_we_stand": "Fired. Three-entity coverage active: Micron CEO Mehrotra Form 4 sale (Mar 15, 2026) within 12-month aging window; SK Hynix DART material disclosure (rcept_dt 20260706); Samsung Electronics 2 material DART disclosures (rcept_dt 20260707). DART disclosures from both Korean entities in the past 48 hours reinforce signal breadth. No reversal condition met\u2026",
-      "latest_developments": "SK Hynix DART material disclosure Jul 6 and Samsung Electronics 2 material DART disclosures Jul 7 add corroborating evidence across all three entities. Signal preserves Fired with strengthened Korean-entity coverage.",
+      "where_we_stand": "Fired since Mar 2026 (Micron CEO Mehrotra Form 4 sale, Mar 15, 2026 \u2014 12-month aging window expires Mar 15, 2027). Two SK Hynix DART material disclosures filed Jul 13\u201315 (rcept_no 20260715800456, 20260715800045) within the 30-day trigger window; content not parsed as confirmed insider sales but presence maintains signal sensitivity.\u2026",
+      "latest_developments": "Micron Form 4 filed Jul 6 (SEC EDGAR); SK Hynix DART filings Jul 13\u201315. Neither confirmed as C-suite sale in structured data. Mehrotra sale (Mar 15) remains primary evidence.",
       "relevant_links": [
         {
-          "title": "SEC EDGAR \u2014 Micron Form 4 filings",
-          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=MU&type=4&dateb=&owner=include&count=10"
-        },
-        {
-          "title": "DART \u2014 SK Hynix disclosures",
-          "url": "https://dart.fss.or.kr/dsab007/main.do?autoSearch=true&textCrpCik=00164779"
+          "title": "Micron Form 4 \u2014 SEC EDGAR Jul 6",
+          "url": "https://www.sec.gov/Archives/edgar/data/723125/000163206326000003/0001632063-26-000003-index.htm"
         }
       ],
       "change_vs_prior": null
@@ -460,16 +425,12 @@
       "description": "Memory makers' inventory weeks rising from record lows.",
       "what_to_look_for": "SK Hynix or Micron inventory weeks crossing 4 in TrendForce monthly print or earnings disclosure. Currently 2-3 weeks.",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. Supplier inventory at 2-3 weeks (TrendForce Q3 2025 baseline; no new print today). Trigger requires SK Hynix or Micron inventory weeks crossing 4. Samsung Q2 2026 earnings confirm HBM production expansion ('expansion of HBM production should constrain conventional memory supply' per Mirae Asset) \u2014 HBM capacity reallocation away from conventional DRAM tightens conventional supply, working against inventory rebuild on that node. SK Hynix $231B revenue guidance for 2026 (vs $67B in 2025) implies sustained throughput, not inventory accumulation. Next scheduled re-check: Q2 2026 earnings disclosures (SK Hynix reports\u2026",
-      "latest_developments": "Samsung HBM4 production expansion (Mirae Asset, Jul 8) implies wafer reallocation from conventional DRAM \u2014 constraining DDR5/LPDDR supply and working against inventory rebuild. No new inventory-weeks data in today's feed.",
+      "where_we_stand": "Not fired. Supplier inventory weeks remain at 2\u20133 weeks per TrendForce Q3 2025 baseline; no subsequent print has crossed the 4-week trigger threshold. ASML's 2026 memory revenue +75% and SK Hynix's HBM capacity reallocation (per Mirae Jul 14\u201315) are consistent with continued tight supplier inventory \u2014 HBM allocation crowds out DDR5 wafers, keeping finished-goods weeks low. No earnings disclosure from SK Hynix or Micron today. Next read: SK Hynix Q2 2026 earnings (expected late Jul 2026).",
+      "latest_developments": "No new inventory weeks data today. Mirae (Jul 14\u201315) confirms HBM capacity prioritization consistent with tight supplier inventory. Trigger threshold (4 weeks) not approached.",
       "relevant_links": [
         {
-          "title": "Mirae Asset \u2014 HBM production expansion constrains conventional supply",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341073"
-        },
-        {
-          "title": "SK Hynix $231B revenue guidance",
-          "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTE1GY1hjYkpQZ3RuUEsxZUdhTjdTWmtneE52eU5MU2s5OHZ4X21EeVRfbmx6YzRJNjZ3Z0NnTy1vU2owN2M4TW0yd1VNejVVbG5GUEF2SmpUX2V2c2pTOHNXYmNaQk0xd2YxQ3NNYmZ3"
+          "title": "Mirae Asset SK Hynix Jul 14",
+          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
         }
       ],
       "change_vs_prior": null
@@ -481,12 +442,16 @@
       "description": "Equipment makers' order books showing first weakness.",
       "what_to_look_for": "ASML or AMAT bookings -10% or worse QoQ. Book-to-bill below 1.0. SEMI worldwide WFE billings printing MoM decline.",
       "current_status": "Not fired",
-      "where_we_stand": "ASML -0.4% today, AMAT +2.4% \u2014 no bookings data in today's feed. Samsung + SK Hynix capex splurge driving record orders for Korean chip test equipment makers (reported today), consistent with WFE order book still healthy. No ASML/AMAT bookings -10% QoQ or book-to-bill <1.0 evidence.",
-      "latest_developments": "Samsung + SK Hynix capex driving record test equipment orders in Korea \u2014 WFE order book remains robust. No cracking evidence.",
+      "where_we_stand": "Not fired. ASML Q2 2026 (Jul 15): net sales \u20ac9.3B, Q3 guidance \u20ac11.0\u201312.0B (sequential growth), FY2026 guidance raised to \u20ac43\u201345B. Memory revenue +75% YoY. Management stated 2027 order book 'already close to receiving all orders needed.' No bookings decline, no book-to-bill below 1.0, no WFE billings weakness. AMAT -4.50% today\u2026",
+      "latest_developments": "ASML Q2 2026 beat: memory +75%, guidance raised, 2027 orders secured. No crack signal. AMAT -4.50% on broad tape weakness, no new bookings data.",
       "relevant_links": [
         {
-          "title": "Samsung + SK Hynix capex fuels record orders for Korean chip test equipment",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE9Ocy1adzZtSEF4TUlJTWgxSXVMNk1Gb19CbTlja01VM3djM2lVa2JsOU5Od3B5Vm1jdlE2NGV4RWFuWDI1UGpTT2xzRDVDRzY4TzFSUHA2RjUzbDlsaEZBMG5TVVpQdEVWNjVGYnNjaGZaRlhGTUE"
+          "title": "ASML Q2 2026 earnings \u2014 CNBC",
+          "url": "https://www.cnbc.com/2026/07/15/asml-2q-earnings-ai-chips-orders.html"
+        },
+        {
+          "title": "ASML Q2 2026 earnings call transcript",
+          "url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-704580.html"
         }
       ],
       "change_vs_prior": null
