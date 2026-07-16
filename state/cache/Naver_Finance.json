@@ -1,12 +1,25 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-07-15T08:49:01.237268+00:00",
+    "fetched_at_iso": "2026-07-16T08:45:57.110620+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
         "code": "000660",
         "actions": [
+          {
+            "broker_korean": "KB",
+            "broker_english": "KB Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 4200000,
+            "prior_target_krw": 4200000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-07-15",
+            "raw": "KB | 26/07/15 | 4,200,000 | 4,200,000 | 0.00 | BUY | BUY"
+          },
           {
             "broker_korean": "\ubbf8\ub798\uc5d0\uc14b",
             "broker_english": "Mirae Asset Securities",
@@ -58,19 +71,6 @@
             "direction": "maintained",
             "published_date_iso": "2026-07-13",
             "raw": "\ub2e4\uc62c\ud22c\uc790 | 26/07/13 | 4,200,000 | 4,200,000 | 0.00 | BUY | BUY"
-          },
-          {
-            "broker_korean": "KB",
-            "broker_english": "KB Securities",
-            "rating": "BUY",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 4200000,
-            "prior_target_krw": 4200000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-07-09",
-            "raw": "KB | 26/07/09 | 4,200,000 | 4,200,000 | 0.00 | BUY | BUY"
           },
           {
             "broker_korean": "BNK\ud22c\uc790",
@@ -229,19 +229,6 @@
             "raw": "iM | 26/06/22 | 3,500,000 | 2,760,000 | 26.81 | Buy | Buy"
           },
           {
-            "broker_korean": "DS\ud22c\uc790",
-            "broker_english": "DS Investment & Securities",
-            "rating": "BUY",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 3100000,
-            "prior_target_krw": 1600000,
-            "target_change_pct": 93.75,
-            "direction": "raised",
-            "published_date_iso": "2026-06-17",
-            "raw": "DS\ud22c\uc790 | 26/06/17 | 3,100,000 | 1,600,000 | 93.75 | BUY | BUY"
-          },
-          {
             "broker_korean": "\uc720\uc9c4\ud22c\uc790",
             "broker_english": "Eugene Investment & Securities",
             "rating": "STRONG BUY",
@@ -253,6 +240,19 @@
             "direction": "raised",
             "published_date_iso": "2026-06-17",
             "raw": "\uc720\uc9c4\ud22c\uc790 | 26/06/17 | 3,700,000 | 3,200,000 | 15.62 | STRONG BUY | STRONG BUY"
+          },
+          {
+            "broker_korean": "DS\ud22c\uc790",
+            "broker_english": "DS Investment & Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3100000,
+            "prior_target_krw": 1600000,
+            "target_change_pct": 93.75,
+            "direction": "raised",
+            "published_date_iso": "2026-06-17",
+            "raw": "DS\ud22c\uc790 | 26/06/17 | 3,100,000 | 1,600,000 | 93.75 | BUY | BUY"
           },
           {
             "broker_korean": "\uba54\ub9ac\uce20",
@@ -324,8 +324,8 @@
         "summary": {
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 3547917,
-          "avg_eps_krw": 316278,
-          "avg_per": 6.05,
+          "avg_eps_krw": 314787,
+          "avg_per": 6.61,
           "num_estimating_institutions": 24
         }
       },
@@ -650,7 +650,7 @@
           "avg_opinion_score": 4.04,
           "avg_target_price_krw": 513958,
           "avg_eps_krw": 46664,
-          "avg_per": 5.64,
+          "avg_per": 5.99,
           "num_estimating_institutions": 24
         }
       },
@@ -832,11 +832,11 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 853692,
           "avg_eps_krw": 125347,
-          "avg_per": 4.48,
+          "avg_per": 4.86,
           "num_estimating_institutions": 13
         }
       }
     }
   },
-  "fetched_at_iso": "2026-07-15T08:49:41.767808"
+  "fetched_at_iso": "2026-07-16T08:46:37.462288"
 }
