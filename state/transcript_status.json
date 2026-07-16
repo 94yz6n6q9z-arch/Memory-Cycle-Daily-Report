@@ -1,19 +1,19 @@
 {
-  "written_at_iso": "2026-07-15T08:46:44.865600+00:00",
+  "written_at_iso": "2026-07-16T08:42:53.130796+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 1,
-    "materials_only": 0,
-    "nothing": 2,
-    "already_processed": 32,
+    "materials_only": 1,
+    "nothing": 3,
+    "already_processed": 29,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
       "Broadcom": "already_processed",
-      "TSMC": "already_processed",
+      "TSMC": "materials_only",
       "Applied Materials": "already_processed",
       "Microsoft": "already_processed",
-      "Alphabet": "already_processed",
+      "Alphabet": "nothing",
       "Meta": "already_processed",
       "Amazon": "already_processed",
       "Oracle": "already_processed",
@@ -34,7 +34,6 @@
       "Broadcom",
       "TSMC",
       "Applied Materials",
-      "ASML",
       "Microsoft",
       "Alphabet",
       "Meta",
@@ -147,10 +146,10 @@
     {
       "company": "ASML",
       "ticker": "ASML",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Motley Fool",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 57304
     },
     {
       "company": "AMD",
@@ -235,10 +234,10 @@
     {
       "company": "TSMC",
       "ticker": "TSM",
-      "availability": "already_processed",
+      "availability": "materials_only",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": "Yahoo page captured but below full-transcript length (844 chars). Likely a historical call behind Yahoo's subscription gate, or a stub \u2014 latest call is normally free and full.",
+      "char_count": 844
     },
     {
       "company": "Applied Materials",
@@ -247,14 +246,6 @@
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
-    },
-    {
-      "company": "ASML",
-      "ticker": "ASML",
-      "availability": "full_transcript",
-      "source_name": "Yahoo Finance",
-      "note": null,
-      "char_count": 11132
     },
     {
       "company": "Microsoft",
@@ -267,9 +258,9 @@
     {
       "company": "Alphabet",
       "ticker": "GOOGL",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
