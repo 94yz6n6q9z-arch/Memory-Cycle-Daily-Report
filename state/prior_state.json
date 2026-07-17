@@ -1,42 +1,42 @@
 {
-  "saved_at_iso": "2026-07-16T08:59:12.049393+00:00",
+  "saved_at_iso": "2026-07-17T09:18:11.182883+00:00",
   "executive_summary": {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
-    "tier_status_summary": "T1: 4/6 fired | T2: 6/7 fired (1 partial) | T3: 1/5 fired (1 partial) | T4: 0/4 fired",
+    "tier_status_summary": "T1: 4/6 fired | T2: 6/7 fired (1 partial) | T3: 2/5 fired (1 partial) | T4: 0/4 fired",
     "new_triggers_today": [
       {
         "tier": 3,
         "indicator_id": "t3_relative_strength",
         "indicator_name": "Memory pure-plays underperform SOX",
-        "description": "Status changed from 'Fired' to 'Not fired'."
+        "description": "Status changed from 'Not fired' to 'Fired'."
       }
     ],
     "base_case": {
       "probability_pct": 47.0,
-      "peak_months_away": 3.0,
+      "peak_months_away": 2.0,
       "peak_window_start": "August 2026",
       "peak_window_end": "October 2026",
-      "return_to_peak_pct": 8.0
+      "return_to_peak_pct": 5.0
     },
     "bull_case": {
-      "probability_pct": 18.0,
+      "probability_pct": 16.0,
       "peak_months_away": 12.0,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q2 2027",
       "return_to_peak_pct": 50.0
     },
     "bear_case": {
-      "probability_pct": 35.0,
+      "probability_pct": 37.0,
       "peak_months_away": 0.0,
       "peak_window_start": "July 2026",
       "peak_window_end": "August 2026",
       "return_to_peak_pct": -43.0
     },
-    "delta_from_prior_text": "Indicator distribution shifted vs prior: t1_competitor_dynamics moved Fired\u2192Partially fired (watch overlay, not a tier-1-5 signal count change); t3_relative_strength moved Fired\u2192Not fired (tier-3 unfire). Applied Rule B for t3_relative_strength unfire: bear -1pp, bull +1pp, base peak unchanged. Net: bear 36\u219235pp, bull 17\u219218pp, base 47pp unchanged. Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base case peak window unchanged vs yesterday.",
+    "delta_from_prior_text": "t3_relative_strength fired today (Not fired \u2192 Fired), applying Tier 3 rule: bear +5pp (35\u219237, capped below base), bull -2pp (18\u219216), base peak_months_away -1mo (3\u21922), base return_to_peak_pct -3pp (8\u21925). Bear case magnitude preserves at -43% per historical average drawdown band (4+ T1 OR 5+ T2 fired regime: -35 to -45%; calibrated to historical average -43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Indicator distribution: T3 fired count 1\u21922.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "1 signal status change today (Memory pure-plays underperform SOX). one watch overlay changed status: Competitor dynamics (Indicator 7) moved from 'Fired' to 'Partially fired' as Layer 2 finds no new 7A/7C/7D sub-trigger evidence and 7B Samsung HBM4 share data remains unconfirmed [\u2192\u00a73]. The dominant development is CXMT's $4.34B Shanghai IPO book-building and capacity estimates approaching 90% of Micron's wafer input by year-end \u2014 a structural supply-side escalation that deepens the commodity DRAM oversupply risk on DDR4/DDR5 nodes within 3\u20139 months, while early performance testing shows CXMT DDR5 still trails SK Hynix on consistency and voltage scaling, limiting near-term Tier-1 OEM penetration [\u2192\u00a74]. SK Hynix completed its 17.79M-share ADR capital raise with the ADR trading at a 50%+ premium to KRX shares on debut \u2014 the peak-coincidence pattern this framework tracks is now fully in motion [\u2192\u00a73]. t3_relative_strength reverted to 'Not fired' as SK Hynix recovered +1.69pp vs SOX over five days, though the DRAM ETF remains at yellow watch (-7.1pp vs SMH) [\u2192\u00a74]. ASML raised its FY2026 revenue outlook to ~$51.8B (second raise this year), citing memory revenue +75% and customers already locking 2027 orders \u2014 WFE order book remains intact, keeping t3_wfe_orders_crack 'Not fired' [\u2192\u00a73]. Memory pure-plays sold off sharply today (SK Hynix -11.5%, Micron -8.0%, Samsung -8.8%) while NVDA/AVGO held flat-to-positive \u2014 a stark divergence that is directional confirmation of relative-strength pressure [\u2192\u00a71]; the driver is the CXMT supply shock, not company-specific micro news."
+    "executive_brief": "One signal fires today: relative strength (t3) moved from 'Not fired' to 'Fired' as the DRAM ETF underperformed SMH by -12.29pp over five sessions \u2014 crossing the -10pp red threshold \u2014 while SK Hynix (-7.31pp) and Micron (-5.53pp vs SOX) sit in yellow watch individually [\u2192\u00a73]. The broad semi tape sold off sharply (INTC -5.84%, MU -5.65%, AMD -5.33%, AVGO -5.03%), a market-wide move with no single-name catalyst in today's feed; the DRAM ETF's outsized underperformance relative to SMH is the framework-relevant signal, not the absolute decline [\u2192\u00a74]. On fundamentals, Mirae Asset's -12% FY27 EPS revision for SK Hynix (published Jul 16) is the first Tier-A downward estimate cut in the current window, keeping t2_eps_revisions at 'Partially fired' and marking the first sell-side dissent from a 38-analyst consensus that remains net-bullish [\u2192\u00a74]. Offsetting: ASML's Q2 2026 earnings confirm memory net system sales +75% YoY and backlog expansion, keeping t3_wfe_orders_crack firmly 'Not fired' [\u2192\u00a74]. Citi's published forecast of Google/Meta/Amazon 2027 CapEx exceeding $800B reinforces t2_capex_parabolic [\u2192\u00a73]. The SK Hynix ADR's post-debut decline (down ~21% in two days near IPO price) is consistent with the mechanical drag embedded in t1_us_adr_event ('Partially fired') and the peak-coincidence pattern [\u2192\u00a74]. With t3_relative_strength now fired alongside two other T3 signals in partial or fired state, the signal cluster is tightening toward the Q3\u2013Q4 2026 peak window [\u2192\u00a72]."
   },
   "indicator_assessments": [
     {
@@ -88,12 +88,12 @@
       "description": "Algorithmic or architectural improvement reducing memory-per-token by >2x. TurboQuant-class shocks. The cycle-breaking risk.",
       "what_to_look_for": "Major announcement from Google / OpenAI / Anthropic / Meta / DeepSeek / Mistral. Specific phrases: 'KV cache compression', 'inference efficiency 2x+', 'memory footprint reduction', 'quantization breakthrough'. Source must be official lab blog, arXiv, or 3+ mainstream tech publications within 48 hours.",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup on H100 \u2014 permanent persistence, cannot be unannounced). NVIDIA Blackwell efficiency commentary today (Indiatimes, July 16) references infrastructure-level gains but does not constitute a new 2x+ memory-per-token reduction event. No new qualifying announcement from Google/OpenAI/Anthropic/Meta/DeepSeek/Mistral in today's feed.\u2026",
-      "latest_developments": "NVIDIA claims Blackwell infrastructure efficiency gains; does not meet the 2x+ memory-per-token threshold for a new firing event. TurboQuant remains the operative fired event.",
+      "where_we_stand": "Fired since March 24, 2026: Google TurboQuant published 6x KV-cache compression and 8x inference speedup on H100 \u2014 a permanent architectural event with no reversal condition. No new efficiency announcement in today's feed. The DHCR direction monitor shows enterprise AI revenue YoY +235% (MSFT+AWS+GCP+Oracle run-rate), which continues to absorb efficiency\u2026",
+      "latest_developments": "",
       "relevant_links": [
         {
-          "title": "NVIDIA Blackwell efficiency commentary",
-          "url": "https://news.google.com/rss/articles/CBMi-AFBVV95cUxOdEFOa0hCOTYzSTFCWmEteFR4V1Jqelc0ZW8xU0NTcnNNUnpSSHozMGFGcnlIQk1JbzlqalJuV3VRei1iTkROWGtCcU1vUUNtYTRtM0RBOHZmbWdtY3k1ZTB4dEVUQmQ2cEEydWM4SldXcjhEdzZES3M2Y0ZJakdYZXdSeHlYWHRnbTI2R2VsWm9xeEdjSWVwbFI5YXBwcGxtWXdhRWE5Vm42S2Q1MnJXbmpta3NSMTVTekwzQ09BejRHM0h0S1psMVZyT3R1RzVvT3RZZHU4Z0JSckpzLXJFOGRNMTFOTXFfcW5KQ0ZOYjVOa3VhcGZvcg"
+          "title": "Google TurboQuant \u2014 original publication context",
+          "url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-649658.html"
         }
       ],
       "change_vs_prior": null
@@ -156,7 +156,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $49.33 (2026-07-16 print). Matrix basis (weekly means): current wk $48.68, +0.00% vs rolling 12w wk-peak $48.68 (wk ending 2026-07-19). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 107d old). Synthetic adjusted: 51.3% central (range 49-54%). Adjustments: tone +4.5pp (10 src, weight 0.4); supplier -30.0pp (1 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $49.73 (2026-07-17 print). Matrix basis (weekly means): current wk $48.89, +0.00% vs rolling 12w wk-peak $48.89 (wk ending 2026-07-19). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 108d old). Synthetic adjusted: 51.2% central (range 49-54%). Adjustments: tone +4.2pp (12 src, weight 0.4); supplier -30.0pp (1 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "TrendForce Jul 15 spot print: DDR5 $48.57 (+0.14%), DDR4 $78.63 (+0.32%). Mirae confirms 40+ consecutive days of spot strength. Matrix remains Not fired.",
       "relevant_links": [
         {
@@ -202,23 +202,23 @@
       "description": "Memory makers' and hyperscalers' CapEx growing parabolic \u2014 building 2027-28 supply glut. ALREADY FIRED on aggregate; watch for 2027 guidance direction at Jul prints.",
       "what_to_look_for": "Big Three combined CapEx >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B (fired). NEW threshold: any of MSFT/GOOG/META/AMZN/ORCL guides 2027 CapEx ABOVE 2026 at Q2 2026 earnings prints. Bull confirm if above; bear catalyst if flat/down.",
       "current_status": "Fired",
-      "where_we_stand": "Fired since Jan 2025. Hyperscaler 2026 aggregate CapEx consensus $725B (+77% YoY) intact. ASML Q2 2026 earnings (July 15) confirm memory revenue +75% FY26 and customers 'already close to receiving all orders needed for 2027' \u2014 the equipment maker's order book is the clearest real-time proxy for sustained capex trajectory. Samsung's new Giheung fab targeting 100K wafers/month for HBM adds supply-side capex. Mirae Asset (July 14\u201316) cites combined hyperscaler order backlog of $2.1T with 2-year revenue backlog of $656B (+38% QoQ). The NEW threshold \u2014 any of MSFT/GOOG/META/AMZN guiding 2027\u2026",
-      "latest_developments": "ASML raises FY2026 outlook to ~$51.8B (second raise this year); memory +75%, 2027 orders nearly locked. Samsung Giheung 100K wafer/month HBM fab announced. Hyperscaler backlog $2.1T per Mirae.",
+      "where_we_stand": "Fired. Aggregate 2026 hyperscaler CapEx >$725B (Big Three memory CapEx >2x 2024). Fresh today: Citi projects Google/Meta/Amazon 2027 CapEx >$800B \u2014 the bull-confirm threshold (2027 above 2026) is met. ASML Q2 2026 confirms memory net system sales +75% YoY and 30% capacity increase targeted for 2027 within existing footprint. TSMC commits additional $100B to Arizona (2026 CapEx guided $64B). Hyperscaler CapEx/OCF mean 80.1% (AMZN 121.2%, MSFT 74.9%, GOOGL 65.5%, META 59.0%) \u2014 all well above the 50% full-fire threshold. No reversal evidence.",
+      "latest_developments": "Citi publishes 2027 Google/Meta/Amazon CapEx forecast >$800B, meeting the bull-confirm threshold. ASML Q2 2026 earnings confirm 75% memory revenue growth and backlog expansion. TSMC adds $100B Arizona commitment.",
       "relevant_links": [
         {
-          "title": "ASML raises 2026 outlook \u2014 finance.biggo",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE95bjRuX0VWYnJKa3dEUW9XQ2FSODNwcmFGWHdPd3FFVlJHRDkwaWtlUlN4eGhtQmRZU20zNkZmVkY1emVaeVRxU04zTHNXZ2V3eVYzTG9tMXZRbHotcXV5dkh4QlVhMHRVT0h3dGVOWWJITkJqQ3c"
+          "title": "Citi: Google/Meta/Amazon 2027 CapEx >$800B",
+          "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxNXzhjWVdyaGNBUUZRSkJXYzBSSkwyaHdwOWRtb0R0S0Y2SWNPdXU0UGZsbjdSQ1NRRkZEWkowdnljY1dvVUxNdHd1eFZ2VmRxSllGa0xTM1Q5Y3FqNENzMy02YlJGOUtZZ3Y1dkZLVl8zdXpKVTc5cF9xQlh3RVh1ZENOMjdTQ0FGbTdwcmpPblBhNkNaWFdXX0VNcmNvTVl6X2JvckNTeGp0U0hOMXFXSFFJM2tkYXFuM2xuMGtSSGpNQTZyd2o3M1NuT1A"
         },
         {
-          "title": "ASML Q2 2026 earnings call transcript",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/07/15/asml-asml-q2-2026-earnings-call-transcript/"
+          "title": "ASML Q2 2026 earnings call",
+          "url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-649658.html"
         },
         {
-          "title": "Samsung Giheung HBM fab 100K wafers/month",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE4yeW9wSHRwa2F2MkJwYTJHRC1VejNnM3BKaUpDcGpUdnBoTHNWV2hlRVdTSm5saUlTRW9jekM2dTJJUU9Yd0g3UVpKS1Z1NFQ1WDVtNXlGVzdSaVlpN1JOWVFLVGQ2OFdVRzdTTVRZazYtMktZM2c"
+          "title": "TSMC $100B Arizona commitment",
+          "url": "https://www.tomshardware.com/tech-industry/tsmc-commits-another-100-billion-to-arizona-for-at-least-four-more-2nm-fabs"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "New corroboration: Citi 2027 CapEx >$800B forecast published today meets the bull-confirm threshold. ASML Q2 2026 results reinforce with 75% memory revenue growth and 30% 2027 capacity expansion. Status remains Fired; bull-confirm threshold now met for the first time."
     },
     {
       "id": "t2_eps_revisions",
@@ -227,23 +227,23 @@
       "description": "First month with net negative FY27 or FY28 EPS revisions for SK Hynix or Micron. The single most important missing signal \u2014 currently NOT FIRED.",
       "what_to_look_for": ">5 analysts revise SK Hynix or MU FY27 EPS DOWN in a single month while <3 revise up. Single broker target price cut of >-10% vs prior is a strong early signal even before the count threshold.",
       "current_status": "Partially fired",
-      "where_we_stand": "SK Hynix FY27 EPS: 451,903 KRW consensus (37 analysts); 16 up / 1 down in last 30 days per structured data. Micron FY27 EPS: $149.64 (42 analysts); 30 up / 0 down. Structured Naver data shows Samsung net bullish score +57.25 with zero downward revisions \u2014 contradicting the Chosunbiz 'brokers cut forecasts' headline. The headline signal (early warning pattern) is present; the count threshold (>5 down, <3 up in a single month) is NOT yet confirmed by structured data. Goldman Sachs cut Micron estimates on SK Hynix weak outlook \u2014\u2026",
-      "latest_developments": "Goldman Sachs cut Micron EPS estimates citing SK Hynix weak Q2 outlook (2026-07-13). Chosunbiz reports multiple brokers cutting Samsung and SK Hynix forecasts. Micron guidance raised on memory pricing per separate analyst note \u2014 conflicting\u2026",
+      "where_we_stand": "Partially fired. Rolling 30-day net score: +52.75 bullish (SK Hynix: 14 up / 1 down in 30d; Micron: 30 up / 0 down). Mirae Asset cut SK Hynix FY27 EPS by 12% on Jul 16 \u2014 the first Tier-A downward revision in the current window and the first sell-side dissent from a consensus of 38 analysts. Zacks cut Micron estimates (Jul 16). Two downward actions now logged vs 44 upward; the 5-analyst threshold for full fire is not yet met. SK Hynix forward P/E: 4.08x. Micron forward P/E: 5.67x. Full\u2026",
+      "latest_developments": "Mirae Asset -12% FY27 EPS revision (Jul 16) is the first Tier-A downward cut. Zacks cuts Micron estimates (Jul 16). Two downward actions now on record; 5-analyst threshold not yet reached. Barclays raises SKHY target\u2026",
       "relevant_links": [
         {
-          "title": "Goldman Sachs Micron EPS cut on SK Hynix weak outlook \u2014 24/7 Wall St.",
-          "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxNdXdPRndnQm92bEx4cHdpUWhqZXZITE9yMUhhYW1ocnRXRlNPSXd6YVdLZHprdlFESk5JalJMMjBqa0MtV0trX1h6OXRJVUwyYUZSQTlkUHNfQVdPMmJIekxrT0ZXUkVWRHJCN3ZMSl83UG90RWIwb1laU2RWdWF1a2dWN3laZ1J6dnRHRk1aWEFsVzJQYjZxMUJfNTFnc0l3eGd5RmFXOC02Z2d4ZHBYVmNQRjVQbmxacG96Zk1yTVk5SmZVR2lNNw"
+          "title": "Mirae Asset SK Hynix report \u2014 FY27 EPS -12%",
+          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
         },
         {
-          "title": "Brokers cut Samsung, SK Hynix forecasts \u2014 Chosunbiz",
-          "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxOUEo0dDNqMDR2MFRCX0RPajdfVFNWM0o4R2psLXJQTDN0NGtEcTNpbWtsUXB3YjB4X2Y2a25iZUE5T2lpYUJlLUpfRUFud2ItTUtKWTdPWGdnTm5qNmY1SHQ5TGNaRWkzN3JSQjJWTTZTY0hvZUFWM0NTTkF0Vmowd9IBlAFBVV95cUxNY2otTUVQc0tiYkpGZDRrMDRDcmljeWxwYksxZlktazI3ekk0aFVWYUk0dW55dTgzVWg0S0Y1YWJOSk9DaXpwUnhvMUJTSHRfMlI0OVRZdmJ5Rl9aX2N0NlFDbVdRa3pVODFOcHRKN3BRQWtkVlJ0eHRPUzJuZWM3cWU2UU41WXc3VHl4a0g1TS1iUVow"
+          "title": "Zacks: Micron EPS estimate cut",
+          "url": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOZ1ZDaDBOeW5WMnJSTzRLREMtUkdiQXdRMWJPNU1xck5jdWYzTV81dTZGa1NReDcydzRNa3J1Sk1NQ1ZlaVZiWkRMYXluX0MzeGJ1bVRhSmg3cHk5QXNvOXVzTTdyajM4Rkl3d3NyWEROMGc0MkNfdVZHejlKX000N3FvQW9TN25YbzhTUHdmSTBTRDRwY0xhWjJ6SUVFRV9TNlVNd3NJVVMtME5FOWJaazdrVlQ1NUJsdGdnM3JJcTlGRGNtcjlXcU04UExaQnVVMEQ4WnVMcVVfSUdyaHliZ1owTFhRZXlkUWFhQ2liYmcxblgxR1FybjZPcw"
         },
         {
-          "title": "Micron guidance raised on memory pricing \u2014 AOL/Motley Fool",
-          "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxPOEExc283UVB5TENqSE5FRExHZC1FU3pRZDI0QzNuQXQ4c09YaHpIMGVJWGhMS3RQVUhoSms1c09paENBV2FhR2oyNlN5MnFJa1ZOb0Y2aXRNZndQQ2JnM3luckJqckhVcDZVUEFLcDVvNXhBUElIMVkyMWR4b0VjZVphQkp3WFBI"
+          "title": "Barclays SKHY $330 target",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFBOb2c0NjZPdW0zT1ZJNFZobWtMdUtWYzB1ZEEtVFZwSlBHWGd2cE9rS0N4Wjk1VmhRM1ZsS2FKOWhzcTd3cUdUaTJyc1paLUFmUGg2M1VFWm9ELTlZdHhlVTdfelRyN3ZWbjNmRnpURWRoXzhsU0E"
         }
       ],
-      "change_vs_prior": "Status transitioned Not fired \u2192 Partially fired (recorded 2026-07-13 per Layer 2). Today adds Goldman Sachs named dissent and Chosunbiz multi-broker cut headline as corroborating early-warning evidence. Full fire pending count threshold confirmation."
+      "change_vs_prior": "Mirae Asset -12% FY27 EPS revision (Jul 16) logged as first Tier-A downward action. Zacks Micron cut adds second downward data point. Status remains Partially fired; accumulation toward 5-analyst full-fire threshold now underway."
     },
     {
       "id": "t2_hyperscaler_capex_revenue",
@@ -345,16 +345,16 @@
       "description": "The single most diagnostic Tier 3 signal. Contract prices roll over MoM.",
       "what_to_look_for": "DDR5 server contract MoM decline of any magnitude in TrendForce monthly report (last week of month). OR HBM contract renegotiation downward (any reported renegotiation = dam break). Currently Q2 2026 +58-63% QoQ projected.",
       "current_status": "Not fired",
-      "where_we_stand": "DDR5 server contract QoQ growth remains +58\u201363% for Q2 2026 per TrendForce \u2014 no MoM sequential decline reported. Spot DDR5 16Gb at $49.33 (+0.89% today), up for 40+ consecutive trading days per Mirae. HBM contract pricing: no renegotiation downward reported. Mirae notes 'HBM is likely to drive overall pricing higher\u2026",
-      "latest_developments": "DDR5 spot +0.89% today; 40+ consecutive days of spot gains per Mirae. No contract decline signal in today's feed. HBM pricing trajectory remains upward per Mirae July 16 note.",
+      "where_we_stand": "Not fired. DDR5 server contract QoQ growth projected +58-63% for Q2 2026 per TrendForce \u2014 firmly in the R1/R2 contract-growth rows of the matrix. Mirae Asset notes spot prices for DDR5 and DDR4 have risen 40+ consecutive trading days, and HBM is expected to drive overall pricing higher in 2027.\u2026",
+      "latest_developments": "Mirae Asset (Jul 16-17) reiterates 40+ consecutive days of spot price strength and bullish 2027 HBM pricing outlook. No contract decline evidence in today's feed.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM spot prices July 16",
-          "url": "https://www.trendforce.com/price/dram/dram_spot"
+          "title": "Mirae Asset SK Hynix report",
+          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
         },
         {
-          "title": "Mirae Asset SK Hynix \u2014 HBM pricing 2027",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
+          "title": "TrendForce DRAM spot pricing",
+          "url": "https://www.trendforce.com/price/dram/dram_spot"
         }
       ],
       "change_vs_prior": null
@@ -390,20 +390,20 @@
       "name": "Memory pure-plays underperform SOX",
       "description": "Memory stocks losing relative strength vs SOX semiconductor index.",
       "what_to_look_for": "SK Hynix (000660.KS) or Micron (MU) underperforms SOX (^SOX) by >10% over 5 trading days. Currently fired then reversed (Mar 2026 fired, May rally erased).",
-      "current_status": "Not fired",
-      "where_we_stand": "5-day vs SOX: SK Hynix +1.69pp, Micron -3.29pp \u2014 both above the -10pp red-fire threshold. DRAM ETF vs SMH 5-day: -7.10pp (DRAM -7.48%, SMH -0.38%) \u2014 yellow watch, below -5pp but above -10pp red threshold. Overall severity: yellow. Red-fire condition (any sub-trigger \u2264 -10pp) not met. Today's sharp single-day drops (SK Hynix -11.5%, Micron -8.0%) are severe but the 5-day rolling window is anchored by prior-week strength; if today's weakness persists 2\u20133 more sessions without recovery, the 5-day spread will cross the red threshold. Status transitioned from Fired (July 14)\u2026",
-      "latest_developments": "SK Hynix -11.5% and Micron -8.0% today on CXMT supply shock; 5-day window not yet at red threshold due to prior-week strength. DRAM ETF yellow watch at -7.1pp vs SMH. Monitor closely \u2014 one more\u2026",
+      "current_status": "Fired",
+      "where_we_stand": "Fired. DRAM ETF vs SMH 5-day: -12.29pp (DRAM -18.68%, SMH -6.39%) \u2014 crosses the -10pp red-fire threshold. SK Hynix 5d vs SOX: -7.31pp (yellow watch, below -5pp threshold). Micron 5d vs SOX: -5.53pp (yellow watch). Overall severity: red. The ETF-level spread is the authoritative trigger; individual names are in yellow but not red. The broad semi tape sold off sharply today (MU -5.65%, INTC -5.84%, AMD -5.33%), a market-wide move; the DRAM ETF's additional underperformance vs SMH is the framework-specific signal.",
+      "latest_developments": "Computed metrics as of Jul 17: DRAM ETF vs SMH -12.29pp fires red threshold. Yesterday's status was Not fired; today's computation crosses the trigger. SK Hynix ADR down ~21% over two sessions post-debut, consistent with\u2026",
       "relevant_links": [
         {
-          "title": "SK Hynix stock tumbles 11% \u2014 Invezz",
-          "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxOY3hkTnNqMEVZc2YyME54RlZOQTg4U2ZFMVNvQ3lWWk9xOHgybEl4cGdVZHpSWG1uWndwaGlSUElUSUxPWml6emJ5TG1oQnBWYkN5eGlDUWwtbVV2MHpTQjZIWEdLNVl0amZ3alg5dUdVcVhsZzdwam9Ya1I1d0NpQTlYdlFndDJTTGZPYzIxSDZNM3hyalR2WlJkZkNONVA2UzFpcjNHVkFKVGZHZXp3NkhOT2lsVTIwZ2FrMA"
+          "title": "SK Hynix ADR post-debut decline",
+          "url": "https://news.google.com/rss/articles/CBMidkFVV95cUxNU0JUYjgwSVdtdUtUSm1zakdrWTFzRDV3ZGgyS1Z0a1ZaTEQzVDFVdVFwMXRUODZnUkpYY1ZxSDdCRUlWWjQxWkI3dEVERHBnTnJFa0VfR1FqQjg2bEc2eXkwUUcxd0lNbTJwZ1pSa1E"
         },
         {
-          "title": "CXMT IPO hammers Micron 8% \u2014 finance.biggo",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFBLYi1lSmJpdUFRd1l2ZmJKRWQxLWZzVTRhelM0RDJGSjRPQXNHUGJOR0Z5OVI4Uk84ZWlldFZOR3Q0NVJXa1VGWlhJeWNRSFN0VWJWUVhHNlU0NzhTT29hN1VKd3g3ZEh2Vlk4S1RHbnhoWnlEalE"
+          "title": "SK Hynix memory supercycle pullback analysis",
+          "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxOUU93MkdrSE1jZWwxUERsVWp1Rlo5N2FlbUhYNlZEeUZDXzF6UGphTDd5c3pDRHVtRkRmMVJRSU1PZ2dtMkc1ZHBhcGpNNUZlbjVmUVJUalVnTWV1N211YnFKYVVxcTI2b2tmLVFwek0xSGpzMjhuQmpkLUxDUWVjaF9yYkRzMTZzcUhoY2VEblc3MjREUmJwZHZNRHR5eDk5U1pVc3ZGLWlXaWxSVW1wbUo5LV8tbi1JazY3c1pjT0dueUhubkUtYnJR"
         }
       ],
-      "change_vs_prior": "Status moved from 'Fired' to 'Not fired'. SK Hynix 5-day vs SOX recovered to +1.69pp (from -16.97pp on July 14) as prior-week positive sessions dominate the rolling window. Micron at -3.29pp. DRAM ETF remains yellow watch at -7.1pp. Today's sharp\u2026"
+      "change_vs_prior": "Status changed from 'Not fired' to 'Fired'. DRAM ETF vs SMH 5-day spread deteriorated to -12.29pp, crossing the -10pp red-fire threshold. Yesterday SK Hynix and Micron were both above the -10pp individual threshold; today the ETF-level spread fires the overall\u2026"
     },
     {
       "id": "t3_supplier_inventory_rebuild",
@@ -429,19 +429,19 @@
       "description": "Equipment makers' order books showing first weakness.",
       "what_to_look_for": "ASML or AMAT bookings -10% or worse QoQ. Book-to-bill below 1.0. SEMI worldwide WFE billings printing MoM decline.",
       "current_status": "Not fired",
-      "where_we_stand": "ASML Q2 2026: net system sales \u20ac6.6B, FY2026 guidance raised to \u20ac43\u201345B (~$51.8B), memory revenue +75% YoY. Management states 'already close to receiving all orders needed for 2027'; customers executing long-term agreements. No QoQ bookings decline; book-to-bill healthy. AMAT -2.7% today but no guidance miss or order-book commentary in today's\u2026",
-      "latest_developments": "ASML raises FY2026 to ~$51.8B (second raise); memory +75%, 2027 orders nearly secured. No AMAT bookings data today. WFE order book remains firmly intact.",
+      "where_we_stand": "Not fired. ASML Q2 2026 (Jul 15-17): memory net system sales +75% YoY, backlog continues to increase with broad customer mix, 30% capacity increase targeted for 2027 within existing footprint, and ASML states it is 'pretty much already close to receiving all orders needed for 2027.' No evidence of bookings\u2026",
+      "latest_developments": "ASML Q2 2026 earnings (Jul 15-17) confirm backlog expansion, 75% memory revenue growth, and aggressive customer capacity additions for 2027-2028. All three trigger conditions (bookings -10% QoQ, BTB <1.0, SEMI billings decline) remain unmet.",
       "relevant_links": [
         {
-          "title": "ASML Q2 2026 earnings call transcript",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/07/15/asml-asml-q2-2026-earnings-call-transcript/"
+          "title": "ASML Q2 2026 earnings call \u2014 Yahoo Finance",
+          "url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-649658.html"
         },
         {
-          "title": "ASML raises 2026 outlook \u2014 semivision",
-          "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE1jaURiUWU3NkVoV21SQzRlUVI0VmdVbmRmTUhpRW5WejJMcVUyMi1HRi1qYmdzeE1VWE1ubE9RZm1icTUwQnVGY0VmaHp0U2Z5UEhxSWFQZ1Iwc2RhVW0xcHdvOHk1NmtYSFhQdVVjZElwclVkYlRjdFU3cFVrZw"
+          "title": "ASML Q2 2026 earnings call \u2014 Motley Fool transcript",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/07/15/asml-asml-q2-2026-earnings-call-transcript/"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "ASML Q2 2026 results published (Jul 15-17) \u2014 new primary-source evidence. All metrics confirm continued order-book strength. Status remains Not fired; reversal condition not approached."
     },
     {
       "id": "t4_capex_slashed",
