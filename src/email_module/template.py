@@ -231,12 +231,14 @@ def build_email_html(
     # the 24h display log (same clock as the NEW TRIGGER EVENT pill). Ongoing
     # red status stays visible in §3 and the t3 card; the banner no longer
     # persists day after day while the signal remains fired.
+    _bespoke_rendered: set = set()
     if (
         rel_strength_verdict
         and rel_strength_verdict.get("overall_fired")
         and _indicator_in_24h_trigger_log(es, "t3_relative_strength")
     ):
         parts.append(_build_relative_strength_banner(rel_strength_verdict))
+        _bespoke_rendered.add("t3_relative_strength")
 
     # 0c. 🚨 EPS Revisions Watch banner — v3.41.10: same transition-day gate
     # (this block had the identical persistent-status bug, latent until the
@@ -245,6 +247,25 @@ def build_email_html(
         overall = eps_scoring_verdict.get("overall_status", "Not fired")
         if overall in ("FIRED", "EARLY_WARNING"):
             parts.append(_build_eps_revisions_banner(eps_scoring_verdict))
+            _bespoke_rendered.add("t2_eps_revisions")
+
+    # 0d. v3.41.15 — generic transition banners: every 24h-log transition not
+    # already carried by a bespoke banner THIS run gets a top alarm — red for
+    # fired-direction moves, amber for downgrades (a bespoke indicator whose
+    # bespoke banner did NOT render, e.g. a t3 downgrade, falls through here
+    # rather than vanishing). Capped to avoid takeover on busy days.
+    _generic = [
+        t for t in (getattr(es, "new_triggers_today", None) or [])
+        if isinstance(t, dict) and t.get("indicator_id") not in _bespoke_rendered
+    ]
+    for _trig in _generic[:4]:
+        parts.append(_build_generic_trigger_banner(_trig))
+    if len(_generic) > 4:
+        parts.append(
+            f"<div style='font-size:12px;color:#5F5E5A;margin:4px 0 8px'>"
+            f"+{len(_generic) - 4} further trigger event(s) — see the "
+            f"executive summary.</div>"
+        )
 
     # 1. Executive summary — phase line, new-trigger callouts, consolidated brief
     # v3.39.7.5: _build_executive_summary now renders es.executive_brief (the
@@ -3129,6 +3150,48 @@ def _indicator_in_24h_trigger_log(es, indicator_id: str) -> bool:
         )
     except Exception:
         return False
+
+
+def _build_generic_trigger_banner(trig: dict) -> str:
+    """v3.41.15 — top-of-brief banner for ANY 24h-log transition.
+
+    Until now only two indicators had bespoke banners (relative strength,
+    EPS revisions); every other transition rendered as the exec-summary pill
+    only — the Jul-20 t4_layoffs fire produced no top alarm at all. This
+    generalizes it: red 🚨 for fired-direction moves, amber ⚠️ for
+    downgrades (including corrections, so a repair announces itself).
+    Same 24h clock as the pill.
+    """
+    name = trig.get("indicator_name") or trig.get("indicator_id") or "indicator"
+    tier = trig.get("tier", "?")
+    old = trig.get("old_status") or "?"
+    new = trig.get("new_status") or "?"
+    desc = trig.get("description") or ""
+    upgrade = (new == "Fired" and old != "Fired") or (
+        new == "Partially fired" and old == "Not fired"
+    )
+    status_line = f"Status: {html.escape(str(old))} → {html.escape(str(new))}."
+    desc_html = (
+        f"<div style='margin-top:6px;font-size:13px'>{html.escape(desc)}</div>"
+        if desc else ""
+    )
+    if upgrade:
+        return (
+            "<div class='urgent-banner' style='background:#FCEBEB;border:2px solid #A32D2D'>"
+            f"<span class='label'>🚨 NEW TIER {html.escape(str(tier))} TRIGGER — "
+            f"{html.escape(str(name))}</span><br/>"
+            f"<span class='text'>{status_line}</span>"
+            f"{desc_html}"
+            "</div>"
+        )
+    return (
+        "<div class='urgent-banner' style='background:#FFF6E0;border:2px solid #B58A1A'>"
+        f"<span class='label' style='color:#7A5500'>⚠️ SIGNAL DOWNGRADE — "
+        f"{html.escape(str(name))} (Tier {html.escape(str(tier))})</span><br/>"
+        f"<span class='text' style='color:#5A3F00'>{status_line}</span>"
+        f"{desc_html}"
+        "</div>"
+    )
 
 
 def _build_relative_strength_banner(verdict: dict) -> str:

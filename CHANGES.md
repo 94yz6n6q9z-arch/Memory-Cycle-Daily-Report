@@ -2,6 +2,24 @@
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
 
+## v3.41.15 (2026-07-20) — t4_layoffs business-unit scoping + one-shot misfire repair + generic transition banners
+
+Two defects from the July 20 brief.
+
+### 1. t4_layoffs fired on Samsung's smartphone division
+
+The signal fired on "Samsung confirms 800+ US job cuts across its smartphone division and Texas headquarters" — a consumer-devices event with zero bearing on the memory business. **Root cause was the spec, verbatim:** `what_to_look_for = "Any Big Three announces layoffs or fab idling."` — entity-scoped, never business-unit-scoped, and embedded word-for-word into the Layer-2 prompt (signal_reasoner.py). The model obeyed a wrong spec. The conglomerate asymmetry (Samsung multi-BU vs pure-play SK Hynix/Micron) was never encoded anywhere, and the wrong fire then persisted by design (cumulative-state evidence store) — moving the T4 scorecard to 1/4 and visibly shifting the peak probabilities on a phones datapoint.
+
+**Fixes:** (a) the spec is rewritten with mandatory BU scoping — fires only for memory-operations workforce reductions or memory-fab utilization cuts; the exact Jul-20 case is named as a must-NOT-fire counterexample; pure-plays count company-wide because they ARE the memory business. (b) A general CONGLOMERATE / BUSINESS-UNIT ATTRIBUTION rule added to REASONER_SYSTEM_PROMPT — before firing any memory-sector signal on a multi-BU company, the affected unit must be attributed; unnamed or non-memory BU does not satisfy. This protects layoffs, capex, margin, inventory and every other signal a conglomerate's other divisions could contaminate. (c) A conservative **one-shot repair** (`repair_t4_layoffs_bu_misfire`, state.py, wired in fast_tier immediately after the evidence-store load): if t4_layoffs is Fired and its evidence matches Samsung + layoff terms + non-memory-BU context with NO memory-operations context, the status reverts to Not fired with a tagged annotation entry; mixed evidence → hands off with a loud warning; runs exactly once (tag-guarded). The store is saved immediately, Layer 2 reasons over the corrected state the same run, and the Fired→Not fired transition surfaces through the normal 24h trigger log (prior_state still says Fired) — the correction is visible, not silent. T4 returns to 0/4 and the probabilities recompute.
+
+### 2. No top-of-brief alarm for the transition
+
+Only two bespoke banners existed (relative strength, EPS revisions) — every other indicator's transition rendered as the exec-summary pill only, which is why Jul 17's t3 fire got the 🚨 banner and Jul 20's t4 fire got nothing. **Fix:** a generic transition banner (template block 0d): every 24h-log event not carried by a bespoke banner that run renders above the executive summary — red 🚨 for fired-direction moves (→Fired, Not fired→Partially fired), amber ⚠️ SIGNAL DOWNGRADE for reversions (including the repair's own revert, so the correction announces itself), with tier, name, old→new, and the event description. Bespoke banners are deduped by what actually RENDERED (a t3 downgrade, which the bespoke banner would skip, falls through to the generic amber instead of vanishing). Capped at 4 with a "+N more" line.
+
+### Tests
+
+`tests/test_v3_41_15_t4_scope_and_banners.py` — 10 tests (spec markers incl. old blanket text gone; prompt rule incl. beyond-layoffs scope; repair reverts+annotates the exact Jul-20 evidence, runs once, hands off on mixed, never touches a legitimate memory fire, no-ops on Not fired/absent; red/amber banners incl. Partially-fired direction; block wiring with bespoke dedup + cap). Full suite: 59 failed / 1255 passed — canonical fixture distribution, +10 new passes. No dependency change (one stdlib import added to state.py).
+
 ## v3.41.14 (2026-07-11) — Spot-display coherence + peak-coincidence finally sees the tier signals + F-1 date fix
 
 Three defects from the July 11 brief, two of them the direct blockers Raul flagged.

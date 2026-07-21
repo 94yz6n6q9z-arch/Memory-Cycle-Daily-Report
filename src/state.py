@@ -30,7 +30,7 @@ import logging
 import re
 import time
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Optional, TypeVar
@@ -828,6 +828,101 @@ def load_indicator_evidence_store(
         )
     logger.info(f"Loaded indicator evidence store: {len(out)} indicators from {path}")
     return out
+
+
+T4_BU_REPAIR_TAG = "REPAIR v3.41.15 (t4_layoffs BU scope)"
+
+_T4_LAYOFF_TERMS = ("layoff", "job cut", "workforce", "headcount")
+_T4_NONMEMORY_BU = ("smartphone", "mobile", "handset", "mx division",
+                    "consumer electronics", "appliance", "display division",
+                    "texas headquarters")
+_T4_MEMORY_CTX = ("memory", "dram", "nand", "hbm", "fab idl", "fab util",
+                  "semiconductor division", "ds division", "ds-memory")
+
+
+def repair_t4_layoffs_bu_misfire(store: dict) -> Optional[dict]:
+    """One-shot correction of the Jul-20 t4_layoffs misfire (v3.41.15).
+
+    The signal fired on "Samsung confirms 800+ US job cuts across its
+    smartphone division" — a consumer-devices event that satisfied the old,
+    entity-scoped spec ("Any Big Three announces layoffs") but not the
+    signal's economic meaning (memory-operations distress). The evidence
+    store's cumulative-state design correctly protects fired statuses from
+    silence, which also means a spec fix alone cannot un-fire it — so this
+    performs a targeted, evidence-predicated revert, exactly once.
+
+    Conditions (ALL must hold, conservative by design):
+      - t4_layoffs present and current_status == "Fired"
+      - not already repaired (no evidence entry carrying T4_BU_REPAIR_TAG)
+      - the evidence text mentions Samsung AND layoff terms AND a
+        non-memory business unit
+      - the evidence text contains NO memory-operations context (if mixed,
+        do nothing and log for manual review — a genuine memory-side cut
+        must never be auto-reverted)
+
+    Mutates the store in place (status -> "Not fired" + an annotation
+    entry) and returns an info dict for logging, or None if no action.
+    The caller persists the store; the Fired -> Not fired transition then
+    surfaces naturally through the 24h trigger log (prior_state still says
+    Fired), so the correction is visible in the brief, not silent.
+    """
+    try:
+        ev = (store or {}).get("t4_layoffs")
+        if ev is None or getattr(ev, "current_status", "") != "Fired":
+            return None
+        entries = list(getattr(ev, "evidence_log", None) or [])
+        blob_parts = []
+        for e in entries:
+            blob_parts.append(str(getattr(e, "value", "")))
+            blob_parts.append(str(getattr(e, "source", "")))
+        blob = " ".join(blob_parts).lower()
+        if T4_BU_REPAIR_TAG.lower() in blob:
+            return None  # already repaired
+        has_samsung = "samsung" in blob
+        has_layoff = any(t in blob for t in _T4_LAYOFF_TERMS)
+        has_nonmem_bu = any(t in blob for t in _T4_NONMEMORY_BU)
+        has_memory_ctx = any(t in blob for t in _T4_MEMORY_CTX)
+        if not (has_samsung and has_layoff and has_nonmem_bu):
+            return None
+        if has_memory_ctx:
+            logger.warning(
+                "[t4-repair] t4_layoffs Fired with MIXED evidence (non-memory "
+                "BU terms AND memory context present) — not auto-reverting; "
+                "review state/indicator_evidence.json manually."
+            )
+            return None
+        today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        ev.current_status = "Not fired"
+        ev.evidence_log.append(EvidenceEntry(
+            date=today_iso,
+            type="data_point",
+            value=(
+                f"{T4_BU_REPAIR_TAG}: prior Fired was based on Samsung "
+                f"smartphone/consumer-division job cuts — a non-memory "
+                f"business unit. Per the re-specified signal scope, "
+                f"non-memory-BU workforce reductions do not constitute "
+                f"memory-operations distress. Status reverted to Not fired."
+            ),
+            source="v3.41.15 one-shot BU-scope repair",
+            persistence="permanent",
+            reversal_condition=(
+                "Memory-operations layoffs or memory-fab idling are "
+                "explicitly reported"
+            ),
+        ))
+        return {
+            "indicator_id": "t4_layoffs",
+            "old_status": "Fired",
+            "new_status": "Not fired",
+            "description": (
+                "Correction: prior firing was based on Samsung "
+                "smartphone-division job cuts (non-memory BU); reverted per "
+                "re-specified memory-operations scope (v3.41.15)."
+            ),
+        }
+    except Exception as e:
+        logger.warning(f"[t4-repair] repair check failed (non-fatal): {e}")
+        return None
 
 
 def save_indicator_evidence_store(

@@ -920,8 +920,25 @@ INDICATORS: list[Indicator] = [
         tier=4,
         name="Layoffs / fab idling",
         short_label="Layoffs / fab idling",
-        description="Memory makers announce workforce reductions or fab utilization cuts.",
-        what_to_look_for="Any Big Three announces layoffs or fab idling.",
+        description=(
+            "Workforce reductions or fab utilization cuts in the MEMORY "
+            "operations of the major makers — a downturn tell for the memory "
+            "business specifically, not for unrelated business units."
+        ),
+        what_to_look_for=(
+            "Layoffs, workforce/headcount reductions, or fab idling/"
+            "utilization cuts IN THE MEMORY OPERATIONS (DRAM/NAND/HBM lines, "
+            "memory fabs, the memory/DS-Memory division) of Samsung, SK Hynix, "
+            "Micron, or other memory makers. BUSINESS-UNIT SCOPING IS "
+            "MANDATORY: Samsung is a conglomerate — job cuts in its Mobile/"
+            "smartphone, consumer-electronics, display, appliance, or other "
+            "non-memory divisions do NOT satisfy this signal (example that "
+            "must NOT fire: smartphone-division layoffs at Samsung's Texas "
+            "headquarters). For pure-play memory makers (SK Hynix, Micron) "
+            "company-level cuts count — they ARE the memory business. If the "
+            "affected business unit is not identified as memory/semiconductor-"
+            "memory, do NOT fire."
+        ),
         sources=["Press releases", "Korean press (KED, Korea Herald, ChosunBiz)"],
         trigger_patterns=[
             "layoffs", "workforce reduction", "headcount reduction",

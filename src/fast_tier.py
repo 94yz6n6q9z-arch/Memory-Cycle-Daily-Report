@@ -922,6 +922,22 @@ def run_fast_tier() -> int:
     # evidence are appended back to the store and committed via the GHA
     # workflow's commit step.
     indicator_evidence_store = load_indicator_evidence_store()
+    # v3.41.15 — one-shot BU-scope repair for the Jul-20 t4_layoffs misfire
+    # (Samsung smartphone-division cuts fired a memory-operations signal).
+    # Runs before Layer 2 so today's reasoning sees the corrected state; the
+    # Fired→Not fired transition then surfaces via the normal 24h trigger
+    # log (prior_state still says Fired) — visible, not silent.
+    try:
+        from src.state import (
+            repair_t4_layoffs_bu_misfire,
+            save_indicator_evidence_store as _save_ev_store,
+        )
+        _rep = repair_t4_layoffs_bu_misfire(indicator_evidence_store)
+        if _rep:
+            _save_ev_store(indicator_evidence_store)
+            logger.warning(f"[t4-repair] applied: {_rep['description']}")
+    except Exception as e:
+        logger.warning(f"[t4-repair] wiring failed (non-fatal): {e}")
     if not indicator_evidence_store:
         logger.warning(
             "v3.39.7.3 evidence store empty — Layer 2 will run without "
