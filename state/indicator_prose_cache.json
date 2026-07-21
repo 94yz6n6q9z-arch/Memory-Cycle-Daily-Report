@@ -49,22 +49,30 @@
       "evidence_count": 0
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-07-17",
+      "last_full_regen_date": "2026-07-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026: Google TurboQuant published 6x KV-cache compression and 8x inference speedup on H100 \u2014 a permanent architectural event with no reversal condition. No new efficiency announcement in today's feed. The DHCR direction monitor shows enterprise AI revenue YoY +235% (MSFT+AWS+GCP+Oracle run-rate), which continues to absorb efficiency\u2026",
-      "latest_developments": "",
+      "where_we_stand": "Fired since 2026-03-24 (Google TurboQuant: 6x KV-cache compression, 8x speedup \u2014 permanent literature record). Today adds two corroborating arXiv preprints: SpecXMaster (speculative decoding reducing per-token HBM bandwidth demand) and FlashMemory-DeepSeek-V4 (lookahead sparse attention for ultra-long context). Neither reverses the foundational TurboQuant event. Citi's Kimi K3 Jevons Paradox note \u2014 higher\u2026",
+      "latest_developments": "SpecXMaster and FlashMemory-DeepSeek-V4 preprints published 2026-07-21 add speculative decoding and sparse-attention efficiency evidence. Alphabet's Gemini-integrated custom silicon (Frozen v2) reported by CNBC adds in-house ASIC substitution risk overlay.",
       "relevant_links": [
         {
-          "title": "Google TurboQuant \u2014 original publication context",
-          "url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-649658.html"
+          "title": "SpecXMaster arXiv preprint (2026-07-21)",
+          "url": "https://arxiv.org/abs/2603.23101"
+        },
+        {
+          "title": "FlashMemory-DeepSeek-V4 arXiv preprint (2026-07-21)",
+          "url": "https://arxiv.org/abs/2606.09079"
+        },
+        {
+          "title": "Alphabet Gemini-integrated chip \u2014 CNBC (2026-07-20)",
+          "url": "https://www.cnbc.com/2026/07/20/alphabet-googl-stock-ai-chip-report.html"
         }
       ],
-      "change_vs_prior": null,
+      "change_vs_prior": "Status preserves Fired. Two new corroborating efficiency preprints add evidence depth but do not alter the foundational TurboQuant-driven Fired status. No reversal condition met.",
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-07-17",
+      "updated_date": "2026-07-21",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 2
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-07-20",
@@ -273,24 +281,28 @@
       "evidence_count": 2
     },
     "t2_ltas_signed": {
-      "last_full_regen_date": "2026-07-14",
+      "last_full_regen_date": "2026-07-21",
       "current_status": "Fired",
-      "where_we_stand": "HBM3E sold out through 2026; SK Hynix HBM4 LTAs with Nvidia in force. Mirae Asset (2026-07-14) reports hyperscaler 2-year revenue backlog grew 38% QoQ to $656B (Google +93% QoQ, Amazon +49% QoQ) \u2014 independent confirmation of sustained multi-year commitments. No LTA cancellation or buyer pull-out reported. Reversal condition not met.",
-      "latest_developments": "Mirae Asset July 14 brief: combined 5-provider order backlog $2.1T; 2-year revenue portion +38% QoQ to $656B. SK Hynix CEO stated demand will outstrip supply beyond 2030, reinforcing LTA rationale.",
+      "where_we_stand": "Fired. SK Hynix HBM4 LTAs with Nvidia and HBM3E sold out through 2026 remain the foundational triggers. Micron now confirms HBM capacity sold out through 2027 with a $3B wafer investment commitment \u2014 extending the multi-supplier LTA ecosystem to all three major HBM producers. CXMT's 2027 DDR5 production reportedly fully\u2026",
+      "latest_developments": "Micron HBM capacity sold out through 2027 + $3B wafer investment confirmed. CXMT 2027 DDR5 production fully sold out reported by Overclocking.com (2026-07-21). Both corroborate and extend the multi-supplier LTA narrative.",
       "relevant_links": [
         {
-          "title": "Mirae Asset SK Hynix report \u2014 backlog +38% QoQ",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
+          "title": "Micron HBM sold out through 2027 + $3B wafer investment (Ad-hoc-news, 2026-07-20)",
+          "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOdk9ndU9xNkVmR0lPQXZoQ2JuSFQ5SDJTVW44d1hsVW13dnFNeV9obFBLcFJOZmw3ZjM2cGdwWHgzbm1qTXRNNDRzcmdzR3gtQVFjX21mYXo3Z0xJOFBid1N6czNkRklBeDcxTU9FREZteWRNT0Z1WFRjZWtJMU5WSjM2OEltQ3k4VFB2SS11TjZLVHVHT1UzY1RUMldwcVNxcGplMmJ6a1VpYjJ3c2xLcWF1QzlZQktzU2VBSllZQS1WVGl1S3VV"
         },
         {
-          "title": "SK Hynix CEO: worst shortage 2027, demand > supply post-2030",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFBJdVpKaXVNLWFOYUc1a3J2WXFXeHUxd202SVpfeEVBWDdnZmg2cENWSlgxZmI5S1FhbERheHpNM25UNl9KbXZmcFN5SDFpWjdJV1BVTGc2S3B4OTNMZG8tVkF0eUxJTHVHclI0dGJqbkxqVVN0Mmc"
+          "title": "CXMT 2027 DDR5 production fully sold out (Overclocking.com, 2026-07-21)",
+          "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxQdDRLWDdhWEFqSDRTczU5S3VuUVJjVU51SnQzb1AwV0dhRjJrY2JuS3VWSUFZU1YwNDBpZkRyaHFwdzkzWGd3N2VyZmNTajZoZWltRjFwS3gwWHAwQXU2SEVVZm84X2s2ZzYycUNmZHJvNF83Q1FVVUZWNDJtSUV0bUZLVnNNTHZieHFrUUhaLWs0dw"
+        },
+        {
+          "title": "AMD Helios + Microsoft HBM4 demand chain (TrendForce, 2026-07-21)",
+          "url": "https://news.google.com/rss/articles/CBMi-gFBVV95cUxQX2E5ajBCQ2hfOHAycWZkVDBSZ2c2M2xERjUzRm9jTUJ6SWJaR1hIWEdDaHlsVjFjOWJ4THhtWVJoLU1VNXF1VHc4UWV5Zm4xSlRfYU9CQmpUMFNwNERLSkhydnNxeXdTN09JRVgwamxCYUp2T3JWMGtHY2tfQWY5TjExdTZ0Wk11MDdfUGUyT2wtSUQtc2ZQSVFndUkzSmtReENJR2Z3bnB6UWhJTDRyVmt0bElWaGN0YlBHUmxiY3FvYXpyT2Z3WFdCcHlHYW4xcndSSnZmZlVWRTJWcFNRSVhsM09IQm5HY3BzdXFYblRTUkZNQ2s3TGV3"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-07-14",
+      "updated_date": "2026-07-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 1
     },

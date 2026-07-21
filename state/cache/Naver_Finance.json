@@ -1,12 +1,25 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-07-20T09:43:44.422497+00:00",
+    "fetched_at_iso": "2026-07-21T09:10:56.903819+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
         "code": "000660",
         "actions": [
+          {
+            "broker_korean": "DS\ud22c\uc790",
+            "broker_english": "DS Investment & Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3100000,
+            "prior_target_krw": 3100000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-07-20",
+            "raw": "DS\ud22c\uc790 | 26/07/20 | 3,100,000 | 3,100,000 | 0.00 | BUY | BUY"
+          },
           {
             "broker_korean": "KB",
             "broker_english": "KB Securities",
@@ -242,19 +255,6 @@
             "raw": "\uc720\uc9c4\ud22c\uc790 | 26/06/17 | 3,700,000 | 3,200,000 | 15.62 | STRONG BUY | STRONG BUY"
           },
           {
-            "broker_korean": "DS\ud22c\uc790",
-            "broker_english": "DS Investment & Securities",
-            "rating": "BUY",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 3100000,
-            "prior_target_krw": 1600000,
-            "target_change_pct": 93.75,
-            "direction": "raised",
-            "published_date_iso": "2026-06-17",
-            "raw": "DS\ud22c\uc790 | 26/06/17 | 3,100,000 | 1,600,000 | 93.75 | BUY | BUY"
-          },
-          {
             "broker_korean": "\uba54\ub9ac\uce20",
             "broker_english": "Meritz Securities",
             "rating": "Buy",
@@ -325,7 +325,7 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 3547917,
           "avg_eps_krw": 314787,
-          "avg_per": 5.85,
+          "avg_per": 5.6,
           "num_estimating_institutions": 24
         }
       },
@@ -333,17 +333,17 @@
         "code": "005930",
         "actions": [
           {
-            "broker_korean": "KB",
-            "broker_english": "KB Securities",
+            "broker_korean": "DS\ud22c\uc790",
+            "broker_english": "DS Investment & Securities",
             "rating": "BUY",
             "rating_english": "Buy",
             "prior_rating": "Buy",
-            "target_price_krw": 600000,
-            "prior_target_krw": 600000,
+            "target_price_krw": 530000,
+            "prior_target_krw": 530000,
             "target_change_pct": 0.0,
             "direction": "maintained",
-            "published_date_iso": "2026-07-13",
-            "raw": "KB | 26/07/13 | 600,000 | 600,000 | 0.00 | BUY | BUY"
+            "published_date_iso": "2026-07-20",
+            "raw": "DS\ud22c\uc790 | 26/07/20 | 530,000 | 530,000 | 0.00 | BUY | BUY"
           },
           {
             "broker_korean": "\ub2e4\uc62c\ud22c\uc790",
@@ -359,17 +359,17 @@
             "raw": "\ub2e4\uc62c\ud22c\uc790 | 26/07/13 | 585,000 | 585,000 | 0.00 | BUY | BUY"
           },
           {
-            "broker_korean": "IBK\ud22c\uc790",
-            "broker_english": "IBK Investment & Securities",
-            "rating": "\ub9e4\uc218",
+            "broker_korean": "KB",
+            "broker_english": "KB Securities",
+            "rating": "BUY",
             "rating_english": "Buy",
             "prior_rating": "Buy",
-            "target_price_krw": 460000,
-            "prior_target_krw": 350000,
-            "target_change_pct": 31.43,
-            "direction": "raised",
-            "published_date_iso": "2026-07-08",
-            "raw": "IBK\ud22c\uc790 | 26/07/08 | 460,000 | 350,000 | 31.43 | \ub9e4\uc218 | \ub9e4\uc218"
+            "target_price_krw": 600000,
+            "prior_target_krw": 600000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-07-13",
+            "raw": "KB | 26/07/13 | 600,000 | 600,000 | 0.00 | BUY | BUY"
           },
           {
             "broker_korean": "\uc0bc\uc131",
@@ -489,17 +489,30 @@
             "raw": "\ud558\ub098 | 26/07/08 | 480,000 | 480,000 | 0.00 | BUY | BUY"
           },
           {
-            "broker_korean": "DS\ud22c\uc790",
-            "broker_english": "DS Investment & Securities",
-            "rating": "BUY",
+            "broker_korean": "IBK\ud22c\uc790",
+            "broker_english": "IBK Investment & Securities",
+            "rating": "\ub9e4\uc218",
             "rating_english": "Buy",
             "prior_rating": "Buy",
-            "target_price_krw": 530000,
-            "prior_target_krw": 530000,
+            "target_price_krw": 460000,
+            "prior_target_krw": 350000,
+            "target_change_pct": 31.43,
+            "direction": "raised",
+            "published_date_iso": "2026-07-08",
+            "raw": "IBK\ud22c\uc790 | 26/07/08 | 460,000 | 350,000 | 31.43 | \ub9e4\uc218 | \ub9e4\uc218"
+          },
+          {
+            "broker_korean": "BNK\ud22c\uc790",
+            "broker_english": "BNK Investment & Securities",
+            "rating": "\ub9e4\uc218",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 430000,
+            "prior_target_krw": 430000,
             "target_change_pct": 0.0,
             "direction": "maintained",
             "published_date_iso": "2026-07-07",
-            "raw": "DS\ud22c\uc790 | 26/07/07 | 530,000 | 530,000 | 0.00 | BUY | BUY"
+            "raw": "BNK\ud22c\uc790 | 26/07/07 | 430,000 | 430,000 | 0.00 | \ub9e4\uc218 | \ub9e4\uc218"
           },
           {
             "broker_korean": "\ub300\uc2e0",
@@ -539,19 +552,6 @@
             "direction": "maintained",
             "published_date_iso": "2026-07-07",
             "raw": "\ud55c\ud654\ud22c\uc790 | 26/07/07 | 580,000 | 580,000 | 0.00 | Buy | Buy"
-          },
-          {
-            "broker_korean": "BNK\ud22c\uc790",
-            "broker_english": "BNK Investment & Securities",
-            "rating": "\ub9e4\uc218",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 430000,
-            "prior_target_krw": 430000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-07-07",
-            "raw": "BNK\ud22c\uc790 | 26/07/07 | 430,000 | 430,000 | 0.00 | \ub9e4\uc218 | \ub9e4\uc218"
           },
           {
             "broker_korean": "\uba54\ub9ac\uce20",
@@ -650,7 +650,7 @@
           "avg_opinion_score": 4.04,
           "avg_target_price_krw": 513958,
           "avg_eps_krw": 46664,
-          "avg_per": 5.46,
+          "avg_per": 5.23,
           "num_estimating_institutions": 24
         }
       },
@@ -832,11 +832,11 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 853692,
           "avg_eps_krw": 125347,
-          "avg_per": 4.63,
+          "avg_per": 4.62,
           "num_estimating_institutions": 13
         }
       }
     }
   },
-  "fetched_at_iso": "2026-07-20T09:44:25.713488"
+  "fetched_at_iso": "2026-07-21T09:11:36.636399"
 }

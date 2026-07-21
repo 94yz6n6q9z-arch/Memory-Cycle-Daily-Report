@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-07-20T10:09:15.174793+00:00",
+  "saved_at_iso": "2026-07-21T09:41:50.890225+00:00",
   "executive_summary": {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
@@ -33,10 +33,10 @@
       "peak_window_end": "August 2026",
       "return_to_peak_pct": -43.0
     },
-    "delta_from_prior_text": "t4_layoffs fired today (Not fired \u2192 Fired): Samsung 800+ US layoffs. Applied Tier 4 rule: bear +2pp (31\u219233), bull -1pp (19\u219218), base -1pp (50\u219249). Bear return_to_peak_pct held at -43% \u2014 already at the 'Any T4 fired' band (-45 to -55% historical norm); calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base peak_months_away unchanged at 3mo. Hard invariants satisfied: base 49 > bear 33 > bull 18; sum = 100.",
+    "delta_from_prior_text": "Indicator distribution unchanged vs prior: t4_layoffs was already Fired as of 2026-07-20 (the transition recorded in prior brief). No new tier-1-5 signals fired or unfired today. Probabilities hold byte-identical to prior brief: base 49%, bull 18%, bear 33%. Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough) \u2014 within the 'Any T4 fired' band of -45 to -55%; held at -43% as only one T4 signal is active. Base case peak window unchanged vs yesterday.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "One new signal fires today: t4_layoffs transitions to 'Fired' as Samsung confirms 800+ US job cuts across its smartphone division and Texas headquarters, corroborated by three independent sources [\u2192\u00a73]. This is the first Tier 4 signal to fire, advancing the cycle scorecard to T1: 4/6 | T2: 6/7 | T3: 1/5 | T4: 1/4 and tightening the bear case [\u2192\u00a74]. No other tier-1-5 signals changed status. Memory pure-plays led the tape lower \u2014 SK Hynix -4.23%, Samsung -4.31%, AMAT -5.57% \u2014 in a broad semi selloff; the 5-day relative-strength spread for SK Hynix vs SOX is now -7.31pp and DRAM ETF vs SMH -7.45pp, both in yellow-watch territory but below the -10pp red-fire threshold [\u2192\u00a73]. CXMT's LPDDR6 enters sampling with mass production targeted H2 2026, and research places CXMT capacity near Micron's 2026 level \u2014 commodity DDR pressure on Samsung/SK Hynix spot pricing in the 3-9 month window [\u2192\u00a74]. Morgan Stanley and Bank of America both raised Q3 DRAM ASP forecasts to +21%, and SK Hynix's 424B4 final prospectus is on file, with the ADR indicator at 'Partially fired' pending roadshow pricing data [\u2192\u00a73]. The Samsung layoff, read alongside the t3_eps_miss_guidance partial fire and six of seven Tier 2 signals already fired, confirms the cycle is in late-stage deterioration; the next domino to watch is the first net-negative EPS revision month for SK Hynix or Micron [\u2192\u00a74]."
+    "executive_brief": "Layoffs / fab idling (t4) remains Fired following Samsung's 800+ US employee reduction \u2014 the second Tier 4 signal now active alongside t4_yoy_asp_negative's prior-day transition, pushing the lagging-indicator cluster deeper into late-cycle confirmation [\u2192\u00a73]. Two efficiency-related arXiv preprints published today (SpecXMaster speculative decoding; FlashMemory-DeepSeek-V4 lookahead sparse attention) add corroborating evidence to t1_efficiency_shock without altering its Fired status [\u2192\u00a74]. On the demand side, CXMT's 2027 DDR5 production is reportedly fully sold out and the company secured Haesung DS as a DDR5 substrate supplier while sampling LPDDR6 \u2014 a supply-chain maturation that deepens commodity DRAM competitive pressure on Samsung and SK Hynix standard DRAM margins [\u2192\u00a74]. AMD launched its Helios rack-scale AI system with Microsoft as anchor customer, sustaining the hyperscaler CapEx demand chain that underpins t2_capex_parabolic [\u2192\u00a73]; Q2 2026 hyperscaler earnings (MSFT/GOOGL due imminently) are the next read on whether 2027 CapEx guides above 2026. Morgan Stanley issued multiple buy calls on memory names, framing the recent 28-40% drawdowns as an entry point with supply shortages persisting through 2028 \u2014 directional confirmation that sell-side consensus remains constructive, keeping t2_eps_revisions at Partially fired rather than escalating [\u2192\u00a73]. SK Hynix +4.1% and Samsung +6.2% today [\u2192\u00a71] reflect broad semi tape recovery, not stock-specific catalysts; the 5-day SK Hynix vs. SOX spread at -9.65pp holds t3_relative_strength at Not fired, one session from the red threshold [\u2192\u00a74]."
   },
   "indicator_assessments": [
     {
@@ -92,15 +92,23 @@
       "description": "Algorithmic or architectural improvement reducing memory-per-token by >2x. TurboQuant-class shocks. The cycle-breaking risk.",
       "what_to_look_for": "Major announcement from Google / OpenAI / Anthropic / Meta / DeepSeek / Mistral. Specific phrases: 'KV cache compression', 'inference efficiency 2x+', 'memory footprint reduction', 'quantization breakthrough'. Source must be official lab blog, arXiv, or 3+ mainstream tech publications within 48 hours.",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026: Google TurboQuant published 6x KV-cache compression and 8x inference speedup on H100 \u2014 a permanent architectural event with no reversal condition. No new efficiency announcement in today's feed. The DHCR direction monitor shows enterprise AI revenue YoY +235% (MSFT+AWS+GCP+Oracle run-rate), which continues to absorb efficiency\u2026",
-      "latest_developments": "",
+      "where_we_stand": "Fired since 2026-03-24 (Google TurboQuant: 6x KV-cache compression, 8x speedup \u2014 permanent literature record). Today adds two corroborating arXiv preprints: SpecXMaster (speculative decoding reducing per-token HBM bandwidth demand) and FlashMemory-DeepSeek-V4 (lookahead sparse attention for ultra-long context). Neither reverses the foundational TurboQuant event. Citi's Kimi K3 Jevons Paradox note \u2014 higher\u2026",
+      "latest_developments": "SpecXMaster and FlashMemory-DeepSeek-V4 preprints published 2026-07-21 add speculative decoding and sparse-attention efficiency evidence. Alphabet's Gemini-integrated custom silicon (Frozen v2) reported by CNBC adds in-house ASIC substitution risk overlay.",
       "relevant_links": [
         {
-          "title": "Google TurboQuant \u2014 original publication context",
-          "url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-649658.html"
+          "title": "SpecXMaster arXiv preprint (2026-07-21)",
+          "url": "https://arxiv.org/abs/2603.23101"
+        },
+        {
+          "title": "FlashMemory-DeepSeek-V4 arXiv preprint (2026-07-21)",
+          "url": "https://arxiv.org/abs/2606.09079"
+        },
+        {
+          "title": "Alphabet Gemini-integrated chip \u2014 CNBC (2026-07-20)",
+          "url": "https://www.cnbc.com/2026/07/20/alphabet-googl-stock-ai-chip-report.html"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status preserves Fired. Two new corroborating efficiency preprints add evidence depth but do not alter the foundational TurboQuant-driven Fired status. No reversal condition met."
     },
     {
       "id": "t1_lead_times",
@@ -168,7 +176,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $49.77 (2026-07-20 print). Matrix basis (weekly means): current wk $49.77, +0.00% vs rolling 12w wk-peak $49.77 (wk ending 2026-07-26). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 111d old). Synthetic adjusted: 51.2% central (range 49-54%). Adjustments: tone +4.2pp (12 src, weight 0.4); supplier -30.0pp (1 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $50.00 (2026-07-21 print). Matrix basis (weekly means): current wk $49.88, +0.00% vs rolling 12w wk-peak $49.88 (wk ending 2026-07-26). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 112d old). Synthetic adjusted: 51.1% central (range 49-54%). Adjustments: tone +4.1pp (11 src, weight 0.4); supplier -30.0pp (1 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "TrendForce Jul 15 spot print: DDR5 $48.57 (+0.14%), DDR4 $78.63 (+0.32%). Mirae confirms 40+ consecutive days of spot strength. Matrix remains Not fired.",
       "relevant_links": [
         {
@@ -306,16 +314,20 @@
       "description": "Buyers panic-locking long-term supply. Paradoxical bearish signal \u2014 already fired.",
       "what_to_look_for": "3+ year HBM LTA announcements. 'Sold out through 2027/2028' phrasing. Currently fired (HBM3E sold out through 2026; Hynix HBM4 LTAs with Nvidia).",
       "current_status": "Fired",
-      "where_we_stand": "HBM3E sold out through 2026; SK Hynix HBM4 LTAs with Nvidia in force. Mirae Asset (2026-07-14) reports hyperscaler 2-year revenue backlog grew 38% QoQ to $656B (Google +93% QoQ, Amazon +49% QoQ) \u2014 independent confirmation of sustained multi-year commitments. No LTA cancellation or buyer pull-out reported. Reversal condition not met.",
-      "latest_developments": "Mirae Asset July 14 brief: combined 5-provider order backlog $2.1T; 2-year revenue portion +38% QoQ to $656B. SK Hynix CEO stated demand will outstrip supply beyond 2030, reinforcing LTA rationale.",
+      "where_we_stand": "Fired. SK Hynix HBM4 LTAs with Nvidia and HBM3E sold out through 2026 remain the foundational triggers. Micron now confirms HBM capacity sold out through 2027 with a $3B wafer investment commitment \u2014 extending the multi-supplier LTA ecosystem to all three major HBM producers. CXMT's 2027 DDR5 production reportedly fully\u2026",
+      "latest_developments": "Micron HBM capacity sold out through 2027 + $3B wafer investment confirmed. CXMT 2027 DDR5 production fully sold out reported by Overclocking.com (2026-07-21). Both corroborate and extend the multi-supplier LTA narrative.",
       "relevant_links": [
         {
-          "title": "Mirae Asset SK Hynix report \u2014 backlog +38% QoQ",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
+          "title": "Micron HBM sold out through 2027 + $3B wafer investment (Ad-hoc-news, 2026-07-20)",
+          "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOdk9ndU9xNkVmR0lPQXZoQ2JuSFQ5SDJTVW44d1hsVW13dnFNeV9obFBLcFJOZmw3ZjM2cGdwWHgzbm1qTXRNNDRzcmdzR3gtQVFjX21mYXo3Z0xJOFBid1N6czNkRklBeDcxTU9FREZteWRNT0Z1WFRjZWtJMU5WSjM2OEltQ3k4VFB2SS11TjZLVHVHT1UzY1RUMldwcVNxcGplMmJ6a1VpYjJ3c2xLcWF1QzlZQktzU2VBSllZQS1WVGl1S3VV"
         },
         {
-          "title": "SK Hynix CEO: worst shortage 2027, demand > supply post-2030",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFBJdVpKaXVNLWFOYUc1a3J2WXFXeHUxd202SVpfeEVBWDdnZmg2cENWSlgxZmI5S1FhbERheHpNM25UNl9KbXZmcFN5SDFpWjdJV1BVTGc2S3B4OTNMZG8tVkF0eUxJTHVHclI0dGJqbkxqVVN0Mmc"
+          "title": "CXMT 2027 DDR5 production fully sold out (Overclocking.com, 2026-07-21)",
+          "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxQdDRLWDdhWEFqSDRTczU5S3VuUVJjVU51SnQzb1AwV0dhRjJrY2JuS3VWSUFZU1YwNDBpZkRyaHFwdzkzWGd3N2VyZmNTajZoZWltRjFwS3gwWHAwQXU2SEVVZm84X2s2ZzYycUNmZHJvNF83Q1FVVUZWNDJtSUV0bUZLVnNNTHZieHFrUUhaLWs0dw"
+        },
+        {
+          "title": "AMD Helios + Microsoft HBM4 demand chain (TrendForce, 2026-07-21)",
+          "url": "https://news.google.com/rss/articles/CBMi-gFBVV95cUxQX2E5ajBCQ2hfOHAycWZkVDBSZ2c2M2xERjUzRm9jTUJ6SWJaR1hIWEdDaHlsVjFjOWJ4THhtWVJoLU1VNXF1VHc4UWV5Zm4xSlRfYU9CQmpUMFNwNERLSkhydnNxeXdTN09JRVgwamxCYUp2T3JWMGtHY2tfQWY5TjExdTZ0Wk11MDdfUGUyT2wtSUQtc2ZQSVFndUkzSmtReENJR2Z3bnB6UWhJTDRyVmt0bElWaGN0YlBHUmxiY3FvYXpyT2Z3WFdCcHlHYW4xcndSSnZmZlVWRTJWcFNRSVhsM09IQm5HY3BzdXFYblRTUkZNQ2s3TGV3"
         }
       ],
       "change_vs_prior": null
