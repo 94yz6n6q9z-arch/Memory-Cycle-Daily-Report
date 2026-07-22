@@ -137,24 +137,24 @@
       "evidence_count": 0
     },
     "t1_spot_decline": {
-      "last_full_regen_date": "2026-07-15",
+      "last_full_regen_date": "2026-07-22",
       "current_status": "Not fired",
-      "where_we_stand": "Matrix cell: Not fired (Row 1 \u00d7 Col 1). DDR5 16Gb 4800/5600 spot: $48.57 (Jul 15 TrendForce print, +0.14% session). Rolling 12-week peak: $48.47 (week ending Jul 19); current week mean $48.47 \u2014 0% drawdown from peak. Contract anchor: Q2 2026 +58\u201363% QoQ (TrendForce). Synthetic row: R1 (\u2265+30% QoQ contract growth). Spot has risen for 40+ consecutive sessions. No firing condition met \u2014 full position hold. Mirae (Jul 15) confirms 'spot prices strengthening for 40+ consecutive trading days'; HBM capacity reallocation away from DDR5 is the structural support. Watch for\u2026",
-      "latest_developments": "TrendForce Jul 15 spot print: DDR5 $48.57 (+0.14%), DDR4 $78.63 (+0.32%). Mirae confirms 40+ consecutive days of spot strength. Matrix remains Not fired.",
+      "where_we_stand": "Matrix cell: R1 \u00d7 C1 \u2014 Not fired. DDR5 16Gb spot $50.33 (July 22 print); weekly mean $50.03, 0% drawdown from rolling 12-week peak ($50.03, week ending 2026-07-26). Contract anchor: Q2 2026 +58\u201363% QoQ (TrendForce). Spot is at a new 12-week peak \u2014 no drawdown, no firing condition met. Hold full position. Vivo/Oppo rejection of Samsung's DRAM price hike is a demand-side stress signal but has not yet transmitted into spot price weakness; watch for spot to roll off current peak in coming sessions as OEM pushback persists.",
+      "latest_developments": "DDR5 spot $50.33 (+0.53%) on July 22 TrendForce print \u2014 at 12-week peak. Vivo/Oppo rejecting Samsung DRAM price hike is the leading demand-destruction edge; no spot decline yet.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot \u2014 Jul 15",
+          "title": "TrendForce DRAM Spot Price \u2014 2026-07-22",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
         },
         {
-          "title": "Mirae Asset SK Hynix report Jul 15",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
+          "title": "Vivo and Oppo reject Samsung DRAM price hike",
+          "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxPbk1aT2xhM3VBM0xUZWQwWWRZVndPTElsSU5od3JObEN4Q1Z0VmVORGZIeWNwbmV3WXJ0LUtGTHRvZ1FDcDc4QWo3X3o0bHNq"
         }
       ],
-      "change_vs_prior": null,
+      "change_vs_prior": "No status change. Matrix verdict recomputed fresh: R1\u00d7C1, Not fired. Spot at new 12-week peak \u2014 no drawdown.",
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-07-15",
+      "updated_date": "2026-07-22",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 3
     },
@@ -421,20 +421,24 @@
       "evidence_count": 1
     },
     "t3_supplier_inventory_rebuild": {
-      "last_full_regen_date": "2026-07-15",
+      "last_full_regen_date": "2026-07-22",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. Supplier inventory weeks remain at 2\u20133 weeks per TrendForce Q3 2025 baseline; no subsequent print has crossed the 4-week trigger threshold. ASML's 2026 memory revenue +75% and SK Hynix's HBM capacity reallocation (per Mirae Jul 14\u201315) are consistent with continued tight supplier inventory \u2014 HBM allocation crowds out DDR5 wafers, keeping finished-goods weeks low. No earnings disclosure from SK Hynix or Micron today. Next read: SK Hynix Q2 2026 earnings (expected late Jul 2026).",
-      "latest_developments": "No new inventory weeks data today. Mirae (Jul 14\u201315) confirms HBM capacity prioritization consistent with tight supplier inventory. Trigger threshold (4 weeks) not approached.",
+      "where_we_stand": "Supplier inventory remains 2\u20133 weeks per TrendForce Q3 2025 baseline (last hard print). Trigger requires SK Hynix or Micron inventory weeks crossing 4.0 in a TrendForce monthly print or earnings disclosure. SK Hynix Q2 2026 earnings call (July 29) is the next scheduled data point. No new inventory-weeks data in today's feed. SK Hynix CEO's 2027 supply-constraint commentary implies makers are not yet rebuilding inventory \u2014 consistent with continued tight supply posture. Status: Not fired.",
+      "latest_developments": "No new inventory-weeks data today. SK Hynix Q2 earnings call July 29 is the next hard read. CEO supply-constraint commentary is consistent with sub-4-week inventory.",
       "relevant_links": [
         {
-          "title": "Mirae Asset SK Hynix Jul 14",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341230"
+          "title": "SK Hynix Q2 FY2026 earnings call \u2014 July 29",
+          "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxQTEV3YVRQT0duVWsteHFpVGN6T2JZUzA1Y2xBQV9Qby1VLWVZMmJQSFhxQkozRExGRWRMWjRGaExhTWdlTzRkbzBuSXFRcEI2dGxaV1EtS0MtYmhXRDkta0lGT0JCVGxQY2RTRnJZLUJIY1JYUmRESnZ0X3hsWXpPRkF5a2V2cU53cDhLaDI4SHNIR2Njc1NNaGJrVlowQQ?oc=5"
+        },
+        {
+          "title": "SK Hynix CEO: 2027 worst year for memory supply",
+          "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxOMG9uU2JmVEJNT2RRQ1hxcjJUZm1GWXJmdFdCbGV3ZmNOQTNFdGJrem1JN2tkdHNKWUdXN0QxMnJzd0FPbE5pbEpfbEwtajI0Z1o2cEJSZEFfalhxMlBMVHFfWGJaMVhkM3o4Y19NbnptNXlsblE4ODVJNzBWWWpFWGZSZ0hLZklGd0c0RHZlWXQzZDUxbjE4Z1pRRDRqaVlJeWR0N2EtbV9MOWJhRGZSRFZTVUhxdHE2VFVRbWJwZw?oc=5"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-07-15",
+      "updated_date": "2026-07-22",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
