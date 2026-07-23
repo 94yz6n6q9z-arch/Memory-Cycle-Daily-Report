@@ -3,9 +3,9 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
-    "last_aggregator_run": "2026-07-22T09:14:22Z",
+    "last_aggregator_run": "2026-07-23T09:15:20Z",
     "description": "Frontier inference model registry. open_models feeds frontier_kv computation. closed_models excluded from frontier calc (architecture unknown) but Sonnet may reference them in narrative. Auto-updated by src/analysis/dhcr_arch_aggregator.py.",
-    "last_run_additions": 0,
+    "last_run_additions": 1,
     "last_arch_research_run_at": "2026-05-25T21:11:42Z",
     "last_arch_research_additions": 1
   },
@@ -223,6 +223,19 @@
       "confidence": "low",
       "estimation_method": "back-solve from 1M-context pricing",
       "notes": "Google has been most aggressive on long context. May have proprietary attention compression."
+    },
+    {
+      "name": "Gemini 3.6 Flash",
+      "release_date": "2026-07-23",
+      "architecture_family": "GQA",
+      "num_layers": null,
+      "num_kv_heads": null,
+      "head_dim": null,
+      "bytes_per_element": null,
+      "compression_factor": null,
+      "source_url": null,
+      "notes": "Auto-added by dhcr_arch_aggregator from Yahoo Finance / Alphabet / 2026-07-23 (Tier C source).",
+      "confidence_band": "medium"
     }
   ],
   "llm_worker_frontier": {
