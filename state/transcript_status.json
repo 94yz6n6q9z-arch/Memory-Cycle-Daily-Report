@@ -1,28 +1,28 @@
 {
-  "written_at_iso": "2026-07-22T09:10:01.261822+00:00",
+  "written_at_iso": "2026-07-23T09:11:02.139985+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 0,
+    "full_transcript": 1,
     "materials_only": 0,
-    "nothing": 3,
-    "already_processed": 32,
+    "nothing": 4,
+    "already_processed": 30,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
       "Broadcom": "already_processed",
-      "TSMC": "nothing",
+      "TSMC": "already_processed",
       "Applied Materials": "already_processed",
       "Microsoft": "already_processed",
-      "Alphabet": "already_processed",
+      "Alphabet": "full_transcript",
       "Meta": "already_processed",
       "Amazon": "already_processed",
-      "Oracle": "already_processed",
+      "Oracle": "nothing",
       "Dell": "already_processed",
       "HPE": "already_processed",
       "ASML": "already_processed",
       "AMD": "already_processed",
       "Intel": "already_processed",
-      "Cerebras": "already_processed",
+      "Cerebras": "nothing",
       "SK Hynix": "already_processed",
       "Samsung Electronics": "already_processed"
     },
@@ -171,9 +171,9 @@
     {
       "company": "Cerebras",
       "ticker": "CBRS",
-      "availability": "already_processed",
-      "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "availability": "nothing",
+      "source_name": "Motley Fool",
+      "note": "No transcript links found on Motley Fool quote page for CBRS. Either no recent transcripts indexed, or Motley Fool changed the quote page structure \u2014 selector may need review.",
       "char_count": 0
     },
     {
@@ -235,9 +235,9 @@
     {
       "company": "TSMC",
       "ticker": "TSM",
-      "availability": "nothing",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
@@ -267,10 +267,10 @@
     {
       "company": "Alphabet",
       "ticker": "GOOGL",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 53961
     },
     {
       "company": "Meta",
@@ -291,9 +291,9 @@
     {
       "company": "Oracle",
       "ticker": "ORCL",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
