@@ -605,12 +605,12 @@ INDICATORS: list[Indicator] = [
         name="Forward P/E compressed to 3-5x",
         short_label="Fwd P/E to 3-5×",
         description=(
-            "Forward P/E compresses on PEAK earnings denominator — bearish, not bullish. "
-            "Already fired for SK Hynix and Samsung."
+            "Forward P/E compresses on PEAK earnings denominator — bearish, not bullish."
         ),
         what_to_look_for=(
-            "SK Hynix forward FY27 P/E below 5x (currently 3.7x — fired). Micron below 8x "
-            "(currently 7-12x). Samsung below 6x (currently 5.3x — fired)."
+            "SK Hynix forward FY27 P/E below 5x. Micron below 8x. Samsung below 6x. "
+            "Thresholds only — today's computed values render on the card with "
+            "their dates (v3.41.16: spec text carries no point-in-time numbers)."
         ),
         sources=["yfinance API (price + FY27 EPS estimate)", "Finnhub /price-target endpoint"],
         trigger_patterns=[],  # pure numeric
@@ -937,7 +937,9 @@ INDICATORS: list[Indicator] = [
             "headquarters). For pure-play memory makers (SK Hynix, Micron) "
             "company-level cuts count — they ARE the memory business. If the "
             "affected business unit is not identified as memory/semiconductor-"
-            "memory, do NOT fire."
+            "memory, do NOT fire. 'Samsung announces layoffs' alone is NEVER "
+            "sufficient — the report must explicitly state the cuts hit "
+            "memory operations/employees."
         ),
         sources=["Press releases", "Korean press (KED, Korea Herald, ChosunBiz)"],
         trigger_patterns=[

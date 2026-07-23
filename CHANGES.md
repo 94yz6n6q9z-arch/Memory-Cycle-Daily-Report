@@ -2,6 +2,28 @@
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
 
+## v3.41.16 (2026-07-22) — Sources of truth: evidence invalidation, deterministic Forward P/E, spec hygiene
+
+Jul 22's brief disagreed with itself three ways. All three were sources-of-truth faults; all three are closed.
+
+### 1. The t4 repair was undone by Layer 2 in the same run — v2 neutralizes the evidence, not just the status
+
+The v1 repair reverted the status but left the Jul-20 pro-fire text ("Samsung confirms 800+ US job cuts… corroborated by three sources") in the evidence log. Layer 2 read that story as its prior context and RE-FIRED within the run — leaving the store annotation saying "reverted", the tier line saying T4 1/4, and the card saying Fired: three truths. **v2 repair** (`repair_t4_layoffs_bu_misfire`, rewritten): every entry matching the non-memory-BU predicate is rewritten with an `INVALIDATED (non-memory BU — not firing evidence): ` prefix; the status reverts if Fired; a v2-tagged annotation records the action; runs once (v2 tag). Verified against the exact production store shape (Jul-20 entry + v1 annotation + Jul-22 re-fire entry): both pro-fire entries invalidated, v1 annotation untouched, status reverted. Two subtle guards: the predicate scrubs "non-memory" before the memory-context check (the v1 annotation's own wording contains the substring "memory" and would otherwise trip the mixed-evidence freeze — i.e., the repair had to be made immune to its own prior annotation), and repair-authored entries are excluded from all predicates. Genuine memory-context evidence anywhere → full hands-off + loud warning. Already-Not-fired-but-poisoned → entries invalidated without touching status (nothing can re-fire on them later).
+
+Backing it in the prompt: a new **INVALID FIRES** block — "'Samsung' + 'layoffs' is NEVER sufficient; firing requires explicit memory-operations attribution (DRAM/NAND/HBM lines, memory fabs, DS-Memory employees); the July 2026 smartphone-division cuts do NOT fire this signal and re-firing on echoed coverage is an error — corroboration of a non-memory event is still a non-memory event; entries beginning INVALIDATED are retracted and not citable." The same positive-scoping sentence is added to the config spec.
+
+### 2. Forward P/E status is now arithmetic, not opinion
+
+The card computed all three names below threshold (SKH 4.07x<5, Samsung 3.91x<6, Micron 6.01x<8) and Haiku still returned 'Not fired' "pending broader estimate rollover" — a direct violation of the prompt's [A]-category rule. Prompt rules are requests. New `_override_t2_pe_from_computed` (fast_tier, the cycle-matrix-injector pattern): status = Fired if ANY name is below its threshold (per config trigger_numeric and the [A] example's single-name precedent), Not fired if none are, untouched if no data; the override runs **before** `update_evidence_after_layer2` so the store records the deterministic status; a note is prepended to the reasoning fields and `[pe-override] SK Hynix 4.07x(<5); … → Fired` logs every run. Haiku keeps writing the prose; the status comes from the numbers.
+
+### 3. Spec texts carry thresholds only
+
+"(currently 3.7x — fired)" etc. removed from t2_pe_compressed's spec (and "Already fired for SK Hynix and Samsung" from its description) — drafting-time numbers were rendering beside live computed values as if both were today's. A test now asserts no `currently <number>` exists anywhere in config.
+
+### Tests
+
+`tests/test_v3_41_16_truth_sources.py` — 14 tests (v2 on the exact prod store; run-once; v1-annotation immunity; memory-evidence freeze; invalidate-without-revert; clean/absent no-ops; prompt + spec markers; P/E fires on the Jul-22 numbers / unfires when none breach / single-name sufficiency / no-data passthrough / ordering-before-store-update; no stale numbers). One v3.41.15 test assertion updated to the v2 contract (annotation tag + invalidation prefix). Full suite: 59 failed / 1269 passed — canonical fixture distribution, +14. No dependency change.
+
 ## v3.41.15 (2026-07-20) — t4_layoffs business-unit scoping + one-shot misfire repair + generic transition banners
 
 Two defects from the July 20 brief.

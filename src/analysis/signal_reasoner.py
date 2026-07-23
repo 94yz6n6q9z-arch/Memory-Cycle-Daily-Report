@@ -284,6 +284,10 @@ INVALID DOWNGRADES (these are bugs the v3.39.7.3 fix eliminates):
 CONGLOMERATE / BUSINESS-UNIT ATTRIBUTION (v3.41.15):
 Samsung is a conglomerate; SK Hynix and Micron are pure-play memory makers. Before firing ANY memory-sector signal on evidence about a multi-BU company, attribute the affected business unit. If the evidence names a non-memory division (Mobile/smartphone, consumer electronics, display, appliances, networks) or does not identify the unit at all, it does NOT satisfy a memory-sector condition — no matter how prominent the company name is. Example: "Samsung confirms 800+ US job cuts across its smartphone division" is a consumer-devices event, NOT memory-operations distress, and must NOT fire t4_layoffs. Pure-play companies need no attribution — company-level events are memory events. This rule applies to layoffs, capex, margin, inventory, and any other signal where a conglomerate's other divisions could masquerade as memory evidence.
 
+INVALID FIRES (v3.41.16):
+- 'Samsung' + 'layoffs' is NEVER sufficient for t4_layoffs. Firing requires the evidence to EXPLICITLY attribute the reductions to memory operations/employees (DRAM/NAND/HBM lines, memory fabs, DS-Memory division). Specifically: the July 2026 Samsung consumer/smartphone-division US job cuts (800+/739 roles, Texas HQ) do NOT fire this signal, and RE-FIRING on continued or echoed coverage of that event is an error — no matter how many sources corroborate that the cuts happened; corroboration of a non-memory event is still a non-memory event.
+- Evidence-log entries whose text begins with "INVALIDATED" have been retracted and are NOT evidence — do not cite them for any status, in any direction.
+
 NEW EVIDENCE HANDLING:
 If today's news ADDS corroborating evidence (e.g., another capex announcement, another LTA), the status remains Fired and the new evidence is logged downstream. Mention the new evidence in `evidence_for_change_vs_yesterday`.
 

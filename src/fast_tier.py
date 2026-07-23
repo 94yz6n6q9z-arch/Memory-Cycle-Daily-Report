@@ -963,6 +963,21 @@ def run_fast_tier() -> int:
     )
     logger.info(f"Layer 2 produced {len(signal_reasonings)} signal reasonings")
 
+    # v3.41.16 — deterministic Forward P/E override. t2_pe_compressed is a
+    # pure-numeric signal (config: trigger_patterns=[], "Pure numeric") whose
+    # values are computed every run — yet its status was decided by Haiku,
+    # which on Jul 22 returned 'Not fired' "pending broader estimate
+    # rollover" while its own card showed all three names below threshold
+    # (SKH 4.07x<5, Samsung 3.91x<6, Micron 6.01x<8) — a direct violation of
+    # the prompt's [A]-category rule ("the computed verdict IS the
+    # evidence"). Prompt rules are requests; arithmetic isn't. This override
+    # runs BEFORE update_evidence_after_layer2 so the store records the
+    # deterministic status, mirroring the cycle-matrix injector pattern.
+    try:
+        _override_t2_pe_from_computed(signal_reasonings, computed_metrics)
+    except Exception as e:
+        logger.warning(f"[pe-override] failed (non-fatal): {e}")
+
     # v3.39.7.3 — update the evidence store with any status transitions from
     # this Layer 2 run, then persist back to disk. The GHA workflow's commit
     # step (extended in v3.39.7.3 to include indicator_evidence.json) pushes
@@ -1928,6 +1943,63 @@ def _load_processed_signal_urls(signals_csv) -> set:
     except Exception as e:
         logger.warning(f"Could not load processed URLs: {e}")
         return set()
+
+
+def _override_t2_pe_from_computed(signal_reasonings: list, computed_metrics: dict) -> None:
+    """v3.41.16 — hard status override for the pure-numeric P/E signal.
+
+    Rule (per config trigger_numeric + the reasoner's [A]-category text,
+    which treats a single-name breach as sufficient): Fired if ANY name is
+    below its threshold — SK Hynix <5x, Samsung <6x, Micron <8x — Not fired
+    if none are (among names with data). No data at all → leave Layer 2's
+    verdict untouched. Haiku keeps writing the prose; the status is
+    arithmetic.
+    """
+    pe = (computed_metrics or {}).get("forward_pe") or {}
+    thresholds = [
+        ("SK Hynix", "000660.KS", 5.0),
+        ("Samsung", "005930.KS", 6.0),
+        ("Micron", "MU", 8.0),
+    ]
+    breaches, readings = [], []
+    n_with_data = 0
+    for label, ticker, thr in thresholds:
+        v = pe.get(ticker)
+        if v is None:
+            continue
+        n_with_data += 1
+        readings.append(f"{label} {v:.2f}x({'<' if v < thr else '>='}{thr:g})")
+        if v < thr:
+            breaches.append(label)
+    if n_with_data == 0:
+        return
+    status = "Fired" if breaches else "Not fired"
+    for r in signal_reasonings:
+        if getattr(r, "signal_id", None) != "t2_pe_compressed":
+            continue
+        old = getattr(r, "fired_status", None)
+        if old != status:
+            r.fired_status = status
+            note = (
+                f"Deterministic override (v3.41.16): computed forward P/E is "
+                f"authoritative for this pure-numeric signal — "
+                f"{'; '.join(readings)} → {status}. Layer 2 had returned "
+                f"'{old}'."
+            )
+            r.evidence_for_change_vs_yesterday = (
+                note + " " + (getattr(r, "evidence_for_change_vs_yesterday", "") or "")
+            ).strip()
+            try:
+                r.fired_status_evidence = [note] + list(
+                    getattr(r, "fired_status_evidence", None) or []
+                )
+            except Exception:
+                pass
+        logger.info(
+            f"[pe-override] {'; '.join(readings)} → {status}"
+            + (f" (was: {old})" if old != status else " (Layer 2 agreed)")
+        )
+        return
 
 
 def _inject_matrix_verdict_into_signal_reasonings(

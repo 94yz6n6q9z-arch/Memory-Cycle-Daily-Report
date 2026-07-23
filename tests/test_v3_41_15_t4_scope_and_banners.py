@@ -75,7 +75,11 @@ def test_repair_reverts_the_jul20_misfire_and_annotates():
     assert r is not None
     assert r["old_status"] == "Fired" and r["new_status"] == "Not fired"
     assert s["t4_layoffs"].current_status == "Not fired"
-    assert any(T4_BU_REPAIR_TAG in e.value for e in s["t4_layoffs"].evidence_log)
+    # v3.41.16: the repair is now v2 — it invalidates the poisoned entry and
+    # appends a v2-tagged annotation (the v1 tag is kept only as a marker).
+    assert any("REPAIR v3.41.16" in e.value for e in s["t4_layoffs"].evidence_log)
+    assert any(e.value.startswith("INVALIDATED (non-memory BU")
+               for e in s["t4_layoffs"].evidence_log)
 
 
 def test_repair_runs_exactly_once():

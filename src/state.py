@@ -830,80 +830,119 @@ def load_indicator_evidence_store(
     return out
 
 
-T4_BU_REPAIR_TAG = "REPAIR v3.41.15 (t4_layoffs BU scope)"
+T4_BU_REPAIR_TAG = "REPAIR v3.41.15 (t4_layoffs BU scope)"       # v1 marker (kept for detection)
+T4_BU_REPAIR_V2_TAG = "REPAIR v3.41.16 (t4_layoffs BU scope v2)"
+T4_INVALIDATED_PREFIX = "INVALIDATED (non-memory BU — not firing evidence): "
 
 _T4_LAYOFF_TERMS = ("layoff", "job cut", "workforce", "headcount")
 _T4_NONMEMORY_BU = ("smartphone", "mobile", "handset", "mx division",
                     "consumer electronics", "appliance", "display division",
-                    "texas headquarters")
+                    "texas headquarters", "texas hq")
 _T4_MEMORY_CTX = ("memory", "dram", "nand", "hbm", "fab idl", "fab util",
                   "semiconductor division", "ds division", "ds-memory")
+_T4_MARKER_SNIPPETS = ("repair v3.41.15", "repair v3.41.16", "invalidated (non-memory bu")
+
+
+def _t4_scrub(text: str) -> str:
+    """Lowercase + remove 'non-memory' so it can't fake memory context."""
+    return (text or "").lower().replace("non-memory", "").replace("non memory", "")
+
+
+def _t4_is_marker(text: str) -> bool:
+    low = (text or "").lower()
+    return any(m in low for m in _T4_MARKER_SNIPPETS)
+
+
+def _t4_is_nonmemory_samsung_layoff(text: str) -> bool:
+    low = _t4_scrub(text)
+    return (
+        "samsung" in low
+        and any(t in low for t in _T4_LAYOFF_TERMS)
+        and any(t in low for t in _T4_NONMEMORY_BU)
+        and not any(t in low for t in _T4_MEMORY_CTX)
+    )
 
 
 def repair_t4_layoffs_bu_misfire(store: dict) -> Optional[dict]:
-    """One-shot correction of the Jul-20 t4_layoffs misfire (v3.41.15).
+    """One-shot v2 correction of the t4_layoffs BU misfire (v3.41.16).
 
-    The signal fired on "Samsung confirms 800+ US job cuts across its
-    smartphone division" — a consumer-devices event that satisfied the old,
-    entity-scoped spec ("Any Big Three announces layoffs") but not the
-    signal's economic meaning (memory-operations distress). The evidence
-    store's cumulative-state design correctly protects fired statuses from
-    silence, which also means a spec fix alone cannot un-fire it — so this
-    performs a targeted, evidence-predicated revert, exactly once.
+    v3.41.15's v1 repair reverted the STATUS but left the Jul-20 evidence
+    entry's persuasive pro-fire text in the store — Layer 2 read it as its
+    prior context and RE-FIRED the signal in the same run, undoing the
+    repair within minutes and leaving three sources of truth disagreeing
+    (store annotation said reverted, assessments said Fired, exec prose
+    narrated the annotation). v2 neutralizes the EVIDENCE, not just the
+    status: every entry matching the non-memory-BU predicate is rewritten
+    with an INVALIDATED prefix (the reasoner prompt's INVALID FIRES rule
+    instructs Layer 2 that such entries are not evidence), and the status
+    reverts if currently Fired.
 
-    Conditions (ALL must hold, conservative by design):
-      - t4_layoffs present and current_status == "Fired"
-      - not already repaired (no evidence entry carrying T4_BU_REPAIR_TAG)
-      - the evidence text mentions Samsung AND layoff terms AND a
-        non-memory business unit
-      - the evidence text contains NO memory-operations context (if mixed,
-        do nothing and log for manual review — a genuine memory-side cut
-        must never be auto-reverted)
+    Scoping rule encoded here and in the spec: 'Samsung' + 'layoffs' is
+    NEVER sufficient — firing requires explicit memory-operations
+    attribution. Conservative guards: entries written by the repair itself
+    (v1 annotation, v2 annotation, INVALIDATED rewrites) are excluded from
+    all predicates ('non-memory' is scrubbed so the v1 annotation's own
+    wording cannot register as memory context); if any NON-marker entry
+    carries genuine memory context, the repair does nothing and logs for
+    manual review; runs exactly once (v2 tag).
 
-    Mutates the store in place (status -> "Not fired" + an annotation
-    entry) and returns an info dict for logging, or None if no action.
-    The caller persists the store; the Fired -> Not fired transition then
-    surfaces naturally through the 24h trigger log (prior_state still says
-    Fired), so the correction is visible in the brief, not silent.
+    Mutates the store in place; returns an info dict or None. The caller
+    persists; a Fired→Not fired revert then surfaces through the normal
+    24h trigger log (prior_state still says Fired) — visible, not silent.
     """
     try:
         ev = (store or {}).get("t4_layoffs")
-        if ev is None or getattr(ev, "current_status", "") != "Fired":
+        if ev is None:
             return None
         entries = list(getattr(ev, "evidence_log", None) or [])
-        blob_parts = []
-        for e in entries:
-            blob_parts.append(str(getattr(e, "value", "")))
-            blob_parts.append(str(getattr(e, "source", "")))
-        blob = " ".join(blob_parts).lower()
-        if T4_BU_REPAIR_TAG.lower() in blob:
-            return None  # already repaired
-        has_samsung = "samsung" in blob
-        has_layoff = any(t in blob for t in _T4_LAYOFF_TERMS)
-        has_nonmem_bu = any(t in blob for t in _T4_NONMEMORY_BU)
-        has_memory_ctx = any(t in blob for t in _T4_MEMORY_CTX)
-        if not (has_samsung and has_layoff and has_nonmem_bu):
+        if any(T4_BU_REPAIR_V2_TAG.lower() in (getattr(e, "value", "") or "").lower()
+               for e in entries):
+            return None  # v2 already ran
+        substantive = [
+            e for e in entries
+            if not _t4_is_marker(f"{getattr(e, 'value', '')} {getattr(e, 'source', '')}")
+        ]
+        poison = [
+            e for e in substantive
+            if _t4_is_nonmemory_samsung_layoff(
+                f"{getattr(e, 'value', '')} {getattr(e, 'source', '')}")
+        ]
+        if not poison:
             return None
-        if has_memory_ctx:
+        memory_ctx_present = any(
+            any(t in _t4_scrub(f"{getattr(e, 'value', '')} {getattr(e, 'source', '')}")
+                for t in _T4_MEMORY_CTX)
+            for e in substantive
+        )
+        if memory_ctx_present:
             logger.warning(
-                "[t4-repair] t4_layoffs Fired with MIXED evidence (non-memory "
-                "BU terms AND memory context present) — not auto-reverting; "
-                "review state/indicator_evidence.json manually."
+                "[t4-repair] non-memory-BU entries found ALONGSIDE genuine "
+                "memory-context evidence — not auto-repairing; review "
+                "state/indicator_evidence.json manually."
             )
             return None
+        for e in poison:
+            e.value = T4_INVALIDATED_PREFIX + (getattr(e, "value", "") or "")
+        status_reverted = False
+        if getattr(ev, "current_status", "") == "Fired":
+            ev.current_status = "Not fired"
+            status_reverted = True
         today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        ev.current_status = "Not fired"
         ev.evidence_log.append(EvidenceEntry(
             date=today_iso,
             type="data_point",
             value=(
-                f"{T4_BU_REPAIR_TAG}: prior Fired was based on Samsung "
-                f"smartphone/consumer-division job cuts — a non-memory "
-                f"business unit. Per the re-specified signal scope, "
-                f"non-memory-BU workforce reductions do not constitute "
-                f"memory-operations distress. Status reverted to Not fired."
+                f"{T4_BU_REPAIR_V2_TAG}: {len(poison)} evidence entr"
+                f"{'y' if len(poison) == 1 else 'ies'} invalidated — Samsung "
+                f"non-memory-BU (smartphone/consumer) job cuts are not firing "
+                f"evidence for this signal. 'Samsung' + 'layoffs' alone is "
+                f"never sufficient; firing requires explicit memory-operations "
+                f"attribution (DRAM/NAND/HBM lines, memory fabs, DS-Memory "
+                f"employees). "
+                + ("Status reverted to Not fired."
+                   if status_reverted else "Status was already not Fired.")
             ),
-            source="v3.41.15 one-shot BU-scope repair",
+            source="v3.41.16 one-shot BU-scope repair (v2)",
             persistence="permanent",
             reversal_condition=(
                 "Memory-operations layoffs or memory-fab idling are "
@@ -912,12 +951,16 @@ def repair_t4_layoffs_bu_misfire(store: dict) -> Optional[dict]:
         ))
         return {
             "indicator_id": "t4_layoffs",
-            "old_status": "Fired",
+            "invalidated": len(poison),
+            "status_reverted": status_reverted,
+            "old_status": "Fired" if status_reverted else getattr(ev, "current_status", "?"),
             "new_status": "Not fired",
             "description": (
-                "Correction: prior firing was based on Samsung "
-                "smartphone-division job cuts (non-memory BU); reverted per "
-                "re-specified memory-operations scope (v3.41.15)."
+                f"Correction (v2): {len(poison)} Samsung non-memory-BU "
+                f"layoff entr{'y' if len(poison) == 1 else 'ies'} invalidated; "
+                f"'Samsung'+'layoffs' is never sufficient — explicit "
+                f"memory-operations attribution required."
+                + (" Status reverted to Not fired." if status_reverted else "")
             ),
         }
     except Exception as e:
