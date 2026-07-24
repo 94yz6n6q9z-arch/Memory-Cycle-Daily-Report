@@ -1,7 +1,7 @@
 {
   "source_id": "DART API",
   "payload": {
-    "fetched_at_iso": "2026-07-23T09:11:56.093386",
+    "fetched_at_iso": "2026-07-24T09:07:38.617330",
     "tickers": {
       "SK Hynix": {
         "corp_code": "00164779",
@@ -31,6 +31,14 @@
         "n_disclosures": 102,
         "n_material": 0,
         "disclosures": [
+          {
+            "report_nm": "\uc8fc\uc2dd\ub4f1\uc758\ub300\ub7c9\ubcf4\uc720\uc0c1\ud669\ubcf4\uace0\uc11c(\uc77c\ubc18)",
+            "rcept_dt": "20260724",
+            "rcept_no": "20260724000625",
+            "flr_nm": "\uc0bc\uc131\ubb3c\uc0b0",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260724000625"
+          },
           {
             "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
             "rcept_dt": "20260723",
@@ -824,14 +832,6 @@
             "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260721001197"
           },
           {
-            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
-            "rcept_dt": "20260721",
-            "rcept_no": "20260721001196",
-            "flr_nm": "\uc2e0\ud604\uc9c4",
-            "is_material": false,
-            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260721001196"
-          },
-          {
             "report_nm": "\ud48d\ubb38\ub610\ub294\ubcf4\ub3c4\uc5d0\ub300\ud55c\ud574\uba85(\ubbf8\ud655\uc815)              ",
             "rcept_dt": "20260723",
             "rcept_no": "20260723800875",
@@ -851,11 +851,20 @@
       },
       "SK Square": {
         "corp_code": "01515323",
-        "n_disclosures": 0,
+        "n_disclosures": 1,
         "n_material": 0,
-        "disclosures": []
+        "disclosures": [
+          {
+            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
+            "rcept_dt": "20260724",
+            "rcept_no": "20260724000026",
+            "flr_nm": "\uc815\uc7ac\ud55c",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260724000026"
+          }
+        ]
       }
     }
   },
-  "fetched_at_iso": "2026-07-23T09:12:07.149317"
+  "fetched_at_iso": "2026-07-24T09:07:50.207765"
 }

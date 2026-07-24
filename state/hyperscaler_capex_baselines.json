@@ -1,9 +1,9 @@
 {
-  "computed_at_iso": "2026-07-23T09:15:20.330801",
-  "mean_capex_ocf_ratio_2q": 0.8014,
+  "computed_at_iso": "2026-07-24T09:10:29.317122",
+  "mean_capex_ocf_ratio_2q": 0.8787,
   "per_company_capex_ocf_2q": {
     "MSFT": 0.7485,
-    "GOOGL": 0.6553,
+    "GOOGL": 0.9645,
     "META": 0.59,
     "AMZN": 1.2119
   },
@@ -63,6 +63,18 @@
       {
         "ticker": "GOOGL",
         "name": "Alphabet",
+        "quarter_iso": "2026-Q2",
+        "capex_usd_b": 44.92,
+        "revenue_usd_b": 119.8,
+        "ocf_usd_b": 39.07,
+        "capex_revenue_ratio": 0.375,
+        "capex_ocf_ratio": 1.1499,
+        "fired_threshold": true,
+        "fy_capex_run_rate_usd_b": 132.4
+      },
+      {
+        "ticker": "GOOGL",
+        "name": "Alphabet",
         "quarter_iso": "2026-Q1",
         "capex_usd_b": 35.67,
         "revenue_usd_b": 109.9,
@@ -70,7 +82,7 @@
         "capex_revenue_ratio": 0.3246,
         "capex_ocf_ratio": 0.7791,
         "fired_threshold": false,
-        "fy_capex_run_rate_usd_b": 109.92
+        "fy_capex_run_rate_usd_b": 132.4
       },
       {
         "ticker": "GOOGL",
@@ -82,7 +94,7 @@
         "capex_revenue_ratio": 0.2447,
         "capex_ocf_ratio": 0.5315,
         "fired_threshold": false,
-        "fy_capex_run_rate_usd_b": 109.92
+        "fy_capex_run_rate_usd_b": 132.4
       },
       {
         "ticker": "GOOGL",
@@ -94,19 +106,7 @@
         "capex_revenue_ratio": 0.234,
         "capex_ocf_ratio": 0.4948,
         "fired_threshold": false,
-        "fy_capex_run_rate_usd_b": 109.92
-      },
-      {
-        "ticker": "GOOGL",
-        "name": "Alphabet",
-        "quarter_iso": "2025-Q2",
-        "capex_usd_b": 22.45,
-        "revenue_usd_b": 96.43,
-        "ocf_usd_b": 27.75,
-        "capex_revenue_ratio": 0.2328,
-        "capex_ocf_ratio": 0.809,
-        "fired_threshold": false,
-        "fy_capex_run_rate_usd_b": 109.92
+        "fy_capex_run_rate_usd_b": 132.4
       }
     ],
     "META": [
