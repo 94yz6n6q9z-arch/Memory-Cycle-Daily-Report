@@ -938,6 +938,16 @@ def run_fast_tier() -> int:
             logger.warning(f"[t4-repair] applied: {_rep['description']}")
     except Exception as e:
         logger.warning(f"[t4-repair] wiring failed (non-fatal): {e}")
+
+    # v3.41.17 — first-party capex-guidance ingest: news_event_extractor's
+    # capex_signals entries (company guides 2027 above 2026 — first-party
+    # prints only, by the extractor's own prompt) land as structured
+    # evidence on t2_capex_parabolic BEFORE Layer 2, so the card's evidence
+    # leads with the print rather than analyst echoes.
+    try:
+        _ingest_capex_guidance_evidence(indicator_evidence_store)
+    except Exception as e:
+        logger.warning(f"[capex-guidance] ingest failed (non-fatal): {e}")
     if not indicator_evidence_store:
         logger.warning(
             "v3.39.7.3 evidence store empty — Layer 2 will run without "
@@ -977,6 +987,19 @@ def run_fast_tier() -> int:
         _override_t2_pe_from_computed(signal_reasonings, computed_metrics)
     except Exception as e:
         logger.warning(f"[pe-override] failed (non-fatal): {e}")
+
+    # v3.41.17 — deterministic t4 business-unit gate. Prompt-level control
+    # failed twice on this signal (Jul 20 fire, Jul 23 re-fire in defiance of
+    # the named INVALID FIRES rule): the news feed re-delivers the echoed
+    # Samsung consumer-division coverage daily via the "layoffs" trigger
+    # pattern, and Layer 2 keeps firing on corroboration of an out-of-scope
+    # event. Discretion is withdrawn: a Fired/Partially-fired verdict must
+    # carry explicit memory-operations attribution in its evidence or it is
+    # forced to Not fired. A genuine memory-side fire passes untouched.
+    try:
+        _gate_t4_layoffs(signal_reasonings)
+    except Exception as e:
+        logger.warning(f"[t4-gate] failed (non-fatal): {e}")
 
     # v3.39.7.3 — update the evidence store with any status transitions from
     # this Layer 2 run, then persist back to disk. The GHA workflow's commit
@@ -1243,6 +1266,13 @@ def run_fast_tier() -> int:
             )
             assessment.current_status = composite
 
+    # v3.41.17 — deterministic bear-case return anchored to current price
+    # (Sonnet keeps probabilities + base/bull path estimates).
+    try:
+        _reanchor_bear_case(analysis, price_history)
+    except Exception as e:
+        logger.warning(f"[scenario-anchor] wiring failed (non-fatal): {e}")
+
     # v3.39.7.5 — 24h ephemeral trigger event window.
     #
     # The brief used to compute "new triggers today" via Sonnet's diff of
@@ -1282,18 +1312,25 @@ def run_fast_tier() -> int:
         # PLUS earlier transitions today that Sonnet wouldn't see on reruns.
         # Convert log entry shape to the dict shape ExecutiveSummary expects
         # (keys: tier, indicator_id, indicator_name, description).
+        _sonnet_had = len(analysis.executive_summary.new_triggers_today or [])
+        # v3.41.17 — keep old_status/new_status: this conversion previously
+        # STRIPPED them ("the dict shape ExecutiveSummary expects"), which is
+        # why the Jul-23 P/E banner rendered "Status: ? -> ?" and classified
+        # a fresh fire as a DOWNGRADE — the direction test saw no statuses.
         analysis.executive_summary.new_triggers_today = [
             {
                 "tier": e["tier"],
                 "indicator_id": e["indicator_id"],
                 "indicator_name": e["indicator_name"],
+                "old_status": e.get("old_status"),
+                "new_status": e.get("new_status"),
                 "description": e["description"],
             }
             for e in display_entries
         ]
         logger.info(
-            f"Trigger event log: {len(log_entries)} raw entries in 24h window, "
-            f"{len(display_entries)} after net-collapse for display"
+            f"[trigger-log] source=authoritative entries={len(display_entries)} "
+            f"(raw_24h={len(log_entries)}, sonnet_had={_sonnet_had})"
         )
     except Exception as e:
         # Safe-fail: if the log update fails for any reason, keep Sonnet's
@@ -1943,6 +1980,184 @@ def _load_processed_signal_urls(signals_csv) -> set:
     except Exception as e:
         logger.warning(f"Could not load processed URLs: {e}")
         return set()
+
+
+_T4_GATE_MEMORY_TERMS = (
+    "dram", "nand", "hbm", "memory fab", "memory division", "memory workforce",
+    "memory operations", "memory business", "memory employees", "ds-memory",
+    "ds division", "fab idl", "fab utilization", "wafer line",
+    "semiconductor workforce",
+)
+
+
+def _ingest_capex_guidance_evidence(indicator_evidence_store: dict) -> None:
+    """v3.41.17 — feed first-party capex guidance into t2_capex_parabolic.
+
+    Reads today's extraction log for entries carrying `capex_signals` with
+    `guides_2027_capex_above_2026` true (the extractor's prompt restricts
+    these to the company's OWN prints), and appends a deduped evidence entry
+    to the t2_capex_parabolic store so Layer 2 and the card cite the print,
+    not an analyst echo. Dedup key: company + 'guides 2027' in existing
+    evidence values. No-ops safely on missing store/log.
+    """
+    import json as _json
+    from datetime import datetime as _dt, timezone as _tz
+    from pathlib import Path as _Path
+    from src.state import EvidenceEntry as _EE
+    ev = (indicator_evidence_store or {}).get("t2_capex_parabolic")
+    if ev is None:
+        return
+    today = _dt.now(_tz.utc).strftime("%Y-%m-%d")
+    log_path = _Path("state") / f"extraction_log_{today}.jsonl"
+    if not log_path.exists():
+        return
+    existing = " ".join(
+        str(getattr(e, "value", "")) for e in (getattr(ev, "evidence_log", None) or [])
+    ).lower()
+    n = 0
+    for line in log_path.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = _json.loads(line)
+        except Exception:
+            continue
+        sig = entry.get("capex_signals") or {}
+        if sig.get("guides_2027_capex_above_2026") is not True:
+            continue
+        company = (sig.get("company") or "hyperscaler").strip()
+        dedup_key = f"{company.lower()} guides 2027"
+        if dedup_key in existing:
+            continue
+        note = (sig.get("note") or "").strip()
+        g26 = sig.get("capex_2026_guidance_usd_b")
+        ev.evidence_log.append(_EE(
+            date=today,
+            type="data_point",
+            value=(
+                f"FIRST-PARTY: {company} guides 2027 CapEx above 2026 "
+                f"(own print"
+                + (f"; 2026 guided ${g26:g}B" if isinstance(g26, (int, float)) else "")
+                + (f"; \"{note[:120]}\"" if note else "")
+                + "). Bull-confirm threshold input — analyst forecasts do "
+                  "not satisfy this threshold."
+            ),
+            source=str(entry.get("source") or "news_article"),
+            persistence="quarterly",
+            reversal_condition=f"{company} guides 2027 capex below 2026",
+        ))
+        existing += " " + dedup_key
+        n += 1
+    if n:
+        logger.info(f"[capex-guidance] ingested {n} first-party guidance event(s)")
+
+
+def _gate_t4_layoffs(signal_reasonings: list) -> None:
+    """v3.41.17 — hard BU gate for t4_layoffs (same pattern as the P/E override).
+
+    A Fired/Partially-fired verdict must carry explicit memory-operations
+    attribution in its own evidence (DRAM/NAND/HBM, memory fab/division/
+    workforce, DS-Memory…). Bare "memory chip maker Samsung" press phrasing
+    does not qualify — only operations-specific compounds count. Absent
+    attribution → forced Not fired with a logged note. Never touches a
+    Not-fired verdict or one with genuine memory-side evidence.
+    """
+    import json as _json
+    for r in signal_reasonings:
+        if getattr(r, "signal_id", None) != "t4_layoffs":
+            continue
+        st = getattr(r, "fired_status", "")
+        if st not in ("Fired", "Partially fired"):
+            logger.info(f"[t4-gate] status={st!r} — pass-through")
+            return
+        parts = [str(getattr(r, "consensus_direction", "") or "")]
+        parts += [str(x) for x in (getattr(r, "fired_status_evidence", None) or [])]
+        parts += [str(x) for x in (getattr(r, "key_quotes_consolidated", None) or [])]
+        parts.append(str(getattr(r, "evidence_for_change_vs_yesterday", "") or ""))
+        try:
+            parts.append(_json.dumps(getattr(r, "raw_evidence_dump", {}) or {}))
+        except Exception:
+            pass
+        blob = " ".join(parts).lower()
+        if any(t in blob for t in _T4_GATE_MEMORY_TERMS):
+            logger.info(
+                f"[t4-gate] memory-operations attribution present — "
+                f"'{st}' stands"
+            )
+            return
+        note = (
+            f"Deterministic BU gate (v3.41.17): Layer 2 returned '{st}' but "
+            f"the evidence contains no explicit memory-operations attribution "
+            f"(DRAM/NAND/HBM, memory fab/division/workforce, DS-Memory). "
+            f"Non-memory-BU events cannot fire this signal; status forced to "
+            f"Not fired."
+        )
+        r.fired_status = "Not fired"
+        r.evidence_for_change_vs_yesterday = (
+            note + " " + (getattr(r, "evidence_for_change_vs_yesterday", "") or "")
+        ).strip()
+        try:
+            r.fired_status_evidence = [note] + list(
+                getattr(r, "fired_status_evidence", None) or []
+            )
+        except Exception:
+            pass
+        logger.warning(
+            f"[t4-gate] FORCED Not fired (was {st!r}) — no memory-operations "
+            f"attribution in evidence"
+        )
+        return
+
+
+def _reanchor_bear_case(analysis, price_history) -> None:
+    """v3.41.17 — deterministic bear-case return, anchored to current price.
+
+    The Phase-4 bear return was a Sonnet judgment number with no anchor
+    declaration — "-40%" indistinguishable between from-here and
+    peak-to-trough, static across days, and blind to the ~30% drawdown
+    already realized. Now: bear trough = cycle peak × (1 +
+    BEAR_TROUGH_FROM_PEAK_PCT/100), cycle peak = SK Hynix max close over the
+    3y price history; bear return = trough vs CURRENT close. The anchor
+    numbers are attached to the ExecutiveSummary (runtime attr, not
+    serialized) for a context line in the email. Probabilities and the
+    base/bull path estimates stay Sonnet's.
+    """
+    try:
+        from src.config import BEAR_TROUGH_FROM_PEAK_PCT, BEAR_TROUGH_BAND_PCT
+        if price_history is None or getattr(price_history, "empty", True):
+            return
+        if "SK Hynix" not in getattr(price_history, "columns", []):
+            return
+        series = price_history["SK Hynix"].dropna()
+        if len(series) < 30:
+            return
+        current = float(series.iloc[-1])
+        peak = float(series.max())
+        if current <= 0 or peak <= 0:
+            return
+        drawdown_now_pct = (current / peak - 1.0) * 100.0
+        trough = peak * (1.0 + BEAR_TROUGH_FROM_PEAK_PCT / 100.0)
+        bear_from_here_pct = (trough / current - 1.0) * 100.0
+        es = analysis.executive_summary
+        old = getattr(es.bear_case, "return_to_peak_pct", None)
+        es.bear_case.return_to_peak_pct = bear_from_here_pct
+        setattr(es, "scenario_anchor", {
+            "current_price": current,
+            "peak_price": peak,
+            "drawdown_now_pct": drawdown_now_pct,
+            "bear_trough_from_peak_pct": BEAR_TROUGH_FROM_PEAK_PCT,
+            "band": tuple(BEAR_TROUGH_BAND_PCT),
+        })
+        logger.info(
+            f"[scenario-anchor] SKH current={current:,.0f} peak={peak:,.0f} "
+            f"({drawdown_now_pct:+.1f}% off peak); bear trough "
+            f"{BEAR_TROUGH_FROM_PEAK_PCT:.1f}% from peak → "
+            f"{bear_from_here_pct:+.1f}% from here (Sonnet had "
+            f"{old if old is None else format(old, '+.0f')}%)"
+        )
+    except Exception as e:
+        logger.warning(f"[scenario-anchor] failed (non-fatal): {e}")
 
 
 def _override_t2_pe_from_computed(signal_reasonings: list, computed_metrics: dict) -> None:

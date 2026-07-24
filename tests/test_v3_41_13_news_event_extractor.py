@@ -80,7 +80,9 @@ def test_schema_constrained_and_flag_on():
     assert NEWS_EVENT_SCHEMA["additionalProperties"] is False
     item = NEWS_EVENT_SCHEMA["properties"]["extractions"]["items"]
     assert item["additionalProperties"] is False
-    assert set(item["required"]) == {"news_index", "adr_signals", "competitor_signals"}
+    # v3.41.17 — capex_signals group added (first-party 2027-guidance lane)
+    assert set(item["required"]) == {"news_index", "adr_signals",
+                                     "competitor_signals", "capex_signals"}
     # nullable groups, fixed keys inside
     assert item["properties"]["adr_signals"]["additionalProperties"] is False
     assert "insider_sale_event" in item["properties"]["adr_signals"]["properties"]

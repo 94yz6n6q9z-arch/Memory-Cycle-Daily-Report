@@ -2,6 +2,28 @@
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.
 
+## v3.41.17 (2026-07-23) — Four fixes: banner truth, anchored scenarios, first-party capex, t4 discretion withdrawn
+
+### 1. The P/E banner rendered "Status: ? → ?" as an amber DOWNGRADE — root cause was the pipeline's own shape-conversion
+
+The authoritative trigger-log override converts collapsed log entries to "the dict shape ExecutiveSummary expects" — and that conversion **stripped old_status/new_status**. The banner received status-less entries, printed the literal "?" defaults, and classified an unknown direction as a downgrade. Fixes: the conversion keeps both keys (comment documents the bug); Sonnet's example schema emits them; the banner is shape-proof (keys → else parse "from 'X' to 'Y'" out of the description → else omit the status line — never "?"), unknown direction defaults to the RED alarm, and the description renders only when it adds information beyond the status line. A `[trigger-log] source=authoritative entries=N (raw_24h=…, sonnet_had=…)` line makes the population path greppable every run.
+
+### 2. Bear case re-anchored to arithmetic
+
+The Phase-4 bear return was a Sonnet judgment number with no anchor declaration. Now deterministic: cycle peak = SK Hynix max close over the 3y history; bear trough = peak × (1 − 57.5%) (docx Part 2: memory pure-plays average 50–65% peak-to-trough across all six cycles — `BEAR_TROUGH_FROM_PEAK_PCT = -57.5`, band `(-65, -50)` in config); bear return computed FROM CURRENT price; `[scenario-anchor]` logged with all inputs. The email gains a context line under the cases: current vs peak, drawdown already realized, the trough anchor and band, and the statement that the bear number is computed from current price. On Jul-23 prices this yields −39.5% from here (−29.8% already off peak ⇒ −57.5% total) — Sonnet's −40% was accidentally the right arithmetic; now it's labeled arithmetic. Probabilities and base/bull path estimates remain Sonnet's.
+
+### 3. First-party guidance precedence (capex)
+
+The capex card credited "Citi projects 2027 CapEx >$800B" with meeting a threshold that is phrased as **company guidance** — unmeetable by an analyst forecast — while Alphabet's own Q2 print (2026 raised to $195–205B; 2027 "increase significantly") sat in the exec summary. Fixes: a FIRST-PARTY GUIDANCE PRECEDENCE rule in both the Layer-2 reasoner prompt and Sonnet's card instructions (with the Citi/Alphabet counterexample named); the news-event extractor gains a `capex_signals` group (company, guides_2027_capex_above_2026, 2026 guidance $B, note — restricted by its prompt to first-party prints); and a fast-tier ingest (`_ingest_capex_guidance_evidence`) lands those events as deduped FIRST-PARTY evidence entries on t2_capex_parabolic before Layer 2 runs.
+
+### 4. t4: discretion withdrawn — deterministic BU gate + idempotent repair
+
+Prompt-level control failed twice (Jul-20 fire; Jul-23 re-fire in direct defiance of the INVALID FIRES rule naming the event — the news feed re-delivers the echoed Samsung coverage daily via the "layoffs" trigger pattern). The pre-named fallback ships: `_gate_t4_layoffs` (fast_tier, after the P/E override, before the evidence-store update) — a Fired/Partially-fired verdict must carry explicit memory-operations attribution in its own evidence (DRAM/NAND/HBM, memory fab/division/workforce, DS-Memory; bare "memory chip maker Samsung" press phrasing deliberately does NOT qualify) or it is forced to Not fired with a logged `[t4-gate]` note. A genuine memory-side fire passes untouched. The repair drops its run-once tag and becomes idempotent: already-prefixed entries are markers (naturally excluded), so each day only NEW poison is invalidated — the Jul-22/23 re-fire entries, frozen out by v2's tag, get cleaned on the next run; a standing Fired resting only on invalidated evidence is reverted.
+
+### Tests
+
+`tests/test_v3_41_17_four_fixes.py` — 17 tests (gate: forces/passes/pass-through incl. the "memory chip maker" press-phrasing rejection; repair v3 on the exact current prod store incl. same-day idempotency and invalidated-evidence-only revert; banner: description-parse red, keys+amber, unknown→red, no "?" anywhere, conversion+Sonnet-example source asserts; re-anchor math incl. no-op and docx band; capex: prompt rules both layers, schema+conversion, ingest+dedup via tmp state dir). One v3.41.13 schema test updated for the extended required set. Full suite: 59 failed / 1286 passed — canonical fixture distribution, +17. No dependency change.
+
 ## v3.41.16 (2026-07-22) — Sources of truth: evidence invalidation, deterministic Forward P/E, spec hygiene
 
 Jul 22's brief disagreed with itself three ways. All three were sources-of-truth faults; all three are closed.

@@ -288,6 +288,9 @@ INVALID FIRES (v3.41.16):
 - 'Samsung' + 'layoffs' is NEVER sufficient for t4_layoffs. Firing requires the evidence to EXPLICITLY attribute the reductions to memory operations/employees (DRAM/NAND/HBM lines, memory fabs, DS-Memory division). Specifically: the July 2026 Samsung consumer/smartphone-division US job cuts (800+/739 roles, Texas HQ) do NOT fire this signal, and RE-FIRING on continued or echoed coverage of that event is an error — no matter how many sources corroborate that the cuts happened; corroboration of a non-memory event is still a non-memory event.
 - Evidence-log entries whose text begins with "INVALIDATED" have been retracted and are NOT evidence — do not cite them for any status, in any direction.
 
+FIRST-PARTY GUIDANCE PRECEDENCE (v3.41.17):
+Thresholds phrased as company guidance (e.g. "any of MSFT/GOOG/META/AMZN/ORCL guides 2027 CapEx above 2026") are satisfiable ONLY by the company's own print or guidance. An analyst forecast (Citi, Morgan Stanley, BofA, ...) of the same metric is context — it must NEVER be described as meeting, confirming, or triggering such a threshold. When a first-party print and an analyst forecast of the same metric exist on the same day, the first-party print is the evidence; cite it first.
+
 NEW EVIDENCE HANDLING:
 If today's news ADDS corroborating evidence (e.g., another capex announcement, another LTA), the status remains Fired and the new evidence is logged downstream. Mention the new evidence in `evidence_for_change_vs_yesterday`.
 

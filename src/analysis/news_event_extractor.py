@@ -87,6 +87,13 @@ _COMPETITOR_PROPS = {
     "hbf_hot_tier_displacement": _NULLABLE_BOOL,
 }
 
+_CAPEX_PROPS = {
+    "company": {"type": ["string", "null"]},
+    "guides_2027_capex_above_2026": _NULLABLE_BOOL,
+    "capex_2026_guidance_usd_b": _NULLABLE_NUM,
+    "note": _NULLABLE_STR,
+}
+
 NEWS_EVENT_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -110,8 +117,15 @@ NEWS_EVENT_SCHEMA = {
                         "properties": _COMPETITOR_PROPS,
                         "required": list(_COMPETITOR_PROPS.keys()),
                     },
+                    "capex_signals": {
+                        "type": ["object", "null"],
+                        "additionalProperties": False,
+                        "properties": _CAPEX_PROPS,
+                        "required": list(_CAPEX_PROPS.keys()),
+                    },
                 },
-                "required": ["news_index", "adr_signals", "competitor_signals"],
+                "required": ["news_index", "adr_signals", "competitor_signals",
+                             "capex_signals"],
             },
         }
     },
@@ -123,6 +137,7 @@ _PROMPT_HEADER = """You are extracting STRUCTURED EVENT SIGNALS from today's mem
 Extract ONLY facts the text explicitly states. If an item states no listed signal, do not emit an extraction object for it. Never infer, never extrapolate from general commentary. Dates as YYYY-MM-DD. Sizes in USD billions (26.5 for "$26.5 billion"). Only emit an adr_signals or competitor_signals object when at least one of its fields is non-null; otherwise use null for that whole object.
 
 SIGNALS — ADR (SK Hynix US listing lifecycle): f1_canceled (offering pulled/withdrawn); underwriter_syndicate (named banks); roadshow_active; demand_classification strong|normal|weak (oversubscription/books language); pricing_day; pricing_discount_pct (discount to prior close); final_size_usd_b; insider_sale_event (a NAMED insider selling, with USD millions and date).
+SIGNALS — CapEx guidance (FIRST-PARTY prints only — never analyst forecasts): company (MSFT|GOOG|Alphabet|META|AMZN|Amazon|ORCL|Oracle); guides_2027_capex_above_2026 (true ONLY if the company's own print/guidance states 2027 capex above/increasing vs 2026); capex_2026_guidance_usd_b (company-guided 2026 number if stated, in USD billions); note (short quote).
 SIGNALS — Competitor: us_export_controls_easing_event (BIS easing re China memory equipment); cxmt_oem_mainstream_win (named OEM adopting CXMT for mainstream products); samsung_hbm4e_announcement; amd_samsung_hbm4_supply_mou; jedec_hbf_spec_ratified; sk_hynix_solidigm_hbf_integration; sandisk_kioxia_hbf_milestone (milestone description); hbf_hyperscaler_design_win ("<hyperscaler>+<accelerator>+<tier>"); hbf_hot_tier_displacement (HBM displaced in the HOT tier specifically).
 
 TODAY'S ITEMS:
@@ -165,7 +180,7 @@ def _entries_from_extractions(parsed: dict, news_items: list, now_iso: str) -> l
         url = (getattr(item, "url", "") or "").strip()
         title = (getattr(item, "title", "") or "").strip()
         pub_iso = str(getattr(item, "published", "") or now_iso)
-        for key in ("adr_signals", "competitor_signals"):
+        for key in ("adr_signals", "competitor_signals", "capex_signals"):
             group = ex.get(key)
             if not isinstance(group, dict):
                 continue

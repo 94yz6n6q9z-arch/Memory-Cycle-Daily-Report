@@ -895,36 +895,48 @@ def repair_t4_layoffs_bu_misfire(store: dict) -> Optional[dict]:
         if ev is None:
             return None
         entries = list(getattr(ev, "evidence_log", None) or [])
-        if any(T4_BU_REPAIR_V2_TAG.lower() in (getattr(e, "value", "") or "").lower()
-               for e in entries):
-            return None  # v2 already ran
         substantive = [
             e for e in entries
             if not _t4_is_marker(f"{getattr(e, 'value', '')} {getattr(e, 'source', '')}")
         ]
-        poison = [
+        # v3.41.17 — idempotent, runs EVERY day: the v2 run-once tag meant the
+        # Jul-22/23 re-fire entries (written after v2 ran) were never cleaned.
+        # Already-prefixed entries are markers and drop out of `substantive`,
+        # so re-invalidation is naturally impossible; only NEW poison acts.
+        poison_new = [
             e for e in substantive
             if _t4_is_nonmemory_samsung_layoff(
                 f"{getattr(e, 'value', '')} {getattr(e, 'source', '')}")
         ]
-        if not poison:
-            return None
         memory_ctx_present = any(
             any(t in _t4_scrub(f"{getattr(e, 'value', '')} {getattr(e, 'source', '')}")
                 for t in _T4_MEMORY_CTX)
             for e in substantive
         )
         if memory_ctx_present:
-            logger.warning(
-                "[t4-repair] non-memory-BU entries found ALONGSIDE genuine "
-                "memory-context evidence — not auto-repairing; review "
-                "state/indicator_evidence.json manually."
-            )
+            if poison_new:
+                logger.warning(
+                    "[t4-repair] non-memory-BU entries found ALONGSIDE genuine "
+                    "memory-context evidence — not auto-repairing; review "
+                    "state/indicator_evidence.json manually."
+                )
             return None
-        for e in poison:
+        has_prior_invalidated = any(
+            (getattr(e, "value", "") or "").startswith(T4_INVALIDATED_PREFIX)
+            for e in entries
+        )
+        # Revert a standing Fired when it rests on poisoned or already-
+        # invalidated evidence (and nothing memory-side supports it).
+        should_revert = (
+            getattr(ev, "current_status", "") == "Fired"
+            and (poison_new or has_prior_invalidated)
+        )
+        if not poison_new and not should_revert:
+            return None
+        for e in poison_new:
             e.value = T4_INVALIDATED_PREFIX + (getattr(e, "value", "") or "")
         status_reverted = False
-        if getattr(ev, "current_status", "") == "Fired":
+        if should_revert:
             ev.current_status = "Not fired"
             status_reverted = True
         today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -932,8 +944,8 @@ def repair_t4_layoffs_bu_misfire(store: dict) -> Optional[dict]:
             date=today_iso,
             type="data_point",
             value=(
-                f"{T4_BU_REPAIR_V2_TAG}: {len(poison)} evidence entr"
-                f"{'y' if len(poison) == 1 else 'ies'} invalidated — Samsung "
+                f"{T4_BU_REPAIR_V2_TAG}: {len(poison_new)} evidence entr"
+                f"{'y' if len(poison_new) == 1 else 'ies'} invalidated — Samsung "
                 f"non-memory-BU (smartphone/consumer) job cuts are not firing "
                 f"evidence for this signal. 'Samsung' + 'layoffs' alone is "
                 f"never sufficient; firing requires explicit memory-operations "
@@ -942,7 +954,7 @@ def repair_t4_layoffs_bu_misfire(store: dict) -> Optional[dict]:
                 + ("Status reverted to Not fired."
                    if status_reverted else "Status was already not Fired.")
             ),
-            source="v3.41.16 one-shot BU-scope repair (v2)",
+            source="v3.41.16+ BU-scope repair (idempotent since v3.41.17)",
             persistence="permanent",
             reversal_condition=(
                 "Memory-operations layoffs or memory-fab idling are "
@@ -951,13 +963,13 @@ def repair_t4_layoffs_bu_misfire(store: dict) -> Optional[dict]:
         ))
         return {
             "indicator_id": "t4_layoffs",
-            "invalidated": len(poison),
+            "invalidated": len(poison_new),
             "status_reverted": status_reverted,
             "old_status": "Fired" if status_reverted else getattr(ev, "current_status", "?"),
             "new_status": "Not fired",
             "description": (
-                f"Correction (v2): {len(poison)} Samsung non-memory-BU "
-                f"layoff entr{'y' if len(poison) == 1 else 'ies'} invalidated; "
+                f"Correction: {len(poison_new)} Samsung non-memory-BU "
+                f"layoff entr{'y' if len(poison_new) == 1 else 'ies'} invalidated; "
                 f"'Samsung'+'layoffs' is never sufficient — explicit "
                 f"memory-operations attribution required."
                 + (" Status reverted to Not fired." if status_reverted else "")

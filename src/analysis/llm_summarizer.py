@@ -1850,6 +1850,9 @@ NO STALE CARRYOVER (v3.41.5):
   - The brief covers TODAY. Do NOT re-narrate a prior-day story unless there is fresh, same-day news about it in today's feed. A story that resolved days or weeks ago is not today's news and must not lead — or even appear in — the summary absent a fresh development.
   - Yesterday's framing is not evidence. Anchor on today's news and the computed verdicts, never on how the thesis happened to be described in a previous brief.
 
+FIRST-PARTY GUIDANCE PRECEDENCE (v3.41.17):
+When an indicator card's threshold is phrased as COMPANY GUIDANCE (e.g. "any of MSFT/GOOG/META/AMZN/ORCL guides 2027 CapEx above 2026"), only the company's own earnings print or guidance can satisfy it. An analyst forecast of the same metric (Citi, Morgan Stanley, BofA, ...) is context — never describe it as "meeting", "confirming", or "triggering" the threshold. When a first-party print exists (today or in the events record), it MUST lead that card's where_we_stand and latest_developments; the analyst forecast may only corroborate, after it. Example: Alphabet's Q2 print guiding 2027 CapEx above 2026 satisfies the bull-confirm threshold; "Citi projects 2027 CapEx >$800B" does not and must not be cited as doing so.
+
 EARNINGS ECHO — new information vs repackaging (v3.41.9):
 An earnings print is a SINGLE event, and a fresh publish date on an article does NOT make an old event today's news. After a print has appeared in a prior brief, ask of every item referencing it: does it carry a NEW, ATTRIBUTABLE fact, or does it only restate what was already known? Consult the EARNINGS EVENTS ALREADY IN THE RECORD block (below the news) — it lists each recent print with its age, write-up count, and a FRESH/STALE tag.
 
@@ -1934,7 +1937,7 @@ OUTPUT FORMAT - respond with ONLY a JSON object:
 {json_example_phase_label}
     "tier_status_summary": "T1: X/6 fired | T2: Y/7 fired | T3: Z/5 fired | T4: W/4 fired",
     "new_triggers_today": [
-      {{"tier": 2, "indicator_id": "...", "indicator_name": "...", "description": "..."}}
+      {{"tier": 2, "indicator_id": "...", "indicator_name": "...", "old_status": "Not fired", "new_status": "Fired", "description": "..."}}
     ],
     "executive_brief": "5-8 sentence consolidated paragraph per EXECUTIVE BRIEF SPECIFICATION above. Lead with signal/indicator developments; summarize what's happening on the thesis (do NOT fabricate a driver for routine or broad/market-wide moves); bring in macro only when it has a channel into an indicator; no stale carryover. Use anchor links of the form [→§N] for cross-references.",
 {json_example_case_block}

@@ -576,6 +576,23 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
         f"{_ret_label(bull.return_to_peak_pct)} {bull.return_to_peak_pct:+.0f}%</span>"
         f"</div>"
     )
+    # v3.41.17 — scenario anchor context: the bear return is now computed
+    # from current price against the cycle-peak trough anchor; show the
+    # arithmetic so the number is never ambiguous again.
+    _sa = getattr(es, "scenario_anchor", None)
+    if isinstance(_sa, dict):
+        try:
+            _band = _sa.get("band") or (None, None)
+            cases_line += (
+                f"<div class='exec-line' style='font-size:12px;color:#5F5E5A'>"
+                f"Scenario anchor: SK Hynix ₩{_sa['current_price']:,.0f} vs cycle peak "
+                f"₩{_sa['peak_price']:,.0f} (<strong>{_sa['drawdown_now_pct']:+.0f}%</strong> from peak already). "
+                f"Bear trough anchor {_sa['bear_trough_from_peak_pct']:.0f}% from peak "
+                f"(historical band {_band[0]:.0f} to {_band[1]:.0f}%); bear return above is computed "
+                f"from the current price.</div>"
+            )
+        except Exception:
+            pass
 
     # v3.39.7.6 — `delta_line` construction removed entirely. v3.39.7.5
     # was supposed to consolidate the old three-block pattern
@@ -3152,44 +3169,66 @@ def _indicator_in_24h_trigger_log(es, indicator_id: str) -> bool:
         return False
 
 
+_STATUS_FROM_DESC_RE = re.compile(r"from '([^']+)' to '([^']+)'")
+
+
 def _build_generic_trigger_banner(trig: dict) -> str:
     """v3.41.15 — top-of-brief banner for ANY 24h-log transition.
 
-    Until now only two indicators had bespoke banners (relative strength,
-    EPS revisions); every other transition rendered as the exec-summary pill
-    only — the Jul-20 t4_layoffs fire produced no top alarm at all. This
-    generalizes it: red 🚨 for fired-direction moves, amber ⚠️ for
-    downgrades (including corrections, so a repair announces itself).
-    Same 24h clock as the pill.
+    v3.41.17 — shape-proof. The Jul-23 P/E fire rendered as an amber
+    "SIGNAL DOWNGRADE" with "Status: ? → ?": the fast_tier shape-conversion
+    stripped old_status/new_status (fixed at source) and this function
+    printed the literal "?" defaults and mis-classified direction. Now:
+    statuses resolve from keys when present, else parse from the description
+    ("from 'X' to 'Y'"); the status line renders only when both are known —
+    never "?"; the description renders only when it adds information beyond
+    the status line; unresolved direction defaults to the RED alarm (a
+    trigger event with unknown direction should alarm, not soothe).
     """
     name = trig.get("indicator_name") or trig.get("indicator_id") or "indicator"
     tier = trig.get("tier", "?")
-    old = trig.get("old_status") or "?"
-    new = trig.get("new_status") or "?"
+    old = trig.get("old_status")
+    new = trig.get("new_status")
     desc = trig.get("description") or ""
-    upgrade = (new == "Fired" and old != "Fired") or (
-        new == "Partially fired" and old == "Not fired"
+    if not old or not new:
+        m = _STATUS_FROM_DESC_RE.search(desc)
+        if m:
+            old, new = m.group(1), m.group(2)
+    known = bool(old) and bool(new)
+    if known:
+        upgrade = (new == "Fired" and old != "Fired") or (
+            new == "Partially fired" and old == "Not fired"
+        )
+    else:
+        upgrade = True  # unknown direction → alarm loudly, never soothe
+    status_line = (
+        f"Status: {html.escape(str(old))} → {html.escape(str(new))}."
+        if known else ""
     )
-    status_line = f"Status: {html.escape(str(old))} → {html.escape(str(new))}."
+    generic_phrase = (
+        f"Status changed from '{old}' to '{new}'." if known else None
+    )
+    show_desc = bool(desc) and desc != generic_phrase
     desc_html = (
         f"<div style='margin-top:6px;font-size:13px'>{html.escape(desc)}</div>"
-        if desc else ""
+        if show_desc else ""
     )
+    body = status_line or html.escape(desc)
     if upgrade:
         return (
             "<div class='urgent-banner' style='background:#FCEBEB;border:2px solid #A32D2D'>"
             f"<span class='label'>🚨 NEW TIER {html.escape(str(tier))} TRIGGER — "
             f"{html.escape(str(name))}</span><br/>"
-            f"<span class='text'>{status_line}</span>"
-            f"{desc_html}"
+            f"<span class='text'>{body}</span>"
+            f"{desc_html if status_line else ''}"
             "</div>"
         )
     return (
         "<div class='urgent-banner' style='background:#FFF6E0;border:2px solid #B58A1A'>"
         f"<span class='label' style='color:#7A5500'>⚠️ SIGNAL DOWNGRADE — "
         f"{html.escape(str(name))} (Tier {html.escape(str(tier))})</span><br/>"
-        f"<span class='text' style='color:#5A3F00'>{status_line}</span>"
-        f"{desc_html}"
+        f"<span class='text' style='color:#5A3F00'>{body}</span>"
+        f"{desc_html if status_line else ''}"
         "</div>"
     )
 

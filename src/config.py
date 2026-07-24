@@ -2489,6 +2489,15 @@ USE_STRUCTURED_TRIAGE = True
 # (no legacy fallback — the deterministic detector is unaffected).
 USE_NEWS_EVENT_EXTRACTOR = True
 
+# v3.41.17 — bear-case scenario anchor. memory_supercycle_analysis.docx,
+# Part 2: "average peak-to-trough drawdown for memory pure-plays 50-65%"
+# across all six prior cycles (and "steeper run-ups have historically
+# produced steeper declines"). The bear-case return in the brief is now
+# computed deterministically: trough = cycle peak x (1 + this/100), return
+# shown FROM CURRENT PRICE, with the realized drawdown displayed alongside.
+BEAR_TROUGH_FROM_PEAK_PCT = -57.5
+BEAR_TROUGH_BAND_PCT = (-65.0, -50.0)
+
 # Stage 2 — mid-tier reasoning model for tier classification, probability
 # synthesis, exec summary composition. Currently resolves to Sonnet 4.6;
 # will roll forward. The largest tier (`opus`) would be ~3-5x cost for
