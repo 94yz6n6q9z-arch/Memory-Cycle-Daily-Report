@@ -1,14 +1,5 @@
 [
   {
-    "indicator_id": "t2_pe_compressed",
-    "indicator_name": "Forward P/E compressed to 3-5x",
-    "tier": 2,
-    "old_status": "Not fired",
-    "new_status": "Fired",
-    "description": "Status changed from 'Not fired' to 'Fired'.",
-    "fired_at_iso": "2026-07-23T09:26:35.681256"
-  },
-  {
     "indicator_id": "t4_layoffs",
     "indicator_name": "Layoffs / fab idling",
     "tier": 4,
@@ -16,5 +7,14 @@
     "new_status": "Not fired",
     "description": "Status changed from 'Fired' to 'Not fired'.",
     "fired_at_iso": "2026-07-24T09:21:27.026579"
+  },
+  {
+    "indicator_id": "t2_eps_revisions",
+    "indicator_name": "Forward FY27/FY28 EPS revision direction \u2014 THE canonical Tier 2 signal",
+    "tier": 2,
+    "old_status": "Partially fired",
+    "new_status": "Not fired",
+    "description": "Status changed from 'Partially fired' to 'Not fired'.",
+    "fired_at_iso": "2026-07-25T08:45:14.052210"
   }
 ]
