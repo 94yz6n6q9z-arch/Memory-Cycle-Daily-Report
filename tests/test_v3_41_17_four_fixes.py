@@ -134,13 +134,14 @@ def test_banner_parses_description_and_renders_red_for_fire():
     assert "SIGNAL DOWNGRADE" not in h
 
 
-def test_banner_keys_beat_description_and_downgrade_is_amber():
+def test_banner_keys_beat_description_and_downgrade_is_green():
+    # v3.41.18 — destination coloring: → Not fired renders GREEN (was amber).
     h = T._build_generic_trigger_banner({
         "indicator_id": "x", "indicator_name": "X", "tier": 4,
         "old_status": "Fired", "new_status": "Not fired",
         "description": "Correction: BU gate"})
-    assert "⚠️ SIGNAL DOWNGRADE" in h and "Fired → Not fired" in h
-    assert "Correction: BU gate" in h
+    assert "✅ SIGNAL DOWNGRADE" in h and "Fired → Not fired" in h
+    assert "#EAF4E2" in h and "Correction: BU gate" in h
 
 
 def test_banner_unknown_direction_alarms_red_without_question_marks():

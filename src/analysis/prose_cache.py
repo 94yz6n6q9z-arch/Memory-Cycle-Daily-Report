@@ -183,12 +183,35 @@ def apply_status_guard(decisions: dict, cache: dict, current_status_by_id: dict)
     for ind_id, dec in decisions.items():
         if dec.get("action") != "reuse":
             continue
-        cached_status = (cache.get(ind_id) or {}).get("status")
+        entry = cache.get(ind_id) or {}
+        cached_status = entry.get("status")
         cur_status = current_status_by_id.get(ind_id)
         if cur_status is not None and cached_status is not None and cached_status != cur_status:
             decisions[ind_id] = {
                 "action": "regen",
                 "reason": f"status_mismatch(cached={cached_status},computed={cur_status})",
+            }
+            continue
+        # v3.41.18 — guard the field that RENDERS. `status` is Layer 2's
+        # verdict at cache time; `current_status` is the assessment prose the
+        # card actually displays. The Jul-23 P/E card froze with
+        # current_status='Fired' (Sonnet's own arithmetic) beside
+        # status='Not fired' (Layer 2) — the guard compared Layer 2 against
+        # Layer 2, equal by construction, and reused the contradiction for
+        # three briefs. A rendered status that disagrees with the live
+        # verdict must force regeneration.
+        rendered_status = entry.get("current_status")
+        if (
+            cur_status is not None
+            and rendered_status is not None
+            and rendered_status != cur_status
+        ):
+            decisions[ind_id] = {
+                "action": "regen",
+                "reason": (
+                    f"rendered_status_mismatch(cached_card={rendered_status},"
+                    f"computed={cur_status})"
+                ),
             }
     return decisions
 

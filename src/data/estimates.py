@@ -58,6 +58,35 @@ def fetch_estimates_yfinance(ticker_symbol: str, ticker_name: str) -> EstimateSn
     num_analysts = info.get("numberOfAnalystOpinions")
     forward_pe = info.get("forwardPE")
 
+    # v3.41.18 — deterministic fallback. On Jul-23/25 yfinance returned no
+    # forwardPE for any of the three memory names (and FMP 403'd), so
+    # computed_metrics["forward_pe"] was EMPTY, the v3.41.16 [pe-override]
+    # never ran, and t2_pe_compressed's status fell back to LLM discretion —
+    # Sonnet self-computed 4.25x and fired a Tier-2 trigger the deterministic
+    # path could not verify. When forwardPE is absent, compute it here from
+    # the same source's own price and forward EPS (both fields carry the
+    # ticker's native currency, so the ratio is unit-safe). The [pe-data]
+    # line makes the source of every P/E greppable per run.
+    pe_source = "yf.forwardPE" if forward_pe is not None else None
+    if forward_pe is None:
+        fwd_eps = info.get("forwardEps")
+        px = (
+            info.get("currentPrice")
+            or info.get("regularMarketPrice")
+            or info.get("regularMarketPreviousClose")
+        )
+        try:
+            if fwd_eps and px and float(fwd_eps) > 0:
+                forward_pe = float(px) / float(fwd_eps)
+                pe_source = "computed(price/forwardEps)"
+        except (TypeError, ValueError, ZeroDivisionError):
+            pass
+    logger.info(
+        f"[pe-data] {ticker_symbol}: "
+        + (f"{forward_pe:.2f}x via {pe_source}" if forward_pe is not None
+           else "unavailable (no forwardPE, no price/forwardEps pair)")
+    )
+
     # Try to get full forward estimates table
     fy_next = None
     fy_next2 = None

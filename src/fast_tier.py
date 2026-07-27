@@ -1266,6 +1266,23 @@ def run_fast_tier() -> int:
             )
             assessment.current_status = composite
 
+    # v3.41.18 — deterministic status for the RENDERED t2_pe_compressed card.
+    # v3.41.16's override corrected Layer 2's verdict and the evidence store
+    # but never touched Sonnet's indicator_assessments — the object that
+    # renders, becomes prior_state, and feeds the 24h trigger log. On Jul-23
+    # (computed forward_pe EMPTY: FMP 403 + yfinance blank) Sonnet
+    # self-computed 4.25x, wrote 'Fired', and that reached the reader as a
+    # red NEW TIER 2 TRIGGER banner and T2 7/7 while the store said Not
+    # fired. Rule: with computed data, the assessment status is the computed
+    # status; with NO computed data, it is slaved to Layer 2's verdict
+    # (evidence-store-governed) — Sonnet may never move this signal's status
+    # on its own arithmetic. MUST run before update_trigger_log_24h so the
+    # banner, log, and prior_state all see the corrected status.
+    try:
+        _override_t2_pe_assessment(analysis, computed_metrics, signal_reasonings)
+    except Exception as e:
+        logger.warning(f"[pe-override] assessment wiring failed (non-fatal): {e}")
+
     # v3.41.17 — deterministic bear-case return anchored to current price
     # (Sonnet keeps probabilities + base/bull path estimates).
     try:
@@ -1297,9 +1314,41 @@ def run_fast_tier() -> int:
             for a in (prior_state.get("indicator_assessments") or [])
             if isinstance(a, dict) and a.get("id")
         }
+        # v3.41.18 — attach the WHY to each transition. The authoritative-log
+        # switch (v3.39.11) traded Sonnet's evidence-bearing descriptions for
+        # the log's truth, and the log only knew the generic "Status changed
+        # from X to Y" phrase — so the top banners lost the trigger evidence
+        # the reader used to get. Source: Layer 2's own change reasoning
+        # (which already carries the deterministic override notes for P/E and
+        # the matrix, since those prepend to it). MUST pass through the
+        # machinery-leak sanitizer — Layer-2 notes contain version tags
+        # ("Per v3.41.16 rule…") that would otherwise land verbatim in the
+        # most prominent spot of the email. Sanitization happens HERE, not in
+        # state.py, because llm_summarizer imports state (cycle).
+        evidence_by_id: dict = {}
+        try:
+            from src.analysis.llm_summarizer import _strip_internal_jargon
+            for _r in (signal_reasonings or []):
+                _rid = getattr(_r, "signal_id", None)
+                if not _rid:
+                    continue
+                _ev = (
+                    (getattr(_r, "evidence_for_change_vs_yesterday", "") or "").strip()
+                    or (getattr(_r, "consensus_direction", "") or "").strip()
+                )
+                if not _ev:
+                    continue
+                _ev = _strip_internal_jargon(_ev) or ""
+                if len(_ev) > 320:
+                    _ev = _ev[:320].rsplit(" ", 1)[0].rstrip(",;:") + " …"
+                if _ev:
+                    evidence_by_id[_rid] = _ev
+        except Exception as _ev_err:
+            logger.warning(f"[trigger-log] evidence map build failed (non-fatal): {_ev_err}")
         log_entries = update_trigger_log_24h(
             prior_status_by_id=prior_status_by_id,
             current_assessments=analysis.indicator_assessments or [],
+            evidence_by_id=evidence_by_id,
         )
         # v3.39.10 — collapse to one NET transition per indicator for the
         # banners. The stored log keeps individual transitions; this only
@@ -2158,6 +2207,77 @@ def _reanchor_bear_case(analysis, price_history) -> None:
         )
     except Exception as e:
         logger.warning(f"[scenario-anchor] failed (non-fatal): {e}")
+
+
+def _override_t2_pe_assessment(analysis, computed_metrics: dict,
+                               signal_reasonings: list) -> None:
+    """v3.41.18 — slave the RENDERED t2_pe_compressed status to a
+    deterministic source. Companion to _override_t2_pe_from_computed (which
+    corrects Layer 2's verdict + the store): this one corrects the
+    IndicatorAssessment Sonnet emitted, closing the last leg where the
+    on-screen status could diverge from every deterministic truth.
+
+    - Computed forward_pe present (>=1 name): status = Fired if any name is
+      below its threshold, else Not fired (same rule as the Layer-2
+      override, so the two never disagree).
+    - Computed forward_pe EMPTY: status = Layer 2's verdict for
+      t2_pe_compressed (post-override, evidence-store-governed). Sonnet's
+      own arithmetic is never allowed to set this signal's status.
+    """
+    assessments = getattr(analysis, "indicator_assessments", None) or []
+    target = next((a for a in assessments
+                   if getattr(a, "id", None) == "t2_pe_compressed"), None)
+    if target is None:
+        return
+
+    pe = (computed_metrics or {}).get("forward_pe") or {}
+    thresholds = [
+        ("SK Hynix", "000660.KS", 5.0),
+        ("Samsung", "005930.KS", 6.0),
+        ("Micron", "MU", 8.0),
+    ]
+    breaches, readings, n_with_data = [], [], 0
+    for label, ticker, thr in thresholds:
+        v = pe.get(ticker)
+        if v is None:
+            continue
+        n_with_data += 1
+        readings.append(f"{label} {v:.2f}x({'<' if v < thr else '>='}{thr:g})")
+        if v < thr:
+            breaches.append(label)
+
+    if n_with_data > 0:
+        status = "Fired" if breaches else "Not fired"
+        basis = f"computed forward P/E — {'; '.join(readings)}"
+    else:
+        l2 = next((r for r in (signal_reasonings or [])
+                   if getattr(r, "signal_id", None) == "t2_pe_compressed"), None)
+        status = getattr(l2, "fired_status", None) if l2 is not None else None
+        if status not in ("Fired", "Partially fired", "Not fired"):
+            logger.info(
+                "[pe-override] assessment: no computed data and no Layer 2 "
+                "verdict — leaving Sonnet's status untouched"
+            )
+            return
+        basis = (
+            "no computed forward P/E available this run — status governed by "
+            "the evidence-backed verdict; a data-driven fire requires live "
+            "values below threshold (SK Hynix <5x, Samsung <6x, Micron <8x)"
+        )
+
+    old = getattr(target, "current_status", None)
+    if old != status:
+        target.current_status = status
+        note = f"Status set deterministically ({basis})."
+        prior_cvp = getattr(target, "change_vs_prior", None)
+        target.change_vs_prior = (
+            note if not prior_cvp else f"{note} {prior_cvp}"
+        )
+        logger.warning(
+            f"[pe-override] assessment: {old!r} → {status!r} ({basis})"
+        )
+    else:
+        logger.info(f"[pe-override] assessment agrees: {status!r} ({basis})")
 
 
 def _override_t2_pe_from_computed(signal_reasonings: list, computed_metrics: dict) -> None:

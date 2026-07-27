@@ -215,6 +215,14 @@ def load_trigger_log_24h(now_utc: Optional[datetime] = None) -> list[dict]:
     return pruned
 
 
+# v3.41.18 — matches the auto-generated transition phrase so the collapse
+# and the template can distinguish "no evidence attached" from an enriched
+# description.
+_GENERIC_TRANSITION_DESC_RE = re.compile(
+    r"^Status changed from '.*' to '.*'\.$"
+)
+
+
 def collapse_trigger_log_for_display(entries: list[dict]) -> list[dict]:
     """Collapse the 24h log to one NET transition per indicator for display.
 
@@ -247,13 +255,24 @@ def collapse_trigger_log_for_display(entries: list[dict]) -> list[dict]:
         latest_new = latest.get("new_status")
         if earliest_old == latest_new:
             continue  # round-trip nets to no change — nothing to announce
+        # v3.41.18 — carry the freshest ENRICHED description through the
+        # collapse instead of rebuilding the generic phrase (which discarded
+        # the evidence v3.41.18's update path now attaches). Walk legs
+        # newest→oldest; first non-generic description wins; none → the
+        # generic phrase for the NET move, exactly as before.
+        desc = f"Status changed from '{earliest_old}' to '{latest_new}'."
+        for leg in reversed(evs_sorted):
+            d = (leg.get("description") or "").strip()
+            if d and not _GENERIC_TRANSITION_DESC_RE.match(d):
+                desc = d
+                break
         collapsed.append({
             "indicator_id": latest.get("indicator_id"),
             "indicator_name": latest.get("indicator_name"),
             "tier": latest.get("tier"),
             "old_status": earliest_old,
             "new_status": latest_new,
-            "description": f"Status changed from '{earliest_old}' to '{latest_new}'.",
+            "description": desc,
             "fired_at_iso": latest.get("fired_at_iso", ""),
         })
 
@@ -319,6 +338,7 @@ def update_trigger_log_24h(
     prior_status_by_id: dict[str, str],
     current_assessments: list,
     now_utc: Optional[datetime] = None,
+    evidence_by_id: Optional[dict[str, str]] = None,
 ) -> list[dict]:
     """Merge today's observed transitions into the 24h log, prune, save, return.
 
@@ -331,6 +351,15 @@ def update_trigger_log_24h(
             the just-computed brief. Each must have .id, .name, .tier,
             .current_status. Pass directly from analysis.indicator_assessments.
         now_utc: optional datetime override for testing.
+        evidence_by_id: v3.41.18 — optional indicator_id → short evidence
+            string (pre-SANITIZED and pre-capped by the caller). When a
+            transition is logged and this map carries a non-empty string for
+            the indicator, it becomes the entry's description — the "why"
+            the banners lost when v3.39.11 made this log authoritative
+            (Sonnet's own descriptions were replaced by the generic
+            "Status changed from X to Y" phrase, which the template then
+            rightly suppresses as adding nothing). Absent/empty → the
+            generic phrase, exactly as before.
 
     Returns the final pruned + saved log — what should be passed to
     ExecutiveSummary.new_triggers_today. Each dict has keys: indicator_id,
@@ -368,13 +397,17 @@ def update_trigger_log_24h(
         if key in existing_keys:
             continue  # Already in log from earlier rerun today
 
+        evidence = (evidence_by_id or {}).get(indicator_id) or ""
         log.append({
             "indicator_id": indicator_id,
             "indicator_name": indicator_name,
             "tier": tier,
             "old_status": prior_status,
             "new_status": new_status,
-            "description": f"Status changed from '{prior_status}' to '{new_status}'.",
+            "description": (
+                evidence.strip()
+                or f"Status changed from '{prior_status}' to '{new_status}'."
+            ),
             "fired_at_iso": now_iso,
         })
         existing_keys.add(key)
@@ -844,8 +877,33 @@ _T4_MARKER_SNIPPETS = ("repair v3.41.15", "repair v3.41.16", "invalidated (non-m
 
 
 def _t4_scrub(text: str) -> str:
-    """Lowercase + remove 'non-memory' so it can't fake memory context."""
-    return (text or "").lower().replace("non-memory", "").replace("non memory", "")
+    """Lowercase + remove negated memory references so they can't fake
+    memory context. v3.41.18: 'not memory' / 'no memory' added — the Jul-24
+    Layer-2 transition note ('…smartphone division, not memory operations…')
+    registered as memory context through the v3.41.16/17 scrub, which only
+    knew the 'non-memory' spelling, and froze the repair on its own
+    corrective annotation."""
+    low = (text or "").lower()
+    for neg in ("non-memory", "non memory", "not memory", "no memory"):
+        low = low.replace(neg, "")
+    return low
+
+
+# v3.41.18 — absence statements. The May-9 bootstrap entry ("No layoffs or
+# fab idling announced at any of the three majors") is a statement that
+# NOTHING happened, yet its 'fab idl' substring passed the memory-context
+# check and froze the repair from the day v1 shipped (v1/v2/v3 never ran
+# once in production; the Jul-24 t4 revert came from Layer 2 alone). An
+# absence entry asserts no event — it can be neither firing evidence nor
+# proof of a genuine memory-side fire, so it is excluded from BOTH the
+# poison and the memory-context predicates.
+_T4_ABSENCE_RE = re.compile(
+    r"\bno\s+(?:new\s+)?(?:layoffs?|fab\s+idling|evidence)\b", re.IGNORECASE
+)
+
+
+def _t4_is_absence(text: str) -> bool:
+    return bool(_T4_ABSENCE_RE.search(text or ""))
 
 
 def _t4_is_marker(text: str) -> bool:
@@ -895,9 +953,12 @@ def repair_t4_layoffs_bu_misfire(store: dict) -> Optional[dict]:
         if ev is None:
             return None
         entries = list(getattr(ev, "evidence_log", None) or [])
+        # v3.41.18 — absence statements excluded alongside repair markers:
+        # they assert nothing happened and can support neither predicate.
         substantive = [
             e for e in entries
             if not _t4_is_marker(f"{getattr(e, 'value', '')} {getattr(e, 'source', '')}")
+            and not _t4_is_absence(f"{getattr(e, 'value', '')} {getattr(e, 'source', '')}")
         ]
         # v3.41.17 — idempotent, runs EVERY day: the v2 run-once tag meant the
         # Jul-22/23 re-fire entries (written after v2 ran) were never cleaned.

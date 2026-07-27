@@ -3185,6 +3185,18 @@ def _build_generic_trigger_banner(trig: dict) -> str:
     the status line; unresolved direction defaults to the RED alarm (a
     trigger event with unknown direction should alarm, not soothe).
     """
+    # v3.41.18 — colors keyed to the DESTINATION status, matching the
+    # exec-summary trigger pills (v3.4.1 convention) that render in the SAME
+    # email: → Fired red, → Partially fired amber, → Not fired green. The
+    # v3.41.15 banner knew only red-for-fired-direction / amber-for-the-rest,
+    # so a Fired→Not fired reversion sat in an amber warning box above an
+    # exec summary showing the same event as a green pill. Readability: the
+    # amber variant set label color #7A5500 but inherited the CSS class's
+    # DARK RED pill background (.urgent-banner .label) — dark olive on dark
+    # red, the unreadable titles in the Jul-24/25 briefs. Every variant now
+    # sets pill background AND text explicitly; dark pills always get white
+    # text (the v3.4.3.1 pill lesson). Unknown destination stays the red
+    # alarm (v3.41.17: alarm, never soothe).
     name = trig.get("indicator_name") or trig.get("indicator_id") or "indicator"
     tier = trig.get("tier", "?")
     old = trig.get("old_status")
@@ -3195,12 +3207,6 @@ def _build_generic_trigger_banner(trig: dict) -> str:
         if m:
             old, new = m.group(1), m.group(2)
     known = bool(old) and bool(new)
-    if known:
-        upgrade = (new == "Fired" and old != "Fired") or (
-            new == "Partially fired" and old == "Not fired"
-        )
-    else:
-        upgrade = True  # unknown direction → alarm loudly, never soothe
     status_line = (
         f"Status: {html.escape(str(old))} → {html.escape(str(new))}."
         if known else ""
@@ -3209,25 +3215,39 @@ def _build_generic_trigger_banner(trig: dict) -> str:
         f"Status changed from '{old}' to '{new}'." if known else None
     )
     show_desc = bool(desc) and desc != generic_phrase
+
+    if not known or new == "Fired":
+        # Fresh full fire — or unresolvable direction, which must alarm.
+        box_bg, box_border = "#FCEBEB", "#A32D2D"
+        pill_bg, body_color = "#B91C1C", "#791F1F"
+        label = f"🚨 NEW TIER {html.escape(str(tier))} TRIGGER — {html.escape(str(name))}"
+    elif new == "Partially fired":
+        box_bg, box_border = "#FFF6E0", "#B58A1A"
+        pill_bg, body_color = "#8A5A00", "#5A3F00"
+        if old == "Fired":
+            label = (f"⚠️ SIGNAL DOWNGRADE — {html.escape(str(name))} "
+                     f"(Tier {html.escape(str(tier))})")
+        else:
+            label = (f"⚠️ NEW TIER {html.escape(str(tier))} TRIGGER (PARTIAL) — "
+                     f"{html.escape(str(name))}")
+    else:  # → Not fired: the signal receded — green, per destination rule
+        box_bg, box_border = "#EAF4E2", "#4C8B3B"
+        pill_bg, body_color = "#2F6B2F", "#244F24"
+        label = (f"✅ SIGNAL DOWNGRADE — {html.escape(str(name))} "
+                 f"(Tier {html.escape(str(tier))})")
+
     desc_html = (
-        f"<div style='margin-top:6px;font-size:13px'>{html.escape(desc)}</div>"
+        f"<div style='margin-top:6px;font-size:13px;color:{body_color}'>"
+        f"{html.escape(desc)}</div>"
         if show_desc else ""
     )
     body = status_line or html.escape(desc)
-    if upgrade:
-        return (
-            "<div class='urgent-banner' style='background:#FCEBEB;border:2px solid #A32D2D'>"
-            f"<span class='label'>🚨 NEW TIER {html.escape(str(tier))} TRIGGER — "
-            f"{html.escape(str(name))}</span><br/>"
-            f"<span class='text'>{body}</span>"
-            f"{desc_html if status_line else ''}"
-            "</div>"
-        )
     return (
-        "<div class='urgent-banner' style='background:#FFF6E0;border:2px solid #B58A1A'>"
-        f"<span class='label' style='color:#7A5500'>⚠️ SIGNAL DOWNGRADE — "
-        f"{html.escape(str(name))} (Tier {html.escape(str(tier))})</span><br/>"
-        f"<span class='text' style='color:#5A3F00'>{body}</span>"
+        f"<div class='urgent-banner' style='background:{box_bg};"
+        f"border:2px solid {box_border}'>"
+        f"<span class='label' style='background:{pill_bg};color:#fff'>"
+        f"{label}</span><br/>"
+        f"<span class='text' style='color:{body_color}'>{body}</span>"
         f"{desc_html if status_line else ''}"
         "</div>"
     )

@@ -120,14 +120,40 @@ def test_fired_direction_renders_red_alarm():
                                               desc="Samsung confirms cuts"))
     assert "🚨 NEW TIER 4 TRIGGER" in h and "Layoffs / fab idling" in h
     assert "#A32D2D" in h and "Not fired → Fired" in h and "Samsung confirms" in h
-    assert "🚨" in T._build_generic_trigger_banner(_trig("Not fired", "Partially fired"))
+    # v3.41.18 — a PARTIAL fire is amber (destination coloring), still an
+    # upgrade-worded trigger, never the red 🚨.
+    hp = T._build_generic_trigger_banner(_trig("Not fired", "Partially fired"))
+    assert "⚠️" in hp and "(PARTIAL)" in hp and "#FFF6E0" in hp
 
 
-def test_downgrade_renders_amber_with_description():
+def test_downgrade_to_not_fired_renders_green_with_description():
+    # v3.41.18 — destination coloring: → Not fired is GREEN (the signal
+    # receded), matching the exec-summary pill in the same email. The
+    # v3.41.15 amber-for-every-downgrade contract is retired.
     h = T._build_generic_trigger_banner(
         _trig("Fired", "Not fired", desc="Correction: non-memory BU"))
-    assert "⚠️ SIGNAL DOWNGRADE" in h and "#B58A1A" in h
+    assert "✅ SIGNAL DOWNGRADE" in h and "#EAF4E2" in h and "#2F6B2F" in h
     assert "Fired → Not fired" in h and "Correction" in h
+    assert "#FFF6E0" not in h  # no amber anywhere on a green banner
+
+
+def test_downgrade_to_partial_renders_amber():
+    h = T._build_generic_trigger_banner(
+        _trig("Fired", "Partially fired", desc="partial recede"))
+    assert "⚠️ SIGNAL DOWNGRADE" in h and "#FFF6E0" in h and "#8A5A00" in h
+
+
+def test_all_pills_have_explicit_white_text_on_dark_background():
+    # v3.41.18 — the Jul-24/25 unreadable titles: the amber variant set label
+    # color #7A5500 while inheriting the CSS class's dark-red pill
+    # background. Every variant must now set pill background AND white text.
+    for old, new in [("Not fired", "Fired"), ("Not fired", "Partially fired"),
+                     ("Fired", "Partially fired"), ("Fired", "Not fired"),
+                     ("Partially fired", "Not fired")]:
+        h = T._build_generic_trigger_banner(_trig(old, new))
+        assert "color:#fff" in h, (old, new)
+        assert "background:" in h.split("class='label'")[1].split(">")[0], (old, new)
+        assert "#7A5500" not in h, (old, new)
 
 
 def test_banner_block_wired_with_bespoke_dedup_and_cap():

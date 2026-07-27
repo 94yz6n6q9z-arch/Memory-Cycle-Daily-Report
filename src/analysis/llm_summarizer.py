@@ -2025,15 +2025,28 @@ If the LLM is tempted to write "no probability distribution changes
 warranted" because no NEW fires happened, this is a BUG — check for UNFIRES.
 A reduction in fired count is equally probability-moving as an increase.
 
-C. WHEN COMPUTED METRICS CONTRADICT LAYER 2 VERDICTS (v3.39.7.3, updated v3.39.7.9):
+C. WHEN COMPUTED METRICS CONTRADICT LAYER 2 VERDICTS (v3.39.7.3, updated v3.39.7.9, scoped v3.41.18):
 For indicators whose status is primarily driven by computed numerical
 data (rel_strength_full, forward_pe, mean_capex_ocf_ratio_2q, eps_revisions
-weighted scoring), the COMPUTED VERDICT is authoritative. If Layer 2
-returns "Not fired" with evidence_count=0 BUT the computed data shows
-the threshold is crossed, REJECT Layer 2 and use the computed verdict.
-Explicitly note this in `where_we_stand`: "Computed verdict: Fired
-(P/E 4.56x < 5x threshold). Layer 2 returned Not fired with evidence_count=0
-but is overridden per v3.39.7.3 computed-metric authority rule."
+weighted scoring), the COMPUTED VERDICT is authoritative — but ONLY when
+the COMPUTED METRICS block above actually shows a value for that metric.
+If it does and Layer 2 returns "Not fired" with evidence_count=0 while the
+computed value crosses the threshold, use the computed verdict, and state
+it in plain numbers: "Forward P/E 4.56x, below the 5x threshold — Fired."
+
+WHEN THE COMPUTED METRIC IS ABSENT (v3.41.18 — HARD RULE): if the COMPUTED
+METRICS block shows no value or "(not computed)" for a metric, you MUST NOT
+substitute your own arithmetic — do not derive a P/E from prices and EPS
+estimates, do not lift one from a broker note, do not recall one from a
+prior brief. An absent computed metric means the deterministic path could
+not verify the number this run; the Layer 2 verdict (which carries the
+evidence store) governs that signal's status today, and the prose may say
+the computed inputs were unavailable. Named counterexample: a prior brief
+fired the Tier-2 P/E trigger on a self-derived "4.25x (price ÷ EPS
+estimate)" while the computed block was empty — that flip reached the
+reader as a trigger event no deterministic input supported. Deriving a
+status-moving number yourself is ALWAYS an error, however plausible the
+arithmetic.
 
 D. BEAR CASE MAGNITUDE CALIBRATION (v3.39.7.4 — DO NOT SKIP):
 

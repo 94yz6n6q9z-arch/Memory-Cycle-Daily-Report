@@ -50,6 +50,50 @@ EXTRACTOR_TAG = "news_event_extractor_v3.41.13"
 MAX_ITEMS = 150
 MAX_TOKENS = 8000
 
+# v3.41.18 — consecutive-failure sentinel. The v3.41.13 schema bug 400'd
+# EVERY structured call for 16 days and the fail-quiet design reduced it to
+# one WARNING per run — indistinguishable in practice from a healthy quiet
+# lane. Same disease locked decision #11 exists for. The lane stays
+# fail-quiet for the brief (no raise — a brand-new lane must not be able to
+# break the email), but after SENTINEL_THRESHOLD consecutive API/parse
+# failures the per-run log escalates to ERROR with the streak count, which
+# is loud in the Actions log. Config-level skips (flag off, no key, no news)
+# do NOT count and do NOT reset — only real attempts move the counter.
+SENTINEL_FILE = Path("state/news_event_extractor_consecutive_failures.json")
+SENTINEL_THRESHOLD = 5
+
+
+def _sentinel_read() -> int:
+    try:
+        return int(json.loads(SENTINEL_FILE.read_text()).get("consecutive", 0))
+    except Exception:
+        return 0
+
+
+def _sentinel_write(n: int) -> None:
+    try:
+        SENTINEL_FILE.parent.mkdir(parents=True, exist_ok=True)
+        SENTINEL_FILE.write_text(json.dumps({"consecutive": int(n)}))
+    except Exception as e:
+        logger.warning(f"[event-extract] sentinel write failed (non-fatal): {e}")
+
+
+def _sentinel_failure() -> None:
+    n = _sentinel_read() + 1
+    _sentinel_write(n)
+    if n >= SENTINEL_THRESHOLD:
+        logger.error(
+            f"[event-extract] SENTINEL: {n} consecutive failed runs — the "
+            f"news-event lane has produced nothing for {n} attempts. ADR "
+            f"8B/8D language detection, competitor events, and the capex "
+            f"first-party lane are all dark until this is fixed."
+        )
+
+
+def _sentinel_success() -> None:
+    if _sentinel_read():
+        _sentinel_write(0)
+
 _NULLABLE_BOOL = {"type": ["boolean", "null"]}
 _NULLABLE_STR = {"type": ["string", "null"]}
 _NULLABLE_NUM = {"type": ["number", "null"]}
@@ -58,7 +102,14 @@ _ADR_PROPS = {
     "f1_canceled": _NULLABLE_BOOL,
     "underwriter_syndicate": {"type": ["array", "null"], "items": {"type": "string"}},
     "roadshow_active": _NULLABLE_BOOL,
-    "demand_classification": {"type": ["string", "null"], "enum": ["strong", "normal", "weak", None]},
+    # v3.41.18 — NO enum here. The API's structured-output validator rejects
+    # `enum` combined with a union type ("Enum value 'strong' does not match
+    # declared type '['string', 'null']'") — this one line 400'd EVERY call
+    # since v3.41.13 shipped (Jul-10 → Jul-25: zero entries ever produced by
+    # this lane; the fail-quiet design hid it as a per-run WARNING). The
+    # allowed values live in the prompt; _normalize_demand_classification in
+    # the converter enforces them deterministically.
+    "demand_classification": _NULLABLE_STR,
     "pricing_day": _NULLABLE_STR,
     "pricing_discount_pct": _NULLABLE_NUM,
     "final_size_usd_b": _NULLABLE_NUM,
@@ -168,6 +219,21 @@ def _source_label(raw: str) -> str:
     return low or "news"
 
 
+_DEMAND_CLASSES = ("strong", "normal", "weak")
+
+
+def _normalize_demand_classification(group: dict) -> None:
+    """v3.41.18 — schema no longer enum-constrains demand_classification (the
+    API validator rejects enum-on-union); enforce the vocabulary here. An
+    unexpected value is dropped to None (stripped by the null filter) rather
+    than propagated into the ADR state machine."""
+    v = group.get("demand_classification")
+    if v is None:
+        return
+    low = str(v).strip().lower()
+    group["demand_classification"] = low if low in _DEMAND_CLASSES else None
+
+
 def _entries_from_extractions(parsed: dict, news_items: list, now_iso: str) -> list[dict]:
     entries: list[dict] = []
     for ex in parsed.get("extractions") or []:
@@ -184,6 +250,8 @@ def _entries_from_extractions(parsed: dict, news_items: list, now_iso: str) -> l
             group = ex.get(key)
             if not isinstance(group, dict):
                 continue
+            if key == "adr_signals":
+                _normalize_demand_classification(group)
             filtered = {k: v for k, v in group.items() if v is not None and v is not False}
             if not filtered:
                 continue
@@ -246,6 +314,7 @@ def extract_and_log_news_events(
                 f"run (deterministic detector unaffected)"
             )
             summary["reason"] = "api_error"
+            _sentinel_failure()
             return summary
 
         summary["ran"] = True
@@ -282,7 +351,9 @@ def extract_and_log_news_events(
             f"[event-extract] entries={summary['entries']} "
             f"dedup_skipped={summary['skipped_dedup']} stop_reason={stop_reason}"
         )
+        _sentinel_success()
     except Exception as e:
         logger.warning(f"[event-extract] failed (non-fatal): {e}")
         summary["reason"] = summary["reason"] or "error"
+        _sentinel_failure()
     return summary
