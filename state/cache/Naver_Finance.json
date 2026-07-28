@@ -1,12 +1,25 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-07-27T10:28:33.643652+00:00",
+    "fetched_at_iso": "2026-07-28T09:18:47.391349+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
         "code": "000660",
         "actions": [
+          {
+            "broker_korean": "\uba54\ub9ac\uce20",
+            "broker_english": "Meritz Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3100000,
+            "prior_target_krw": 2950000,
+            "target_change_pct": 5.08,
+            "direction": "raised",
+            "published_date_iso": "2026-07-27",
+            "raw": "\uba54\ub9ac\uce20 | 26/07/27 | 3,100,000 | 2,950,000 | 5.08 | Buy | Buy"
+          },
           {
             "broker_korean": "\ubbf8\ub798\uc5d0\uc14b",
             "broker_english": "Mirae Asset Securities",
@@ -34,19 +47,6 @@
             "raw": "\ub300\uc2e0 | 26/07/22 | 3,900,000 | 3,900,000 | 0.00 | Buy | Buy"
           },
           {
-            "broker_korean": "KB",
-            "broker_english": "KB Securities",
-            "rating": "BUY",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 4200000,
-            "prior_target_krw": 4200000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-07-22",
-            "raw": "KB | 26/07/22 | 4,200,000 | 4,200,000 | 0.00 | BUY | BUY"
-          },
-          {
             "broker_korean": "\ub2e4\uc62c\ud22c\uc790",
             "broker_english": "Daol Investment & Securities",
             "rating": "BUY",
@@ -58,6 +58,19 @@
             "direction": "maintained",
             "published_date_iso": "2026-07-22",
             "raw": "\ub2e4\uc62c\ud22c\uc790 | 26/07/22 | 4,200,000 | 4,200,000 | 0.00 | BUY | BUY"
+          },
+          {
+            "broker_korean": "KB",
+            "broker_english": "KB Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 4200000,
+            "prior_target_krw": 4200000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-07-22",
+            "raw": "KB | 26/07/22 | 4,200,000 | 4,200,000 | 0.00 | BUY | BUY"
           },
           {
             "broker_korean": "DS\ud22c\uc790",
@@ -255,17 +268,17 @@
             "raw": "\uc720\uc9c4\ud22c\uc790 | 26/06/17 | 3,700,000 | 3,200,000 | 15.62 | STRONG BUY | STRONG BUY"
           },
           {
-            "broker_korean": "\uba54\ub9ac\uce20",
-            "broker_english": "Meritz Securities",
-            "rating": "Buy",
+            "broker_korean": "\ud0a4\uc6c0",
+            "broker_english": "Kiwoom Securities",
+            "rating": "Outperform",
             "rating_english": "Buy",
             "prior_rating": "Buy",
-            "target_price_krw": 2950000,
-            "prior_target_krw": 2000000,
-            "target_change_pct": 47.5,
+            "target_price_krw": 2600000,
+            "prior_target_krw": 1900000,
+            "target_change_pct": 36.84,
             "direction": "raised",
-            "published_date_iso": "2026-06-10",
-            "raw": "\uba54\ub9ac\uce20 | 26/06/10 | 2,950,000 | 2,000,000 | 47.50 | Buy | Buy"
+            "published_date_iso": "2026-06-01",
+            "raw": "\ud0a4\uc6c0 | 26/06/01 | 2,600,000 | 1,900,000 | 36.84 | Outperform | Outperform"
           },
           {
             "broker_korean": "SK",
@@ -281,19 +294,6 @@
             "raw": "SK | 26/06/01 | 4,000,000 | 3,000,000 | 33.33 | \ub9e4\uc218 | \ub9e4\uc218"
           },
           {
-            "broker_korean": "\ud0a4\uc6c0",
-            "broker_english": "Kiwoom Securities",
-            "rating": "Outperform",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 2600000,
-            "prior_target_krw": 1900000,
-            "target_change_pct": 36.84,
-            "direction": "raised",
-            "published_date_iso": "2026-06-01",
-            "raw": "\ud0a4\uc6c0 | 26/06/01 | 2,600,000 | 1,900,000 | 36.84 | Outperform | Outperform"
-          },
-          {
             "broker_korean": "\uc720\uc548\ud0c0",
             "broker_english": "Yuanta Securities",
             "rating": "Buy",
@@ -305,33 +305,33 @@
             "direction": "raised",
             "published_date_iso": "2026-06-01",
             "raw": "\uc720\uc548\ud0c0 | 26/06/01 | 3,300,000 | 1,900,000 | 73.68 | Buy | Buy"
-          },
-          {
-            "broker_korean": "DB",
-            "broker_english": "DB Financial Investment",
-            "rating": "Buy",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 1750000,
-            "prior_target_krw": 1100000,
-            "target_change_pct": 59.09,
-            "direction": "raised",
-            "published_date_iso": "2026-04-24",
-            "raw": "DB | 26/04/24 | 1,750,000 | 1,100,000 | 59.09 | Buy | Buy"
           }
         ],
-        "n_actions": 24,
+        "n_actions": 23,
         "summary": {
           "avg_opinion_score": 4.0,
-          "avg_target_price_krw": 3626087,
-          "avg_eps_krw": 314202,
-          "avg_per": 5.6,
+          "avg_target_price_krw": 3632609,
+          "avg_eps_krw": 315593,
+          "avg_per": 5.75,
           "num_estimating_institutions": 23
         }
       },
       "Samsung Electronics": {
         "code": "005930",
         "actions": [
+          {
+            "broker_korean": "\uba54\ub9ac\uce20",
+            "broker_english": "Meritz Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 500000,
+            "prior_target_krw": 500000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-07-27",
+            "raw": "\uba54\ub9ac\uce20 | 26/07/27 | 500,000 | 500,000 | 0.00 | Buy | Buy"
+          },
           {
             "broker_korean": "KB",
             "broker_english": "KB Securities",
@@ -437,32 +437,6 @@
             "raw": "DB | 26/07/08 | 360,000 | 360,000 | 0.00 | Buy | Buy"
           },
           {
-            "broker_korean": "\ud604\ub300\ucc28",
-            "broker_english": "Hyundai Motor Securities",
-            "rating": "BUY",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 440000,
-            "prior_target_krw": 440000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-07-08",
-            "raw": "\ud604\ub300\ucc28 | 26/07/08 | 440,000 | 440,000 | 0.00 | BUY | BUY"
-          },
-          {
-            "broker_korean": "\uc720\uc9c4\ud22c\uc790",
-            "broker_english": "Eugene Investment & Securities",
-            "rating": "STRONG BUY",
-            "rating_english": "Strong Buy",
-            "prior_rating": "Strong Buy",
-            "target_price_krw": 560000,
-            "prior_target_krw": 560000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-07-08",
-            "raw": "\uc720\uc9c4\ud22c\uc790 | 26/07/08 | 560,000 | 560,000 | 0.00 | STRONG BUY | STRONG BUY"
-          },
-          {
             "broker_korean": "iM",
             "broker_english": "iM Securities",
             "rating": "Buy",
@@ -528,6 +502,32 @@
             "raw": "\ud558\ub098 | 26/07/08 | 480,000 | 480,000 | 0.00 | BUY | BUY"
           },
           {
+            "broker_korean": "\ud604\ub300\ucc28",
+            "broker_english": "Hyundai Motor Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 440000,
+            "prior_target_krw": 440000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-07-08",
+            "raw": "\ud604\ub300\ucc28 | 26/07/08 | 440,000 | 440,000 | 0.00 | BUY | BUY"
+          },
+          {
+            "broker_korean": "\uc720\uc9c4\ud22c\uc790",
+            "broker_english": "Eugene Investment & Securities",
+            "rating": "STRONG BUY",
+            "rating_english": "Strong Buy",
+            "prior_rating": "Strong Buy",
+            "target_price_krw": 560000,
+            "prior_target_krw": 560000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-07-08",
+            "raw": "\uc720\uc9c4\ud22c\uc790 | 26/07/08 | 560,000 | 560,000 | 0.00 | STRONG BUY | STRONG BUY"
+          },
+          {
             "broker_korean": "\ud55c\ud654\ud22c\uc790",
             "broker_english": "Hanwha Investment & Securities",
             "rating": "Buy",
@@ -552,19 +552,6 @@
             "direction": "maintained",
             "published_date_iso": "2026-07-07",
             "raw": "BNK\ud22c\uc790 | 26/07/07 | 430,000 | 430,000 | 0.00 | \ub9e4\uc218 | \ub9e4\uc218"
-          },
-          {
-            "broker_korean": "\uba54\ub9ac\uce20",
-            "broker_english": "Meritz Securities",
-            "rating": "Buy",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 500000,
-            "prior_target_krw": 420000,
-            "target_change_pct": 19.05,
-            "direction": "raised",
-            "published_date_iso": "2026-07-06",
-            "raw": "\uba54\ub9ac\uce20 | 26/07/06 | 500,000 | 420,000 | 19.05 | Buy | Buy"
           },
           {
             "broker_korean": "\uad50\ubcf4",
@@ -649,8 +636,8 @@
         "summary": {
           "avg_opinion_score": 4.04,
           "avg_target_price_krw": 513958,
-          "avg_eps_krw": 46664,
-          "avg_per": 5.35,
+          "avg_eps_krw": 46642,
+          "avg_per": 5.45,
           "num_estimating_institutions": 24
         }
       },
@@ -832,11 +819,11 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 853692,
           "avg_eps_krw": 125347,
-          "avg_per": 5.03,
+          "avg_per": 4.97,
           "num_estimating_institutions": 13
         }
       }
     }
   },
-  "fetched_at_iso": "2026-07-27T10:29:15.531697"
+  "fetched_at_iso": "2026-07-28T09:19:27.396523"
 }
