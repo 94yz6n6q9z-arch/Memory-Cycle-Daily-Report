@@ -1,10 +1,10 @@
 {
-  "written_at_iso": "2026-07-27T10:27:45.086755+00:00",
+  "written_at_iso": "2026-07-28T09:17:53.970585+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 0,
     "materials_only": 0,
-    "nothing": 2,
+    "nothing": 1,
     "already_processed": 33,
     "by_company": {
       "Micron": "already_processed",
@@ -178,10 +178,10 @@
     },
     {
       "company": "SK Hynix",
-      "ticker": "000660.KS",
-      "availability": "nothing",
-      "source_name": "SK Hynix IR",
-      "note": "IR RSS feed returned 10 entries but none matched earnings keywords. Newsroom may have shifted naming conventions.",
+      "ticker": "HY9H.MU",
+      "availability": "already_processed",
+      "source_name": "Yahoo Finance",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
@@ -198,14 +198,6 @@
       "availability": "nothing",
       "source_name": "Micron IR",
       "note": "IR page loaded but no earnings/transcript links matched. Site may have been redesigned \u2014 selectors need review. Reliability hint: high.",
-      "char_count": 0
-    },
-    {
-      "company": "SK Hynix",
-      "ticker": "HY9H.MU",
-      "availability": "already_processed",
-      "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
