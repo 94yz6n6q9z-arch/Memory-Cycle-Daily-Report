@@ -148,6 +148,14 @@ def fetch_estimates_fmp(ticker_symbol: str, ticker_name: str, api_key: str) -> O
         resp = requests.get(url, timeout=10)
         resp.raise_for_status()
         data = resp.json()
+        # v3.42.0 — [fmp-health]: the positive-path line we lacked. Until now
+        # FMP only ever logged on FAILURE, so "no warnings" was
+        # indistinguishable from "silently never called" — and a dead key
+        # (403 since at least Jul-23) could only be inferred, never confirmed
+        # fixed. One INFO line per successful call makes FMP status greppable
+        # in every run log.
+        logger.info(f"[fmp-health] {ticker_symbol}: HTTP {resp.status_code}, "
+                    f"{len(data) if isinstance(data, list) else 'obj'} rows (legacy /api/v3)")
 
         if not data or not isinstance(data, list):
             return None

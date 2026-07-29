@@ -1,3 +1,89 @@
+# v3.42.0 — 2026-07-29 — Tape Circuit Breaker + one-truth computed verdicts + post-peak state
+
+Postmortem release for the July 2026 unwind (peak ₩2,919,000 on 2026-06-26 →
+−52% by Jul-29 with zero Tier-3 fires and the brief printing "+13% upside to
+peak" mid-crash), and for the Jul-29 brief's internal contradictions.
+
+## 1. Tape Circuit Breaker (NEW: src/analysis/tape_circuit_breaker.py)
+Deterministic price/volume exit-state machine. No LLM anywhere in the loop;
+computed before any model runs; renders as the topmost banner always;
+un-overridable. Levels carry action semantics: L1 TAPE ALERT, L2 DE-RISK —
+peak likely behind us, L3 SELL — thesis stopped out. Components: shock day
+(≤−3σ/−8% in trailing 15 sessions), drawdown (−20% fire / −30% stopout vs
+250d high), distribution (≥4 heavy-volume down days in 20 sessions; degrades
+to no_data without volume), trend break (close < falling 50d MA, 20d<50d);
+failed_good_news reserved (Release B). Ratchets up instantly; de-escalates
+only after 10 closes above the 50d MA AND drawdown inside −15%. Own OHLCV
+fetch (shared price frame is closes-only); state/tcb_state.json; stale-data
+fallback serves the last verdict flagged STALE. Synthetic replay of the 2026
+shape: L2 at −21.6%, L3 at −31.1% — versus riding it to −52%.
+Calibration: scripts/tcb_backtest.py + docs/tcb_backtest_workflow.yml
+(paste manually as .github/workflows/tcb_backtest.yml — deploy never touches
+workflows) replays 2018/2021-22/2024/2026 and prints level-transition dates.
+Thresholds are provisional pending that replay.
+
+## 2. Post-peak state is now shown deterministically
+TCB level ≥2 forces post-peak framing regardless of the fundamental phase:
+the exec summary renders a red TAPE STATE: POST-PEAK line (peak price/date,
+drawdown), the scenario block flips to the trough anchor noun (the v3.4.11
+Phase-5 mechanism, now TCB-triggerable), and the Sonnet prompt carries a
+HARD RULE (peak_months_away=0, returns to the trough band, laggard
+indicators described as lagging the tape). Phase-machine advance itself is
+untouched (locked decision #9); TCB-L3 as a Phase-5 condition is a Release B
+design item.
+
+## 3. Computed-verdict table (NEW: src/analysis/computed_verdicts.py)
+The Jul-29 brief carried t2_eps_revisions as FIRED (deterministic 30d score
+−18 < −15) in its own banner and "Partially fired" in the assessment — the
+same two-truths disease v3.41.18 fixed for P/E alone. One evaluator per
+computed indicator now owns the status, applied on BOTH legs (pre-store to
+Layer 2 reasonings, post-Sonnet to assessments): t2_pe_compressed
+(two-sided), t2_eps_revisions (up_only: score < −15 forces Fired; cadence
+partials above it stay with Layer 2), t3_relative_strength (two-sided from
+severity), t2_hyperscaler_capex_revenue (two-sided, locked 40/50%
+thresholds). t1_spot_decline keeps its existing matrix override.
+
+## 4. Exec-pill truth fix (v3.41.18 regression)
+The pill only knew Sonnet's legacy to_status key; 24h-log entries carry
+new_status, so it always fell through to regex-parsing the description —
+which, once .18 enriched descriptions with evidence containing historical
+phrases ("transitioned to 'Not fired' on 2026-06-18"), colored the Jul-29
+P/E RE-FIRE green under a red top banner. Keys first everywhere; the regex
+survives only for entries with no status keys at all.
+
+## 5. Render-side machinery-leak guard (fail-closed)
+Jul-29 banner text carried fired_status_evidence='supports_not_fired',
+"deep-tier evidence", "Layer 2 transitions". Build-site sanitizer vocabulary
+extended (llm_summarizer._JARGON_SUBS), and template._RENDER_JARGON_RE now
+suppresses any description still carrying internal vocabulary at render
+time — the status line always stands alone, so dropping a leaky description
+costs nothing.
+
+## 6. Relative strength: S&P 500 OR-path
+The SOX is ~40% memory: in a memory unwind the spread mean-reverts exactly
+when it matters (fired Jul-6, unfired mid-crash). SK Hynix/Micron 5d spreads
+vs S&P 500 (already in BENCHMARKS) now OR-compose with the SOX path at the
+same −10/−5pp thresholds (provisional pending backtest); can only catch more.
+
+## 7. t3_eps_miss_guidance contrarian hard rules (config spec)
+Jul-29 inversion: SK Hynix's first miss with guidance maintained — the
+textbook Scenario-B fire — was REVERTED to Not fired with the fire condition
+recited as the reversal reasoning. The spec now carries the named
+counterexample, the reversal≠fire-condition rule, and fired-on-print
+persistence until the next print. Full determinization via an
+earnings-actuals feed is Release B.
+
+## 8. [fmp-health] positive-path probe (estimates.py)
+FMP only ever logged on failure; a dead key (403 since ≤Jul-23) could be
+inferred but never confirmed fixed. One INFO line per successful call.
+
+Tests: tests/test_v3_42_0_tcb_and_truth.py (23). Suite: 1366 passed, 39
+failed — failing set byte-identical to the v3.41.18 baseline (env-dependent
+set; zero regressions).
+
+MANUAL STEP: paste docs/tcb_backtest_workflow.yml as
+.github/workflows/tcb_backtest.yml via the web editor (one-time).
+
 # Memory Cycle Brief — Changelog
 
 > Note: this changelog skips from v3.8.6 to v3.41.6. The intervening releases (the v3.39.x / v3.40.x / v3.41.x streams) were tracked in `CLAUDE.md`'s inline changelog and per-release `RELEASE_NOTES_*.md`, not here. This entry resumes the canonical changelog.

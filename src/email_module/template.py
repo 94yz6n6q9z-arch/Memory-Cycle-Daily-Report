@@ -70,6 +70,10 @@ def build_email_html(
     upcoming_events: Optional[list[dict]] = None,
     rel_strength_verdict: Optional[dict] = None,
     eps_scoring_verdict: Optional[dict] = None,
+    # v3.42.0 — Tape Circuit Breaker verdict. Renders as the TOPMOST banner
+    # always, and at level >= 2 forces post-peak framing in the executive
+    # summary regardless of the fundamental phase.
+    tcb_verdict: Optional[dict] = None,
     brief_datetime: Optional[datetime] = None,
     # v3.39.2: new supercycle chart. When provided, renders as its own
     # section between "Performance overview" and "Tier indicators". When
@@ -232,6 +236,14 @@ def build_email_html(
     # red status stays visible in §3 and the t3 card; the banner no longer
     # persists day after day while the signal remains fired.
     _bespoke_rendered: set = set()
+
+    # 0a. v3.42.0 — TAPE CIRCUIT BREAKER: always the first banner. L1 amber,
+    # L2/L3 red family; STALE data flagged; components listed with values.
+    # This is the deterministic exit-state machine — no LLM writes a word
+    # of it and nothing below may soften it.
+    if tcb_verdict and int(tcb_verdict.get("level", 0)) >= 1:
+        parts.append(_build_tcb_banner(tcb_verdict))
+
     if (
         rel_strength_verdict
         and rel_strength_verdict.get("overall_fired")
@@ -272,7 +284,7 @@ def build_email_html(
     # consolidated 5-8 sentence paragraph) with anchor link substitution. The
     # old _build_big_movers and market_summary renders are GONE — both themes
     # are now folded into the consolidated paragraph.
-    parts.append(_build_executive_summary(es))
+    parts.append(_build_executive_summary(es, tcb_verdict=tcb_verdict))
 
     # 3. Performance section
     #
@@ -450,7 +462,7 @@ def build_email_html(
     return "\n".join(parts)
 
 
-def _build_executive_summary(es: ExecutiveSummary) -> str:
+def _build_executive_summary(es: ExecutiveSummary, tcb_verdict: Optional[dict] = None) -> str:
     """Render the executive summary in the format Raul specified."""
 
     # Phase line
@@ -475,8 +487,21 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
     if es.new_triggers_today:
         trigger_lines = []
         for trig in es.new_triggers_today:
-            description = trig.get('description', '')
-            to_status = trig.get('to_status') or ''
+            description = _clean_render_desc(trig.get('description', ''))
+            if not description:
+                _o = trig.get('old_status') or '?'
+                _n = trig.get('new_status') or trig.get('to_status') or '?'
+                description = f"Status changed from '{_o}' to '{_n}'." 
+            # v3.42.0 — KEYS FIRST. The 24h-log entries carry
+            # old_status/new_status; this builder only knew Sonnet's legacy
+            # 'to_status' key, always came up empty for log entries, and fell
+            # through to regex-parsing the description — which, once .18
+            # enriched descriptions with evidence (containing historical
+            # phrases like "transitioned to 'Not fired' on 2026-06-18"),
+            # colored the Jul-29 P/E RE-FIRE green. Structured keys are the
+            # only truth; the regex survives strictly as a legacy fallback
+            # for entries with no status keys at all.
+            to_status = (trig.get('to_status') or trig.get('new_status') or '')
             # Parse destination from description if to_status not provided.
             # Look for "to 'X'" pattern at end of typical phrasing.
             if not to_status:
@@ -548,10 +573,33 @@ def _build_executive_summary(es: ExecutiveSummary) -> str:
     # TROUGH ahead of us. The return field stays signed; only the labels
     # and anchor noun change.
     is_phase_5 = int(getattr(es, "current_phase", 4) or 4) >= 5
-    anchor_noun = "trough" if is_phase_5 else "peak"
-    anchor_noun_cap = "Trough" if is_phase_5 else "Peak"
+    # v3.42.0 — the Tape Circuit Breaker at level >= 2 forces post-peak
+    # framing regardless of the fundamental phase. The fundamental stack
+    # spent July printing "+13% upside to peak" at -30%; the tape now owns
+    # this switch deterministically.
+    _tcb_post_peak = bool(tcb_verdict and tcb_verdict.get("post_peak"))
+    post_peak = is_phase_5 or _tcb_post_peak
+    anchor_noun = "trough" if post_peak else "peak"
+    anchor_noun_cap = "Trough" if post_peak else "Peak"
+
+    _tape_line = ""
+    if _tcb_post_peak and not is_phase_5 and isinstance(tcb_verdict, dict):
+        _pp = tcb_verdict.get("peak_price")
+        _pd = tcb_verdict.get("peak_date")
+        _dd = tcb_verdict.get("drawdown_pct")
+        _lv = int(tcb_verdict.get("level", 0))
+        _tape_line = (
+            f"<div class='exec-line' style='margin-top:14px;padding:8px 12px;"
+            f"background:#F6E0E0;border-left:4px solid #7A1212;color:#5A0E0E'>"
+            f"<strong>TAPE STATE: POST-PEAK (Circuit Breaker L{_lv}).</strong> "
+            f"The cycle peak — ₩{_pp:,.0f} on {html.escape(str(_pd))} — is behind us; "
+            f"drawdown {_dd:+.1f}%. The scenario estimates below are re-anchored to the "
+            f"trough; any peak-ahead language surviving in prose is superseded by this state."
+            f"</div>"
+        ) if _pp else ""
 
     peak_line = (
+        f"{_tape_line}"
         f"<div class='exec-line' style='margin-top:14px'>"
         f"Based on latest information, our <strong>base case "
         f"(prob {base.probability_pct:.0f}%)</strong> estimates the {anchor_noun} is "
@@ -3171,6 +3219,89 @@ def _indicator_in_24h_trigger_log(es, indicator_id: str) -> bool:
 
 _STATUS_FROM_DESC_RE = re.compile(r"from '([^']+)' to '([^']+)'")
 
+# v3.42.0 — render-side machinery-leak guard (fail-closed). The Jul-29 brief
+# put `fired_status_evidence='supports_not_fired'`, "deep-tier evidence" and
+# "Layer 2 transition" into reader-facing banner text: the build-site
+# sanitizer only knew version tags. Any description still carrying internal
+# vocabulary at RENDER time is suppressed entirely — the status line always
+# stands on its own, so dropping a leaky description costs nothing.
+_RENDER_JARGON_RE = re.compile(
+    r"fired_status_evidence|supports_not_fired|supports_fired|raw_evidence"
+    r"|Layer\s*[23]|deep-tier|fast-tier|evidence store|weighted[_\s]scoring"
+    r"|reversal condition|signal_specific|key_metrics|per v\d|v\d+\.\d+"
+    r"|prose[- ]cache|trigger log|_id\b|=='|='",
+    re.IGNORECASE,
+)
+
+
+def _clean_render_desc(desc: str) -> str:
+    if desc and _RENDER_JARGON_RE.search(desc):
+        return ""
+    return desc or ""
+
+
+def _build_tcb_banner(tcb: dict) -> str:
+    """v3.42.0 — Tape Circuit Breaker banner. Always first. Deterministic."""
+    level = int(tcb.get("level", 0))
+    action = str(tcb.get("action", ""))
+    since = tcb.get("level_since", "")
+    stale = tcb.get("data_status") == "stale"
+    dd = tcb.get("drawdown_pct")
+    peak_p = tcb.get("peak_price")
+    peak_d = tcb.get("peak_date")
+    last_c = tcb.get("last_close")
+    last_d = tcb.get("last_date")
+
+    if level >= 3:
+        box_bg, box_border, pill_bg, body = "#F6E0E0", "#7A1212", "#7A1212", "#5A0E0E"
+        icon = "🛑"
+    elif level == 2:
+        box_bg, box_border, pill_bg, body = "#FCEBEB", "#A32D2D", "#B91C1C", "#791F1F"
+        icon = "🚨"
+    else:
+        box_bg, box_border, pill_bg, body = "#FFF6E0", "#B58A1A", "#8A5A00", "#5A3F00"
+        icon = "⚠️"
+
+    comp_bits = []
+    c = tcb.get("components") or {}
+    sh = c.get("shock") or {}
+    if sh.get("fired"):
+        comp_bits.append(f"shock day {sh.get('worst_ret_pct')}% on {sh.get('worst_day')}")
+    dr = c.get("drawdown") or {}
+    if dr.get("fired"):
+        comp_bits.append(f"drawdown {dr.get('drawdown_pct')}% from peak")
+    di = c.get("distribution") or {}
+    if di.get("fired"):
+        comp_bits.append(f"distribution: {di.get('days')} heavy-volume down days in 20 sessions")
+    elif di.get("status") == "no_data":
+        comp_bits.append("distribution: volume data unavailable")
+    tr = c.get("trend_break") or {}
+    if tr.get("fired"):
+        comp_bits.append("trend break: close below falling 50d MA, 20d < 50d")
+
+    head = f"{icon} TAPE CIRCUIT BREAKER — LEVEL {level}: {html.escape(action)}"
+    if stale:
+        head += " (STALE DATA — last computed verdict)"
+    lines = [
+        f"<span class='label' style='background:{pill_bg};color:#fff'>{head}</span><br/>",
+        f"<span class='text' style='color:{body}'>"
+    ]
+    if level >= 2 and peak_p and dd is not None:
+        lines.append(
+            f"<strong>Post-peak confirmed by the tape.</strong> Cycle peak "
+            f"₩{peak_p:,.0f} on {html.escape(str(peak_d))}; last close "
+            f"₩{last_c:,.0f} ({html.escape(str(last_d))}) = "
+            f"<strong>{dd:+.1f}%</strong> from peak. ")
+    if comp_bits:
+        lines.append("Components fired: " + html.escape("; ".join(comp_bits)) + ".")
+    lines.append(f" Level held since {html.escape(str(since))}; de-escalation "
+                 f"requires 10 closes above the 50d MA and drawdown inside -15%.")
+    lines.append("</span>")
+    return (
+        f"<div class='urgent-banner' style='background:{box_bg};"
+        f"border:2px solid {box_border}'>" + "".join(lines) + "</div>"
+    )
+
 
 def _build_generic_trigger_banner(trig: dict) -> str:
     """v3.41.15 — top-of-brief banner for ANY 24h-log transition.
@@ -3214,6 +3345,7 @@ def _build_generic_trigger_banner(trig: dict) -> str:
     generic_phrase = (
         f"Status changed from '{old}' to '{new}'." if known else None
     )
+    desc = _clean_render_desc(desc)
     show_desc = bool(desc) and desc != generic_phrase
 
     if not known or new == "Fired":

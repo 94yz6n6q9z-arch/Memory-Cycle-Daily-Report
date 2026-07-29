@@ -542,6 +542,13 @@ def run_fast_tier() -> int:
         logger.warning(f"Relative strength evaluation failed: {e}")
         rel_strength_verdict = {}
 
+    # v3.42.0 — Tape Circuit Breaker: deterministic price/volume exit-state
+    # machine, computed before any LLM touches anything. See
+    # src/analysis/tape_circuit_breaker.py for the level semantics
+    # (L1 TAPE ALERT / L2 DE-RISK / L3 SELL). Never raises; None = offline.
+    logger.info("Running Tape Circuit Breaker (price/volume state machine)...")
+    tcb_verdict = run_tape_circuit_breaker()
+
     # v3.39.7.9: Compute per-company 2-quarter capex/OCF mean, then cross-
     # company mean. Pre-v3.39.7.9 used snaps[0] (single quarter) — the May
     # 21 brief showed why: Amazon Q1 2026 OCF dipped to $26.03B (vs $54.46B
@@ -602,6 +609,7 @@ def run_fast_tier() -> int:
             for ticker, snaps in hyperscaler_capex.items()
         },
         "relative_strength_full": rel_strength_verdict,
+        "tape_circuit_breaker": tcb_verdict or {},
         "dart_material_disclosures": dart_data or {},
     }
 
@@ -985,6 +993,19 @@ def run_fast_tier() -> int:
     # deterministic status, mirroring the cycle-matrix injector pattern.
     try:
         _override_t2_pe_from_computed(signal_reasonings, computed_metrics)
+        # v3.42.0 — computed-verdict table, pre-store leg: every indicator
+        # with a deterministic verdict this run gets its Layer 2 status
+        # slaved to it BEFORE the evidence store records anything. Ends the
+        # per-indicator whack-a-mole (P/E in .16/.18, EPS-revisions and the
+        # exec/banner split on Jul-29).
+        try:
+            _cv = evaluate_computed_verdicts(computed_metrics, signal_reasonings)
+            apply_computed_verdicts(
+                signal_reasonings, _cv, status_attr="fired_status",
+                id_attr="signal_id", note_attr="evidence_for_change_vs_yesterday",
+                stage="pre-store")
+        except Exception as _cve:
+            logger.warning(f"[computed-verdict] pre-store apply failed (non-fatal): {_cve}")
     except Exception as e:
         logger.warning(f"[pe-override] failed (non-fatal): {e}")
 
@@ -1283,6 +1304,19 @@ def run_fast_tier() -> int:
     except Exception as e:
         logger.warning(f"[pe-override] assessment wiring failed (non-fatal): {e}")
 
+    # v3.42.0 — computed-verdict table, post-Sonnet leg: the rendered
+    # assessments (the objects that become prior_state and feed the 24h
+    # trigger log) are slaved to the same deterministic verdicts the store
+    # just recorded. One truth per indicator, both legs, every run.
+    try:
+        _cv2 = evaluate_computed_verdicts(computed_metrics, signal_reasonings)
+        apply_computed_verdicts(
+            analysis.indicator_assessments or [], _cv2,
+            status_attr="current_status", id_attr="id",
+            note_attr="change_vs_prior", stage="assessment")
+    except Exception as e:
+        logger.warning(f"[computed-verdict] assessment apply failed (non-fatal): {e}")
+
     # v3.41.17 — deterministic bear-case return anchored to current price
     # (Sonnet keeps probabilities + base/bull path estimates).
     try:
@@ -1561,6 +1595,7 @@ def run_fast_tier() -> int:
             signal_reasonings_by_id[sid] = rd
 
     html_body = build_email_html(
+        tcb_verdict=tcb_verdict,
         analysis=analysis,
         performance=performance,
         chart_base64=chart_b64,

@@ -24,6 +24,7 @@ import copy
 import json
 import logging
 import math  # v3.39.7.9 — defensive NaN guard in COMPUTED METRICS rendering
+import re  # v3.42.0 — _JARGON_SUBS additions compile at module scope
 from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
@@ -88,6 +89,22 @@ _VERSION_PAREN_RE = _re_leak.compile(r'\s*\((?:per\s+)?v\d+\.\d+(?:\.\d+)*[^)]*\
 _VERSION_INLINE_RE = _re_leak.compile(r'[\s,;—-]*\b(?:per|see|cf\.?|under)\s+v\d+\.\d+(?:\.\d+)*\b', _re_leak.I)
 _VERSION_BARE_RE = _re_leak.compile(r'\bv\d+\.\d+(?:\.\d+)*\b')
 _JARGON_SUBS = [
+    # v3.42.0 — Jul-29 leaked vocabulary (fired_status_evidence=
+    # 'supports_not_fired', "deep-tier evidence", "Layer 2 transition",
+    # "consensus fast-tier coverage" all reached reader-facing banner text;
+    # the template's _RENDER_JARGON_RE is the fail-closed backstop, this is
+    # the build-site cleanup so good descriptions survive).
+    (re.compile(r"fired_status_evidence\s*=\s*'[^']*'\s*,?\s*", re.I), ""),
+    (re.compile(r"\bsupports_(not_)?fired\b", re.I), ""),
+    (re.compile(r"\bdeep-tier\b", re.I), "research-note"),
+    (re.compile(r"\bfast-tier\b", re.I), "daily"),
+    (re.compile(r"\bLayer\s*2\s*transition(s)?\b", re.I), "signal change"),
+    (re.compile(r"\bLayer\s*[23]\b", re.I), "the model"),
+    (re.compile(r"\bevidence store\b", re.I), "signal history"),
+    (re.compile(r"\braw_evidence\w*\b", re.I), ""),
+    (re.compile(r"\bkey_metrics\b", re.I), "key metrics"),
+    (re.compile(r"\bweighted[_\s]scoring\b", re.I), "revision scoring"),
+
     (_re_leak.compile(r'\bper the RECENCY ON CONTRADICTING EVENTS(?:\s+rule)?\b', _re_leak.I), ''),
     (_re_leak.compile(r'\boperative state of the world\b', _re_leak.I), 'current state'),
     (_re_leak.compile(r'\boperative state\b', _re_leak.I), 'current state'),
@@ -1398,6 +1415,28 @@ def build_sonnet_analysis_prompt(
     # the actual computed spread was below threshold (banner_text was None
     # in the fast_tier log, meaning overall_severity was None).
     computed_text = "\nCOMPUTED METRICS (deterministic numerical verdicts — quote these EXACTLY):\n"
+    # v3.42.0 — Tape Circuit Breaker state + hard rule. At level >= 2 the
+    # tape has deterministically declared the peak behind us; Sonnet's
+    # scenario fields and prose must follow.
+    _tcb = (computed_metrics or {}).get("tape_circuit_breaker") or {}
+    if _tcb.get("level"):
+        computed_text += (
+            f"- TAPE CIRCUIT BREAKER: LEVEL {_tcb.get('level')} "
+            f"({_tcb.get('action')}), since {_tcb.get('level_since')}. "
+            f"Cycle peak {_tcb.get('peak_price')} on {_tcb.get('peak_date')}; "
+            f"drawdown {_tcb.get('drawdown_pct')}% "
+            f"(components fired: {', '.join(_tcb.get('components_fired') or []) or 'none'}).\n"
+        )
+        if int(_tcb.get("level", 0)) >= 2:
+            computed_text += (
+                "  HARD RULE — POST-PEAK STATE: the price/volume circuit breaker has "
+                "deterministically established that the cycle PEAK IS BEHIND US. You "
+                "MUST NOT describe the peak as ahead, MUST NOT produce positive "
+                "'upside to peak' framing, and the scenario cases MUST be anchored to "
+                "the TROUGH ahead (peak_months_away=0 for every case; returns measured "
+                "to the trough band). Fundamental indicators that have not caught up "
+                "are described as lagging the tape, never as evidence the peak is ahead.\n"
+            )
     if computed_metrics:
         rs = computed_metrics.get("relative_strength_full") or {}
         if rs:

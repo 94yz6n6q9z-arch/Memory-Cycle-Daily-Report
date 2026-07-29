@@ -1,0 +1,22 @@
+# v3.42.0 — paste this file MANUALLY as .github/workflows/tcb_backtest.yml
+# via the GitHub web editor (the release deploy intentionally never touches
+# .github/workflows/). Manual-dispatch only; prints level-transition dates
+# per historical cycle in the Actions log for threshold calibration.
+name: tcb_backtest
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "Ticker to replay"
+        default: "000660.KS"
+        required: false
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - run: python scripts/tcb_backtest.py "${{ github.event.inputs.symbol || '000660.KS' }}"

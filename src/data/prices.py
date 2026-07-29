@@ -729,6 +729,42 @@ def evaluate_relative_strength_signal(history: pd.DataFrame) -> dict:
     _classify_5d("SK Hynix", skhx_5d)
     _classify_5d("Micron", mu_5d)
 
+    # v3.42.0 — S&P 500 benchmark OR-path. The SOX is ~40% memory in this
+    # regime: when memory craters it drags the benchmark with it and the
+    # spread mean-reverts mid-crash (Jul-2026: fired Jul-6, unfired days
+    # later at -40%). The broad-market spread keeps measuring what matters —
+    # memory vs the market — through the unwind. Same thresholds
+    # (provisional; scripts/tcb_backtest.py replay covers calibration),
+    # OR-composed with the SOX path so this can only catch MORE.
+    def _spread_vs(name: str, bench_col: str, days: int = 5):
+        try:
+            cols = history.columns
+            if name not in cols or bench_col not in cols:
+                return None
+            a = history[name].dropna()
+            b = history[bench_col].dropna()
+            if len(a) <= days or len(b) <= days:
+                return None
+            ra = (a.iloc[-1] / a.iloc[-1 - days] - 1.0) * 100
+            rb = (b.iloc[-1] / b.iloc[-1 - days] - 1.0) * 100
+            return round(float(ra - rb), 2)
+        except Exception:
+            return None
+
+    skhx_5d_spx = _spread_vs("SK Hynix", "S&P 500")
+    mu_5d_spx = _spread_vs("Micron", "S&P 500")
+    out["skhx_5d_vs_spx_pp"] = skhx_5d_spx
+    out["mu_5d_vs_spx_pp"] = mu_5d_spx
+    for _n, _v in (("SK Hynix", skhx_5d_spx), ("Micron", mu_5d_spx)):
+        if _v is None:
+            continue
+        if _v < -10.0:
+            out["fired_sub_triggers"].append(
+                ("red", f"{_n} 5d vs S&P 500 = {_v:.1f}pp (< -10pp — RED fire)"))
+        elif _v < -5.0:
+            out["fired_sub_triggers"].append(
+                ("yellow", f"{_n} 5d vs S&P 500 = {_v:.1f}pp (< -5pp — yellow watch)"))
+
     # Sub-trigger (c): DRAM ETF vs SMH — yellow/red on same scale
     dram_vs_smh = get_dram_etf_vs_smh(history, days=5)
     out["dram_etf_vs_smh"] = dram_vs_smh

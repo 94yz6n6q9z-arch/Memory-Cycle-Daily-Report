@@ -1,3 +1,22 @@
+## v3.42.0 lessons (2026-07-29)
+- **The tape is a tier.** Fundamental/narrative indicators lag price by
+  construction; a cycle framework without a deterministic price/volume organ
+  will narrate a crash instead of acting on it. The TCB is un-overridable
+  and its action words (TAPE ALERT / DE-RISK / SELL) are configured
+  semantics, not advice generated per-run.
+- **One truth per indicator, applied on both legs.** Any indicator with a
+  computed verdict gets its status from computed_verdicts.py — pre-store AND
+  post-Sonnet. Never add a bespoke banner with its own fire definition.
+- **Keys first at render.** Never parse direction/status out of prose that
+  other code enriches; the Jul-29 green-pill-on-red-banner bug was a
+  key-name mismatch (to_status vs new_status) hidden by a regex fallback.
+- **Benchmarks have regimes.** Pure-play vs SOX mean-reverts in a memory
+  unwind because the benchmark IS ~40% memory; broad-market spreads keep
+  measuring the thing through the crash.
+- **Contrarian indicators need named counterexamples in-spec**: LLM common
+  sense inverts them ("record profits = healthy"), reciting the fire
+  condition as the reversal.
+
 # CLAUDE.md — Context for Claude working on this repo
 
 <!--

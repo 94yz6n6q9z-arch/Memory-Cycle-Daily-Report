@@ -836,7 +836,22 @@ INDICATORS: list[Indicator] = [
         what_to_look_for=(
             "MU or SK Hynix beat <10% (vs prior 30-40% beats — current SKHX Q1 48.8%, "
             "MU Q2 41.86%). OR first miss while forward guidance maintained or raised. "
-            "Scenario A and Scenario B from Part 8 Indicator 5."
+            "Scenario A and Scenario B from Part 8 Indicator 5. "
+            "CONTRARIAN-DIRECTION HARD RULES (v3.42.0, from the Jul-29-2026 inversion): "
+            "(1) This is a PEAK indicator — the fire condition IS the bearish event. A "
+            "first miss with guidance maintained is EXACTLY the fire, no matter how "
+            "large the absolute profits or YoY growth are. NAMED COUNTEREXAMPLE: on "
+            "2026-07-29 SK Hynix printed record profit (+557% YoY) that MISSED "
+            "consensus with guidance maintained — the textbook Scenario B fire — and "
+            "the signal was instead REVERTED to Not fired with the fire condition "
+            "('beat magnitude dropped materially') recited as the reversal reasoning. "
+            "Record absolute results are IRRELEVANT; only beat magnitude vs consensus "
+            "and guidance direction matter. (2) The reversal condition must be the "
+            "OPPOSITE of the fire condition (beat re-widening to >=30% on a NEW "
+            "quarterly print, or guidance cut converting this into the T4 family) — "
+            "never a restatement of the fire condition itself. (3) Once fired on a "
+            "dated print, the status PERSISTS until the next quarterly print: quiet "
+            "news days are not reversal evidence."
         ),
         sources=["Memory maker earnings press releases", "Yahoo Finance full transcripts",
                  "Finnhub earnings + analyst reactions", "Investing.com per-ticker RSS"],
