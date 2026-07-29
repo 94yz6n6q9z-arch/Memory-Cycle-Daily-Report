@@ -1,11 +1,29 @@
 [
   {
+    "indicator_id": "t2_eps_revisions",
+    "indicator_name": "Forward FY27/FY28 EPS revision direction \u2014 THE canonical Tier 2 signal",
+    "tier": 2,
+    "old_status": "Not fired",
+    "new_status": "Partially fired",
+    "description": "Status transitions from Not fired (2026-07-25) to Partially fired (2026-07-29). Two Tier-A broker target price cuts on SK Hynix (Mirae -33.3%, BNK to \u20a91.48M) match 'target price cut' trigger pattern and exceed -10% single-broker threshold, qualifying as early signal per cadence rule. Weighted scoring confirms net \u2026",
+    "fired_at_iso": "2026-07-29T09:45:29.969842"
+  },
+  {
     "indicator_id": "t2_pe_compressed",
     "indicator_name": "Forward P/E compressed to 3-5x",
     "tier": 2,
-    "old_status": "Fired",
+    "old_status": "Not fired",
+    "new_status": "Fired",
+    "description": "Evidence store shows status transitioned to 'Not fired' on 2026-06-18 when Samsung P/E rose to 6.6x. Today's Mirae Asset reports (2026-07-29) show Samsung 2026f P/E at 4.5x and SK Hynix at 4.6x \u2014 both now below thresholds again. This reverses the June 18 reversal condition (Samsung >6x) and re-fires the signal. Two \u2026",
+    "fired_at_iso": "2026-07-29T09:45:29.969842"
+  },
+  {
+    "indicator_id": "t3_eps_miss_guidance",
+    "indicator_name": "EPS miss or beat narrowing on still-rising guidance",
+    "tier": 3,
+    "old_status": "Partially fired",
     "new_status": "Not fired",
-    "description": "Prior status unknown. Current evidence store shows last transition was 2026-06-18 (Partially fired \u2192 Not fired) when Samsung P/E rose to 6.6x, exceeding the 6x threshold. No new computed P/E data in today's feed; live metric from 2026-06-18 remains authoritative. Status: Not fired.",
-    "fired_at_iso": "2026-07-28T09:32:48.620325"
+    "description": "SK Hynix Q2 2026 earnings released 2026-07-29. Evidence store recorded Layer 2 transition to 'Partially fired' on 2026-07-13 citing ~8% miss. Today's deep-tier evidence (Yahoo Finance full transcript, key_metrics, fired_status_evidence='supports_not_fired') and consensus fast-tier coverage (9 sources) confirm revenue \u2026",
+    "fired_at_iso": "2026-07-29T09:45:29.969842"
   }
 ]
