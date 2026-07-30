@@ -1,0 +1,61 @@
+{
+  "level": 1,
+  "level_since": "2026-07-30",
+  "updated": "2026-07-30",
+  "last_verdict": {
+    "level": 1,
+    "action": "TAPE ALERT",
+    "level_since": "2026-07-30",
+    "post_peak": false,
+    "components_fired": [
+      "drawdown",
+      "distribution"
+    ],
+    "components": {
+      "shock": {
+        "fired": false,
+        "worst_day": null,
+        "worst_ret_pct": null,
+        "threshold_pct": -19.43
+      },
+      "drawdown": {
+        "fired": true,
+        "watch": true,
+        "stopout_depth": true,
+        "drawdown_pct": -52.0,
+        "peak_price": 2919000.0,
+        "peak_date": "2026-06-22",
+        "last_close": 1401000.0,
+        "last_date": "2026-07-29"
+      },
+      "distribution": {
+        "fired": true,
+        "status": "data_ok",
+        "days": 4,
+        "needed": 4
+      },
+      "trend_break": {
+        "status": "data_ok",
+        "fired": false,
+        "close": 1401000.0,
+        "ma50": 2179194.84,
+        "ma50_falling": false,
+        "ma20_below_ma50": true
+      },
+      "failed_good_news": {
+        "fired": false,
+        "status": "not_implemented"
+      }
+    },
+    "peak_price": 2919000.0,
+    "peak_date": "2026-06-22",
+    "drawdown_pct": -52.0,
+    "last_close": 1401000.0,
+    "last_date": "2026-07-29",
+    "data_status": "fresh",
+    "deescalation": {
+      "closes_above_ma50_streak_ok": false,
+      "dd_recovered": false
+    }
+  }
+}
