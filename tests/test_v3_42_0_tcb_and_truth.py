@@ -281,3 +281,31 @@ class TestPostPeakFraming:
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+class TestV3421Hotfix:
+    def test_fast_tier_binds_new_names_at_module_level(self):
+        # v3.42.0 shipped calls whose imports silently failed to land (the
+        # insertion anchored on a nonexistent line); module import succeeded
+        # because the names resolve only at runtime inside run_fast_tier.
+        # This test fails on exactly that class of bug.
+        import src.fast_tier as ft
+        for n in ("run_tape_circuit_breaker", "evaluate_computed_verdicts",
+                  "apply_computed_verdicts"):
+            assert hasattr(ft, n), n
+
+    def test_fmp_stable_first_both_call_sites(self):
+        est = open("src/data/estimates.py").read()
+        assert "/stable/analyst-estimates?symbol=" in est
+        assert est.index("/stable/analyst-estimates") < est.index("/api/v3/analyst-estimates")
+        assert "epsAvg" in est  # stable field normalization present
+        pr = open("src/data/prices.py").read()
+        fn = pr[pr.index("def _fetch_krx_quote_from_fmp"):]
+        fn = fn[:fn.index("\ndef ", 10)]
+        assert "/stable/quote?symbol=" in fn
+        assert fn.index("/stable/quote") < fn.index("/api/v3/quote/")
+
+    def test_tcb_call_site_is_belted(self):
+        src = open("src/fast_tier.py").read()
+        i = src.index("tcb_verdict = run_tape_circuit_breaker()")
+        assert "try:" in src[i-80:i]

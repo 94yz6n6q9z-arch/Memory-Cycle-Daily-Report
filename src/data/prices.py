@@ -181,8 +181,17 @@ def _fetch_krx_quote_from_fmp(symbol: str, api_key: str) -> Optional[dict]:
     if not api_key:
         return None
     try:
-        url = f"https://financialmodelingprep.com/api/v3/quote/{symbol}?apikey={api_key}"
-        resp = requests.get(url, timeout=10)
+        # v3.42.1 — stable-first (see estimates.py rationale)
+        _urls = [
+            f"https://financialmodelingprep.com/stable/quote?symbol={symbol}&apikey={api_key}",
+            f"https://financialmodelingprep.com/api/v3/quote/{symbol}?apikey={api_key}",
+        ]
+        url = _urls[0]
+        resp = None
+        for url in _urls:
+            resp = requests.get(url, timeout=10)
+            if resp.status_code == 200:
+                break
         resp.raise_for_status()
         data = resp.json()
         if not data or not isinstance(data, list) or not data[0].get("price"):

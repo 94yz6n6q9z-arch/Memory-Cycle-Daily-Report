@@ -144,8 +144,20 @@ def fetch_estimates_fmp(ticker_symbol: str, ticker_name: str, api_key: str) -> O
 
     try:
         # FMP analyst estimates endpoint
-        url = f"https://financialmodelingprep.com/api/v3/analyst-estimates/{ticker_symbol}?period=annual&apikey={api_key}"
-        resp = requests.get(url, timeout=10)
+        # v3.42.1 — stable-first. The new annual-plan key 403s the legacy
+        # /api/v3 family (confirmed Jul-29 11:52 log); FMP serves current
+        # plans from /stable. Legacy kept as fallback so nothing regresses
+        # if a key with legacy entitlements ever returns.
+        _urls = [
+            ("stable", f"https://financialmodelingprep.com/stable/analyst-estimates?symbol={ticker_symbol}&period=annual&apikey={api_key}"),
+            ("legacy /api/v3", f"https://financialmodelingprep.com/api/v3/analyst-estimates/{ticker_symbol}?period=annual&apikey={api_key}"),
+        ]
+        resp, _family = None, None
+        for _family, url in _urls:
+            resp = requests.get(url, timeout=10)
+            if resp.status_code == 200:
+                break
+            logger.info(f"[fmp-health] {ticker_symbol}: HTTP {resp.status_code} on {_family} — trying next")
         resp.raise_for_status()
         data = resp.json()
         # v3.42.0 — [fmp-health]: the positive-path line we lacked. Until now
@@ -155,10 +167,19 @@ def fetch_estimates_fmp(ticker_symbol: str, ticker_name: str, api_key: str) -> O
         # fixed. One INFO line per successful call makes FMP status greppable
         # in every run log.
         logger.info(f"[fmp-health] {ticker_symbol}: HTTP {resp.status_code}, "
-                    f"{len(data) if isinstance(data, list) else 'obj'} rows (legacy /api/v3)")
+                    f"{len(data) if isinstance(data, list) else 'obj'} rows ({_family})")
 
         if not data or not isinstance(data, list):
             return None
+
+        # v3.42.1 — stable field-name normalization (stable: epsAvg /
+        # numAnalystsEps vs legacy estimatedEpsAvg / numberAnalystEstimatedEps).
+        for _e in data:
+            if isinstance(_e, dict):
+                if "estimatedEpsAvg" not in _e and "epsAvg" in _e:
+                    _e["estimatedEpsAvg"] = _e.get("epsAvg")
+                if "numberAnalystEstimatedEps" not in _e and "numAnalystsEps" in _e:
+                    _e["numberAnalystEstimatedEps"] = _e.get("numAnalystsEps")
 
         # Sort by date to find the next two fiscal years
         sorted_estimates = sorted(data, key=lambda x: x.get("date", ""))

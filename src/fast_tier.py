@@ -127,6 +127,11 @@ from src.data.finnhub import fetch_finnhub_with_retry
 from src.data.dart import fetch_dart_with_retry
 from src.config import HYPERSCALERS
 from src.analysis.signal_reasoner import reason_all_signals
+from src.analysis.tape_circuit_breaker import run_tape_circuit_breaker
+from src.analysis.computed_verdicts import (
+    evaluate_all as evaluate_computed_verdicts,
+    apply_to_objects as apply_computed_verdicts,
+)
 from src.analysis.llm_summarizer import (
     analyze_with_llm,
     fallback_analysis,
@@ -547,7 +552,11 @@ def run_fast_tier() -> int:
     # src/analysis/tape_circuit_breaker.py for the level semantics
     # (L1 TAPE ALERT / L2 DE-RISK / L3 SELL). Never raises; None = offline.
     logger.info("Running Tape Circuit Breaker (price/volume state machine)...")
-    tcb_verdict = run_tape_circuit_breaker()
+    try:
+        tcb_verdict = run_tape_circuit_breaker()
+    except Exception as e:
+        logger.warning(f"[tcb] call-site failure (non-fatal): {e}")
+        tcb_verdict = None
 
     # v3.39.7.9: Compute per-company 2-quarter capex/OCF mean, then cross-
     # company mean. Pre-v3.39.7.9 used snaps[0] (single quarter) — the May
