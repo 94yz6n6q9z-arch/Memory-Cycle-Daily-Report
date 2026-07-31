@@ -12,7 +12,7 @@ exhibit), produces a structured JSON digest:
       "key_metrics":    { ddr5_16gb_spot_referenced: "$39",
                           lpddr5x_lead_time_referenced: "26-39 weeks",
                           supplier_inventory_weeks: "2-3", ... },
-      "signal_relevance": ["t1_lead_times", "t1_oem_inventory", "t2_eps_revisions", "i6b_samsung_hbm4"],
+      "signal_relevance": ["t1_lead_times", "t1_oem_inventory", "t2_eps_revisions", "t3_capex_plateau", "i6b_samsung_hbm4"],
       "key_quotes":     ["...", "..."],
       "target_price_action": { broker, ticker, new_pt, prior_pt, direction },
       "fired_status_evidence": "neutral" | "supports_fire" | "supports_not_fired",

@@ -61,15 +61,9 @@ class TestComputedMetricsBlock(unittest.TestCase):
         # no yellow). Sonnet's prompt must show these so its prose can quote them.
         computed_metrics = {
             "relative_strength_full": {
-                "skhx_5d_vs_sox_pp": -3.21,
-                "mu_5d_vs_sox_pp": -2.84,
-                "dram_etf_vs_smh": {
-                    "spread_pp": -1.10,
-                    "dram_return_pct": -2.5,
-                    "smh_return_pct": -1.4,
-                    "severity": None,
-                },
-                "overall_severity": None,
+                "skhx_5d_vs_spx_pp": -3.21,
+                "mu_5d_vs_spx_pp": -2.84,
+                                "overall_severity": None,
                 "overall_fired": False,
                 "fired_sub_triggers": [],
                 "banner_text": None,
@@ -82,12 +76,10 @@ class TestComputedMetricsBlock(unittest.TestCase):
         )
         # The numeric values must appear in the prompt — these are the
         # numbers Sonnet should quote instead of speculating from headlines.
-        self.assertIn("SK Hynix 5d vs SOX:", prompt)
+        self.assertIn("SK Hynix vs S&P 500:", prompt)
         self.assertIn("-3.21pp", prompt)
-        self.assertIn("Micron 5d vs SOX:", prompt)
+        self.assertIn("Micron vs S&P 500:", prompt)
         self.assertIn("-2.84pp", prompt)
-        self.assertIn("DRAM ETF 5d vs SMH:", prompt)
-        self.assertIn("-1.10pp", prompt)
         # The status must be unambiguous — "None" not "Partially fired"
         self.assertIn("Overall severity:", prompt)
         self.assertIn("None", prompt)
@@ -101,20 +93,13 @@ class TestComputedMetricsBlock(unittest.TestCase):
         # only the severity field changes. Asserting both ends of the range.
         computed_metrics = {
             "relative_strength_full": {
-                "skhx_5d_vs_sox_pp": -12.40,
-                "mu_5d_vs_sox_pp": -11.15,
-                "dram_etf_vs_smh": {
-                    "spread_pp": -8.20,
-                    "dram_return_pct": -9.3,
-                    "smh_return_pct": -1.1,
-                    "severity": "yellow",
-                },
-                "overall_severity": "red",
+                "skhx_5d_vs_spx_pp": -12.40,
+                "mu_5d_vs_spx_pp": -11.15,
+                                "overall_severity": "red",
                 "overall_fired": True,
                 "fired_sub_triggers": [
-                    ("red", "SK Hynix 5d -12.40pp vs SOX"),
-                    ("red", "Micron 5d -11.15pp vs SOX"),
-                    ("yellow", "DRAM ETF 5d -8.20pp vs SMH"),
+                    ("red", "SK Hynix 5d -12.40pp vs S&P 500"),
+                    ("red", "Micron 5d -11.15pp vs S&P 500"),
                 ],
                 "banner_text": "🚨 t3_relative_strength FIRED (red)",
             },
@@ -130,7 +115,7 @@ class TestComputedMetricsBlock(unittest.TestCase):
         self.assertIn("red", prompt)
         self.assertIn("Overall fired (red):     True", prompt)
         # Sub-trigger detail surfaces so Sonnet can quote which sub-trigger fired.
-        self.assertIn("SK Hynix 5d -12.40pp vs SOX", prompt)
+        self.assertIn("SK Hynix 5d -12.40pp vs S&P 500", prompt)
 
     def test_forward_pe_renders_per_ticker(self):
         computed_metrics = {
@@ -245,9 +230,8 @@ class TestLayer2VerdictBlock(unittest.TestCase):
                 convergence="high",
                 fired_status="Not fired",  # ← the truthful verdict the May 18 brief got wrong
                 fired_status_evidence=[
-                    "SK Hynix 5d vs SOX: -3.21pp (below -5pp yellow threshold)",
-                    "Micron 5d vs SOX: -2.84pp",
-                    "DRAM ETF 5d vs SMH: -1.10pp",
+                    "SK Hynix 5d vs S&P 500: -3.21pp (below -5pp yellow threshold)",
+                    "Micron 5d vs S&P 500: -2.84pp",
                     "Single-day moves large but window includes positive May 11-12 sessions",
                 ],
                 evidence_for_change_vs_yesterday="no change — still not fired",
@@ -291,7 +275,7 @@ class TestLayer2VerdictBlock(unittest.TestCase):
         # numbers also live in the COMPUTED METRICS block; Sonnet isn't writing
         # about a dormant signal). The fired/changed t2 keeps full detail.
         self.assertIn("Not fired (unchanged)", prompt)
-        self.assertNotIn("SK Hynix 5d vs SOX: -3.21pp", prompt)  # dormant → dropped
+        self.assertNotIn("SK Hynix 5d vs S&P 500: -3.21pp", prompt)  # dormant → dropped
         # The FIRED signal keeps confidence + convergence + evidence so Sonnet
         # can weight and quote it.
         self.assertIn("confidence: high", prompt)
@@ -352,7 +336,7 @@ class TestNumberFirstFormattingInstruction(unittest.TestCase):
             performance_data=[], estimates_data={}, big_movers=[], prior_state={},
         )
         # The example numeric line must appear in the instruction text
-        self.assertIn("5-day vs SOX:", prompt)
+        self.assertIn("vs S&P 500: SK Hynix 5d", prompt)
         # Threshold language
         self.assertIn("yellow threshold -5pp", prompt)
         self.assertIn("red threshold -10pp", prompt)

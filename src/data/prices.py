@@ -555,256 +555,147 @@ def _get_currency(symbol: str) -> str:
     return "USD"
 
 
-def get_relative_strength_vs_sox(
+def get_relative_strength_vs_benchmark(
     ticker_name: str,
     history: pd.DataFrame,
     days: int = 5,
+    benchmark_col: str = "S&P 500",
 ) -> Optional[float]:
-    """Calculate ticker's relative performance vs SOX over `days` trading days.
+    """Ticker's relative performance vs a benchmark column over `days`
+    trading days. Negative = underperformance (percentage points).
 
-    Returns a percentage. Negative means underperformance.
-
-    v3.39.7.9: NaN guard for cells in the lookback window.
-
-    v3.4.6.2 (2026-05-22) — FIX for calendar misalignment between KRX
-    (SK Hynix, Samsung Electronics) and US-listed tickers (^SOX, MU,
-    DRAM, SMH). The yfinance batch returns a DataFrame whose index spans
-    both calendars; KRX-only trading days have NaN in US columns and
-    vice versa. iloc[-1]/iloc[-days-1] therefore landed on NaN whenever
-    the most recent date in the DataFrame was a KRX-only day (KRX trades
-    Mon-Fri Asia hours; US ETFs/indices fill in later on US calendar).
-    The previous v3.39.7.9 guard correctly detected NaN and returned
-    None — but never produced a number on days when the calendars
-    didn't align at the tail, which was MOST run days for SK Hynix
-    (where the next-day's US bar hadn't landed yet at brief-send time).
-    The fix: project both columns onto rows where BOTH have values,
-    then take iloc[-1]/iloc[-days-1] from the aligned subset.
+    v3.43.0 — generalized from the retired get_relative_strength_vs_sox.
+    The SOX benchmark is REMOVED from the t3_relative_strength signal
+    entirely (Raul, Jul-31: it is ~40% memory — self-referential and
+    volatile, the spread mean-reverts mid-crash). The v3.4.6.2 calendar-
+    alignment fix is preserved verbatim: KRX and US calendars misalign at
+    the tail, so both series are projected onto rows where BOTH have
+    values before taking the window endpoints.
     """
-    sox_col = "MSCI ACWI Semiconductor"  # name we use for SOX in BENCHMARKS
-    if sox_col not in history.columns or ticker_name not in history.columns:
+    if benchmark_col not in history.columns or ticker_name not in history.columns:
         return None
-
-    # v3.4.6.2 — project onto rows where both series have values.
-    # This is the calendar-alignment fix.
-    aligned = history[[ticker_name, sox_col]].dropna()
+    aligned = history[[ticker_name, benchmark_col]].dropna()
     if len(aligned) < days + 1:
         return None
-
-    # Use .iloc against the aligned subset — guaranteed non-NaN cells now.
-    ticker_end = aligned[ticker_name].iloc[-1]
-    ticker_start = aligned[ticker_name].iloc[-days - 1]
-    sox_end = aligned[sox_col].iloc[-1]
-    sox_start = aligned[sox_col].iloc[-days - 1]
-
-    # Belt-and-suspenders NaN guard (kept from v3.39.7.9 in case dropna
-    # was somehow circumvented by a future caller).
-    if any(pd.isna(v) for v in (ticker_end, ticker_start, sox_end, sox_start)):
+    t_end = aligned[ticker_name].iloc[-1]
+    t_start = aligned[ticker_name].iloc[-days - 1]
+    b_end = aligned[benchmark_col].iloc[-1]
+    b_start = aligned[benchmark_col].iloc[-days - 1]
+    if any(pd.isna(v) for v in (t_end, t_start, b_end, b_start)):
         return None
-    if ticker_start == 0 or sox_start == 0:
+    if t_start == 0 or b_start == 0:
         return None
-
-    ticker_return = (ticker_end / ticker_start - 1) * 100
-    sox_return = (sox_end / sox_start - 1) * 100
-
-    if pd.isna(ticker_return) or pd.isna(sox_return):
+    t_ret = (t_end / t_start - 1) * 100
+    b_ret = (b_end / b_start - 1) * 100
+    if pd.isna(t_ret) or pd.isna(b_ret):
         return None
+    return t_ret - b_ret
 
-    return ticker_return - sox_return
-
-
-# ============================================================
-# Sharpened relative-strength signals for t3_relative_strength
-# ============================================================
-# v3.39: redesigned around two severity tiers on the SAME 5-day metric.
-# Prior versions (v3.36-v3.38.6) used:
-#   (a) 5-day spread vs SOX < -10pp           (red fire)
-#   (b) ANY SINGLE DAY worst spread < -5pp    (red fire)  ← whipsawed daily
-#   (c) DRAM ETF underperforming SMH 5d       (red fire)
-# The single-day sub-trigger (b) fired on May 17 from one rough session
-# (Samsung -8.61%, SK Hynix -7.66%, MU -6.62%) when SOX was down ~3-4%,
-# yielding 3-5pp single-day spreads. Raul's feedback: a single session
-# fires-and-unfires daily, masks the persistent-weakness signal we want.
-#
-# v3.39 design:
-#   (a) 5-day spread vs SOX < -10pp           → RED full fire (unchanged)
-#   (b) 5-day spread vs SOX < -5pp            → YELLOW watch (informational)
-#   (c) DRAM ETF underperforming SMH 5d       → YELLOW watch (unchanged threshold)
-# Same 5-day metric for (a) and (b), two thresholds. Yellow does NOT trip
-# urgent_attention; only red does. Cleaner, no single-day noise, less code.
-
-
-def get_dram_etf_vs_smh(
+def evaluate_relative_strength_signal(
     history: pd.DataFrame,
-    days: int = 5,
-) -> Optional[dict]:
-    """Compute DRAM ETF vs SMH (broader semi ETF) over `days` trading days.
+    state_path: Optional[str] = None,
+) -> dict:
+    """t3_relative_strength, v3.43.0 rebuild.
 
-    Pure-memory proxy: if DRAM ETF underperforms SMH, that's a clean memory-cycle
-    signal independent of any single stock's idiosyncrasies. v3.39: yellow watch
-    threshold (< -5pp) — same as prior versions; this sub-trigger was never the
-    whipsawing one. Red fire threshold (< -10pp) added for parity.
+    Benchmark: S&P 500 ONLY. SOX and DRAM-ETF-vs-SMH are removed from the
+    fire path and from the verdict entirely — a memory-heavy benchmark
+    mean-reverts against memory names precisely during a memory unwind
+    (fired Jul-6-2026, un-fired mid-crash, re-fired Jul-31).
 
-    v3.4.6.2 (2026-05-22) — Same calendar-alignment fix as
-    get_relative_strength_vs_sox. Both DRAM and SMH are US-listed so they
-    usually agree, but the upstream DataFrame index spans KRX trading
-    days too — so the latest row can still be a KRX-only day with NaN
-    in the US columns. Previously this produced a `spread_pp: NaN`
-    that rendered as "+NaN pp" in the email. Now: project to aligned
-    rows, then iloc; return None if fewer than `days + 1` aligned
-    bars exist.
+    Anti-flap design (Raul, Jul-31 — "in a way that volatility doesn't
+    turn it on and off all the time"):
+      FIRE (red):  any name with 5d spread < -10pp AND 20d spread < -10pp
+                   — fast entry, trend-confirmed; one bad day can't trip it.
+      WATCH (yellow): any name with 5d < -5pp AND 20d < -5pp (not red).
+      STICKY RELEASE: once red, stays red until the worst 5d spread holds
+                   above -5pp for 5 CONSECUTIVE sessions. Fires fast,
+                   releases slow. Latch state: state/rel_strength_state.json.
+
+    Thresholds provisional pending the backtest replay.
     """
-    dram_col = "Roundhill DRAM ETF"
-    smh_col = "VanEck Semi ETF (SMH)"
-    if dram_col not in history.columns or smh_col not in history.columns:
-        return None
+    import json as _json
+    from pathlib import Path as _Path
 
-    aligned = history[[dram_col, smh_col]].dropna()
-    if len(aligned) < days + 1:
-        return None
-
-    dram_end = aligned[dram_col].iloc[-1]
-    dram_start = aligned[dram_col].iloc[-days - 1]
-    smh_end = aligned[smh_col].iloc[-1]
-    smh_start = aligned[smh_col].iloc[-days - 1]
-
-    if any(pd.isna(v) for v in (dram_end, dram_start, smh_end, smh_start)):
-        return None
-    if dram_start == 0 or smh_start == 0:
-        return None
-
-    dram_return = (dram_end / dram_start - 1) * 100
-    smh_return = (smh_end / smh_start - 1) * 100
-    delta = dram_return - smh_return
-
-    if pd.isna(delta):
-        return None
-
-    if delta < -10.0:
-        severity = "red"
-    elif delta < -5.0:
-        severity = "yellow"
-    else:
-        severity = None
-
-    return {
-        "dram_return_pct": round(dram_return, 2),
-        "smh_return_pct": round(smh_return, 2),
-        "spread_pp": round(delta, 2),
-        "severity": severity,
-        "fired_threshold": severity is not None,  # back-compat for prior callers
-    }
-
-
-def evaluate_relative_strength_signal(history: pd.DataFrame) -> dict:
-    """Evaluate the full t3_relative_strength signal across the two thresholds
-    and the DRAM-ETF sub-trigger. Returns a structured verdict for Layer 2/3.
-
-    Severity ladder:
-      red   — 5-day spread < -10pp on SK Hynix or Micron (full Tier 3 fire)
-      yellow — 5-day spread < -5pp (informational watch)
-      none  — no underperformance
-
-    overall_severity is the max severity across all sub-triggers (red beats
-    yellow beats none). urgent_attention should be wired to overall_severity
-    == 'red' only.
-    """
     out = {
-        "skhx_5d_vs_sox_pp": None,
-        "mu_5d_vs_sox_pp": None,
-        "dram_etf_vs_smh": None,
-        "fired_sub_triggers": [],     # list of (severity, description)
-        "overall_severity": None,     # 'red' | 'yellow' | None
-        "overall_fired": False,        # back-compat: True iff overall_severity == 'red'
+        "skhx_5d_vs_spx_pp": None,
+        "mu_5d_vs_spx_pp": None,
+        "skhx_20d_vs_spx_pp": None,
+        "mu_20d_vs_spx_pp": None,
+        "fired_sub_triggers": [],      # list of (severity, description)
+        "overall_severity": None,      # 'red' | 'yellow' | None (post-latch)
+        "raw_severity": None,          # pre-latch, for the log
+        "overall_fired": False,
         "banner_text": None,
+        "latch": {"latched": None, "recovery_streak": 0},
+        "benchmark": "S&P 500",
     }
 
-    skhx_5d = get_relative_strength_vs_sox("SK Hynix", history, days=5)
-    mu_5d = get_relative_strength_vs_sox("Micron", history, days=5)
-    out["skhx_5d_vs_sox_pp"] = round(skhx_5d, 2) if skhx_5d is not None else None
-    out["mu_5d_vs_sox_pp"] = round(mu_5d, 2) if mu_5d is not None else None
+    spreads = {}
+    for name, k5, k20 in (("SK Hynix", "skhx_5d_vs_spx_pp", "skhx_20d_vs_spx_pp"),
+                          ("Micron", "mu_5d_vs_spx_pp", "mu_20d_vs_spx_pp")):
+        s5 = get_relative_strength_vs_benchmark(name, history, days=5)
+        s20 = get_relative_strength_vs_benchmark(name, history, days=20)
+        out[k5] = round(s5, 2) if s5 is not None else None
+        out[k20] = round(s20, 2) if s20 is not None else None
+        spreads[name] = (out[k5], out[k20])
 
-    def _classify_5d(name: str, val: Optional[float]) -> None:
-        if val is None:
-            return
-        if val < -10.0:
-            out["fired_sub_triggers"].append(
-                ("red", f"{name} 5d vs SOX = {val:.1f}pp (< -10pp — RED fire)")
-            )
-        elif val < -5.0:
-            out["fired_sub_triggers"].append(
-                ("yellow", f"{name} 5d vs SOX = {val:.1f}pp (< -5pp — yellow watch)")
-            )
-
-    _classify_5d("SK Hynix", skhx_5d)
-    _classify_5d("Micron", mu_5d)
-
-    # v3.42.0 — S&P 500 benchmark OR-path. The SOX is ~40% memory in this
-    # regime: when memory craters it drags the benchmark with it and the
-    # spread mean-reverts mid-crash (Jul-2026: fired Jul-6, unfired days
-    # later at -40%). The broad-market spread keeps measuring what matters —
-    # memory vs the market — through the unwind. Same thresholds
-    # (provisional; scripts/tcb_backtest.py replay covers calibration),
-    # OR-composed with the SOX path so this can only catch MORE.
-    def _spread_vs(name: str, bench_col: str, days: int = 5):
-        try:
-            cols = history.columns
-            if name not in cols or bench_col not in cols:
-                return None
-            a = history[name].dropna()
-            b = history[bench_col].dropna()
-            if len(a) <= days or len(b) <= days:
-                return None
-            ra = (a.iloc[-1] / a.iloc[-1 - days] - 1.0) * 100
-            rb = (b.iloc[-1] / b.iloc[-1 - days] - 1.0) * 100
-            return round(float(ra - rb), 2)
-        except Exception:
-            return None
-
-    skhx_5d_spx = _spread_vs("SK Hynix", "S&P 500")
-    mu_5d_spx = _spread_vs("Micron", "S&P 500")
-    out["skhx_5d_vs_spx_pp"] = skhx_5d_spx
-    out["mu_5d_vs_spx_pp"] = mu_5d_spx
-    for _n, _v in (("SK Hynix", skhx_5d_spx), ("Micron", mu_5d_spx)):
-        if _v is None:
+    raw = None
+    for name, (s5, s20) in spreads.items():
+        if s5 is None or s20 is None:
             continue
-        if _v < -10.0:
+        if s5 < -10.0 and s20 < -10.0:
+            raw = "red"
             out["fired_sub_triggers"].append(
-                ("red", f"{_n} 5d vs S&P 500 = {_v:.1f}pp (< -10pp — RED fire)"))
-        elif _v < -5.0:
+                ("red", f"{name} vs S&P 500: 5d {s5:+.1f}pp / 20d {s20:+.1f}pp "
+                        f"(both < -10pp — RED fire)"))
+        elif s5 < -5.0 and s20 < -5.0:
+            if raw is None:
+                raw = "yellow"
             out["fired_sub_triggers"].append(
-                ("yellow", f"{_n} 5d vs S&P 500 = {_v:.1f}pp (< -5pp — yellow watch)"))
+                ("yellow", f"{name} vs S&P 500: 5d {s5:+.1f}pp / 20d {s20:+.1f}pp "
+                           f"(both < -5pp — yellow watch)"))
+    out["raw_severity"] = raw
 
-    # Sub-trigger (c): DRAM ETF vs SMH — yellow/red on same scale
-    dram_vs_smh = get_dram_etf_vs_smh(history, days=5)
-    out["dram_etf_vs_smh"] = dram_vs_smh
-    if dram_vs_smh and dram_vs_smh["severity"]:
-        sev = dram_vs_smh["severity"]
-        pp = dram_vs_smh["spread_pp"]
-        thresh = "-10pp — RED fire" if sev == "red" else "-5pp — yellow watch"
-        out["fired_sub_triggers"].append(
-            (sev, f"DRAM ETF vs SMH 5d = {pp}pp (< {thresh})")
-        )
+    # ---- sticky release latch -------------------------------------------
+    sp = _Path(state_path or "state/rel_strength_state.json")
+    try:
+        latch = _json.loads(sp.read_text())
+    except Exception:
+        latch = {"latched": None, "recovery_streak": 0}
 
-    # Compute overall severity
-    severities = [s for s, _ in out["fired_sub_triggers"]]
-    if "red" in severities:
-        out["overall_severity"] = "red"
-        out["overall_fired"] = True
-    elif "yellow" in severities:
-        out["overall_severity"] = "yellow"
-        out["overall_fired"] = False
+    severity = raw
+    if raw == "red":
+        latch = {"latched": "red", "recovery_streak": 0}
+    elif latch.get("latched") == "red":
+        vals5 = [v for v, _ in spreads.values() if v is not None]
+        worst5 = min(vals5) if vals5 else None
+        if worst5 is not None and worst5 > -5.0:
+            latch["recovery_streak"] = int(latch.get("recovery_streak", 0)) + 1
+        else:
+            latch["recovery_streak"] = 0
+        if latch["recovery_streak"] >= 5:
+            latch = {"latched": None, "recovery_streak": 0}
+        else:
+            severity = "red"
+            out["fired_sub_triggers"].append(
+                ("red", f"RED latched — recovery {latch['recovery_streak']}/5 "
+                        f"sessions (release requires 5d spread > -5pp for 5 "
+                        f"consecutive sessions)"))
+    try:
+        sp.parent.mkdir(parents=True, exist_ok=True)
+        sp.write_text(_json.dumps(latch))
+    except Exception:
+        pass
+    out["latch"] = latch
 
-    if out["overall_severity"]:
-        prefix = "🚨 RELATIVE STRENGTH RED FIRE" if out["overall_severity"] == "red" else "🟡 RELATIVE STRENGTH YELLOW WATCH"
-        descriptions = [desc for _, desc in out["fired_sub_triggers"]]
-        out["banner_text"] = f"{prefix} — " + " · ".join(descriptions)
-
+    out["overall_severity"] = severity
+    out["overall_fired"] = severity == "red"
+    if severity:
+        prefix = ("🚨 RELATIVE STRENGTH RED FIRE" if severity == "red"
+                  else "🟡 RELATIVE STRENGTH YELLOW WATCH")
+        out["banner_text"] = f"{prefix} — " + " · ".join(
+            d for _, d in out["fired_sub_triggers"])
     return out
-
-
-# ============================================================
-# v3.4.3 — HBM/DDR5 price trend derivation (for DHCR sanity check)
-# ============================================================
 
 def compute_hbm_price_trend(
     spot_history_csv: Optional[Path] = None,

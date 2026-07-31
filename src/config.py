@@ -779,21 +779,97 @@ INDICATORS: list[Indicator] = [
     Indicator(
         id="t3_relative_strength",
         tier=3,
-        name="Memory pure-plays underperform SOX",
-        short_label="Pure-plays vs SOX",
-        description="Memory stocks losing relative strength vs SOX semiconductor index.",
+        name="Memory pure-plays underperform the market (S&P 500)",
+        short_label="Pure-plays vs S&P 500",
+        description=(
+            "Memory stocks losing relative strength vs the broad market. "
+            "v3.43.0: benchmark is the S&P 500 ONLY — SOX removed (the SOX "
+            "is ~40% memory, so the spread is self-referential and "
+            "mean-reverts against memory names exactly during a memory "
+            "unwind: fired Jul-6-2026, un-fired mid-crash, re-fired Jul-31)."
+        ),
         what_to_look_for=(
-            "SK Hynix (000660.KS) or Micron (MU) underperforms SOX (^SOX) by >10% over "
-            "5 trading days. Currently fired then reversed (Mar 2026 fired, May rally erased)."
+            "FIRE (red): SK Hynix (000660.KS) or Micron (MU) underperforms "
+            "the S&P 500 by >10pp on BOTH the 5-day AND 20-day windows — "
+            "fast entry, trend-confirmed, so a single volatile session "
+            "cannot trip it. WATCH (yellow): both windows beyond -5pp. "
+            "STICKY RELEASE: once red, the signal STAYS red until the 5-day "
+            "spread holds above -5pp for 5 consecutive sessions — it fires "
+            "fast and releases slow; daily flapping is a defect, not a "
+            "feature. The computed spreads are the sole authority for this "
+            "signal's status (deterministic, two-sided). Where-we-stand and "
+            "targets are expressed against the S&P 500 spread only; never "
+            "reference the SOX. Thresholds provisional pending backtest."
         ),
         sources=["yfinance API price data", "Finnhub quote endpoint (cross-check)"],
         trigger_patterns=[],  # pure numeric
         trigger_numeric={
-            "skhx_minus_sox_5d_return_pp": {"trigger_below": -10.0},
-            "mu_minus_sox_5d_return_pp": {"trigger_below": -10.0},
+            "skhx_minus_spx_5d_return_pp": {"trigger_below": -10.0},
+            "skhx_minus_spx_20d_return_pp": {"trigger_below": -10.0},
+            "mu_minus_spx_5d_return_pp": {"trigger_below": -10.0},
+            "mu_minus_spx_20d_return_pp": {"trigger_below": -10.0},
         },
-        cadence="Rolling 5-trading-day window, computed daily",
-        stitching="Pure yfinance computation. Finnhub redundant cross-check.",
+        cadence="Rolling 5d + 20d windows, computed daily; sticky release latch",
+        stitching="Pure yfinance computation with persisted latch state.",
+    ),
+
+    Indicator(
+        id="t3_capex_plateau",
+        tier=3,
+        name="Hyperscaler CapEx plateau (rate stabilizes)",
+        short_label="CapEx plateau",
+        description=(
+            "Hyperscalers keep spending at enormous scale but STOP "
+            "ACCELERATING — next-period guidance lands flat vs the prior "
+            "baseline. This is the 'infrastructure is built' moment: a "
+            "peak-confirmation signal, distinct from CapEx acceleration "
+            "(t2_capex_parabolic, boom fuel) and from CapEx cuts (Tier 4, "
+            "bust confirmation)."
+        ),
+        what_to_look_for=(
+            "A tracked hyperscaler (MSFT, GOOGL, AMZN, META) guides "
+            "next-period CapEx FLAT vs its prior baseline (within ±5%) or "
+            "uses stabilization language: 'stabilize', 'similar level', "
+            "'in line with', 'discipline', 'ROI focus', 'moderating growth "
+            "rate'. STATUS LADDER: 1 hyperscaler at plateau = Partially "
+            "fired; 2 or more = Fired. CANONICAL EXAMPLE (2026-07-30): "
+            "Microsoft guiding FY27 CapEx at $190B against a $190B 2026 "
+            "baseline = plateau, Partially fired. HARD RULES: (1) This is "
+            "NOT CapEx cutting — dollars remain enormous; the SIGNAL is the "
+            "growth rate reaching zero. An explicit guide-DOWN >5% hands "
+            "off to the Tier 4 cut/idling family — and this signal REMAINS "
+            "fired (progression continues, it does not reverse). (2) "
+            "Guidance still growing >5% YoY is NOT this signal, however "
+            "'disciplined' the language — that is decelerating "
+            "acceleration, still t2_capex_parabolic territory. (3) This is "
+            "a CONTRARIAN-DIRECTION peak indicator: a plateau is LATE-CYCLE "
+            "CONFIRMATION ('we are done building — thanks Nvidia, Micron, "
+            "SK Hynix'), never good news for memory suppliers, never a "
+            "reversal of the boom. Never describe a plateau as "
+            "stabilization-is-healthy. (4) Reversal condition is the "
+            "OPPOSITE event only: a hyperscaler re-ACCELERATING guidance "
+            ">10% above baseline on a subsequent print. Once fired on a "
+            "dated print, status persists until the next print."
+        ),
+        sources=["Hyperscaler earnings calls + transcripts",
+                 "Hyperscaler press releases", "Investing.com per-ticker RSS",
+                 "Google News CapEx queries"],
+        trigger_patterns=[
+            "capex flat", "capital expenditure similar", "in line with",
+            "stabilize capex", "capex discipline", "ROI focus",
+            "moderate investment growth", "similar level of capital",
+        ],
+        trigger_numeric={
+            "hyperscalers_at_plateau_count": {"partial_at": 1, "trigger_at": 2},
+            "guidance_vs_baseline_pct": {"plateau_band_abs": 5.0},
+        },
+        cadence="Quarterly (hyperscaler earnings) + intra-quarter statements",
+        stitching=(
+            "Guidance numbers vs prior baseline from earnings coverage; "
+            "language markers from transcripts. Deterministic guidance-feed "
+            "evaluator is a Release B item — until then Layer 2 owns status "
+            "under the hard rules above."
+        ),
     ),
 
     Indicator(

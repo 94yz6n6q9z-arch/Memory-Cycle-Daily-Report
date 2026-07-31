@@ -134,7 +134,12 @@ def compute_tcb_components(df: pd.DataFrame) -> dict:
         recent = rets.iloc[-SHOCK_LOOKBACK:]
         base = rets.iloc[:-1].dropna().iloc[-120:]
         sigma = float(base.std()) if len(base) >= 30 else None
-        thr = min(SHOCK_ABS, -SHOCK_SIGMA * sigma) if sigma else SHOCK_ABS
+        # v3.43.0 — max(), not min(): fire on the EASIER of -8% / -3σ. The
+        # shipped min() made the breaker harder exactly when volatility
+        # exploded (crash-era σ pushed -3σ past -10%, so Jul-29's -10.3%
+        # day didn't count as a shock). Masked in tests by a calm synthetic
+        # run-up where min() happened to pick -8%.
+        thr = max(SHOCK_ABS, -SHOCK_SIGMA * sigma) if sigma else SHOCK_ABS
         shock["threshold_pct"] = round(thr * 100, 2)
         hits = recent[recent <= thr]
         if len(hits) > 0:
@@ -178,21 +183,33 @@ def compute_tcb_components(df: pd.DataFrame) -> dict:
     comp["distribution"] = dist
 
     # --- trend break --------------------------------------------------------
-    trend = {"fired": False, "status": "no_data"}
+    trend = {"fired": False, "status": "no_data",
+             "reason": f"insufficient history ({len(close)} rows < 65)"}
     if len(close) >= 65:
         ma20 = close.rolling(20).mean()
         ma50 = close.rolling(50).mean()
         ma50_now = float(ma50.iloc[-1])
         ma50_prev = float(ma50.iloc[-11])
-        trend = {
-            "status": "data_ok",
-            "fired": bool(last < ma50_now and ma50_now < ma50_prev
-                          and float(ma20.iloc[-1]) < ma50_now),
-            "close": last,
-            "ma50": round(ma50_now, 2),
-            "ma50_falling": ma50_now < ma50_prev,
-            "ma20_below_ma50": float(ma20.iloc[-1]) < ma50_now,
-        }
+        ma20_now = float(ma20.iloc[-1])
+        import math as _math
+        if any(_math.isnan(v) for v in (ma50_now, ma50_prev, ma20_now)):
+            # v3.43.0 — NaN inputs previously produced a silent fired=False
+            # with status data_ok. NaN is no_data, loudly.
+            trend = {"status": "no_data", "fired": False,
+                     "reason": "NaN in MA inputs",
+                     "ma50": ma50_now, "ma20": ma20_now}
+        else:
+            trend = {
+                "status": "data_ok",
+                "fired": bool(last < ma50_now and ma50_now < ma50_prev
+                              and ma20_now < ma50_now),
+                "close": last,
+                "ma50": round(ma50_now, 2),
+                "ma20": round(ma20_now, 2),
+                "ma50_falling": ma50_now < ma50_prev,
+                "ma20_below_ma50": ma20_now < ma50_now,
+                "reason": None,
+            }
     comp["trend_break"] = trend
 
     comp["failed_good_news"] = {"fired": False, "status": "not_implemented"}
@@ -212,16 +229,21 @@ def compute_tcb_components(df: pd.DataFrame) -> dict:
 
 
 def compute_tcb_level(comp: dict) -> int:
+    """v3.43.0 ladder. The shipped version gated L3 behind L2's component
+    count, so a -52% drawdown sat at L1 when the shock day rolled out of
+    its 15-session window and trend reported nothing. A stop-out-depth
+    drawdown (<= -30% from the 250d high) now escalates ON ITS OWN — no
+    committee of components required to declare the thesis stopped out."""
     fired = [k for k in ("shock", "drawdown", "distribution", "trend_break",
                          "failed_good_news") if comp.get(k, {}).get("fired")]
     n = len(fired)
+    stopout = bool(comp["drawdown"].get("stopout_depth"))
     level = 0
     if n >= 1:
         level = 1
-    if n >= 3 or (comp["shock"]["fired"] and comp["drawdown"]["fired"]):
+    if n >= 3 or (comp["shock"]["fired"] and comp["drawdown"]["fired"]) or stopout:
         level = 2
-    if level >= 2 and (comp["trend_break"].get("fired")
-                       or comp["drawdown"].get("stopout_depth")):
+    if level >= 2 and (comp["trend_break"].get("fired") or stopout):
         level = 3
     return level
 
@@ -238,7 +260,18 @@ def run_tape_circuit_breaker(df: Optional[pd.DataFrame] = None,
         today = today_iso or date.today().isoformat()
         state = _read_state()
         if df is None:
-            df = fetch_tcb_ohlcv()
+            # v3.43.0 — period fallback ladder + loud row-count logging. A
+            # silently short frame disables the shock/trend blocks; the
+            # Jul-31 L1-at--52% incident was undiagnosable from the log
+            # because neither frame length nor not-fired reasons were
+            # recorded.
+            for _period in ("2y", "1y", "6mo"):
+                df = fetch_tcb_ohlcv(period=_period)
+                if df is not None and len(df) >= 200:
+                    break
+            if df is not None:
+                logger.info(f"[tcb] OHLCV frame: {len(df)} rows "
+                            f"({df.index[0].date()} → {df.index[-1].date()})")
         if df is None:
             prev = state.get("last_verdict")
             if prev:
@@ -290,10 +323,23 @@ def run_tape_circuit_breaker(df: Optional[pd.DataFrame] = None,
         }
         _write_state({"level": level, "level_since": level_since,
                       "updated": today, "last_verdict": verdict})
+        sh, tr, di = comp["shock"], comp["trend_break"], comp["distribution"]
         logger.warning(
             f"[tcb] LEVEL {level} ({ACTION_LABELS[level]}) | "
             f"fired={fired_names} | peak={dd['peak_price']:.0f} on {dd['peak_date']} | "
             f"drawdown={dd['drawdown_pct']:.1f}% | close={dd['last_close']:.0f} ({dd['last_date']})"
+        )
+        # v3.43.0 — full component-input logging: every NOT-fired component
+        # states why, so the next anomaly is diagnosable from the log alone.
+        logger.info(
+            f"[tcb] components: shock(fired={sh['fired']}, thr={sh.get('threshold_pct')}%, "
+            f"worst={sh.get('worst_ret_pct')}% on {sh.get('worst_day')}) | "
+            f"trend(fired={tr.get('fired')}, status={tr.get('status')}, "
+            f"close={tr.get('close')}, ma50={tr.get('ma50')}, ma20={tr.get('ma20')}, "
+            f"falling={tr.get('ma50_falling')}, reason={tr.get('reason')}) | "
+            f"distribution(fired={di.get('fired')}, status={di.get('status')}, "
+            f"days={di.get('days')}/{di.get('needed')}) | "
+            f"stopout_depth={dd.get('stopout_depth')}"
         )
         return verdict
     except Exception as e:

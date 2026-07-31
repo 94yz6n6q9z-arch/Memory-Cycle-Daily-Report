@@ -368,7 +368,7 @@ class TestRelativeStrengthNaNGuard:
     def test_single_ticker_nan_uses_aligned_subset(self):
         """One NaN in the ticker column drops that row from the aligned
         pair. With 9 remaining aligned bars and days=5 we still compute."""
-        from src.data.prices import get_relative_strength_vs_sox
+        from src.data.prices import get_relative_strength_vs_benchmark
         import math
         idx = pd.date_range("2026-05-13", periods=10, freq="D")
         history = pd.DataFrame({
@@ -377,7 +377,7 @@ class TestRelativeStrengthNaNGuard:
         }, index=idx)
         # v3.4.6.2: aligned subset has 9 rows (the NaN row dropped). days=5
         # needs 6 rows; we have 9 → real number returned.
-        result = get_relative_strength_vs_sox("SK Hynix", history, days=5)
+        result = get_relative_strength_vs_benchmark("SK Hynix", history, days=5, benchmark_col="MSCI ACWI Semiconductor")
         assert result is not None
         assert isinstance(result, float)
         assert not math.isnan(result)
@@ -385,14 +385,14 @@ class TestRelativeStrengthNaNGuard:
     def test_single_sox_nan_uses_aligned_subset(self):
         """One NaN in the SOX column drops that row from the aligned pair.
         Result computed from the remaining 9 aligned bars."""
-        from src.data.prices import get_relative_strength_vs_sox
+        from src.data.prices import get_relative_strength_vs_benchmark
         import math
         idx = pd.date_range("2026-05-13", periods=10, freq="D")
         history = pd.DataFrame({
             "SK Hynix": [100, 101, 102, 103, 104, 105, 106, 107, 108, 110],
             "MSCI ACWI Semiconductor": [200, 201, 202, 203, float("nan"), 205, 206, 207, 208, 210],
         }, index=idx)
-        result = get_relative_strength_vs_sox("SK Hynix", history, days=5)
+        result = get_relative_strength_vs_benchmark("SK Hynix", history, days=5, benchmark_col="MSCI ACWI Semiconductor")
         assert result is not None
         assert not math.isnan(result)
 
@@ -400,27 +400,27 @@ class TestRelativeStrengthNaNGuard:
         """The dominant production case — latest bar is KRX-only, SOX NaN
         at iloc[-1]. v3.4.6.2 drops that row from the aligned pair and
         computes from the prior 9 bars (which include 5+ valid days)."""
-        from src.data.prices import get_relative_strength_vs_sox
+        from src.data.prices import get_relative_strength_vs_benchmark
         import math
         idx = pd.date_range("2026-05-13", periods=10, freq="D")
         history = pd.DataFrame({
             "SK Hynix": [100, 101, 102, 103, 104, 105, 106, 107, 108, float("nan")],
             "MSCI ACWI Semiconductor": [200, 201, 202, 203, 204, 205, 206, 207, 208, 210],
         }, index=idx)
-        result = get_relative_strength_vs_sox("SK Hynix", history, days=5)
+        result = get_relative_strength_vs_benchmark("SK Hynix", history, days=5, benchmark_col="MSCI ACWI Semiconductor")
         assert result is not None
         assert not math.isnan(result)
 
     def test_returns_valid_float_when_data_clean(self):
         """Sanity check: clean data still returns a real number."""
-        from src.data.prices import get_relative_strength_vs_sox
+        from src.data.prices import get_relative_strength_vs_benchmark
         idx = pd.date_range("2026-05-13", periods=10, freq="D")
         # Ticker -5% over 5 days, SOX +2% over 5 days → ticker underperforms by 7pp
         history = pd.DataFrame({
             "SK Hynix": [100.0] * 5 + [95.0] * 5,
             "MSCI ACWI Semiconductor": [200.0] * 5 + [204.0] * 5,
         }, index=idx)
-        result = get_relative_strength_vs_sox("SK Hynix", history, days=5)
+        result = get_relative_strength_vs_benchmark("SK Hynix", history, days=5, benchmark_col="MSCI ACWI Semiconductor")
         assert result is not None
         assert isinstance(result, float)
         assert not math.isnan(result)
@@ -430,13 +430,13 @@ class TestRelativeStrengthNaNGuard:
     def test_zero_start_price_returns_none(self):
         """Pathological zero-price guard at the lookback position.
         For days=8 in a 10-row df, lookback is iloc[-9] = index 1."""
-        from src.data.prices import get_relative_strength_vs_sox
+        from src.data.prices import get_relative_strength_vs_benchmark
         idx = pd.date_range("2026-05-13", periods=10, freq="D")
         history = pd.DataFrame({
             "SK Hynix": [100, 0.0, 102, 103, 104, 105, 106, 107, 108, 110],
             "MSCI ACWI Semiconductor": [200, 201, 202, 203, 204, 205, 206, 207, 208, 210],
         }, index=idx)
-        result = get_relative_strength_vs_sox("SK Hynix", history, days=8)
+        result = get_relative_strength_vs_benchmark("SK Hynix", history, days=8, benchmark_col="MSCI ACWI Semiconductor")
         assert result is None
 
 
@@ -458,36 +458,34 @@ class TestSection3RelativeStrengthSnippet:
     def test_snippet_shows_skhx_value(self):
         from src.email_module.template import _build_relative_strength_snippet
         verdict = {
-            "skhx_5d_vs_sox_pp": -3.21,
-            "mu_5d_vs_sox_pp": -2.84,
-            "dram_etf_vs_smh": {"spread_pp": -1.10},
-        }
+            "skhx_5d_vs_spx_pp": -3.21,
+            "mu_5d_vs_spx_pp": -2.84,
+                    }
         snippet = _build_relative_strength_snippet(verdict)
         # The SK Hynix label + value must appear
         assert "SK Hynix" in snippet
         assert "-3.21pp" in snippet
 
-    def test_snippet_shows_micron_and_dram_etf_values(self):
+    def test_snippet_shows_micron_and_20d_values(self):
         from src.email_module.template import _build_relative_strength_snippet
         verdict = {
-            "skhx_5d_vs_sox_pp": -3.21,
-            "mu_5d_vs_sox_pp": -2.84,
-            "dram_etf_vs_smh": {"spread_pp": -1.10},
+            "skhx_5d_vs_spx_pp": -3.21,
+            "mu_5d_vs_spx_pp": -2.84,
+            "mu_20d_vs_spx_pp": -4.10,
         }
         snippet = _build_relative_strength_snippet(verdict)
-        assert "Micron" in snippet
+        assert "Micron 5d vs S&amp;P 500:" in snippet
         assert "-2.84pp" in snippet
-        assert "DRAM ETF" in snippet
-        assert "-1.10pp" in snippet
+        assert "Micron 20d vs S&amp;P 500:" in snippet
+        assert "-4.10pp" in snippet
 
     def test_snippet_color_codes_red_band_below_minus_10(self):
         """Value ≤ -10pp must use the Fired color (#B91C1C)."""
         from src.email_module.template import _build_relative_strength_snippet, STATUS_COLORS
         verdict = {
-            "skhx_5d_vs_sox_pp": -12.5,  # below -10pp → red
-            "mu_5d_vs_sox_pp": -1.0,
-            "dram_etf_vs_smh": {"spread_pp": -2.0},
-        }
+            "skhx_5d_vs_spx_pp": -12.5,  # below -10pp → red
+            "mu_5d_vs_spx_pp": -1.0,
+                    }
         snippet = _build_relative_strength_snippet(verdict)
         # The Fired color must be applied to the SK Hynix span
         assert STATUS_COLORS["Fired"] in snippet
@@ -496,10 +494,9 @@ class TestSection3RelativeStrengthSnippet:
         """Value -5 to -10pp → Partially fired (yellow)."""
         from src.email_module.template import _build_relative_strength_snippet, STATUS_COLORS
         verdict = {
-            "skhx_5d_vs_sox_pp": -7.0,  # in -5 to -10 → yellow
-            "mu_5d_vs_sox_pp": 0.0,
-            "dram_etf_vs_smh": {"spread_pp": 0.0},
-        }
+            "skhx_5d_vs_spx_pp": -7.0,  # in -5 to -10 → yellow
+            "mu_5d_vs_spx_pp": 0.0,
+                    }
         snippet = _build_relative_strength_snippet(verdict)
         assert STATUS_COLORS["Partially fired"] in snippet
 
@@ -507,10 +504,9 @@ class TestSection3RelativeStrengthSnippet:
         """Value > -5pp → Not fired (green)."""
         from src.email_module.template import _build_relative_strength_snippet, STATUS_COLORS
         verdict = {
-            "skhx_5d_vs_sox_pp": -2.0,
-            "mu_5d_vs_sox_pp": 1.5,
-            "dram_etf_vs_smh": {"spread_pp": 0.5},
-        }
+            "skhx_5d_vs_spx_pp": -2.0,
+            "mu_5d_vs_spx_pp": 1.5,
+                    }
         snippet = _build_relative_strength_snippet(verdict)
         assert STATUS_COLORS["Not fired"] in snippet
 
@@ -518,10 +514,9 @@ class TestSection3RelativeStrengthSnippet:
         """NaN value must render as "(not computed)", not "+nanpp"."""
         from src.email_module.template import _build_relative_strength_snippet
         verdict = {
-            "skhx_5d_vs_sox_pp": float("nan"),
-            "mu_5d_vs_sox_pp": -2.84,
-            "dram_etf_vs_smh": {"spread_pp": -1.10},
-        }
+            "skhx_5d_vs_spx_pp": float("nan"),
+            "mu_5d_vs_spx_pp": -2.84,
+                    }
         snippet = _build_relative_strength_snippet(verdict)
         assert "(not computed)" in snippet
         # And no "+nanpp" or "nanpp" leakage
@@ -530,22 +525,20 @@ class TestSection3RelativeStrengthSnippet:
     def test_snippet_renders_not_computed_for_none(self):
         from src.email_module.template import _build_relative_strength_snippet
         verdict = {
-            "skhx_5d_vs_sox_pp": None,
-            "mu_5d_vs_sox_pp": None,
-            "dram_etf_vs_smh": {},
-        }
+            "skhx_5d_vs_spx_pp": None,
+            "mu_5d_vs_spx_pp": None,
+                    }
         snippet = _build_relative_strength_snippet(verdict)
-        assert snippet.count("(not computed)") == 3  # SKHX + MU + DRAM ETF
+        assert snippet.count("(not computed)") == 4  # SKHX 5d/20d + MU 5d/20d
 
     def test_snippet_includes_threshold_legend(self):
         """The thresholds row helps the reader interpret the numbers
         without scrolling to section 4."""
         from src.email_module.template import _build_relative_strength_snippet
         verdict = {
-            "skhx_5d_vs_sox_pp": -2.0,
-            "mu_5d_vs_sox_pp": 1.5,
-            "dram_etf_vs_smh": {"spread_pp": 0.5},
-        }
+            "skhx_5d_vs_spx_pp": -2.0,
+            "mu_5d_vs_spx_pp": 1.5,
+                    }
         snippet = _build_relative_strength_snippet(verdict)
         assert "Thresholds" in snippet
         assert "−10pp" in snippet or "-10pp" in snippet

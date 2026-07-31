@@ -270,8 +270,29 @@ def build_email_html(
         t for t in (getattr(es, "new_triggers_today", None) or [])
         if isinstance(t, dict) and t.get("indicator_id") not in _bespoke_rendered
     ]
+    # v3.43.0 — STAGE PROGRESSION rule: a t2_capex_parabolic DOWNGRADE while
+    # t3_capex_plateau is Partial/Fired is late-cycle progression (the
+    # hyperscalers are done accelerating), not improvement — it must never
+    # render green or amber "downgrade".
+    _plateau_status = None
+    try:
+        for _ia in (getattr(analysis, "indicator_assessments", None) or []):
+            if getattr(_ia, "id", None) == "t3_capex_plateau":
+                _plateau_status = getattr(_ia, "current_status", None)
+                break
+    except Exception:
+        _plateau_status = None
+    _rank_ps = {"Not fired": 0, "Partially fired": 1, "Fired": 2}
     for _trig in _generic[:4]:
-        parts.append(_build_generic_trigger_banner(_trig))
+        _new_st = _trig.get("new_status") or _trig.get("to_status") or ""
+        _is_capex_downgrade = (
+            _trig.get("indicator_id") == "t2_capex_parabolic"
+            and _rank_ps.get(_new_st, 0) < _rank_ps.get(_trig.get("old_status") or "", 0)
+        )
+        if _is_capex_downgrade and _plateau_status in ("Partially fired", "Fired"):
+            parts.append(_build_progression_banner(_trig, _plateau_status))
+        else:
+            parts.append(_build_generic_trigger_banner(_trig))
     if len(_generic) > 4:
         parts.append(
             f"<div style='font-size:12px;color:#5F5E5A;margin:4px 0 8px'>"
@@ -324,7 +345,7 @@ def build_email_html(
     # 5. Tier indicators (section 3 — summary cards table)
     parts.append("<h2 id='section-3'>3. Tier indicators — daily status</h2>")
     # v3.39.7.9 — rel_strength_verdict threaded through so t3_relative_strength
-    # card surfaces the actual 5d-vs-SOX numbers (color-coded by fire band)
+    # card surfaces the computed 5d/20d-vs-S&P-500 numbers (color-coded by fire band)
     # at the section 3 summary level, not just in the section 4 deep dive.
     parts.append(_build_indicators_section(
         analysis.indicator_assessments,
@@ -2566,7 +2587,7 @@ def _build_dhcr_section4_card_legacy(
 
 
 def _build_relative_strength_snippet(rel_strength_verdict: Optional[dict]) -> str:
-    """v3.39.7.9 — pre-built HTML snippet showing the computed 5d-vs-SOX
+    """v3.39.7.9 — pre-built HTML snippet showing the computed 5d/20d-vs-S&P-500
     relative strength numbers, color-coded per the fire thresholds:
 
       ≤ -10pp  →  red (Fired band)
@@ -2585,7 +2606,7 @@ def _build_relative_strength_snippet(rel_strength_verdict: Optional[dict]) -> st
         return ""
 
     def _band_color(pp_value: Optional[float]) -> str:
-        """Map a 5d-vs-SOX value (in percentage points) to a status color."""
+        """Map a spread value (in percentage points) to a status color."""
         if pp_value is None or (isinstance(pp_value, float) and math.isnan(pp_value)):
             return "#888888"  # grey — not computed
         if pp_value <= -10.0:
@@ -2600,36 +2621,28 @@ def _build_relative_strength_snippet(rel_strength_verdict: Optional[dict]) -> st
             return "(not computed)"
         return f"{pp_value:+.2f}pp"
 
-    skhx_pp = rel_strength_verdict.get("skhx_5d_vs_sox_pp")
-    mu_pp = rel_strength_verdict.get("mu_5d_vs_sox_pp")
-    dram_block = rel_strength_verdict.get("dram_etf_vs_smh") or {}
-    dram_pp = dram_block.get("spread_pp")
+    skhx_pp = rel_strength_verdict.get("skhx_5d_vs_spx_pp")
+    mu_pp = rel_strength_verdict.get("mu_5d_vs_spx_pp")
+    skhx_20 = rel_strength_verdict.get("skhx_20d_vs_spx_pp")
+    mu_20 = rel_strength_verdict.get("mu_20d_vs_spx_pp")
 
     rows = []
-    # SK Hynix
-    skhx_color = _band_color(skhx_pp)
-    rows.append(
-        f"<span style='display:inline-block;background:{skhx_color};"
-        f"color:#1a1a1a;padding:2px 8px;border-radius:3px;font-weight:600;"
-        f"font-size:12px;margin-right:6px;margin-bottom:3px'>"
-        f"SK Hynix 5d vs SOX: {_format_pp(skhx_pp)}</span>"
-    )
-    # Micron
-    mu_color = _band_color(mu_pp)
-    rows.append(
-        f"<span style='display:inline-block;background:{mu_color};"
-        f"color:#1a1a1a;padding:2px 8px;border-radius:3px;font-weight:600;"
-        f"font-size:12px;margin-right:6px;margin-bottom:3px'>"
-        f"Micron 5d vs SOX: {_format_pp(mu_pp)}</span>"
-    )
-    # DRAM ETF vs SMH
-    dram_color = _band_color(dram_pp)
-    rows.append(
-        f"<span style='display:inline-block;background:{dram_color};"
-        f"color:#1a1a1a;padding:2px 8px;border-radius:3px;font-weight:600;"
-        f"font-size:12px;margin-right:6px;margin-bottom:3px'>"
-        f"DRAM ETF 5d vs SMH: {_format_pp(dram_pp)}</span>"
-    )
+    # v3.43.0 — S&P 500 benchmark only, both horizons per name; SOX and
+    # DRAM-ETF-vs-SMH removed across the board (self-referential benchmark).
+    for _lbl, _v5, _v20 in (("SK Hynix", skhx_pp, skhx_20),
+                            ("Micron", mu_pp, mu_20)):
+        rows.append(
+            f"<span style='display:inline-block;background:{_band_color(_v5)};"
+            f"color:#1a1a1a;padding:2px 8px;border-radius:3px;font-weight:600;"
+            f"font-size:12px;margin-right:6px;margin-bottom:3px'>"
+            f"{_lbl} 5d vs S&amp;P 500: {_format_pp(_v5)}</span>"
+        )
+        rows.append(
+            f"<span style='display:inline-block;background:{_band_color(_v20)};"
+            f"color:#1a1a1a;padding:2px 8px;border-radius:3px;font-weight:600;"
+            f"font-size:12px;margin-right:6px;margin-bottom:3px'>"
+            f"{_lbl} 20d vs S&amp;P 500: {_format_pp(_v20)}</span>"
+        )
 
     # Thresholds line for context
     thresholds_line = (
@@ -2756,7 +2769,7 @@ def _build_indicators_section(
                 links_html = f"<div class='links-list' style='margin-top:6px'>{' · '.join(link_strs)}</div>"
 
             # v3.39.7.9 — for t3_relative_strength, lead the "Where we stand"
-            # cell with the computed 5d-vs-SOX numbers (color-coded by fire
+            # cell with the computed vs-S&P-500 numbers (color-coded by fire
             # threshold) before the Sonnet-written prose. Per user direction
             # 2026-05-21: the number is what trips the indicator, so the
             # number must be visible at the section 3 summary level — not
@@ -3303,6 +3316,27 @@ def _build_tcb_banner(tcb: dict) -> str:
     )
 
 
+def _build_progression_banner(trig: dict, plateau_status: str) -> str:
+    """v3.43.0 — neutral rendering for a CapEx-parabolic de-escalation that
+    is actually stage progression. Slate/purple, no green, no checkmark."""
+    desc = _clean_render_desc(trig.get("description", ""))
+    body = (
+        f"CapEx acceleration signal de-escalated while the CapEx PLATEAU "
+        f"signal is {html.escape(plateau_status)} — hyperscalers keep "
+        f"spending at scale but have stopped accelerating. This is "
+        f"late-cycle progression toward the peak, not an improvement."
+    )
+    if desc:
+        body += f" {html.escape(desc)}"
+    return (
+        "<div class='urgent-banner' style='background:#EEEBF5;border:2px solid #5B4B8A'>"
+        "<span class='label' style='background:#5B4B8A;color:#fff'>"
+        "⏭ STAGE PROGRESSION — CapEx boom signal superseded by plateau</span><br/>"
+        f"<span class='text' style='color:#3D3260'>{body}</span>"
+        "</div>"
+    )
+
+
 def _build_generic_trigger_banner(trig: dict) -> str:
     """v3.41.15 — top-of-brief banner for ANY 24h-log transition.
 
@@ -3386,52 +3420,36 @@ def _build_generic_trigger_banner(trig: dict) -> str:
 
 
 def _build_relative_strength_banner(verdict: dict) -> str:
-    """Render the relative-strength banner. v3.39: two severity levels.
-    - red:    full Tier 3 fire — bold red banner, 🚨
-    - yellow: informational watch (5d spread between -5 and -10pp) — soft
-              amber banner, 🟡. Does NOT trip urgent_attention.
-    - none:   no banner.
-
-    Back-compat: handles older verdict dicts that only had `fired_sub_triggers`
-    (list of strings) and `overall_fired` (bool). For those, treat as red.
-    """
+    """v3.43.0 — S&P 500 benchmark, dual-horizon, sticky release. Red =
+    full Tier 3 fire (5d AND 20d beyond -10pp, or latched); yellow = watch
+    band; none = no banner."""
     triggers = verdict.get("fired_sub_triggers", [])
     if not triggers:
         return ""
-
     severity = verdict.get("overall_severity")
-    # Normalize triggers: v3.39 emits (sev, desc) tuples; older versions emit
-    # plain strings. Extract description regardless.
-    descs = []
-    for t in triggers:
-        if isinstance(t, (list, tuple)) and len(t) == 2:
-            descs.append(t[1])
-        else:
-            descs.append(t)
+    descs = [t[1] if isinstance(t, (list, tuple)) and len(t) == 2 else t
+             for t in triggers]
     bullets = "".join(f"<li>{html.escape(d)}</li>" for d in descs)
-
-    # Older verdicts without overall_severity default to red (preserves v3.38
-    # behavior when an old prior_state.json is in scope).
     if severity is None:
         severity = "red" if verdict.get("overall_fired") else "yellow"
-
     if severity == "red":
         return (
             "<div class='urgent-banner' style='background:#FCEBEB;border:2px solid #A32D2D'>"
             "<span class='label'>🚨 RELATIVE STRENGTH RED FIRE</span><br/>"
-            "<span class='text'>Memory pure-plays underperforming semis by &gt;10pp over 5d — Tier 3 signal active</span>"
+            "<span class='text'>Memory pure-plays underperforming the market "
+            "(S&amp;P 500) on both the 5d and 20d windows — Tier 3 signal "
+            "active (sticky: releases only after 5 recovery sessions)</span>"
             f"<ul style='margin:8px 0 0 0;color:#791F1F;font-size:13px'>{bullets}</ul>"
             "</div>"
         )
-    else:  # yellow
-        return (
-            "<div class='urgent-banner' style='background:#FFF6E0;border:2px solid #B58A1A'>"
-            "<span class='label' style='color:#7A5500'>🟡 RELATIVE STRENGTH YELLOW WATCH</span><br/>"
-            "<span class='text' style='color:#5A3F00'>Memory pure-plays underperforming semis by 5-10pp over 5d — informational, not a full fire</span>"
-            f"<ul style='margin:8px 0 0 0;color:#5A3F00;font-size:13px'>{bullets}</ul>"
-            "</div>"
-        )
-
+    return (
+        "<div class='urgent-banner' style='background:#FFF6E0;border:2px solid #B58A1A'>"
+        "<span class='label' style='background:#8A5A00;color:#fff'>🟡 RELATIVE STRENGTH YELLOW WATCH</span><br/>"
+        "<span class='text'>Memory pure-plays trailing the market (S&amp;P 500) "
+        "on both windows — watch band, not a fire</span>"
+        f"<ul style='margin:8px 0 0 0;color:#5A3F00;font-size:13px'>{bullets}</ul>"
+        "</div>"
+    )
 
 def _build_eps_revisions_banner(verdict: dict) -> str:
     """🚨 banner for canonical Tier 2 EPS revisions signal."""

@@ -1440,41 +1440,27 @@ def build_sonnet_analysis_prompt(
     if computed_metrics:
         rs = computed_metrics.get("relative_strength_full") or {}
         if rs:
-            computed_text += "\n  t3_relative_strength (5-day rolling window vs SOX / SMH):\n"
-            skhx = rs.get("skhx_5d_vs_sox_pp")
-            mu = rs.get("mu_5d_vs_sox_pp")
-            dram = rs.get("dram_etf_vs_smh") or {}
-            # v3.39.7.9 — defensive NaN guard (belt + braces). Pre-v3.39.7.9
-            # `if x is not None` allowed NaN floats through and produced
-            # "+nanpp" in the brief. get_relative_strength_vs_sox() now
-            # returns None on NaN, but defensive check stays here in case
-            # an upstream path bypasses the guard.
-            def _valid(v):
-                return v is not None and not (isinstance(v, float) and math.isnan(v))
-            if _valid(skhx):
-                computed_text += f"    SK Hynix 5d vs SOX:      {skhx:+.2f}pp\n"
-            else:
-                computed_text += "    SK Hynix 5d vs SOX:      (not computed — SOX or SK Hynix price cell missing in lookback window)\n"
-            if _valid(mu):
-                computed_text += f"    Micron 5d vs SOX:        {mu:+.2f}pp\n"
-            else:
-                computed_text += "    Micron 5d vs SOX:        (not computed — SOX or Micron price cell missing in lookback window)\n"
-            if dram.get("spread_pp") is not None:
-                computed_text += (
-                    f"    DRAM ETF 5d vs SMH:      {dram['spread_pp']:+.2f}pp "
-                    f"(DRAM {dram.get('dram_return_pct', '?')}%, SMH {dram.get('smh_return_pct', '?')}%)\n"
-                )
+            computed_text += "\n  t3_relative_strength (S&P 500 benchmark; 5d + 20d dual-horizon, sticky release):\n"
+            _rs = computed_metrics.get("relative_strength_full") or {}
+            for _lbl, _k5, _k20 in (("SK Hynix", "skhx_5d_vs_spx_pp", "skhx_20d_vs_spx_pp"),
+                                    ("Micron", "mu_5d_vs_spx_pp", "mu_20d_vs_spx_pp")):
+                _v5, _v20 = _rs.get(_k5), _rs.get(_k20)
+                if _v5 is not None and not (isinstance(_v5, float) and math.isnan(_v5)):
+                    _t20 = f"{_v20:+.2f}pp" if (_v20 is not None and not (isinstance(_v20, float) and math.isnan(_v20))) else "n/a"
+                    computed_text += f"    {_lbl} vs S&P 500: 5d {_v5:+.2f}pp / 20d {_t20}\n"
+                else:
+                    computed_text += f"    {_lbl} vs S&P 500: (not computed — price cell missing in lookback window)\n"
             computed_text += (
-                f"    Overall severity:        {rs.get('overall_severity') or 'None'}\n"
-                f"    Overall fired (red):     {rs.get('overall_fired', False)}\n"
-                "    Thresholds:              red ≤ -10pp on ANY sub-trigger | yellow ≤ -5pp\n"
-            )
-            sub = rs.get("fired_sub_triggers") or []
-            if sub:
-                computed_text += "    Fired sub-triggers:      " + "; ".join(
-                    f"{s[0]}: {s[1]}" if isinstance(s, (list, tuple)) and len(s) >= 2 else str(s)
-                    for s in sub
-                ) + "\n"
+                f"    Overall fired (red):     {bool(_rs.get('overall_fired'))}\n"
+                f"    Overall severity:        {_rs.get('overall_severity')}\n")
+            computed_text += ("    Thresholds: red ≤ -10pp on BOTH 5d and 20d; "
+                              "yellow ≤ -5pp on both; sticky release after 5 "
+                              "sessions with 5d > -5pp\n")
+            for _sev, _d in (_rs.get("fired_sub_triggers") or []):
+                computed_text += f"    [{_sev}] {_d}\n"
+            _latch = _rs.get("latch") or {}
+            if _latch.get("latched"):
+                computed_text += f"    LATCH: RED held — recovery {_latch.get('recovery_streak', 0)}/5 sessions toward release\n"
 
         fpe = computed_metrics.get("forward_pe") or {}
         if fpe:
@@ -1877,8 +1863,8 @@ Content — the brief's SPINE is developments along the signals and indicators (
        The reason for the distinction: the T1 firing count is the institutional read for "are we in peak"; mixing watch-overlay status changes into that signal triggers false-positive reads.
        **v3.39.10 — "NO SIGNALS FIRED" IS A CONDITIONAL CLAIM:** You may write "no signals fired or unfired today" (or any equivalent blanket no-change claim) ONLY when ZERO tier-1-5 signals changed status in EITHER direction. If ANY tier-1-5 signal fired OR unfired today — including a reversion to 'Not fired' — that phrasing is FALSE and FORBIDDEN. Do NOT open with "no signals fired or unfired" and then describe a signal change in the same paragraph (e.g. "No signals fired or unfired today; t3_relative_strength reverted to 'Not fired'" is a self-contradiction and will be overwritten at render time). Lead instead with the actual change: "Relative strength (t3) reverted to 'Not fired' as ...". A change in a watch overlay (Indicators 6/7/8) alone does NOT make the tier-1-5 claim false — those are overlays, not signals — but state the overlay change explicitly rather than burying it.
   (ii) Fresh news bearing on a signal — PRIORITIZE items that align with a framework signal even when they don't formally fire it. Example: a single-firm "Sell SK Hynix" rating doesn't fire t2_insider_sales (which requires actual insider transactions), but in a market of 26-up / 0-down EPS revisions it IS the first sell-side dissent — a psychological inflection the framework cares about deeply. Surface these as "directional confirmation of [signal name]" or "first dissent from the [signal name] consensus".
-  (iii) Notable moves — name specific tickers with 1D % moves WHEN the move carries thesis information. A memory pure-play DIVERGING from the semi tape is signal — lead with it. A broad co-move, where the memory names rise/fall in step with NVDA/AVGO/TSM/the SOX, is NOT a stock-specific event: report it as market-wide and route it per DRIVERS & ATTRIBUTION below; do NOT pin it on any single name's micro story.
-  (iv) Macro — a macro development (rates, inflation, the Fed, oil, major geopolitics, China export policy, AI-capex commitments) earns a mention ONLY when it has a credible transmission channel INTO one of our indicators. When it does, NAME the channel, not just the headline — e.g. easing inflation / a pulled-forward rate-cut path re-rates tech and lifts the memory names, which bears on relative-strength-vs-SOX (t3) and the forward multiple (t2_pe_compressed), while cheaper capital supports hyperscaler capex (t2). A market-wide move with NO read-through to an indicator is noted as macro and dropped — it is backdrop, not a framework development.
+  (iii) Notable moves — name specific tickers with 1D % moves WHEN the move carries thesis information. A memory pure-play DIVERGING from the semi tape is signal — lead with it. A broad co-move, where the memory names rise/fall in step with NVDA/AVGO/TSM/the S&P 500, is NOT a stock-specific event: report it as market-wide and route it per DRIVERS & ATTRIBUTION below; do NOT pin it on any single name's micro story.
+  (iv) Macro — a macro development (rates, inflation, the Fed, oil, major geopolitics, China export policy, AI-capex commitments) earns a mention ONLY when it has a credible transmission channel INTO one of our indicators. When it does, NAME the channel, not just the headline — e.g. easing inflation / a pulled-forward rate-cut path re-rates tech and lifts the memory names, which bears on relative-strength-vs-S&P 500 (t3) and the forward multiple (t2_pe_compressed), while cheaper capital supports hyperscaler capex (t2). A market-wide move with NO read-through to an indicator is noted as macro and dropped — it is backdrop, not a framework development.
 
 DRIVERS & ATTRIBUTION (v3.41.5):
   - SUMMARIZE; do not fabricate a driver. For a routine move, or a broad/market-wide move, state what happened and (where relevant) route it to the indicator it touches — do NOT invent a stock-specific cause.
@@ -2163,7 +2149,7 @@ evidence (rel-strength spreads, hyperscaler CapEx/OCF ratios, forward P/E,
 EPS revisions, single-day moves, etc.):
 
   1. LEAD with the exact numbers. Quote them from COMPUTED METRICS.
-     Example: "5-day vs SOX: SK Hynix -3.21pp, Micron -2.84pp, DRAM
+     Example: "vs S&P 500: SK Hynix 5d -3.21pp / 20d -4.10pp, Micron 5d -2.84pp
      ETF vs SMH -1.10pp. Severity: None (yellow threshold -5pp,
      red threshold -10pp — neither crossed)."
   2. THEN a SHORT trend/context note (≤1/3 of the words). Example:

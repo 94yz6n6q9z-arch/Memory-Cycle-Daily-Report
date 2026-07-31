@@ -133,7 +133,7 @@ class TestIssue2BenchmarksFetched:
     def test_sox_relative_strength_returns_numeric_when_sox_present(self):
         """When ^SOX is in the history columns (because ALL_TICKERS was
         fetched), get_relative_strength_vs_sox returns a number, not None."""
-        from src.data.prices import get_relative_strength_vs_sox
+        from src.data.prices import get_relative_strength_vs_benchmark
 
         # 10 trading days of fake history; SK Hynix down -12%, SOX down -2%
         dates = pd.date_range("2026-05-01", periods=10, freq="B")
@@ -144,7 +144,7 @@ class TestIssue2BenchmarksFetched:
             "MSCI ACWI Semiconductor": sox_prices,  # benchmark name from config
         }, index=dates)
 
-        spread = get_relative_strength_vs_sox("SK Hynix", history, days=5)
+        spread = get_relative_strength_vs_benchmark("SK Hynix", history, days=5, benchmark_col="MSCI ACWI Semiconductor")
         assert spread is not None, (
             "v3.39.7.6 issue 2 regression: with SOX in the columns, the "
             "function must compute a numeric spread."

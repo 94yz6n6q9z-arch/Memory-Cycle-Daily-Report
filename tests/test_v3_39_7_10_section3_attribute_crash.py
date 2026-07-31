@@ -104,10 +104,9 @@ def _make_rel_strength_verdict(
 ) -> dict:
     """Build a minimal valid rel_strength_verdict dict."""
     return {
-        "skhx_5d_vs_sox_pp": skhx_pp,
-        "mu_5d_vs_sox_pp": mu_pp,
-        "dram_etf_vs_smh": {"spread_pp": dram_pp},
-    }
+        "skhx_5d_vs_spx_pp": skhx_pp,
+        "mu_5d_vs_spx_pp": mu_pp,
+            }
 
 
 class TestBuildIndicatorsSectionRunsWithoutError:
@@ -164,9 +163,8 @@ class TestSnippetActuallyInjects:
         verdict = _make_rel_strength_verdict()
         html_out = _build_indicators_section(assessments, rel_strength_verdict=verdict)
         # Snippet uses signature text from _build_relative_strength_snippet
-        assert "SK Hynix 5d vs SOX:" in html_out
-        assert "Micron 5d vs SOX:" in html_out
-        assert "DRAM ETF 5d vs SMH:" in html_out
+        assert "SK Hynix 5d vs S&amp;P 500:" in html_out
+        assert "Micron 5d vs S&amp;P 500:" in html_out
 
     def test_snippet_not_present_for_non_t3_indicators(self):
         """Sanity check the gate works — snippet only renders for t3_relative_strength."""
@@ -174,17 +172,16 @@ class TestSnippetActuallyInjects:
         verdict = _make_rel_strength_verdict()
         html_out = _build_indicators_section(assessments, rel_strength_verdict=verdict)
         # The snippet's signature text MUST NOT appear in non-t3 rows
-        assert "SK Hynix 5d vs SOX:" not in html_out
+        assert "SK Hynix 5d vs S&amp;P 500:" not in html_out
 
     def test_actual_value_rendered_for_t3(self):
         """Verify the numeric value (not just label) appears in HTML."""
         assessments = [_make_assessment(indicator_id="t3_relative_strength")]
-        verdict = _make_rel_strength_verdict(skhx_pp=-7.42, mu_pp=-3.18, dram_pp=-12.55)
+        verdict = _make_rel_strength_verdict(skhx_pp=-7.42, mu_pp=-3.18)
         html_out = _build_indicators_section(assessments, rel_strength_verdict=verdict)
         # Each value should render with sign + 2 decimals + pp suffix
         assert "-7.42pp" in html_out
         assert "-3.18pp" in html_out
-        assert "-12.55pp" in html_out
 
     def test_color_coding_red_band(self):
         """SK Hynix at -12pp ≤ -10pp threshold → red Fired color."""
