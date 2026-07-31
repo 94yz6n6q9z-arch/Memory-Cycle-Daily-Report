@@ -673,6 +673,13 @@
       "next_check_due": "2026-05-23",
       "notes": "v3.4.4 NEW. Section 4 deep-dive only. Per-sub status mapped to event lifecycle phase (pre_event \u2192 f1_filed \u2192 roadshow \u2192 pricing \u2192 trading \u2192 completed | canceled). Authoritative state: data/adr_event_tracking.yaml. User-facing label 'Indicator 8'; legacy internal sub-ID i7_adr_launch preserved in COMPANY_SPECIFIC_INDICATORS.",
       "display_name": "US ADR / SPO event tracking"
+    },
+    "t3_capex_plateau": {
+      "current_status": "Not fired",
+      "fired_since": null,
+      "last_updated": "2026-07-31",
+      "evidence_log": [],
+      "next_check_due": null
     }
   }
 }

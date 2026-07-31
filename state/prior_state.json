@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-07-31T09:42:14.431479+00:00",
+  "saved_at_iso": "2026-07-31T10:26:57.944217+00:00",
   "executive_summary": {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
@@ -23,14 +23,14 @@
       }
     ],
     "base_case": {
-      "probability_pct": 44.0,
+      "probability_pct": 46.0,
       "peak_months_away": 0.0,
       "peak_window_start": "June 2026",
       "peak_window_end": "June 2026",
       "return_to_peak_pct": 0.0
     },
     "bull_case": {
-      "probability_pct": 14.0,
+      "probability_pct": 12.0,
       "peak_months_away": 6.0,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q1 2027",
@@ -43,10 +43,10 @@
       "peak_window_end": "June 2026",
       "return_to_peak_pct": -27.789580908032583
     },
-    "delta_from_prior_text": "TAPE CIRCUIT BREAKER Level 3 (post-peak) is the dominant state change: peak_months_away set to 0 across base and bear; returns now measured to trough. t2_capex_parabolic reverted Fired \u2192 Partially fired (bear -3pp, bull +2pp, base unchanged on peak timing). t3_relative_strength fired Not fired \u2192 Fired (bear +5pp, bull -3pp). Net: bear 39\u219242pp, bull 15\u219214pp, base 46\u219244pp. Bear return_to_peak_pct calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough) given T3 now fired and circuit breaker Level 3 active. Hard invariant check: base(44) > bear(42) \u2713; base(44) > bull(14) \u2713; sum=100 \u2713.",
+    "delta_from_prior_text": "Indicator distribution shifted vs prior: t2_capex_parabolic Fired\u2192Partially fired (unfire: bear -3pp, bull +2pp, base peak extends \u2014 but circuit breaker hard-pins peak_months_away=0 for all cases); t3_relative_strength Not fired\u2192Fired (new fire: bear +5pp, bull -3pp). Net: bear +2pp (42%), bull -2pp (12%), base unchanged at 46%. Bear return_to_peak_pct deepened to -42% per historical calibration band (Any T3 fired: -40 to -50%; historical average drawdown -43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Circuit breaker (Level 3 SELL, peak June 22 at \u20a92,919,000, -41.14% drawdown) hard-pins peak_months_away=0 across all scenarios.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "Two signal transitions define today's brief. CapEx parabolic (t2) stepped back from Fired to Partially fired as the Q2 earnings cycle closed with only Amazon and Alphabet explicitly guiding 2027 CapEx above 2026 \u2014 Microsoft guided flat at $190B and Meta disclosed no 2027 figure \u2014 leaving the bull-confirm threshold half-met [\u2192\u00a73]. Simultaneously, relative strength (t3) fired as SK Hynix's 5-day spread vs SOX reached -22.68pp and Micron's vs S&P 500 hit -12.07pp, both deep in red territory [\u2192\u00a74]; today's violent single-session bounces (+29.95% SK Hynix, +18.36% Micron, +26.81% Samsung) are a broad tape recovery, not a memory-specific event, and do not reset the 5-day window. The circuit breaker remains at Level 3 (peak 2,919,000 KRW on June 22; drawdown -41% as of July 31), establishing the cycle peak as behind us [\u2192\u00a72]. Amazon's explicit statement that higher memory costs drove its $20B CapEx raise is the clearest value-chain signal of the session: hyperscaler demand remains firm, but the cost-inflation transmission is now visible in OCF strain \u2014 aggregate CapEx/OCF across the four hyperscalers stands at 89.9%, with Google at 115% and Amazon at 170% for the latest quarter [\u2192\u00a74]. Mirae Asset's -33% SK Hynix and -33% Samsung target cuts, alongside a first analyst warning that Micron revenue could halve by 2030, mark the opening of sell-side dissent [\u2192\u00a73]. Samsung's confirmation of HBM4E sample shipments and a three-fold HBM4 QoQ ramp reinforces the competitor dynamics overlay [\u2192\u00a74]."
+    "executive_brief": "Two signal transitions define today's brief: t2_capex_parabolic reverted to 'Partially fired' as Microsoft's FY27 CapEx guidance landed flat at the $190B baseline rather than above it, and Meta withheld 2027 guidance entirely \u2014 only Amazon and Alphabet satisfy the above-2026 threshold [\u2192\u00a73]. Simultaneously, t3_relative_strength fired (red) as SK Hynix underperformed the S&P 500 by -31.5pp on the 5-day and -49.3pp on the 20-day window, with Micron at -12.1pp / -14.7pp \u2014 both names through the -10pp dual-horizon threshold [\u2192\u00a74]. The circuit breaker is decisive context: the tape established a cycle peak at \u20a92,919,000 on June 22, with SK Hynix now -41% from that level; today's +30% single-session surge [\u2192\u00a71] is a violent bear-market rally, not a new high. Amazon's Q2 print explicitly tied its $220B 2026 CapEx raise to 'higher cost of memory,' and Samsung's earnings flagged supply shortage persisting through 2028 with HBM4 sales +300% QoQ \u2014 fundamental demand remains intact, but the tape peaked months before these prints, consistent with the stock-leads-fundamentals framework [\u2192\u00a72]. The analyst community is splitting: Mirae cut SK Hynix's target -33% and Samsung's -33% while leaving EPS estimates unchanged; Citi and UBS upgraded SK Hynix on memory tightness; one analyst warned Micron revenue could halve by 2030 \u2014 the first material bear dissent in a consensus that has been uniformly bullish [\u2192\u00a75]. SK Group Chairman Chey Tae-won purchased \u20a94.9B in SK Hynix shares, a notable insider buy against the prior insider-sales signal."
   },
   "indicator_assessments": [
     {
@@ -320,23 +320,23 @@
       "description": "Buyers panic-locking long-term supply. Paradoxical bearish signal \u2014 already fired.",
       "what_to_look_for": "3+ year HBM LTA announcements. 'Sold out through 2027/2028' phrasing. Currently fired (HBM3E sold out through 2026; Hynix HBM4 LTAs with Nvidia).",
       "current_status": "Fired",
-      "where_we_stand": "Fired. Samsung Q2 2026 (July 30) confirms multi-year LTAs finalized with top-5 global data center customers (AWS, Microsoft, Google named per TrendForce); 60-70% of memory output to be locked under LTAs; supply shortage through 2028. SK Hynix Q2 2026 (July 29) confirms LTA negotiations concluded with ~10 customers. Both cite\u2026",
-      "latest_developments": "Samsung confirms LTAs with top-5 hyperscalers (AWS, Microsoft, Google) covering 60-70% of output. SK Hynix confirms ~10 customer LTAs. Both cite shortage through 2028.",
+      "where_we_stand": "Fired. SK Hynix disclosed ~10 LTA customers on its Q2 2026 earnings call (2026-07-29); Samsung announced multi-year supply agreements with its top 5 global data center customers and five-year rolling LTAs (CHOSUNBIZ, 2026-07-30). Both companies cite supply shortage persisting through 2028. HBM3E sold out through 2026; HBM4 LTAs with NVIDIA\u2026",
+      "latest_developments": "Samsung five-year rolling LTAs confirmed (CHOSUNBIZ 2026-07-30); SK Hynix ~10 LTA customers disclosed on earnings call (2026-07-29). Both prints add new named parties and explicit multi-year commitment language \u2014 escalating conviction on an already-fired signal.",
       "relevant_links": [
         {
-          "title": "Samsung LTA 60-70% capacity lock-in",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5jVlM2TTZZQ1k0WklCUUVtUUFzTUZvUFI3cVBYQjE0UVhyalJZRlpUcXNEVUwyWnBnTzU2NHJDUlJBNlZ0ZktMakFhNk9XQWZRdzhVTmgzT2V6MEtvR2EyU3FqS2RtUDlRNEpBNk5LdzJhOWhyQlE?oc=5"
-        },
-        {
-          "title": "TrendForce: Samsung LTA with AWS, Microsoft, Google",
-          "url": "https://news.google.com/rss/articles/CBMi4wFBVV95cUxQODdmNjRkSXppY3FURU9Nb1Y2dHdoVHdmdVVaWHYtQjU4QzlsMVNWbFlIcE13SDBnVnlVeEdFZTZfa2RqYktCWm1wLVZIeTEya0xTdWRrLWtfeFkzYzZtTXJseWN3SURpMlBISGo1RzBFSEYzRkNBcU80eVdhcmhObklPZXY3bnJWRWVkVTFyUzZ4UHFxbzhFSWVGSFdsXzVIamRRaWcwU056U2RzeUE0VktJck1EWFI4N3BybzQyS01ncGdqeXhDT1hYeVZTQ1laUWpSOEVIV1VSX0t0YU9Rck03OA?oc=5"
-        },
-        {
-          "title": "SK Hynix Q2 2026 earnings call: ~10 LTAs concluded",
+          "title": "SK Hynix Q2 2026 earnings call transcript",
           "url": "https://finance.yahoo.com/quote/HY9H.MU/earnings/HY9H.MU-Q2-2026-earnings_call-653208.html"
+        },
+        {
+          "title": "Samsung locks up AI chip supply for five years \u2014 Gadget Review",
+          "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPcXlIaXV1ekZIVVJnbGs2dW1YZG9RNTNjMlE4amt3aU5paFVkTUxZMDNIWWRZcnpBazZoZTlLV0dGbElwbEVOMlZKMlYyZk5BWE1UczBZTW4tTFhNZ0pUYkxHT2YtZDBsMkFRbEc0UE9DS3FsWTE0eTFJZ05UZ2VMLU41a0ZjUTVhczhuUjRaajNmazZhelR4T05EVThsS3JXazNqalhyNXpfbkNwdFBOZVRPTmJIS0lEajFKbFBrVWtpUQ"
+        },
+        {
+          "title": "Samsung chip profit jumps 250-fold, signs long-term AI supply deals \u2014 Business Standard",
+          "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxPQjhua2x1YUkyOGZYQ21qZFVnTmR1azJMTzVzTHB5UmNPS0E1d1F4V3hxMW5CX2NVakRXRVU2a3dtdkJjV3hpV2Q0N0NiSTRValJVV3drTWs1R2VYN3ZlT2xQS3AtcHE0Z3RqTlEyMDVfS2NLSk1tdjM2VDRqMjRRaUJNZG10SjhiTEY1LWR4VmF1YllROWF6akllUXFMWXY1amJfTWF4NW5WVlpibUhrTkJOTlctNzhfSXd4bTRiclBIa0Uxc3lNb25Rb9IB0AFBVV95cUxQRWM3bkRwRGluT3podkZqQkY0R1pXVEwtTXpDZktSUm1sWHgwY3U2b1lQMDFzVDVHdkFBenJlLVNqTVJsZnkwY1k0XzN3TldhOWt1NDR2a3JnX1IwYzI2N3pkVER3dUJyamp0d0pGSGVyV3dzeS1XekE5TW9fYUZyLW52MWNDZExWYWZHZXIxUHRQR19PQ25mR0Z2WlFrZ2N5cDB0N1kza0RyREg0NlRoVVhNTkYyNnlCcWtEenNTbjdYZ2ZZY2dzRTVUY1NfLUI5"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status unchanged at Fired. New corroborating evidence: Samsung five-year rolling LTAs (CHOSUNBIZ 2026-07-30) and SK Hynix ~10 LTA customers (earnings 2026-07-29) add named parties and explicit multi-year commitment language, escalating conviction. No reversal condition met."
     },
     {
       "id": "t2_pe_compressed",
@@ -376,6 +376,27 @@
         {
           "title": "SK Hynix Q2 earnings \u2014 DRAM ASP +30% QoQ",
           "url": "https://finance.yahoo.com/quote/HY9H.MU/earnings/HY9H.MU-Q2-2026-earnings_call-653208.html"
+        }
+      ],
+      "change_vs_prior": null
+    },
+    {
+      "id": "t3_capex_plateau",
+      "tier": 3,
+      "name": "Hyperscaler CapEx plateau (rate stabilizes)",
+      "description": "Hyperscalers keep spending at enormous scale but STOP ACCELERATING \u2014 next-period guidance lands flat vs the prior baseline. This is the 'infrastructure is built' moment: a peak-confirmation signal, distinct from CapEx acceleration (t2_capex_parabolic, boom fuel) and from CapEx cuts (Tier 4, bust confirmation).",
+      "what_to_look_for": "A tracked hyperscaler (MSFT, GOOGL, AMZN, META) guides next-period CapEx FLAT vs its prior baseline (within \u00b15%) or uses stabilization language: 'stabilize', 'similar level', 'in line with', 'discipline', 'ROI focus', 'moderating growth rate'. STATUS LADDER: 1 hyperscaler at plateau = Partially fired; 2 or more = Fired. CANONICAL EXAMPLE (2026-07-30): Microsoft guiding FY27 CapEx at $190B against a $190B 2026 baseline = plateau, Partially fired. HARD RULES: (1) This is NOT CapEx cutting \u2014 dollars remain enormous; the SIGNAL is the growth rate reaching zero. An explicit guide-DOWN >5% hands off to the Tier 4 cut/idling family \u2014 and this signal REMAINS fired (progression continues, it does not reverse). (2) Guidance still growing >5% YoY is NOT this signal, however 'disciplined' the language \u2014 that is decelerating acceleration, still t2_capex_parabolic territory. (3) This is a CONTRARIAN-DIRECTION peak indicator: a plateau is LATE-CYCLE CONFIRMATION ('we are done building \u2014 thanks Nvidia, Micron, SK Hynix'), never good news for memory suppliers, never a reversal of the boom. Never describe a plateau as stabilization-is-healthy. (4) Reversal condition is the OPPOSITE event only: a hyperscaler re-ACCELERATING guidance >10% above baseline on a subsequent print. Once fired on a dated print, status persists until the next print.",
+      "current_status": "Not fired",
+      "where_we_stand": "Not fired. Microsoft FY27 CapEx guided at $190B with 'year-over-year growth expected' language \u2014 the baseline is $190B, so guidance is AT baseline, not flat vs prior. The 'growth expected' qualifier prevents plateau classification. Amazon guides 2027 CapEx above 2026 (bull-confirm direction). Meta withheld 2027 guidance. Alphabet (prior evidence) guided\u2026",
+      "latest_developments": "Microsoft Q1 FY27 earnings (2026-07-30): FY27 CapEx $190B with 'year-over-year growth expected' \u2014 growth language disqualifies plateau. Amazon Q2 2026 (2026-07-31): 2027 CapEx above 2026 confirmed. No plateau trigger met across any tracked hyperscaler.",
+      "relevant_links": [
+        {
+          "title": "Microsoft Q1 FY27 earnings call",
+          "url": "https://finance.yahoo.com/quote/MSFT/earnings/MSFT-Q4-2026-earnings_call-647770.html"
+        },
+        {
+          "title": "Amazon Q2 2026 earnings call",
+          "url": "https://finance.yahoo.com/quote/AMZN/earnings/AMZN-Q2-2026-earnings_call-657334.html"
         }
       ],
       "change_vs_prior": null
@@ -429,9 +450,9 @@
     {
       "id": "t3_relative_strength",
       "tier": 3,
-      "name": "Memory pure-plays underperform SOX",
-      "description": "Memory stocks losing relative strength vs SOX semiconductor index.",
-      "what_to_look_for": "SK Hynix (000660.KS) or Micron (MU) underperforms SOX (^SOX) by >10% over 5 trading days. Currently fired then reversed (Mar 2026 fired, May rally erased).",
+      "name": "Memory pure-plays underperform the market (S&P 500)",
+      "description": "Memory stocks losing relative strength vs the broad market. v3.43.0: benchmark is the S&P 500 ONLY \u2014 SOX removed (the SOX is ~40% memory, so the spread is self-referential and mean-reverts against memory names exactly during a memory unwind: fired Jul-6-2026, un-fired mid-crash, re-fired Jul-31).",
+      "what_to_look_for": "FIRE (red): SK Hynix (000660.KS) or Micron (MU) underperforms the S&P 500 by >10pp on BOTH the 5-day AND 20-day windows \u2014 fast entry, trend-confirmed, so a single volatile session cannot trip it. WATCH (yellow): both windows beyond -5pp. STICKY RELEASE: once red, the signal STAYS red until the 5-day spread holds above -5pp for 5 consecutive sessions \u2014 it fires fast and releases slow; daily flapping is a defect, not a feature. The computed spreads are the sole authority for this signal's status (deterministic, two-sided). Where-we-stand and targets are expressed against the S&P 500 spread only; never reference the SOX. Thresholds provisional pending backtest.",
       "current_status": "Fired",
       "where_we_stand": "Fired as of today. SK Hynix 5-day vs SOX: -22.83pp (red threshold: -10pp \u2014 crossed by 12.83pp). Micron 5-day vs SOX: -4.43pp (below red threshold). Micron 5-day vs S&P 500: -12.78pp (red threshold crossed). DRAM ETF 5-day vs SMH: -4.63pp. Overall severity: red. Fired sub-triggers: SK Hynix 5d vs SOX -22.83pp; SK Hynix 5d vs S&P 500 -31.2pp; Micron 5d vs S&P 500 -12.78pp. Today's session \u2014 SK Hynix -5.64% against MU +16.97%, AMAT +14.89%, AMD +13.33%, ASML +7.11% \u2014 is the sharpest single-session memory-vs-semi divergence in the current cycle.\u2026",
       "latest_developments": "SK Hynix -5.64% today while semi tape surged broadly. 5-day vs SOX spread hit -22.83pp, firing the red threshold. Tape circuit breaker Level 1 active since July 30.",

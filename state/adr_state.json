@@ -3,7 +3,7 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session (pre-F-1; no SEC EDGAR filing yet detected)",
-    "last_aggregator_run": "2026-07-31T09:30:58Z",
+    "last_aggregator_run": "2026-07-31T10:18:46Z",
     "description": "Live state for Indicator 8 ADR event tracking. Auto-updated by src/analysis/adr_aggregator.py:aggregate_adr_extractions() \u2014 F-1 detection from SEC EDGAR atom feed, roadshow demand from news coverage, pricing-day from 424B filings, insider sales from Form 4 + DART."
   },
   "lifecycle_phase": "trading",
@@ -64,8 +64,15 @@
     "status_evaluated_at": "2026-07-31",
     "status_evaluator": "adr_aggregator",
     "current_state": {
-      "insider_sales_in_window": [],
-      "insider_sales_total_usd_m_in_window": 0
+      "insider_sales_in_window": [
+        {
+          "insider": "Chey Tae-won",
+          "role": "SK Group Chairman",
+          "usd_m": 3.41,
+          "date": "2026-07-31"
+        }
+      ],
+      "insider_sales_total_usd_m_in_window": 3.41
     },
     "evidence_log": []
   }

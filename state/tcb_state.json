@@ -8,16 +8,17 @@
     "level_since": "2026-07-31",
     "post_peak": true,
     "components_fired": [
+      "shock",
       "drawdown",
       "distribution",
       "trend_break"
     ],
     "components": {
       "shock": {
-        "fired": false,
-        "worst_day": null,
-        "worst_ret_pct": null,
-        "threshold_pct": -19.66
+        "fired": true,
+        "worst_day": "2026-07-13",
+        "worst_ret_pct": -15.37,
+        "threshold_pct": -8.0
       },
       "drawdown": {
         "fired": true,
@@ -40,8 +41,10 @@
         "fired": true,
         "close": 1718000.0,
         "ma50": 2168306.83,
+        "ma20": 1900400.0,
         "ma50_falling": true,
-        "ma20_below_ma50": true
+        "ma20_below_ma50": true,
+        "reason": null
       },
       "failed_good_news": {
         "fired": false,
