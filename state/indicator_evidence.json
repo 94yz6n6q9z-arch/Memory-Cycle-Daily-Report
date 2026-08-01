@@ -2,14 +2,14 @@
   "_metadata": {
     "schema_version": "1.0",
     "bootstrap_source": "memory_supercycle_analysis.docx, May 9, 2026 \u2014 Part 5 firing table (lines 285-326 in extracted text)",
-    "last_full_update": "2026-07-31",
+    "last_full_update": "2026-08-01",
     "description": "Persistent evidence store. Per-indicator: current_status, fired_since, evidence_log of WHAT data fired it and reversal_condition. Layer 2 reads this on each run, preserves prior fired state unless today's evidence matches the reversal_condition. Live-persistence indicators (forward_pe, rel_strength, cycle matrix) are recomputed each run regardless. See src/state.py for the API and docstrings."
   },
   "indicators": {
     "t1_spot_decline": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-20",
@@ -27,7 +27,7 @@
     "t1_lead_times": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -43,7 +43,7 @@
     "t1_price_cuts_no_demand": {
       "current_status": "Fired",
       "fired_since": "2026-04-28",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-04-28",
@@ -59,7 +59,7 @@
     "t1_oem_inventory": {
       "current_status": "Fired",
       "fired_since": "2025-09-01",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2025-09-01",
@@ -75,7 +75,7 @@
     "t1_efficiency_shock": {
       "current_status": "Fired",
       "fired_since": "2026-03-24",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-03-24",
@@ -91,7 +91,7 @@
     "t1_demand_destruction": {
       "current_status": "Fired",
       "fired_since": "2026-04-15",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-04-15",
@@ -107,7 +107,7 @@
     "t2_eps_revisions": {
       "current_status": "Partially fired",
       "fired_since": "2026-07-14",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -148,7 +148,7 @@
     "t2_capex_parabolic": {
       "current_status": "Partially fired",
       "fired_since": "2026-01-15",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-01-15",
@@ -197,7 +197,7 @@
     "t2_ltas_signed": {
       "current_status": "Fired",
       "fired_since": "2025-12-01",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2025-12-01",
@@ -221,7 +221,7 @@
     "t2_insider_sales": {
       "current_status": "Fired",
       "fired_since": "2026-03-15",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-03-15",
@@ -238,7 +238,7 @@
     "t2_pe_compressed": {
       "current_status": "Fired",
       "fired_since": "2026-04-20",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-20",
@@ -295,7 +295,7 @@
     "t2_hyperscaler_capex_revenue": {
       "current_status": "Fired",
       "fired_since": "2026-01-30",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-01-30",
@@ -311,7 +311,7 @@
     "t2_spot_contract_spread": {
       "current_status": "Fired",
       "fired_since": "2026-04-01",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-04-01",
@@ -328,7 +328,7 @@
     "t3_contract_decline": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -344,7 +344,7 @@
     "t3_supplier_inventory_rebuild": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -360,7 +360,7 @@
     "t3_relative_strength": {
       "current_status": "Fired",
       "fired_since": "2026-06-09",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-03-15",
@@ -473,7 +473,7 @@
     "t3_wfe_orders_crack": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -489,7 +489,7 @@
     "t3_eps_miss_guidance": {
       "current_status": "Not fired",
       "fired_since": "2026-07-13",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -521,7 +521,7 @@
     "t4_yoy_asp_negative": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -537,7 +537,7 @@
     "t4_guidance_cuts": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -553,7 +553,7 @@
     "t4_capex_slashed": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -569,7 +569,7 @@
     "t4_layoffs": {
       "current_status": "Not fired",
       "fired_since": "2026-07-20",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-09",
@@ -625,7 +625,7 @@
     "t1_competitor_dynamics": {
       "current_status": "Partially fired",
       "fired_since": "2026-05-22",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-22",
@@ -643,7 +643,7 @@
     "t1_us_adr_event": {
       "current_status": "Fired",
       "fired_since": "2026-06-06",
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [
         {
           "date": "2026-05-22",
@@ -677,7 +677,7 @@
     "t3_capex_plateau": {
       "current_status": "Not fired",
       "fired_since": null,
-      "last_updated": "2026-07-31",
+      "last_updated": "2026-08-01",
       "evidence_log": [],
       "next_check_due": null
     }

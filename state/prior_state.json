@@ -1,27 +1,10 @@
 {
-  "saved_at_iso": "2026-07-31T10:26:57.944217+00:00",
+  "saved_at_iso": "2026-08-01T09:02:13.022475+00:00",
   "executive_summary": {
     "current_phase": 4,
     "current_phase_label": "Boom / Euphoria (late stage)",
     "tier_status_summary": "T1: 4/6 fired | T2: 7/7 fired (2 partial) | T3: 1/5 fired | T4: 0/4 fired",
-    "new_triggers_today": [
-      {
-        "tier": 2,
-        "indicator_id": "t2_capex_parabolic",
-        "indicator_name": "CapEx announcements parabolic",
-        "old_status": "Fired",
-        "new_status": "Partially fired",
-        "description": "Microsoft Q1 FY27 earnings (2026-07-30) guides FY27 CapEx at $190B with 'year-over-year growth expected' qualifier, but baseline 2026 CapEx was also $190B, placing guidance AT not ABOVE threshold. Meta Q2 2026 earnings (2026-07-30) provides 2026 CapEx guidance ($137.5B) but explicitly does NOT disclose 2027 CapEx \u2026"
-      },
-      {
-        "tier": 3,
-        "indicator_id": "t3_relative_strength",
-        "indicator_name": "Memory pure-plays underperform SOX",
-        "old_status": "Not fired",
-        "new_status": "Fired",
-        "description": "Yesterday's status was Not fired (evidence [12] 2026-07-18). Today's computed 5-day relative strength shows SK Hynix underperformed SOX by -22.83pp and Micron underperformed S&P 500 by -12.78pp, both crossing the -10pp red-fire threshold. This is a reversal from yesterday's recovery zone back into red fire. signal \u2026"
-      }
-    ],
+    "new_triggers_today": [],
     "base_case": {
       "probability_pct": 46.0,
       "peak_months_away": 0.0,
@@ -43,10 +26,10 @@
       "peak_window_end": "June 2026",
       "return_to_peak_pct": -27.789580908032583
     },
-    "delta_from_prior_text": "Indicator distribution shifted vs prior: t2_capex_parabolic Fired\u2192Partially fired (unfire: bear -3pp, bull +2pp, base peak extends \u2014 but circuit breaker hard-pins peak_months_away=0 for all cases); t3_relative_strength Not fired\u2192Fired (new fire: bear +5pp, bull -3pp). Net: bear +2pp (42%), bull -2pp (12%), base unchanged at 46%. Bear return_to_peak_pct deepened to -42% per historical calibration band (Any T3 fired: -40 to -50%; historical average drawdown -43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Circuit breaker (Level 3 SELL, peak June 22 at \u20a92,919,000, -41.14% drawdown) hard-pins peak_months_away=0 across all scenarios.",
+    "delta_from_prior_text": "No indicator status changes today; probabilities carry forward from prior brief with one magnitude adjustment. Bear return_to_peak_pct updated to -38% (from -27.8%) to align with the 4+ T1 / 7 T2 fired regime band (-35 to -45%), calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base case peak window unchanged. Circuit breaker Level 3 (SELL) remains operative since 2026-07-31.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "Two signal transitions define today's brief: t2_capex_parabolic reverted to 'Partially fired' as Microsoft's FY27 CapEx guidance landed flat at the $190B baseline rather than above it, and Meta withheld 2027 guidance entirely \u2014 only Amazon and Alphabet satisfy the above-2026 threshold [\u2192\u00a73]. Simultaneously, t3_relative_strength fired (red) as SK Hynix underperformed the S&P 500 by -31.5pp on the 5-day and -49.3pp on the 20-day window, with Micron at -12.1pp / -14.7pp \u2014 both names through the -10pp dual-horizon threshold [\u2192\u00a74]. The circuit breaker is decisive context: the tape established a cycle peak at \u20a92,919,000 on June 22, with SK Hynix now -41% from that level; today's +30% single-session surge [\u2192\u00a71] is a violent bear-market rally, not a new high. Amazon's Q2 print explicitly tied its $220B 2026 CapEx raise to 'higher cost of memory,' and Samsung's earnings flagged supply shortage persisting through 2028 with HBM4 sales +300% QoQ \u2014 fundamental demand remains intact, but the tape peaked months before these prints, consistent with the stock-leads-fundamentals framework [\u2192\u00a72]. The analyst community is splitting: Mirae cut SK Hynix's target -33% and Samsung's -33% while leaving EPS estimates unchanged; Citi and UBS upgraded SK Hynix on memory tightness; one analyst warned Micron revenue could halve by 2030 \u2014 the first material bear dissent in a consensus that has been uniformly bullish [\u2192\u00a75]. SK Group Chairman Chey Tae-won purchased \u20a94.9B in SK Hynix shares, a notable insider buy against the prior insider-sales signal."
+    "executive_brief": "No tier-1-5 signals fired or unfired today; all indicator statuses carry forward from yesterday's brief. The dominant development is SK Hynix +29.95% and Samsung +26.81% \u2014 the largest single-day moves in years \u2014 driven by SK Hynix chairman Chey Tae-won's first-ever personal share purchase, which catalyzed a sentiment reset after the stock's -41% drawdown from its June 22 peak [\u2192\u00a71]. Critically, the tape circuit breaker remains at Level 3 (SELL) with the cycle peak deterministically behind us; today's rally is a post-peak bounce, not a new high [\u2192\u00a72]. Micron -5.90% diverged sharply from the Korean names \u2014 a thesis-relevant split: Micron's 5d/20d underperformance vs the S&P 500 (-11.7pp / -15.7pp) keeps t3_relative_strength fired [\u2192\u00a73]. Amazon's Q2 print confirmed 2026 CapEx raised to $220B explicitly citing higher memory costs, and guided 2027 CapEx above 2026 \u2014 the second hyperscaler (with Alphabet) to satisfy the bull-confirm threshold, though t2_capex_parabolic remains Partially fired as Microsoft guides flat and Meta withholds 2027 guidance [\u2192\u00a74]. CXMT's LPDDR6 clearing R&D verification at 12.8 Gbps and its MSCI fast-track inclusion after a mega-IPO reinforce the competitor-dynamics overlay (Indicator 7, Partially fired) \u2014 near-term DDR5 spot pricing pressure in 1-3 months as Chinese capacity scales [\u2192\u00a74]. Samsung's earnings confirmation of supply shortage through 2028 and multi-year LTAs with top-5 data center customers add corroboration to t2_ltas_signed (Fired) but introduce no new signal transitions."
   },
   "indicator_assessments": [
     {
@@ -178,7 +161,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $50.97 (2026-07-31 print). Matrix basis (weekly means): current wk $50.93, +0.00% vs rolling 12w wk-peak $50.93 (wk ending 2026-08-02). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 122d old). Synthetic adjusted: 50.5% central (range 48-53%). Adjustments: tone +2.5pp (10 src, weight 0.4); supplier -30.0pp (1 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $50.97 (2026-07-31 print). Matrix basis (weekly means): current wk $50.93, +0.00% vs rolling 12w wk-peak $50.93 (wk ending 2026-08-02). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 123d old). Synthetic adjusted: 50.5% central (range 48-53%). Adjustments: tone +2.5pp (10 src, weight 0.4); supplier -30.0pp (1 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "TrendForce July 29 spot print: DDR5 $50.93, flat. Mirae Asset confirms 50+ consecutive up days in DRAM spot, with CXMT IPO failing to disrupt the trend. Matrix remains Row 1 \u00d7 Col 1.",
       "relevant_links": [
         {
