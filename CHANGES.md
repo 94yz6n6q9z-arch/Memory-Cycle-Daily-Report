@@ -1,3 +1,54 @@
+# v3.44.0 (2026-07-31) — CapEx parabolic latched; plateau redefined around the guidance surprise
+
+Response to the first v3.43.0 production run (Jul-31 20:26 UTC brief).
+Ruling 1 (Raul): "once triggered it triggered" — capex parabolic must never
+revert; the Jul-31 Fired -> Partially fired move made the setup look
+de-risked. Ruling 2: the plateau is about the SURPRISE in forward guidance
+stopping, not the level — confirming prior guidance IS the trigger; and
+Layer 2 argued past the spec's own canonical example ('AT baseline, not
+flat' + letting a growth qualifier override the reiterated $190B number).
+
+## t2_capex_parabolic — LATCHED (up-only)
+- Spec rewrite: downgrade path deleted ('bear catalyst if flat/down' is
+  gone); 2027-guidance direction demoted to context; LATCH RULE stated with
+  the Jul-31 downgrade named as the FORBIDDEN COUNTEREXAMPLE; flat/down
+  guidance explicitly routed to t3_capex_plateau in prose and in
+  trigger_numeric (routes_to, bear_catalyst removed).
+- DETERMINISTIC RATCHET (prompt rules failed twice on this signal):
+  computed_verdicts.apply_status_ratchet + LATCHED_UP_ONLY_IDS. Applied in
+  fast_tier at BOTH legs after the verdict table — pre-store (the evidence
+  store can never record a downgrade) and post-Sonnet (assessments,
+  prior_state, and the 24h trigger log can never show one). Prior status
+  read fresh from prior_state; first run = no-op; rising transitions pass
+  untouched; every hold is logged [status-ratchet].
+- The v3.43.0 STAGE PROGRESSION banner remains as a fail-closed backstop
+  but is now unreachable in normal operation (no downgrade transitions can
+  be generated for this signal).
+
+## t3_capex_plateau — guidance-surprise definition + 1-2/3-4 ladder
+- Per company, per print, vs that company's OWN PRIOR FORWARD GUIDANCE:
+  raise >5% = not at plateau; REITERATE/CONFIRM within ±5% = AT PLATEAU
+  (merely confirming is the event); cut >5% = hands to Tier 4, plateau
+  persists. Reversal = re-acceleration >10% above prior guidance.
+- HARD RULE: qualifiers cannot override numbers — MSFT $190B-on-$190B with
+  'growth expected' language IS the fire; the Jul-31 Layer 2 escape
+  reasoning is quoted in the spec as FORBIDDEN.
+- WITHHELD GUIDANCE (Meta): does not count toward the tally (no number to
+  compare) but must render as a 'withheld forward guidance' watch flag.
+- STATUS LADDER (Raul): 1-2 hyperscalers at plateau = Partially fired;
+  3-4 = Fired (trigger_numeric partial_at 1 / trigger_at 3). Worked Jul-31
+  example in spec: MSFT plateau (1/4) -> Partially fired; AMZN raised to
+  $220B + 2027 above = not at plateau; META = watch flag.
+- Deterministic per-company guidance ledger remains Release B.
+
+## Tests
+- NEW tests/test_v3_44_0_capex_latch_and_plateau.py (14): ratchet holds the
+  Jul-31 downgrade, passes rising transitions, no-ops on first run, ignores
+  non-latched ids, works on both object shapes; both-leg wiring + module
+  binding; spec asserts for latch, routing, ladder, qualifier rule,
+  withheld-guidance rule, worked example.
+- Full suite: 1,398 passed; 39 failing set byte-identical to baseline.
+
 # v3.43.0 (2026-07-31) — TCB ladder fixes, S&P-only relative strength, CapEx plateau indicator
 
 Response to the Jul-31 brief: the Tape Circuit Breaker read L1 at -52%, the

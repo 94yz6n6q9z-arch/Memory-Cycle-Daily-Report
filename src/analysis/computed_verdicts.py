@@ -152,6 +152,38 @@ def evaluate_all(computed_metrics: dict, signal_reasonings: list) -> dict:
     return out
 
 
+LATCHED_UP_ONLY_IDS = ("t2_capex_parabolic",)
+
+
+def apply_status_ratchet(objs: list, prior_status_by_id: dict, status_attr: str,
+                         id_attr: str, note_attr, stage: str) -> None:
+    """v3.44.0 — latched signals ratchet up only (Raul, Jul-31: 'once
+    triggered it triggered'). The parabola is a historical fact; later flat
+    guidance is t3_capex_plateau's event, never this signal's reversal.
+    Applied AFTER the verdict table at both legs, so no Layer 2 / Layer 3
+    output can ever move a latched signal's status below its prior status.
+    Rising transitions pass untouched. No prior status (first run) = no-op."""
+    rank = {"Not fired": 0, "Partially fired": 1, "Fired": 2}
+    by_id = {getattr(o, id_attr, None): o for o in (objs or [])}
+    for ind_id in LATCHED_UP_ONLY_IDS:
+        obj = by_id.get(ind_id)
+        prior = (prior_status_by_id or {}).get(ind_id)
+        if obj is None or prior not in rank:
+            continue
+        cur = getattr(obj, status_attr, None)
+        if rank.get(cur, 0) < rank[prior]:
+            setattr(obj, status_attr, prior)
+            if note_attr:
+                note = (f"Status held at '{prior}' by latch — this signal "
+                        f"ratchets up only; flat/declining guidance routes to "
+                        f"the CapEx plateau signal, not to a downgrade here.")
+                prior_note = getattr(obj, note_attr, None)
+                setattr(obj, note_attr,
+                        note if not prior_note else f"{note} {prior_note}")
+            logger.warning(f"[status-ratchet] {stage}: {ind_id} {cur!r} held at "
+                           f"{prior!r} (latched up-only)")
+
+
 def apply_to_objects(objs: list, verdicts: dict, status_attr: str,
                      id_attr: str, note_attr: Optional[str],
                      stage: str) -> None:

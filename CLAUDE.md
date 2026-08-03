@@ -1,3 +1,19 @@
+## v3.44.0 lessons (2026-07-31)
+
+- **Latched signals need a mechanical latch, not a spec sentence.** Prompt
+  rules failed twice on capex signals in two days; 'once triggered it
+  triggered' is now arithmetic (apply_status_ratchet at both legs), and the
+  spec sentence exists only to explain the arithmetic.
+- **A signal about a SURPRISE must be measured against prior guidance, not
+  a level.** 'AT baseline' vs 'flat vs prior' was the escape hatch; the fix
+  defines the comparator (own prior forward guidance) and states that
+  confirming the number IS the event.
+- **Verbal qualifiers must never override reiterated numbers.** Named as a
+  hard rule with the exact escape reasoning quoted as forbidden.
+- **De-escalation of one signal is often the FIRE of its successor.** The
+  parabolic->plateau->cuts ladder encodes this; downgrades of the earlier
+  stage are structurally impossible, progression is told by the successor.
+
 ## v3.43.0 lessons (2026-07-31)
 
 - **min/max threshold inversion masked by calm test σ.** A volatility-scaled

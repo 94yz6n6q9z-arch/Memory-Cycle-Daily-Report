@@ -492,12 +492,22 @@ INDICATORS: list[Indicator] = [
         short_label="CapEx parabolic",
         description=(
             "Memory makers' and hyperscalers' CapEx growing parabolic — building 2027-28 "
-            "supply glut. ALREADY FIRED on aggregate; watch for 2027 guidance direction at Jul prints."
+            "supply glut. ALREADY FIRED on aggregate. v3.44.0: LATCHED — this signal "
+            "ratchets up only and never reverts."
         ),
         what_to_look_for=(
             "Big Three combined CapEx >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B "
-            "(fired). NEW threshold: any of MSFT/GOOG/META/AMZN/ORCL guides 2027 CapEx "
-            "ABOVE 2026 at Q2 2026 earnings prints. Bull confirm if above; bear catalyst if flat/down."
+            "(fired). 2027-guidance direction is CONTEXT for this card, never a reversal "
+            "condition: above-2026 guidance is bull-confirm color; flat/down guidance is "
+            "the t3_capex_plateau signal's event and can NEVER move this signal down. "
+            "LATCH RULE (v3.44.0, Raul Jul-31: 'once triggered it triggered'): once "
+            "Fired, this signal STAYS Fired — the parabola is a historical fact; the "
+            "eventual stop and decline of CapEx growth is later-stage progression told "
+            "by the plateau and Tier 4 signals, not a de-risking of this one. FORBIDDEN "
+            "COUNTEREXAMPLE (2026-07-31): this signal was downgraded Fired → Partially "
+            "fired because Microsoft guided FY27 flat and Meta withheld 2027 — exactly "
+            "the forbidden move. Status is deterministically ratcheted after every run: "
+            "any Layer 2 or Layer 3 output below the prior status is overwritten."
         ),
         sources=[
             "Hyperscaler IR pages (microsoft.com/investor, abc.xyz/investor, ir.meta.com, ir.aboutamazon.com, investor.oracle.com)",
@@ -515,12 +525,12 @@ INDICATORS: list[Indicator] = [
             "googl_2027_capex_usd_b": {"baseline_2026": 185, "trigger_above": 185, "bull_signal": True},
             "meta_2027_capex_usd_b": {"baseline_2026": 105, "trigger_above": 105, "bull_signal": True},
             "amzn_2027_capex_usd_b": {"baseline_2026": 140, "trigger_above": 140, "bull_signal": True},
-            "any_hyperscaler_2027_flat_or_down": {"bear_catalyst": True},
+            "any_hyperscaler_2027_flat_or_down": {"context_only": True, "routes_to": "t3_capex_plateau"},
         },
         cadence="Quarterly earnings (Q2 2026 prints MSFT Jul 22, GOOG Jul 22, META Jul 23, AMZN Jul 24)",
         stitching=(
             "Hyperscaler IR press release primary. Yahoo Finance Q&A transcript adds depth on CapEx intent. "
-            "Trigger on EACH hyperscaler independently — one blink is enough for bear catalyst."
+            "Trigger on EACH hyperscaler independently — a blink routes to t3_capex_plateau; it does not move this signal."
         ),
     ),
 
@@ -827,29 +837,41 @@ INDICATORS: list[Indicator] = [
             "bust confirmation)."
         ),
         what_to_look_for=(
-            "A tracked hyperscaler (MSFT, GOOGL, AMZN, META) guides "
-            "next-period CapEx FLAT vs its prior baseline (within ±5%) or "
-            "uses stabilization language: 'stabilize', 'similar level', "
-            "'in line with', 'discipline', 'ROI focus', 'moderating growth "
-            "rate'. STATUS LADDER: 1 hyperscaler at plateau = Partially "
-            "fired; 2 or more = Fired. CANONICAL EXAMPLE (2026-07-30): "
-            "Microsoft guiding FY27 CapEx at $190B against a $190B 2026 "
-            "baseline = plateau, Partially fired. HARD RULES: (1) This is "
-            "NOT CapEx cutting — dollars remain enormous; the SIGNAL is the "
-            "growth rate reaching zero. An explicit guide-DOWN >5% hands "
-            "off to the Tier 4 cut/idling family — and this signal REMAINS "
-            "fired (progression continues, it does not reverse). (2) "
-            "Guidance still growing >5% YoY is NOT this signal, however "
-            "'disciplined' the language — that is decelerating "
-            "acceleration, still t2_capex_parabolic territory. (3) This is "
-            "a CONTRARIAN-DIRECTION peak indicator: a plateau is LATE-CYCLE "
-            "CONFIRMATION ('we are done building — thanks Nvidia, Micron, "
-            "SK Hynix'), never good news for memory suppliers, never a "
-            "reversal of the boom. Never describe a plateau as "
-            "stabilization-is-healthy. (4) Reversal condition is the "
-            "OPPOSITE event only: a hyperscaler re-ACCELERATING guidance "
-            ">10% above baseline on a subsequent print. Once fired on a "
-            "dated print, status persists until the next print."
+            "Measured per company (MSFT, GOOGL, AMZN, META), per print, against that "
+            "company's OWN PRIOR FORWARD GUIDANCE for the same period — the signal is "
+            "the SURPRISE in forward guidance, not the level and not YoY actuals. "
+            "RAISE >5% above prior guidance = NOT at plateau (still accelerating). "
+            "REITERATE/CONFIRM within ±5% of prior guidance = AT PLATEAU — merely "
+            "confirming the number IS the event; the upward surprises have stopped. "
+            "CUT >5% below prior guidance = hands off to the Tier 4 cut/idling family, "
+            "and this signal PERSISTS (progression, not reversal). "
+            "HARD RULE — qualifiers cannot override numbers: verbal growth language "
+            "('year-over-year growth expected') attached to a reiterated number does "
+            "NOT disqualify the plateau. CANONICAL FIRE (2026-07-30): Microsoft FY27 "
+            "CapEx $190B against a $190B prior baseline = at plateau. FORBIDDEN "
+            "COUNTEREXAMPLE (2026-07-31): Layer 2 classified that exact print Not "
+            "fired, reasoning 'guidance is AT baseline, not flat vs prior' and letting "
+            "the growth qualifier override the reiterated number — both escapes are "
+            "forbidden; AT the prior number IS the plateau. "
+            "WITHHELD GUIDANCE: a company that previously gave forward guidance and "
+            "now declines to guide (Meta 2026-07-30: gave 2026 at $137.5B, withheld "
+            "2027) does NOT count toward the plateau tally — there is no number to "
+            "compare — but MUST be surfaced on this card as a watch flag ('withheld "
+            "forward guidance'): refusal to guide higher is a soft tell. "
+            "STATUS LADDER (v3.44.0): count companies at plateau on their latest "
+            "print — 1-2 = Partially fired; 3-4 = Fired. Worked example (Jul-31 "
+            "prints): Microsoft at plateau (count 1) = Partially fired; Amazon raised "
+            "2026 to $220B and guided 2027 above 2026 = NOT at plateau; Meta = "
+            "withheld, watch flag only. "
+            "Other hard rules unchanged: (1) This is NOT CapEx cutting — dollars "
+            "remain enormous; the SIGNAL is the growth-rate surprise reaching zero. "
+            "(2) This is a CONTRARIAN-DIRECTION peak indicator ('we are done building "
+            "— thanks Nvidia, Micron, SK Hynix'), never good news for memory "
+            "suppliers, never a reversal of the boom; never describe a plateau as "
+            "stabilization-is-healthy. (3) Reversal is the OPPOSITE event only: a "
+            "company re-ACCELERATING guidance >10% above its prior guidance on a "
+            "subsequent print removes it from the plateau count. Once counted on a "
+            "dated print, a company's plateau status persists until its next print."
         ),
         sources=["Hyperscaler earnings calls + transcripts",
                  "Hyperscaler press releases", "Investing.com per-ticker RSS",
@@ -860,8 +882,8 @@ INDICATORS: list[Indicator] = [
             "moderate investment growth", "similar level of capital",
         ],
         trigger_numeric={
-            "hyperscalers_at_plateau_count": {"partial_at": 1, "trigger_at": 2},
-            "guidance_vs_baseline_pct": {"plateau_band_abs": 5.0},
+            "hyperscalers_at_plateau_count": {"partial_at": 1, "trigger_at": 3},
+            "guidance_vs_prior_guidance_pct": {"plateau_band_abs": 5.0, "reaccel_above": 10.0},
         },
         cadence="Quarterly (hyperscaler earnings) + intra-quarter statements",
         stitching=(

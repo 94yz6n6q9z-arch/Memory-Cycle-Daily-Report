@@ -131,6 +131,7 @@ from src.analysis.tape_circuit_breaker import run_tape_circuit_breaker
 from src.analysis.computed_verdicts import (
     evaluate_all as evaluate_computed_verdicts,
     apply_to_objects as apply_computed_verdicts,
+    apply_status_ratchet,
 )
 from src.analysis.llm_summarizer import (
     analyze_with_llm,
@@ -1013,6 +1014,17 @@ def run_fast_tier() -> int:
                 signal_reasonings, _cv, status_attr="fired_status",
                 id_attr="signal_id", note_attr="evidence_for_change_vs_yesterday",
                 stage="pre-store")
+            # v3.44.0 — latched up-only ratchet, pre-store leg: runs after
+            # the verdict table so the evidence store can never record a
+            # downgrade of a latched signal (the Jul-31 Fired→Partial move
+            # on t2_capex_parabolic is structurally impossible now).
+            _prior_cx = {a.get("id"): a.get("current_status")
+                         for a in (load_prior_state() or {}).get(
+                             "indicator_assessments", [])}
+            apply_status_ratchet(
+                signal_reasonings, _prior_cx, status_attr="fired_status",
+                id_attr="signal_id", note_attr="evidence_for_change_vs_yesterday",
+                stage="pre-store")
         except Exception as _cve:
             logger.warning(f"[computed-verdict] pre-store apply failed (non-fatal): {_cve}")
     except Exception as e:
@@ -1321,6 +1333,16 @@ def run_fast_tier() -> int:
         _cv2 = evaluate_computed_verdicts(computed_metrics, signal_reasonings)
         apply_computed_verdicts(
             analysis.indicator_assessments or [], _cv2,
+            status_attr="current_status", id_attr="id",
+            note_attr="change_vs_prior", stage="assessment")
+        # v3.44.0 — latched up-only ratchet, post-Sonnet leg: the rendered
+        # assessments (which become prior_state and feed the 24h trigger
+        # log) can never show a latched signal below its prior status.
+        _prior_cx2 = {a.get("id"): a.get("current_status")
+                      for a in (load_prior_state() or {}).get(
+                          "indicator_assessments", [])}
+        apply_status_ratchet(
+            analysis.indicator_assessments or [], _prior_cx2,
             status_attr="current_status", id_attr="id",
             note_attr="change_vs_prior", stage="assessment")
     except Exception as e:
