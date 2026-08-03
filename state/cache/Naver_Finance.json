@@ -1,7 +1,7 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-08-01T08:42:07.188918+00:00",
+    "fetched_at_iso": "2026-08-03T10:14:07.777133+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
@@ -9,14 +9,14 @@
         "actions": [],
         "n_actions": 0,
         "summary": {},
-        "error": "HTTPSConnectionPool(host='navercomp.wisereport.co.kr', port=443): Max retries exceeded with url: /v2/company/c1010001.aspx?cmp_cd=000660 (Caused by ConnectTimeoutError(<HTTPSConnection(host='navercomp.wisereport.co.kr', port=443) at 0x7fb6906eaa20>, 'Connection to navercomp.wisereport.co.kr timed out. (connect timeout=60)'))"
+        "error": "HTTPSConnectionPool(host='navercomp.wisereport.co.kr', port=443): Max retries exceeded with url: /v2/company/c1010001.aspx?cmp_cd=000660 (Caused by ConnectTimeoutError(<HTTPSConnection(host='navercomp.wisereport.co.kr', port=443) at 0x7f4de05d6600>, 'Connection to navercomp.wisereport.co.kr timed out. (connect timeout=60)'))"
       },
       "Samsung Electronics": {
         "code": "005930",
         "actions": [],
         "n_actions": 0,
         "summary": {},
-        "error": "HTTPSConnectionPool(host='navercomp.wisereport.co.kr', port=443): Max retries exceeded with url: /v2/company/c1010001.aspx?cmp_cd=005930 (Caused by ConnectTimeoutError(<HTTPSConnection(host='navercomp.wisereport.co.kr', port=443) at 0x7fb690681f70>, 'Connection to navercomp.wisereport.co.kr timed out. (connect timeout=60)'))"
+        "error": "HTTPSConnectionPool(host='navercomp.wisereport.co.kr', port=443): Max retries exceeded with url: /v2/company/c1010001.aspx?cmp_cd=005930 (Caused by ConnectTimeoutError(<HTTPSConnection(host='navercomp.wisereport.co.kr', port=443) at 0x7f4de0618ad0>, 'Connection to navercomp.wisereport.co.kr timed out. (connect timeout=60)'))"
       },
       "SK Square": {
         "code": "034730",
@@ -202,5 +202,5 @@
       }
     }
   },
-  "fetched_at_iso": "2026-08-01T08:50:47.877860"
+  "fetched_at_iso": "2026-08-03T10:21:23.375054"
 }
