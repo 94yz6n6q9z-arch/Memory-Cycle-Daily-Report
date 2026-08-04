@@ -1,28 +1,43 @@
 {
   "source_id": "DART API",
   "payload": {
-    "fetched_at_iso": "2026-08-03T10:14:07.781520",
+    "fetched_at_iso": "2026-08-04T09:22:33.183759",
     "tickers": {
       "SK Hynix": {
         "corp_code": "00164779",
-        "n_disclosures": 1,
+        "n_disclosures": 0,
+        "n_material": 0,
+        "disclosures": []
+      },
+      "Samsung Electronics": {
+        "corp_code": "00126380",
+        "n_disclosures": 7,
         "n_material": 0,
         "disclosures": [
           {
             "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
-            "rcept_dt": "20260731",
-            "rcept_no": "20260731000082",
-            "flr_nm": "\ucd5c\ud0dc\uc6d0",
+            "rcept_dt": "20260804",
+            "rcept_no": "20260804000544",
+            "flr_nm": "\uc1a1\ubc29\uc601",
             "is_material": false,
-            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260731000082"
-          }
-        ]
-      },
-      "Samsung Electronics": {
-        "corp_code": "00126380",
-        "n_disclosures": 8,
-        "n_material": 0,
-        "disclosures": [
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260804000544"
+          },
+          {
+            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
+            "rcept_dt": "20260804",
+            "rcept_no": "20260804000531",
+            "flr_nm": "\ub098\uae30\ud64d",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260804000531"
+          },
+          {
+            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
+            "rcept_dt": "20260804",
+            "rcept_no": "20260804000499",
+            "flr_nm": "\uc580\uc190\ud5e8\ub9ad",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260804000499"
+          },
           {
             "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
             "rcept_dt": "20260803",
@@ -54,38 +69,6 @@
             "flr_nm": "\ubc15\ud0dc\ud6c8",
             "is_material": false,
             "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260803000004"
-          },
-          {
-            "report_nm": "\uc8fc\uc2dd\ub4f1\uc758\ub300\ub7c9\ubcf4\uc720\uc0c1\ud669\ubcf4\uace0\uc11c(\uc77c\ubc18)",
-            "rcept_dt": "20260731",
-            "rcept_no": "20260731000779",
-            "flr_nm": "\uc0bc\uc131\ubb3c\uc0b0",
-            "is_material": false,
-            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260731000779"
-          },
-          {
-            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
-            "rcept_dt": "20260731",
-            "rcept_no": "20260731000755",
-            "flr_nm": "\ub178\ud0dc\ubb38",
-            "is_material": false,
-            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260731000755"
-          },
-          {
-            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
-            "rcept_dt": "20260731",
-            "rcept_no": "20260731000690",
-            "flr_nm": "\uc774\uc885\ubbfc",
-            "is_material": false,
-            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260731000690"
-          },
-          {
-            "report_nm": "\ucd5c\ub300\uc8fc\uc8fc\ub4f1\uc18c\uc720\uc8fc\uc2dd\ubcc0\ub3d9\uc2e0\uace0\uc11c              ",
-            "rcept_dt": "20260731",
-            "rcept_no": "20260731801296",
-            "flr_nm": "\uc0bc\uc131\uc804\uc790",
-            "is_material": false,
-            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260731801296"
           }
         ]
       },
@@ -97,5 +80,5 @@
       }
     }
   },
-  "fetched_at_iso": "2026-08-03T10:14:22.485037"
+  "fetched_at_iso": "2026-08-04T09:22:44.486933"
 }
