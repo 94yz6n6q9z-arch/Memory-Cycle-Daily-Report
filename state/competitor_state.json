@@ -3,16 +3,18 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-08-04T09:25:49Z",
+    "last_aggregator_run": "2026-08-05T09:27:28Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
-    "current_status": "Partially fired",
-    "status_evaluated_at": "2026-08-04",
+    "current_status": "Fired",
+    "status_evaluated_at": "2026-08-05",
     "status_evaluator": "competitor_aggregator",
-    "estimated_eps_impact_pct": 10.0,
+    "estimated_eps_impact_pct": 22.0,
     "current_state": {
-      "cxmt_oem_mainstream_wins": [],
+      "cxmt_oem_mainstream_wins": [
+        "HP, Asus, and Acer began limited use of CXMT DRAM"
+      ],
       "cxmt_oem_lowend_wins": [],
       "cxmt_ddr5_share_pct": 2.0,
       "cxmt_total_dram_share_pct": 5.0,
@@ -34,7 +36,7 @@
   },
   "sub_7b_samsung_hbm4": {
     "current_status": "Partially fired",
-    "status_evaluated_at": "2026-08-04",
+    "status_evaluated_at": "2026-08-05",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 10.0,
     "current_state": {
@@ -61,7 +63,7 @@
   },
   "sub_7c_micron": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-04",
+    "status_evaluated_at": "2026-08-05",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.5,
     "current_state": {
@@ -80,7 +82,7 @@
   },
   "sub_7d_hbf": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-04",
+    "status_evaluated_at": "2026-08-05",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.0,
     "current_state": {
@@ -89,7 +91,9 @@
       "sk_hynix_on_jedec_hbf_working_group": null,
       "hyperscaler_hbf_design_wins": [
         "SanDisk/Kioxia multi-year agreements",
-        "SanDisk/Kioxia long-term agreements"
+        "SanDisk/Kioxia long-term agreements",
+        "Google+HBF+AI storage",
+        "Google+HBF+storage"
       ],
       "hbf_hot_tier_substitution_events": [],
       "hbf_cold_tier_additions": [],
@@ -104,7 +108,15 @@
         "SanDisk $42B backlog via 3 LTAs with $11B prepayments; Kioxia targets 50% LTA coverage by 2028",
         "SanDisk $42B backlog via 3 LTAs; Kioxia targets 50% LTA coverage by 2028",
         "Kioxia, SanDisk, Solidigm participated in Nanya W3tr private placement; Kioxia entered long-term DRAM supply agreement with Nanya for SSDs.",
-        "SK Hynix and SanDisk betting on HBF"
+        "SK Hynix and SanDisk betting on HBF",
+        "SK hynix and SanDisk unveiled first HBF standard",
+        "SK hynix and SanDisk unveiled first open standard for High Bandwidth Flash",
+        "SK hynix and SanDisk set first HBF standard for AI memory",
+        "SK hynix and SanDisk unveiled first high-bandwidth flash standards",
+        "SK hynix and SanDisk HBF standard debut with Google and Tenstorrent support",
+        "SK Hynix and SanDisk debut new HBF storage standard",
+        "SanDisk and SK hynix advanced global standardization of High Bandwidth Flash with OCP technical specification release",
+        "SK hynix unveiled first HBF standard specifications with SanDisk"
       ],
       "sk_hynix_solidigm_hbf_integration": true
     },
