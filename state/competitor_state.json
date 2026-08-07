@@ -3,12 +3,12 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-08-06T09:26:19Z",
+    "last_aggregator_run": "2026-08-07T07:57:48Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
     "current_status": "Fired",
-    "status_evaluated_at": "2026-08-06",
+    "status_evaluated_at": "2026-08-07",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 22.0,
     "current_state": {
@@ -37,7 +37,7 @@
   },
   "sub_7b_samsung_hbm4": {
     "current_status": "Partially fired",
-    "status_evaluated_at": "2026-08-06",
+    "status_evaluated_at": "2026-08-07",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 10.0,
     "current_state": {
@@ -64,7 +64,7 @@
   },
   "sub_7c_micron": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-06",
+    "status_evaluated_at": "2026-08-07",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.5,
     "current_state": {
@@ -83,7 +83,7 @@
   },
   "sub_7d_hbf": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-06",
+    "status_evaluated_at": "2026-08-07",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.0,
     "current_state": {
@@ -94,7 +94,8 @@
         "SanDisk/Kioxia multi-year agreements",
         "SanDisk/Kioxia long-term agreements",
         "Google+HBF+AI storage",
-        "Google+HBF+storage"
+        "Google+HBF+storage",
+        "Google+Tenstorrent+HBF"
       ],
       "hbf_hot_tier_substitution_events": [],
       "hbf_cold_tier_additions": [],
@@ -120,7 +121,10 @@
         "SK hynix unveiled first HBF standard specifications with SanDisk",
         "SK Hynix + SanDisk AI memory milestone",
         "SK Hynix + SanDisk HBF standard launch supporting up to 512GB capacity",
-        "HBF spec with 16-Hi NAND stacks, 3 TB/s bandwidth, UCIe"
+        "HBF spec with 16-Hi NAND stacks, 3 TB/s bandwidth, UCIe",
+        "SK Hynix and SanDisk publish first HBF spec",
+        "SK Hynix and SanDisk advance HBF standardization with OCP technical specification",
+        "SanDisk and SK hynix release first OCP technical specification for HBF"
       ],
       "sk_hynix_solidigm_hbf_integration": true
     },
