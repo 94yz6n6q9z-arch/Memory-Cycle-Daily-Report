@@ -127,9 +127,12 @@ class TestPlateauRedefinition:
     def test_worked_example_matches_current_spec(self):
         from src.config import INDICATORS
         wl = {x.id: x for x in INDICATORS}["t3_capex_plateau"].what_to_look_for
-        assert "Microsoft BEYOND plateau" in wl
+        # v3.46.1 — MSFT lease-reclass ruling (2026-08-08): worked example
+        # now shows Microsoft stable +1 (basis change), S=0.
+        assert "Microsoft stable +1" in wl
+        assert "lease reclassification" in wl
         assert "$220B" in wl
-        assert "N=2, S=+1 -> Partially fired" in wl
+        assert "N=2, S=0 -> Partially fired" in wl
 
 
 if __name__ == "__main__":

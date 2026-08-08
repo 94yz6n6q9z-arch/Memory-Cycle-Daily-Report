@@ -2012,11 +2012,29 @@ def _run_cycle_matrix_step(
     if anthropic_client is not None and news_items:
         try:
             already_seen = _load_processed_signal_urls(CYCLE_MATRIX_SIGNALS_CSV)
-            relevant = [
+            # v3.46.1 — one-time seeds: the two public 3Q26 forecast press
+            # releases the old keyword gate missed. already_seen makes this
+            # a no-op after first ingestion.
+            _seed_press = [
+                ("AI Server Demand Continues to Support Memory Prices in 3Q26, "
+                 "but Gains Moderate as Consumer Demand Weakens and High Base "
+                 "Effects Take Hold, Says TrendForce",
+                 "https://www.trendforce.com/presscenter/news/20260703-13134.html"),
+                ("Long-Term Agreements Cap Price Increases; Server DRAM Contract "
+                 "Prices Expected to Rise 13-18% QoQ in 3Q26, Says TrendForce",
+                 "https://www.trendforce.com/presscenter/news/20260709-13140.html"),
+            ]
+            from types import SimpleNamespace as _NS
+            seeded = [_NS(title=t, url=u, source="TrendForce Press Center (seed)")
+                      for t, u in _seed_press if u not in already_seen]
+            if seeded:
+                logger.info(f"  [cycle-matrix] seeding {len(seeded)} missed "
+                            f"TrendForce press release(s) for one-time ingestion")
+            relevant = (seeded + [
                 n for n in news_items
                 if _is_dram_relevant_v3397(getattr(n, "title", ""))
                 and getattr(n, "url", "") not in already_seen
-            ][:CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN]
+            ])[:CYCLE_MATRIX_MAX_EXTRACTIONS_PER_RUN]
 
             logger.info(f"  Haiku extraction over {len(relevant)} new DRAM articles")
             new_signals, new_forecasts = [], []
@@ -2100,7 +2118,12 @@ def _is_dram_relevant_v3397(title: str) -> bool:
         return False
     keywords = ["dram", "ddr5", "ddr4", "hbm", "memory contract",
                 "memory spot", "contract price", "spot price",
-                "samsung", "sk hynix", "micron", "qoq", "forecast"]
+                "samsung", "sk hynix", "micron", "qoq", "forecast",
+                # v3.46.1 — TrendForce retitled their quarterly forecast
+                # releases ("...Support Memory Prices in 3Q26...") so the
+                # Jul-3 3Q26 forecast matched ZERO keywords and the anchor
+                # went 130d stale. Named counterexample in tests.
+                "memory price", "price forecast"]
     low = title.lower()
     return any(kw in low for kw in keywords)
 

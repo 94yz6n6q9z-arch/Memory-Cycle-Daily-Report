@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
@@ -195,6 +196,30 @@ TRENDFORCE_SPOT_URL = "https://www.trendforce.com/price/dram/dram_spot"
 TRENDFORCE_SPOT_STALE_HOURS = 36  # >36h old → tagged [STALE] and excluded from Tier 1 firing
 
 
+# v3.46.1 — Cloudflare-fronted feeds (Benzinga) block python-requests by TLS
+# fingerprint regardless of UA (JA3/JA4). curl-cffi impersonates a real
+# Chrome handshake. Optional dependency: absent -> behavior unchanged.
+_CLOUDFLARE_HOSTS = ("benzinga.com",)
+
+
+def _fetch_bytes_cf_aware(feed_url: str, timeout: int = 20):
+    """requests.get for normal hosts; curl-cffi Chrome impersonation for
+    known Cloudflare hosts when available. Returns (content, transport)."""
+    if any(h in feed_url for h in _CLOUDFLARE_HOSTS):
+        try:
+            from curl_cffi import requests as _cfr
+            r = _cfr.get(feed_url, impersonate="chrome", timeout=timeout)
+            r.raise_for_status()
+            return r.content, "curl-cffi"
+        except ImportError:
+            logger.info(f"curl-cffi unavailable — falling back to requests for {feed_url}")
+        except Exception as e:
+            logger.warning(f"curl-cffi fetch failed for {feed_url} ({e}) — falling back to requests")
+    r = requests.get(feed_url, headers=HEADERS, timeout=timeout)
+    r.raise_for_status()
+    return r.content, "requests"
+
+
 def fetch_rss_feeds(
     feeds: dict[str, str],
     hours_back: int = RECENT_HOURS_DEFAULT,
@@ -328,9 +353,8 @@ def fetch_edgar_feeds(
                     # expected_empty so a quiet feed doesn't look broken.
                     if source_name in expected_empty_set:
                         t.expected_empty = True
-                    resp = requests.get(feed_url, headers=EDGAR_HEADERS, timeout=20)
-                    resp.raise_for_status()
-                    parsed = feedparser.parse(resp.content)
+                    content, _transport = _fetch_bytes_cf_aware(feed_url)
+                    parsed = feedparser.parse(content)
                     for entry in parsed.entries:
                         published = _entry_published(entry)
                         if published and published < cutoff:
@@ -444,11 +468,28 @@ def fetch_google_news(
         # consistency is worth it: we lose the same way everywhere if Google
         # ever tightens its filter.
         def _fetch_and_parse() -> list[NewsItem]:
-            try:
-                resp = requests.get(url, headers=HEADERS, timeout=20)
-                resp.raise_for_status()
-            except requests.RequestException as e:
-                raise RuntimeError(f"HTTP fetch failed: {e}")
+            # v3.46.1 — Google News intermittently 503s under burst load
+            # (78/queries failed on the Aug-8 force-run, a second same-day
+            # run from GHA IPs). 503 is throttling, not breakage: retry
+            # twice with backoff+jitter before declaring the query failed.
+            last_err = None
+            for _attempt in range(3):
+                try:
+                    resp = requests.get(url, headers=HEADERS, timeout=20)
+                    resp.raise_for_status()
+                    break
+                except requests.RequestException as e:
+                    last_err = e
+                    code = getattr(getattr(e, "response", None), "status_code", None)
+                    if code == 503 and _attempt < 2:
+                        import random as _rnd
+                        _t = 4 * (_attempt + 1) + _rnd.uniform(0, 3)
+                        logger.info(f"Google News 503 for '{query}' — retry {_attempt+1}/2 in {_t:.0f}s")
+                        time.sleep(_t)
+                        continue
+                    raise RuntimeError(f"HTTP fetch failed: {e}")
+            else:
+                raise RuntimeError(f"HTTP fetch failed: {last_err}")
             parsed = feedparser.parse(resp.content)
             local: list[NewsItem] = []
             for entry in parsed.entries[:15]:
@@ -599,6 +640,60 @@ def scrape_trendforce(
     except Exception as e:
         logger.warning(f"Failed to fetch TrendForce: {e}")
 
+    return items
+
+
+
+def scrape_trendforce_presscenter(
+    hours_back: int = RECENT_HOURS_DEFAULT,
+    collector: Optional[DiagnosticsCollector] = None,
+) -> list[NewsItem]:
+    """v3.46.1 — TrendForce Press Center listing as a discovery source.
+
+    The quarterly price-forecast press releases (with the QoQ ranges the
+    contract anchor needs) live under /presscenter/news/... and stopped
+    reliably appearing on the /news/category listing — the Jul-3 3Q26
+    forecast release was never discovered, and the anchor went 130 days
+    stale while the data sat public. Same wrapper/status pattern as
+    scrape_trendforce; items carry published=None (listing shows no dates)
+    and flow through the same relevance + Haiku extraction gates.
+    """
+    def _do() -> list[NewsItem]:
+        resp = requests.get(
+            "https://www.trendforce.com/presscenter/news",
+            headers=HEADERS, timeout=15,
+        )
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+        out: list[NewsItem] = []
+        seen: set = set()
+        for link in soup.select("a[href*='/presscenter/news/']")[:60]:
+            href = link.get("href", "")
+            title = link.get_text(strip=True)
+            if not title or len(title) < 25 or not href:
+                continue
+            full_url = href if href.startswith("http") else f"https://www.trendforce.com{href}"
+            if full_url.rstrip("/").endswith("/presscenter/news") or full_url in seen:
+                continue
+            seen.add(full_url)
+            out.append(NewsItem(title=title, url=full_url,
+                                source="TrendForce Press Center",
+                                published=None, summary=None))
+        return out[:20]
+
+    items: list[NewsItem] = []
+    try:
+        if collector is not None:
+            with collector.track("TrendForce Press Center", "scraper") as t:
+                items = _do()
+                t.items_returned = len(items)
+                if len(items) == 0:
+                    t.detail = "0 release links — listing markup may have changed"
+        else:
+            items = _do()
+        logger.info(f"TrendForce Press Center: {len(items)} release link(s)")
+    except Exception as e:
+        logger.warning(f"TrendForce Press Center fetch failed: {e}")
     return items
 
 
@@ -791,6 +886,7 @@ def fetch_all_news(
     ))
     all_items.extend(scrape_chosun_biz(hours_back, collector=collector))
     all_items.extend(scrape_trendforce(hours_back, collector=collector))
+    all_items.extend(scrape_trendforce_presscenter(hours_back, collector=collector))
     # v3.39.3 — TrendForce DRAM Spot price table. Emits one high-priority
     # NewsItem with the parsed table + freshness flag; flows through the
     # relevance filter (auto-preserved at score 10 by score_relevance) and

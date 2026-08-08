@@ -30,10 +30,14 @@ class TestCountOnlyBands:
         return led
 
     def test_seed_state_matches_approved_worked_example(self):
+        # v3.46.1 — updated to Raul's MSFT basis-change ruling (2026-08-08):
+        # $190B->$175B is a finance->operating lease reclassification, ruled
+        # stable + flag (migration 002 applies on load). N stays 2; S: +1 -> 0
+        # (MSFT +2 cutting -> +1 stable). Old expectation superseded.
         v = evaluate_plateau(load_ledger(path="/nonexistent/forces/seed.json"))
-        assert v["count_at_or_beyond"] == 2 and v["score"] == 1
+        assert v["count_at_or_beyond"] == 2 and v["score"] == 0
         assert v["status"] == "Partially fired"
-        assert any("BEYOND plateau" in l for l in v["company_lines"])
+        assert any("basis change" in l for l in v["company_lines"])
         assert any("withheld" in f for f in v["watch_flags"])
         assert len(v["company_lines"]) == 4
 
