@@ -3,9 +3,9 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
-    "last_aggregator_run": "2026-08-07T07:57:48Z",
+    "last_aggregator_run": "2026-08-08T07:36:46Z",
     "description": "Quarterly enterprise AI revenue by category. Auto-updated by src/analysis/dhcr_revenue_aggregator.py from architecture_signals extraction stream.",
-    "last_run_additions": 0,
+    "last_run_additions": 1,
     "last_run_updates": 2
   },
   "microsoft_azure_ai": [
@@ -67,6 +67,14 @@
       "yoy_growth_pct": 152.0,
       "confidence": "high",
       "notes": "Growth rate moderating \u2014 first sequential deceleration since 2024."
+    },
+    {
+      "quarter": "2026-Q4",
+      "revenue_usd_b": 59.3,
+      "qoq_growth_pct": 27,
+      "yoy_growth_pct": 27,
+      "source_quote": "Azure and Other Cloud Services Revenue grew 43% year over year",
+      "source_id": "Motley Fool / Microsoft / 2026-08-07"
     }
   ],
   "aws_ai_services": [
