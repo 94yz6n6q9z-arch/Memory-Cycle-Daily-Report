@@ -1,3 +1,46 @@
+# v3.46.0 (2026-08-08) — TCB: BREAKING gate promotion + Distribution v2
+
+Rulings (Raul, 2026-08-08): one TCB, additive merge — nothing removed;
+the −30% base stop stays UNCONDITIONAL (macro crashes ride to −30% by
+design); macro-vs-idio must be judged at EVENT scale in the index's OWN
+sigma units ("losing 10% for the S&P is like losing 50% for SK Hynix");
+Distribution v1 (never backtested) is overridden by the backtested v2.
+
+- src/analysis/tape_circuit_breaker.py — BREAKING: per-day shocks
+  (production max(−8%, −3σ₁₂₀) semantics, σ-shifted) classified
+  MACRO-excused vs IDIO by benchmark sigma state (S&P dd ≤ −4σ of its own
+  60d vol OR day ≤ −2σ, worst-of(t,t−1) for the KRX offset); ≥3 IDIO in
+  10 sessions, 5-session latch, AND persisted phase 4/5 (two-key) → the
+  stop-out gate promotes −30% → −20%. Frame-derived, stateless. Cascade
+  warning at 2-in-10. Never counts toward the L1/L2 tally.
+- Distribution v2: five AND-gates (UDVR<0.75 dominance · OBV rolling over
+  above the 200dMA · ≥5 distribution days/25 [v1's idea, demoted to one
+  gate] · maturity ≥90% of 150 sessions above 200dMA · lower highs) with
+  live watermark release (close ≥ pre-fire 60d high = absorbed → re-arm).
+  Loud degradation ladder: v1_fallback_short_frame (<360 rows) /
+  v1_fallback_no_hilo / no_data — never a silent disable.
+- fetch_tcb_ohlcv keeps high/low; new fetch_benchmark_closes (^GSPC,
+  safe-fail None → BREAKING inert, gate stays −30%). Phase read from
+  persisted state/phase_state.json (prior run — the TCB runs before this
+  run's phase detection; fail-safe False). Call site in fast_tier.py
+  UNCHANGED — the module stays self-contained; no Sonnet leg exists for
+  the TCB by construction, so the both-legs pattern does not apply.
+- scripts/tcb_backtest.py: BASELINE vs MERGED head-to-head per window,
+  benchmark sliced as-of (no look-ahead). Acceptance: MERGED differs only
+  by exiting earlier on the 2026 idio cascade.
+- tests/test_v3_46_0_tcb_breaking_distv2.py: 15 tests — the calibration
+  counterexamples as executable spec (Iran must NOT promote; July must,
+  in (−30%, −20%]; phase gate hard-blocks; latch decays at 5 and re-arms;
+  base stop fires with no benchmark at all; v2 quiet on run-up / fires
+  post-top / releases on reclaim / maturity-blocked; fallback ladder).
+- Calibration provenance: five Colab iterations (2026-08-08) over 2018 /
+  2021-22 / Iran-Mar-26 / early-June-26 / Jun–Aug-26 / Aug-24 / COVID on
+  000660.KS + MU. Replay of the shipped code: SKH 2026 exit Jul-2 @ −25%
+  (vs base stop Jul-13 @ −37%); Iran/early-June/Aug-24/COVID/2018/2022
+  identical to base. σ-window note: calibration ran σ₂₀, production uses
+  σ₁₂₀ — invariant here because every calibrated shock day breached the
+  −8% absolute cap.
+
 # v3.45.0 (2026-08-08) — Guidance ledger + count-only plateau scoring; taxonomy-aware digests; event-echo dedup; transcript belt
 
 Rulings (Raul, 2026-08-08): points raise>5% = -1 / confirm ±5% = +1 / cut>5%

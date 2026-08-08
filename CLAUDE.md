@@ -1,3 +1,30 @@
+## v3.46.0 (2026-08-08) — TCB BREAKING + Distribution v2
+
+- **One TCB.** All tape logic lives inside tape_circuit_breaker.py as
+  components of the single breaker — never a parallel organ.
+- **Macro-vs-idio is sigma-scaled and event-state, not day-print.** A
+  fixed-% S&P cut cannot separate Iran (−0.9%/day grind to a −4.7σ index
+  drawdown) from July (index within ~1–4σ of highs while the stock threw
+  −15% days). Judge the index in its OWN vol units, worst-of(t,t−1) for
+  the KRX offset. Look-ahead in filter validation (window minima vs as-of
+  values) produced a false pass in iteration 4 — validate day-by-day.
+- **Two-key rule for gate promotion.** Idio cluster (3-in-10, latched 5)
+  AND persisted phase 4/5. The −30% base stop is unconditional and
+  untouchable; BREAKING only promotes it to −20%, never replaces it.
+- **BREAKING is frame-derived and stateless** — the 2y frame recomputes
+  the ledger every run, so quiet days cannot lose the cluster (same
+  principle as the persistent evidence store, achieved without state).
+- **Distribution v2 replaces v1 (Raul override).** v1 was never
+  backtested; v2 carried five Colab iterations. v1 survives only as the
+  loud short-frame/no-high-low fallback — a component that silently
+  disables is worse than a crude one that works.
+- **Sigma-window invariance must be argued, not assumed:** calibration σ₂₀
+  vs production σ₁₂₀ is safe here only because every calibrated shock day
+  breached −8% outright.
+- **Constant-return fixtures are poison:** σ→0 degenerates max(−8%, −3σ)
+  and ordinary drift days become shocks. Fixtures must keep σ alive
+  (noisy) while constraining signs so no accidental shocks/excusals.
+
 ## v3.45.0 lessons (2026-08-08)
 
 - **Verify against code and history before stating.** Two claims this week

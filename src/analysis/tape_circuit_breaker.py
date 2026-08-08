@@ -36,6 +36,57 @@ if components individually relax — a breaker that flaps is worthless.
 The module is deliberately self-contained: it fetches its own OHLCV (the
 pipeline's shared price frame keeps adjusted closes only), never raises
 into the run, and persists state to state/tcb_state.json.
+
+v3.46.0 — BREAKING + Distribution v2 (calibrated 2026-08-08, five Colab
+iterations over 2018 / 2021-22 / Iran-Mar-26 / early-June-26 / Jun-Aug-26 /
+Aug-24 / COVID, on 000660.KS and MU):
+
+    breaking       — idiosyncratic shock-cluster escalation. Each daily
+                     shock is classified MACRO-excused vs IDIO by the
+                     BENCHMARK'S OWN sigma state (Raul's rule: "losing 10%
+                     for the S&P is like losing 50% for SK Hynix" — fixed-%
+                     cuts cannot separate a war outbreak from an
+                     idiosyncratic cascade; sigma-scaled event state can):
+                     a session is MACRO when S&P running drawdown ≤ −4σ of
+                     its own 60d vol OR a single S&P day ≤ −2σ, worst-of
+                     (t, t−1) for the KRX close-time offset. ≥3 IDIO shocks
+                     in 10 sessions, latched 5 sessions, AND the persisted
+                     framework phase is 4/5 (two-key rule) → the stop-out
+                     gate promotes from −30% to −20%. The −30% base stop
+                     stays UNCONDITIONAL — macro crashes ride to −30% by
+                     design; only our-stock-alone cascades exit at −20%.
+                     Named counterexamples (executable in tests):
+                       · Iran Mar-2026: Mar-3/4 IDIO (day-zero), Mar-9
+                         MACRO at S&P dd −4.7σ → cluster stalls at 2 → no
+                         promotion; the stock then ran +73%. Exiting there
+                         is the canonical forbidden outcome.
+                       · Real crash: Jun-23/Jun-26/Jul-2 all IDIO (S&P
+                         within ~1–4σ of highs) → promoted gate exits
+                         Jul-2 at −25% vs the base stop's Jul-13 at −37%.
+                       · early-June-26 / Aug-24 / COVID: excused → no
+                         change vs base. 2018/2022 tops: no idio clusters
+                         → identical to base.
+                     BREAKING is frame-derived and stateless (the 2y frame
+                     recomputes the ledger each run — silence on quiet days
+                     cannot lose the cluster). It never counts toward the
+                     L1/L2 component tally; it ONLY moves the stop-out
+                     gate, plus a cascade-forming warning at 2-in-10.
+    distribution   — REPLACED by v2 (Raul's override ruling 2026-08-08;
+                     v1 was never backtested). v2 = five AND-gates:
+                     up/down-volume ratio < 0.75 (dominance, not
+                     presence) · OBV 20d slope < 0 while price > 200dMA
+                     (flow rolls over pre-price) · ≥5 distribution days /
+                     25 (the old v1 idea, demoted to one gate of five) ·
+                     maturity (above 200dMA ≥90% of 150 sessions) · lower
+                     highs (5d max < 97% of 60d max). Live release: on
+                     fire, watermark = trailing 60d high; a close ≥
+                     watermark = the dip was absorbed → release, re-arm
+                     (this is what kept Iran and early-June quiet while
+                     the July fires survived). Degrades loudly to the v1
+                     counter when the frame is short (<360 rows) or
+                     high/low are unavailable, and to no_data without
+                     volume — a breaker component that silently disables
+                     is worse than a crude one that works.
 """
 
 from __future__ import annotations
@@ -76,6 +127,31 @@ PEAK_WINDOW = 250
 DEESC_SESSIONS_ABOVE_MA50 = 10
 DEESC_DD_RECOVERY = -0.15
 
+# v3.46.0 — BREAKING (idiosyncratic shock-cluster gate promotion).
+BENCH_SYMBOL = "^GSPC"
+SP_VOL_WIN = 60
+SP_DD_SIGMA = -4.0        # S&P running dd ≤ −4σ of its own vol → MACRO
+SP_DAY_SIGMA = -2.0       # or a single S&P day ≤ −2σ → MACRO
+BRK_CLUSTER_N = 3         # idio shocks to arm
+BRK_CLUSTER_WIN = 10      # …within this many sessions
+BRK_WARN_N = 2            # cascade-forming warning level
+BRK_LATCH = 5             # sessions the armed state persists (rel-strength pattern)
+DD_STOPOUT_BREAKING = -0.20
+
+# v3.46.0 — Distribution v2 (five-gate regime classifier).
+D2_MIN_ROWS = 360         # 200dMA + 150-session maturity lookback
+D2_UDVR_WIN = 20
+D2_UDVR_FIRE = 0.75
+D2_DIST_WIN = 25
+D2_DIST_MIN = 5
+D2_DIST_DOWN = -0.002
+D2_MATURE_MA = 200
+D2_MATURE_LOOKBACK = 150
+D2_MATURE_FRAC = 0.90
+D2_LH_WIN = 60
+D2_LH_TOL = 0.97
+D2_RELEASE_WIN = 60
+
 
 def fetch_tcb_ohlcv(symbol: str = TCB_SYMBOL, period: str = "2y") -> Optional[pd.DataFrame]:
     """Own OHLCV fetch (Close + Volume). Safe-failing: None on any error."""
@@ -99,11 +175,192 @@ def fetch_tcb_ohlcv(symbol: str = TCB_SYMBOL, period: str = "2y") -> Optional[pd
             pd.to_numeric(df[cols["volume"]], errors="coerce")
             if "volume" in cols else pd.NA
         )
+        # v3.46.0 — Distribution v2's distribution-day gate needs the close's
+        # position in the daily range (clv < 0.5).
+        for extra in ("high", "low"):
+            out[extra] = (
+                pd.to_numeric(df[cols[extra]], errors="coerce")
+                if extra in cols else pd.NA
+            )
         out = out.dropna(subset=["close"])
         return out if len(out) >= 60 else None
     except Exception as e:
         logger.warning(f"[tcb] OHLCV fetch failed (non-fatal): {e}")
         return None
+
+
+def fetch_benchmark_closes(symbol: str = BENCH_SYMBOL,
+                           period: str = "2y") -> Optional[pd.Series]:
+    """v3.46.0 — benchmark closes for BREAKING's macro-excusal. Safe-failing:
+    None on any error; BREAKING then degrades to no_benchmark and the gate
+    stays at the −30% base (fail-safe = base behaviour)."""
+    try:
+        import yfinance as yf
+        df = yf.download(tickers=symbol, period=period, interval="1d",
+                         auto_adjust=True, progress=False)
+        if df is None or df.empty:
+            logger.warning("[tcb] benchmark fetch returned empty frame")
+            return None
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        cols = {c.lower(): c for c in df.columns}
+        if "close" not in cols:
+            return None
+        s = pd.to_numeric(df[cols["close"]], errors="coerce").dropna()
+        return s if len(s) >= SP_VOL_WIN + 20 else None
+    except Exception as e:
+        logger.warning(f"[tcb] benchmark fetch failed (non-fatal): {e}")
+        return None
+
+
+# ---------------------- v3.46.0 pure helpers ----------------------------
+
+def daily_shock_flags(close: pd.Series) -> pd.Series:
+    """Per-day shock series, production semantics: return ≤
+    max(SHOCK_ABS, −SHOCK_SIGMA · σ) with σ = trailing 120d std (shifted —
+    a day is judged against the vol regime that PRECEDED it). All seven
+    calibration windows are σ-window-invariant here: every relevant day
+    breached the −8% absolute cap outright."""
+    rets = close.pct_change()
+    sigma = rets.rolling(120, min_periods=30).std().shift(1)
+    thr = (-SHOCK_SIGMA * sigma).clip(lower=SHOCK_ABS)
+    thr = thr.fillna(SHOCK_ABS)
+    return (rets <= thr).fillna(False)
+
+
+def benchmark_stress(sp_close: pd.Series, target_index) -> pd.DataFrame:
+    """Benchmark stress in the benchmark's OWN sigma units, worst-of
+    (t, t−1) to bridge the KRX/NYSE close-time offset, reindexed to the
+    target calendar. Columns: day_sig, dd_sig."""
+    spr = sp_close.pct_change()
+    vol = spr.rolling(SP_VOL_WIN).std()
+    dd = sp_close / sp_close.rolling(PEAK_WINDOW, min_periods=20).max() - 1
+    day_sig = spr / vol
+    dd_sig = dd / vol
+    worst = lambda s: pd.concat([s, s.shift(1)], axis=1).min(axis=1)
+    return pd.DataFrame({
+        "day_sig": worst(day_sig).reindex(target_index, method="ffill"),
+        "dd_sig": worst(dd_sig).reindex(target_index, method="ffill"),
+    })
+
+
+def compute_breaking(close: pd.Series,
+                     sp_close: Optional[pd.Series],
+                     phase_late: bool) -> dict:
+    """Frame-derived, stateless BREAKING ledger (see module docstring)."""
+    out = {"status": "no_benchmark", "active": False, "latched": False,
+           "warning": False, "idio_count": 0, "gate_pct": DD_STOPOUT * 100,
+           "phase_late": bool(phase_late), "recent_shocks": []}
+    if sp_close is None or len(sp_close) < SP_VOL_WIN + 20:
+        return out
+    shocks = daily_shock_flags(close)
+    stress = benchmark_stress(sp_close, close.index)
+    macro = ((stress["dd_sig"] <= SP_DD_SIGMA) |
+             (stress["day_sig"] <= SP_DAY_SIGMA)).fillna(False)
+    idio = shocks & ~macro
+    idio_count = int(idio.iloc[-BRK_CLUSTER_WIN:].sum())
+    armed_series = idio.rolling(BRK_CLUSTER_WIN).sum() >= BRK_CLUSTER_N
+    armed_now = bool(armed_series.iloc[-1])
+    latched = bool(armed_series.iloc[-BRK_LATCH:].any())
+    active = latched and bool(phase_late)
+    rets = close.pct_change()
+    recent = []
+    for ts in close.index[-45:]:
+        if shocks.loc[ts]:
+            recent.append({
+                "date": str(pd.Timestamp(ts).date()),
+                "ret_pct": round(float(rets.loc[ts]) * 100, 2),
+                "sp_day_sig": (round(float(stress.loc[ts, "day_sig"]), 2)
+                               if pd.notna(stress.loc[ts, "day_sig"]) else None),
+                "sp_dd_sig": (round(float(stress.loc[ts, "dd_sig"]), 2)
+                              if pd.notna(stress.loc[ts, "dd_sig"]) else None),
+                "class": "MACRO-excused" if macro.loc[ts] else "IDIO",
+            })
+    out.update({
+        "status": "data_ok",
+        "idio_count": idio_count,
+        "warning": (idio_count == BRK_WARN_N) and not armed_now,
+        "armed_now": armed_now,
+        "latched": latched,
+        "active": active,
+        "gate_pct": (DD_STOPOUT_BREAKING if active else DD_STOPOUT) * 100,
+        "recent_shocks": recent,
+    })
+    return out
+
+
+def compute_distribution_v2(df: pd.DataFrame) -> dict:
+    """Distribution v2 with loud degradation ladder (see module docstring).
+    Returns the v1-compatible shape (fired/status/days/needed) plus v2
+    detail. status ∈ data_ok(v2) / v1_fallback_short_frame /
+    v1_fallback_no_hilo / no_data."""
+    base = {"fired": False, "status": "no_data", "days": None,
+            "needed": D2_DIST_MIN, "mode": "v2"}
+    vol_raw = df["volume"] if "volume" in df.columns else None
+    if vol_raw is None or pd.to_numeric(vol_raw, errors="coerce").notna().sum() < 60:
+        return base
+    close = df["close"]
+    volume = pd.to_numeric(vol_raw, errors="coerce")
+    have_hilo = ("high" in df.columns and "low" in df.columns
+                 and pd.to_numeric(df["high"], errors="coerce").notna().sum() >= 60)
+
+    def _v1(status: str) -> dict:
+        rets = close.pct_change()
+        med50 = volume.rolling(50).median()
+        win_ret = rets.iloc[-DIST_WINDOW:]
+        win_vol = volume.iloc[-DIST_WINDOW:]
+        win_med = med50.iloc[-DIST_WINDOW:]
+        mask = (win_ret <= DIST_RET) & (win_vol >= DIST_VOL_MULT * win_med)
+        n = int(mask.fillna(False).sum())
+        return {"fired": n >= DIST_MIN_DAYS, "status": status, "days": n,
+                "needed": DIST_MIN_DAYS, "mode": "v1_fallback"}
+
+    if len(close) < D2_MIN_ROWS:
+        return _v1("v1_fallback_short_frame")
+    if not have_hilo:
+        return _v1("v1_fallback_no_hilo")
+
+    high = pd.to_numeric(df["high"], errors="coerce")
+    low = pd.to_numeric(df["low"], errors="coerce")
+    rets = close.pct_change()
+    up = volume.where(rets > 0, 0).rolling(D2_UDVR_WIN).sum()
+    dn = volume.where(rets < 0, 0).rolling(D2_UDVR_WIN).sum()
+    udvr = up / dn.replace(0, pd.NA)
+    obv = ((rets > 0).astype(int) - (rets < 0).astype(int)).mul(volume).cumsum()
+    ma200 = close.rolling(D2_MATURE_MA).mean()
+    obv_div = (obv.diff(D2_UDVR_WIN) < 0) & (close > ma200)
+    clv = (close - low) / (high - low).replace(0, pd.NA)
+    dist_days = ((rets < D2_DIST_DOWN) & (volume > volume.shift(1))
+                 & (clv < 0.5)).rolling(D2_DIST_WIN).sum()
+    mature = (close > ma200).rolling(D2_MATURE_LOOKBACK).mean() > D2_MATURE_FRAC
+    lower_highs = close.rolling(5).max() < close.rolling(D2_LH_WIN).max() * D2_LH_TOL
+    raw = ((udvr < D2_UDVR_FIRE) & obv_div & (dist_days >= D2_DIST_MIN)
+           & mature & lower_highs).fillna(False).astype(bool)
+
+    hi = close.rolling(D2_RELEASE_WIN).max()
+    watermark = None
+    fired_now = False
+    for i in range(len(close)):
+        px = float(close.iloc[i])
+        if watermark is not None and px >= watermark:
+            watermark = None
+        if watermark is None and bool(raw.iloc[i]):
+            watermark = float(hi.iloc[i])
+        fired_now = watermark is not None
+    last = close.index[-1]
+    return {
+        "fired": bool(fired_now),
+        "status": "data_ok",
+        "days": int(dist_days.iloc[-1]) if pd.notna(dist_days.iloc[-1]) else None,
+        "needed": D2_DIST_MIN,
+        "mode": "v2",
+        "udvr": round(float(udvr.iloc[-1]), 2) if pd.notna(udvr.iloc[-1]) else None,
+        "mature": bool(mature.iloc[-1]) if pd.notna(mature.iloc[-1]) else False,
+        "lower_highs": bool(lower_highs.iloc[-1]),
+        "watermark": round(watermark, 2) if watermark is not None else None,
+        "raw_today": bool(raw.iloc[-1]),
+        "asof": str(pd.Timestamp(last).date()),
+    }
 
 
 def _read_state() -> dict:
@@ -121,8 +378,13 @@ def _write_state(state: dict) -> None:
         logger.warning(f"[tcb] state write failed (non-fatal): {e}")
 
 
-def compute_tcb_components(df: pd.DataFrame) -> dict:
-    """Pure component evaluation from an OHLCV frame (close, volume)."""
+def compute_tcb_components(df: pd.DataFrame,
+                           sp_close: Optional[pd.Series] = None,
+                           phase_late: bool = False) -> dict:
+    """Pure component evaluation from an OHLCV frame (close, volume, and —
+    v3.46.0 — high/low when available). sp_close/phase_late feed the
+    BREAKING gate; both default to inert (backward compatible: existing
+    callers get exactly the base −30% stop-out behaviour)."""
     close = df["close"]
     rets = close.pct_change()
     comp: dict = {}
@@ -157,10 +419,19 @@ def compute_tcb_components(df: pd.DataFrame) -> dict:
     peak_day = str(pd.Timestamp(window.idxmax()).date())
     last = float(close.iloc[-1])
     dd = last / peak_val - 1.0
+    # v3.46.0 — BREAKING computes first so the stop-out gate can promote.
+    breaking = compute_breaking(close, sp_close, phase_late)
+    comp["breaking"] = breaking
+    effective_stopout = (DD_STOPOUT_BREAKING if breaking.get("active")
+                         else DD_STOPOUT)
     comp["drawdown"] = {
         "fired": dd <= DD_FIRE,
         "watch": dd <= DD_WATCH,
-        "stopout_depth": dd <= DD_STOPOUT,
+        # stopout_depth drives the ladder and reflects the EFFECTIVE gate;
+        # the −30% base is reported alongside and is never modified.
+        "stopout_depth": dd <= effective_stopout,
+        "stopout_depth_base": dd <= DD_STOPOUT,
+        "stopout_gate_pct": round(effective_stopout * 100, 1),
         "drawdown_pct": round(dd * 100, 2),
         "peak_price": peak_val,
         "peak_date": peak_day,
@@ -169,18 +440,10 @@ def compute_tcb_components(df: pd.DataFrame) -> dict:
     }
 
     # --- distribution (volume) ---------------------------------------------
-    dist = {"fired": False, "status": "no_data", "days": None, "needed": DIST_MIN_DAYS}
-    vol = df["volume"] if "volume" in df.columns else None
-    if vol is not None and pd.to_numeric(vol, errors="coerce").notna().sum() >= 60:
-        volf = pd.to_numeric(vol, errors="coerce")
-        med50 = volf.rolling(50).median()
-        win_ret = rets.iloc[-DIST_WINDOW:]
-        win_vol = volf.iloc[-DIST_WINDOW:]
-        win_med = med50.iloc[-DIST_WINDOW:]
-        mask = (win_ret <= DIST_RET) & (win_vol >= DIST_VOL_MULT * win_med)
-        n = int(mask.fillna(False).sum())
-        dist.update({"status": "data_ok", "days": n, "fired": n >= DIST_MIN_DAYS})
-    comp["distribution"] = dist
+    # v3.46.0 — v2 five-gate classifier with loud degradation ladder
+    # (v1 counter retained inside compute_distribution_v2 as the short-frame
+    # / no-high-low fallback). Raul's override ruling 2026-08-08.
+    comp["distribution"] = compute_distribution_v2(df)
 
     # --- trend break --------------------------------------------------------
     trend = {"fired": False, "status": "no_data",
@@ -248,8 +511,27 @@ def compute_tcb_level(comp: dict) -> int:
     return level
 
 
+def _load_phase_late() -> bool:
+    """v3.46.0 — two-key rule: BREAKING may promote the gate only when the
+    PERSISTED framework phase is 4/5. The TCB runs before this run's phase
+    detection (fast_tier sequencing), so the prior persisted phase is both
+    the only phase available and the causally correct one — the regime gate
+    is a standing state, not this run's output. Fail-safe: unreadable or
+    missing state → False → gate stays at the −30% base."""
+    try:
+        from src.state import load_phase_state
+        phase = load_phase_state().get("current_phase")
+        return phase in (4, 5)
+    except Exception as e:
+        logger.warning(f"[tcb] phase state unavailable for BREAKING gate "
+                       f"(fail-safe → base gate): {e}")
+        return False
+
+
 def run_tape_circuit_breaker(df: Optional[pd.DataFrame] = None,
-                             today_iso: Optional[str] = None) -> Optional[dict]:
+                             today_iso: Optional[str] = None,
+                             sp_close: Optional[pd.Series] = None,
+                             phase_late: Optional[bool] = None) -> Optional[dict]:
     """Orchestrator: fetch → compute → apply hysteresis → persist → verdict.
 
     Never raises. Returns None only when no usable price data exists at all
@@ -282,7 +564,15 @@ def run_tape_circuit_breaker(df: Optional[pd.DataFrame] = None,
             logger.warning("[tcb] no data and no persisted verdict — breaker offline this run")
             return None
 
-        comp = compute_tcb_components(df)
+        # v3.46.0 — benchmark + phase inputs for BREAKING (both safe-fail
+        # to inert: no benchmark → no_benchmark status, gate stays −30%).
+        if sp_close is None:
+            sp_close = fetch_benchmark_closes()
+        if phase_late is None:
+            phase_late = _load_phase_late()
+
+        comp = compute_tcb_components(df, sp_close=sp_close,
+                                      phase_late=bool(phase_late))
         computed_level = compute_tcb_level(comp)
         prev_level = int(state.get("level", 0))
 
@@ -302,6 +592,25 @@ def run_tape_circuit_breaker(df: Optional[pd.DataFrame] = None,
             level_since = today
 
         dd = comp["drawdown"]
+        brk = comp["breaking"]
+        # v3.46.0 — cascade-state logging: the warning and the promotion are
+        # the two lines Raul reads first.
+        if brk.get("active"):
+            logger.warning(
+                f"[tcb] BREAKING ACTIVE — {brk['idio_count']} idio shocks/"
+                f"{BRK_CLUSTER_WIN} sessions, phase-late confirmed → stop-out "
+                f"gate promoted to {brk['gate_pct']:.0f}%"
+            )
+        elif brk.get("latched") and not brk.get("phase_late"):
+            logger.warning(
+                "[tcb] BREAKING latched but phase-gate closed (framework not "
+                "Phase 4/5) — gate stays at base −30%"
+            )
+        elif brk.get("warning"):
+            logger.warning(
+                f"[tcb] CASCADE FORMING — {BRK_WARN_N} idio shocks in "
+                f"{BRK_CLUSTER_WIN} sessions; one more arms the −20% gate"
+            )
         fired_names = [k for k in ("shock", "drawdown", "distribution",
                                    "trend_break") if comp[k].get("fired")]
         verdict = {
@@ -320,6 +629,8 @@ def run_tape_circuit_breaker(df: Optional[pd.DataFrame] = None,
             "last_date": dd["last_date"],
             "data_status": "fresh",
             "deescalation": comp["_deescalation"],
+            "breaking": brk,
+            "stopout_gate_pct": dd.get("stopout_gate_pct"),
         }
         _write_state({"level": level, "level_since": level_since,
                       "updated": today, "last_verdict": verdict})
@@ -338,8 +649,14 @@ def run_tape_circuit_breaker(df: Optional[pd.DataFrame] = None,
             f"close={tr.get('close')}, ma50={tr.get('ma50')}, ma20={tr.get('ma20')}, "
             f"falling={tr.get('ma50_falling')}, reason={tr.get('reason')}) | "
             f"distribution(fired={di.get('fired')}, status={di.get('status')}, "
-            f"days={di.get('days')}/{di.get('needed')}) | "
-            f"stopout_depth={dd.get('stopout_depth')}"
+            f"mode={di.get('mode')}, days={di.get('days')}/{di.get('needed')}, "
+            f"udvr={di.get('udvr')}) | "
+            f"stopout_depth={dd.get('stopout_depth')} "
+            f"(gate {dd.get('stopout_gate_pct')}%, base_hit="
+            f"{dd.get('stopout_depth_base')}) | "
+            f"breaking(status={brk.get('status')}, idio={brk.get('idio_count')}, "
+            f"latched={brk.get('latched')}, phase_late={brk.get('phase_late')}, "
+            f"active={brk.get('active')})"
         )
         return verdict
     except Exception as e:
