@@ -1142,16 +1142,27 @@ def update_evidence_after_layer2(
                 # but mark the transition in the log
                 pass
             current.current_status = new_status
-            current.evidence_log.append(EvidenceEntry(
-                date=today_iso,
-                type="data_point",
-                value=transition_note,
-                source=f"Layer 2 reasoner ({len(getattr(result, 'evidence_sources', []) or [])} sources)",
-                persistence="live",  # transitions get re-checked next run
-                reversal_condition=(
-                    "Subsequent Layer 2 run reverses this transition with new evidence"
-                ),
-            ))
+# v3.45.0 — event-echo dedup: re-coverage of a stored event
+            # corroborates; near-identical text must not append as new.
+            _ntok = set(re.findall(r'[a-z0-9]+', str(transition_note).lower()))
+            _dup = False
+            for _ex in (current.evidence_log or [])[-20:]:
+                _etok = set(re.findall(r'[a-z0-9]+', str(getattr(_ex, 'value', '') or '').lower()))
+                if _ntok and _etok and len(_ntok & _etok) / max(len(_ntok | _etok), 1) >= 0.6:
+                    _dup = True
+                    logger.info("[evidence-dedup] corroboration of stored event — not appended as new")
+                    break
+            if not _dup:
+                current.evidence_log.append(EvidenceEntry(
+                    date=today_iso,
+                    type="data_point",
+                    value=transition_note,
+                    source=f"Layer 2 reasoner ({len(getattr(result, 'evidence_sources', []) or [])} sources)",
+                    persistence="live",  # transitions get re-checked next run
+                    reversal_condition=(
+                        "Subsequent Layer 2 run reverses this transition with new evidence"
+                    ),
+                ))
     return store
 
 

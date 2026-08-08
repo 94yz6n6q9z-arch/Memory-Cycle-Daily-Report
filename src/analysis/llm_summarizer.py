@@ -1461,6 +1461,22 @@ def build_sonnet_analysis_prompt(
             _latch = _rs.get("latch") or {}
             if _latch.get("latched"):
                 computed_text += f"    LATCH: RED held — recovery {_latch.get('recovery_streak', 0)}/5 sessions toward release\n"
+            # v3.45.0 — deterministic CapEx-plateau ledger block: all four
+            # companies, every day, plus count/score/status. Sonnet's card
+            # prose must mirror these numbers (enumeration hard rule).
+            try:
+                from src.analysis.capex_ledger import load_ledger, evaluate_plateau
+                _pv = evaluate_plateau(load_ledger())
+                computed_text += "\n  t3_capex_plateau (guidance ledger — deterministic):\n"
+                for _cl in _pv["company_lines"]:
+                    computed_text += f"    {_cl}\n"
+                for _wf in _pv["watch_flags"]:
+                    computed_text += f"    WATCH: {_wf}\n"
+                computed_text += (f"    Count at plateau-or-beyond: {_pv['count_at_or_beyond']}/4 "
+                                  f"(bands: 0 Not fired / 1-2 Partially fired / 3-4 Fired) | "
+                                  f"Intensity score: {_pv['score']:+d} | STATUS: {_pv['status']}\n")
+            except Exception as _pe:
+                logger.warning(f"[capex-plateau] computed block failed (non-fatal): {_pe}")
 
         fpe = computed_metrics.get("forward_pe") or {}
         if fpe:
@@ -1816,6 +1832,8 @@ The system has computed the following indicator status transitions over the last
 {_entries_block}
 
 Signal-grade (tier 1-5) transitions in this list: {_signal_count}
+
+HARD RULE — transition count: there are exactly {_signal_count} signal-grade transitions above. If your executive_brief opens by counting the day's signal changes, that count MUST be exactly {_signal_count} — never fewer because a transition seems like a 'correction' or 'restoration' (the 2026-08-08 brief wrote 'Two signals changed' against three logged transitions; forbidden).
 
 HARD RULE: Because this list contains {len(authoritative_24h_log)} transition(s) ({_signal_count} of which are tier-1-5 signals), you may NOT open the executive_brief with any claim equivalent to "no signals fired or unfired" / "all indicators hold prior status" / "no tier-1-5 signals fired or unfired today". Such a claim would directly contradict the banners the reader sees above the brief. Instead, OPEN by naming the actual transition(s) — for example: "Relative strength (t3) reverted to 'Not fired' as the 5d spread tightened..." — then weave in the rest of today's news.
 

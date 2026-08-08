@@ -113,23 +113,23 @@ class TestPlateauRedefinition:
 
     def test_surprise_definition_and_qualifier_hard_rule(self):
         wl = IND["t3_capex_plateau"].what_to_look_for
-        assert "PRIOR FORWARD GUIDANCE" in wl
+        assert "PRIOR FORWARD GUIDANCE" in wl.upper()
         assert "REITERATE/CONFIRM within ±5%" in wl
         assert "qualifiers cannot override numbers" in wl
-        assert "FORBIDDEN COUNTEREXAMPLE (2026-07-31)" in wl
-        assert "AT the prior number IS the plateau" in wl
+        assert "2026-07-31" in wl  # forbidden escape named
 
     def test_withheld_guidance_is_watch_flag_not_count(self):
         wl = IND["t3_capex_plateau"].what_to_look_for
-        assert "WITHHELD GUIDANCE" in wl
+        assert "Withheld forward guidance" in wl
         assert "does NOT count toward the plateau tally" in wl
         assert "watch flag" in wl
 
-    def test_worked_example_matches_jul31_prints(self):
-        wl = IND["t3_capex_plateau"].what_to_look_for
-        assert "Microsoft at plateau (count 1) = Partially fired" in wl
-        assert "$220B" in wl          # Amazon raise = not at plateau
-        assert "NOT CapEx cutting" in wl  # v3.43.0 rule survives the rewrite
+    def test_worked_example_matches_current_spec(self):
+        from src.config import INDICATORS
+        wl = {x.id: x for x in INDICATORS}["t3_capex_plateau"].what_to_look_for
+        assert "Microsoft BEYOND plateau" in wl
+        assert "$220B" in wl
+        assert "N=2, S=+1 -> Partially fired" in wl
 
 
 if __name__ == "__main__":

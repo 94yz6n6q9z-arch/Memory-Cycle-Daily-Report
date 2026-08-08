@@ -132,6 +132,7 @@ from src.analysis.computed_verdicts import (
     evaluate_all as evaluate_computed_verdicts,
     apply_to_objects as apply_computed_verdicts,
     apply_status_ratchet,
+    evaluate_capex_plateau_verdict,
 )
 from src.analysis.llm_summarizer import (
     analyze_with_llm,
@@ -1009,7 +1010,25 @@ def run_fast_tier() -> int:
         # per-indicator whack-a-mole (P/E in .16/.18, EPS-revisions and the
         # exec/banner split on Jul-29).
         try:
+            # v3.45.0 — parse LEDGER_UPDATE lines from the plateau signal's
+            # Layer 2 output, apply to the guidance ledger, then merge the
+            # deterministic plateau verdict into the one-truth table.
+            try:
+                from src.analysis.capex_ledger import (
+                    load_ledger, save_ledger, apply_ledger_updates)
+                _led = load_ledger()
+                _plateau_texts = [
+                    " ".join(str(getattr(r, f, "") or "") for f in (
+                        "reasoning", "evidence_for_change_vs_yesterday",
+                        "where_we_stand"))
+                    for r in (signal_reasonings or [])
+                    if getattr(r, "signal_id", None) == "t3_capex_plateau"]
+                if apply_ledger_updates(_plateau_texts, _led):
+                    save_ledger(_led)
+            except Exception as _le:
+                logger.warning(f"[capex-ledger] update pass failed (non-fatal): {_le}")
             _cv = evaluate_computed_verdicts(computed_metrics, signal_reasonings)
+            _cv.update(evaluate_capex_plateau_verdict())
             apply_computed_verdicts(
                 signal_reasonings, _cv, status_attr="fired_status",
                 id_attr="signal_id", note_attr="evidence_for_change_vs_yesterday",
@@ -1331,6 +1350,7 @@ def run_fast_tier() -> int:
     # just recorded. One truth per indicator, both legs, every run.
     try:
         _cv2 = evaluate_computed_verdicts(computed_metrics, signal_reasonings)
+        _cv2.update(evaluate_capex_plateau_verdict())
         apply_computed_verdicts(
             analysis.indicator_assessments or [], _cv2,
             status_attr="current_status", id_attr="id",

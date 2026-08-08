@@ -155,6 +155,23 @@ def evaluate_all(computed_metrics: dict, signal_reasonings: list) -> dict:
 LATCHED_UP_ONLY_IDS = ("t2_capex_parabolic",)
 
 
+def evaluate_capex_plateau_verdict() -> dict:
+    """v3.45.0 — t3_capex_plateau slaved to the deterministic guidance
+    ledger (count bands decide; score is intensity). Returns {} on error."""
+    try:
+        from src.analysis.capex_ledger import load_ledger, evaluate_plateau
+        v = evaluate_plateau(load_ledger())
+        note_lines = " · ".join(v["company_lines"])
+        flags = ("; ".join(v["watch_flags"]) + ". ") if v["watch_flags"] else ""
+        return {"t3_capex_plateau": {
+            "status": v["status"], "mode": "two_sided",
+            "basis": f"{v['basis']}. {flags}{note_lines}"}}
+    except Exception as e:
+        logger.warning(f"[capex-plateau] ledger verdict failed (non-fatal): {e}")
+        return {}
+
+
+
 def apply_status_ratchet(objs: list, prior_status_by_id: dict, status_attr: str,
                          id_attr: str, note_attr, stage: str) -> None:
     """v3.44.0 — latched signals ratchet up only (Raul, Jul-31: 'once

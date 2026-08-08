@@ -1,3 +1,19 @@
+## v3.45.0 lessons (2026-08-08)
+
+- **Verify against code and history before stating.** Two claims this week
+  (Yahoo routing scope; transcript-latency cause) were made from memory or
+  a stale comment and falsified by Raul's own audit table. Production
+  artifacts and the repo tree are the only admissible sources.
+- **Taxonomy growth must trigger re-digestion.** Any once-and-frozen
+  derived artifact (digests) is stale the moment the schema that shaped it
+  (indicator set) changes. Stamp derived artifacts with the schema hash;
+  invalidate on change.
+- **When the LLM proposes rows and arithmetic decides, contract the
+  handoff.** LEDGER_UPDATE lines: rigid grammar, validation, rejection
+  logging — same pattern as every deterministic gate that has held.
+- **Count bands and intensity scores are different organs.** Status from
+  counts (auditable, flap-resistant); scores for severity display only.
+
 ## v3.44.0 lessons (2026-07-31)
 
 - **Latched signals need a mechanical latch, not a spec sentence.** Prompt

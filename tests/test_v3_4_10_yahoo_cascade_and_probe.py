@@ -146,12 +146,13 @@ class TestYahooEarningsWindowGate(unittest.TestCase):
             from src.data.transcript_sources import _is_in_yahoo_earnings_window
             self.assertTrue(_is_in_yahoo_earnings_window("ORCL"))
 
-    def test_earnings_3_days_ago_returns_false(self):
+    def test_earnings_3_days_ago_returns_true_v3_45_window(self):
         """Day +3 (first day OUT of window) → skip."""
         with patch("src.data.transcript_sources._get_recent_earnings_date") as mock_get:
             mock_get.return_value = date.today() - timedelta(days=3)
             from src.data.transcript_sources import _is_in_yahoo_earnings_window
-            self.assertFalse(_is_in_yahoo_earnings_window("ORCL"))
+            self.assertTrue(  # v3.45.0: window 2->7d
+            _is_in_yahoo_earnings_window("ORCL"))
 
     def test_earnings_30_days_ago_returns_false(self):
         """Far past → skip."""

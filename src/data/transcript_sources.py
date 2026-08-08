@@ -133,7 +133,11 @@ EARNINGS_CACHE_PATH = Path("state/earnings_calendar_cache.json")
 # MF doesn't have it after 72 hours, Yahoo retries are diminishing returns
 # (and we'll get it via MF on a subsequent day anyway, since MF's coverage
 # IS comprehensive — it's just sometimes slow).
-YAHOO_EARNINGS_WINDOW_DAYS = 2
+# v3.45.0 — widened 2 -> 7: with a 2-day window, Motley Fool posting slow
+# closed Yahoo's fallback forever and nobody looked from day 3 on (a
+# designed dead zone). Retries are ~50KB index fetches; the seen-URL cache
+# stops them the moment a transcript lands.
+YAHOO_EARNINGS_WINDOW_DAYS = 7
 
 # v3.4.10 — Set of company display names that are NON-US-listed in
 # YAHOO_TRANSCRIPT_TICKERS (SK Hynix on Munich + Samsung on Frankfurt).
@@ -1449,6 +1453,24 @@ def fetch_all_transcripts(
       3. Yahoo fallback — runs ONLY for names without a full_transcript so far.
          Routes through residential proxy. The Korean names (SK Hynix, Samsung)
          always need this (no Motley Fool coverage); US names need it only if
+         Motley Fool # v3.45.0 — post-earnings sentinel: a known call with no full
+         Motley Fool # transcript must be LOUD, never silent for a week again.
+         Motley Fool try:
+         Motley Fool     _today = date.today()
+         Motley Fool     _byco = summary.get("by_company", {})
+         Motley Fool     for _t, _co in [("MSFT", "Microsoft"), ("GOOGL", "Alphabet"),
+         Motley Fool                     ("AMZN", "Amazon"), ("META", "Meta"), ("MU", "Micron")]:
+         Motley Fool         _ed = get_cached_earnings_date(_t) if "get_cached_earnings_date" in globals() else None
+         Motley Fool         if not _ed:
+         Motley Fool             continue
+         Motley Fool         _days = (_today - _ed).days
+         Motley Fool         if 2 <= _days <= 7 and _byco.get(_co) not in ("full_transcript", "already_processed"):
+         Motley Fool             _msg = (f"[transcript-sentinel] {_co}: earnings {_ed} was "
+         Motley Fool                     f"{_days}d ago and no full transcript is on file "
+         Motley Fool                     f"(status={_byco.get(_co)})")
+         Motley Fool             (logger.error if _days >= 4 else logger.warning)(_msg)
+         Motley Fool except Exception as _se:
+         Motley Fool     logger.warning(f"[transcript-sentinel] check failed (non-fatal): {_se}")
          Motley Fool returned nothing/materials_only this run.
 
     De-dup is by (company, event_date, event_type), keeping the BEST
@@ -1456,6 +1478,38 @@ def fetch_all_transcripts(
     to `already_processed`.
     """
     seen_urls = _load_seen_urls()
+
+    # v3.45.0 — taxonomy-aware digests. Digest routing is written ONCE at
+    # digestion time from the indicator set that exists that night; when
+    # the set grows (t3_capex_plateau was created hours AFTER the Jul-30/31
+    # hyperscaler transcripts were digested, leaving the new signal blind
+    # for a week), every cached digest is stale. On an indicator-set hash
+    # change: clear the seen-URL cache once, forcing a one-time re-fetch +
+    # re-digest of everything still visible on source pages (~13 tickers,
+    # bounded, a handful of Haiku calls), then re-freeze under the new hash.
+    try:
+        import hashlib as _hl
+        from src.config import INDICATORS as _INDS
+        _tax_path = Path("state/digest_taxonomy.json")
+        _cur = _hl.sha256(",".join(sorted(i.id for i in _INDS)).encode()).hexdigest()[:16]
+        _stored = None
+        try:
+            _stored = json.loads(_tax_path.read_text()).get("indicator_set_hash")
+        except Exception:
+            pass
+        if _stored != _cur:
+            logger.warning(
+                f"[taxonomy] indicator set changed ({_stored} -> {_cur}): "
+                f"clearing {len(seen_urls)} seen URLs for one-time re-digest "
+                f"under the new taxonomy")
+            seen_urls = set()
+            _save_seen_urls(seen_urls)
+            _tax_path.parent.mkdir(parents=True, exist_ok=True)
+            _tax_path.write_text(json.dumps({
+                "indicator_set_hash": _cur,
+                "cleared_at": datetime.now(timezone.utc).isoformat()}))
+    except Exception as _te:
+        logger.warning(f"[taxonomy] epoch check failed (non-fatal): {_te}")
 
     # Step 1 — Motley Fool (primary for US names)
     logger.info("Transcript cascade step 1: Motley Fool (primary for US names)")

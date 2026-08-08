@@ -1,3 +1,41 @@
+# v3.45.0 (2026-08-08) — Guidance ledger + count-only plateau scoring; taxonomy-aware digests; event-echo dedup; transcript belt
+
+Rulings (Raul, 2026-08-08): points raise>5% = -1 / confirm ±5% = +1 / cut>5%
+= +2 / withheld = 0 + watch flag; STATUS BY COUNT ALONE — N at stable-or-
+cutting: 0 Not fired / 1-2 Partially fired / 3-4 Fired; score = intensity
+display only (no override; 2 cutters + 2 raisers stays Partially fired).
+
+- NEW src/analysis/capex_ledger.py: state/capex_guidance_ledger.json with
+  in-code seed (Aug-8 state, sources annotated; MSFT $190B->$175B marked
+  provenance-trace pending). company_stance (±5% band, FP-rounded,
+  midpoints for ranges, stance_override for direction-only guidance),
+  evaluate_plateau (count bands + score + four-company enumeration lines +
+  BEYOND-plateau labeling + withheld watch flags), LEDGER_UPDATE parser
+  (regex contract, future-date reject, supersede-with-prior).
+- Layer 2 OUTPUT CONTRACT in the plateau spec: LEDGER_UPDATE: Company |
+  PERIOD | low-high | event_date (CALL date, never coverage date) |
+  source. fast_tier parses these from the plateau reasoning pre-store,
+  updates the ledger, and merges evaluate_capex_plateau_verdict() into
+  the one-truth table at BOTH legs (mode two_sided). Prose never sets
+  status. Computed-metrics block prints the full ledger read daily.
+- Taxonomy-aware digests (root cause of the 7-day blind spot): digest
+  routing is written once at digestion time; t3_capex_plateau was created
+  hours AFTER the Jul-30/31 transcripts were digested and the URL cache
+  never re-digests. Now state/digest_taxonomy.json stores the indicator-
+  set hash; on change, seen URLs are cleared once for a bounded re-fetch +
+  re-digest under the new taxonomy, then re-frozen.
+- Event-echo dedup in update_evidence_after_layer2: >=0.6 token-Jaccard
+  vs the last 20 stored entries -> corroboration, not a new dated entry.
+- Exec transition-count HARD RULE injected next to the authoritative
+  transitions list (the Aug-8 'Two signals changed' vs three pills named
+  as forbidden).
+- Transcript belt: YAHOO_EARNINGS_WINDOW_DAYS 2 -> 7 (the 2-day window +
+  slow Motley Fool = designed dead zone); post-earnings sentinel logs
+  WARNING from day 2, ERROR from day 4 when a known call has no full
+  transcript on file.
+- Tests: tests/test_v3_45_0_ledger_taxonomy_dedup.py (16) + v3.44 spec
+  asserts aligned. Suite: 1,412 passed / 39 failing set byte-identical.
+
 # v3.44.0 (2026-07-31) — CapEx parabolic latched; plateau redefined around the guidance surprise
 
 Response to the first v3.43.0 production run (Jul-31 20:26 UTC brief).
