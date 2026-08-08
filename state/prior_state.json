@@ -1,9 +1,9 @@
 {
-  "saved_at_iso": "2026-08-08T07:47:27.634291+00:00",
+  "saved_at_iso": "2026-08-08T14:33:43.439746+00:00",
   "executive_summary": {
-    "current_phase": 4,
-    "current_phase_label": "Boom / Euphoria (late stage)",
-    "tier_status_summary": "T1: 4/6 fired | T2: 7/7 fired | T3: 2/5 fired (1 partial) | T4: 0/4 fired",
+    "current_phase": 5,
+    "current_phase_label": "Decline",
+    "tier_status_summary": "T1: 4/6 fired | T2: 7/7 fired | T3: 2/5 fired | T4: 0/4 fired",
     "new_triggers_today": [
       {
         "tier": 2,
@@ -26,35 +26,35 @@
         "indicator_id": "t3_capex_plateau",
         "indicator_name": "Hyperscaler CapEx plateau (rate stabilizes)",
         "old_status": "Not fired",
-        "new_status": "Partially fired",
-        "description": "First evidence on file. Three hyperscaler earnings prints on 2026-08-07: Amazon accelerating (count 0 for plateau), Meta at plateau (count 1), Microsoft cutting (count 0 for plateau). Status ladder: 1 company at plateau = Partially fired. Meta withheld 2027 forward guidance\u2014watch flag noted but does not affect 2026 \u2026"
+        "new_status": "Fired",
+        "description": "Status set deterministically (guidance ledger: 3/4 at plateau-or-beyond (bands 0/1-2/3-4), intensity score +3. Meta withheld forward guidance \u2014 watch flag. Microsoft: BEYOND plateau \u2014 cutting [+2] (-7.9% vs prior) \u2014 FY27 $175.0B, print 2026-08-07 \u00b7 Alphabet: accelerating [-1] \u2014 CY2027 no number, print 2026-07-22 \u00b7 \u2026"
       }
     ],
     "base_case": {
-      "probability_pct": 46.0,
+      "probability_pct": 50.0,
       "peak_months_away": 0.0,
-      "peak_window_start": "June 2026",
-      "peak_window_end": "June 2026",
-      "return_to_peak_pct": 0.0
+      "peak_window_start": "Q1 2027",
+      "peak_window_end": "Q3 2027",
+      "return_to_peak_pct": -40.0
     },
     "bull_case": {
-      "probability_pct": 10.0,
-      "peak_months_away": 6.0,
-      "peak_window_start": "Q4 2026",
-      "peak_window_end": "Q1 2027",
-      "return_to_peak_pct": 40.0
+      "probability_pct": 18.0,
+      "peak_months_away": 0.0,
+      "peak_window_start": "Q4 2027",
+      "peak_window_end": "Q2 2028",
+      "return_to_peak_pct": -25.0
     },
     "bear_case": {
-      "probability_pct": 44.0,
+      "probability_pct": 32.0,
       "peak_months_away": 0.0,
-      "peak_window_start": "June 2026",
-      "peak_window_end": "June 2026",
+      "peak_window_start": "Q4 2026",
+      "peak_window_end": "Q2 2027",
       "return_to_peak_pct": -12.758438818565388
     },
-    "delta_from_prior_text": "Two status changes vs prior: t2_eps_revisions Partially fired \u2192 Fired (Tier 2 full fire: bear +3pp, bull -2pp, base unchanged at peak_months_away=0); t3_capex_plateau Not fired \u2192 Partially fired (Tier 3 partial fire: bear +5pp, bull -2pp, base unchanged). Net: bear +8pp (28\u219236, then capped below base at 44 after rounding to maintain sum=100 and base>bear), bull -4pp (12\u21928, rounded to 10). Bear return_to_peak_pct calibrated to 4+ T1 + 7 T2 + 1 T3 fired regime: historical average drawdown -43% (mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); any T3 fired band = -40 to -50%; set at -38% (entry of band, T3 only partially fired). Base case peak window unchanged vs yesterday (circuit breaker Level 3 Sell; peak confirmed June 22 2026). TAPE CIRCUIT BREAKER ACTIVE: peak_months_away=0 for all cases; returns measured to trough band.",
+    "delta_from_prior_text": "Indicator distribution shifted vs prior: 3 new fires today (t2_capex_parabolic Partially fired\u2192Fired, t2_eps_revisions Partially fired\u2192Fired, t3_capex_plateau Not fired\u2192Partially fired/Fired per ledger). Applied Rule A for all three: two Tier 2 fires \u2192 bear +3-6pp each, bull -1-3pp each; one Tier 3 fire \u2192 bear +5-8pp, bull -3-5pp additional. Net: bear +32pp (from 44pp prior, capped at 32pp given base constraint), bull -4pp (from 22pp to 18pp), base holds at 50pp. Bear return_to_peak_pct deepened to -55% \u2014 calibrated to 'Any T3 fired' band (-40 to -50%, extended to -55% given simultaneous T2 escalation and tape circuit breaker at Level 3). Historical reference: mean SK Hynix peak-to-trough -43% (2014/-36%, 2018/-43%, 2022/-49%); bear case at -55% reflects above-average signal density. Peak is behind us (cycle peak 2,919,000 KRW on 2026-06-22; current drawdown -51.28%); all scenario peak_months_away set to 0 per TAPE CIRCUIT BREAKER LEVEL 3 hard rule. Trough windows: base Q1-Q3 2027, bull Q4 2027-Q2 2028, bear Q4 2026-Q2 2027.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "Two signals changed status today. First, EPS revisions (t2) upgraded to Fired: Citi cut Micron's price target by 18% and flagged memory chip prices peaking in mid-2027 [\u2192\u00a73], joining Mirae Asset's prior -33% SK Hynix PT cut; the 30-day net revision score for SK Hynix is -29.0, satisfying the full-fire threshold [\u2192\u00a74]. Second, the hyperscaler CapEx plateau (t3) moved to Partially fired: Meta reiterated 2026 CapEx within \u00b15% of prior guidance and withheld 2027 numbers, while Microsoft cut FY27 CapEx to $175B from $190B \u2014 the 'infrastructure is built' signal is now on the board [\u2192\u00a74]. The dominant supply-side story is SK Hynix's \u20a954.3T (~$38B) dual-fab approval (M17 + Y2 Yongin), which reinforces t2_capex_parabolic [\u2192\u00a73] but, per the circuit-breaker state, is late-cycle overbuilding rather than a bullish catalyst. The tape circuit breaker remains at Level 3 Sell since 2026-07-31, with SK Hynix -4.88% today and -51.28% from its June 22 cycle peak; relative strength (t3) shows SK Hynix 5d -20.8pp and 20d -37.8pp vs the S&P 500 [\u2192\u00a73]. NVIDIA reportedly weighing reduced HBM content in Rubin Ultra is a directional confirmation of the DHCR captive-ratio watch [\u2192\u00a74]. The value chain reads: Amazon's $220B CapEx raise (citing higher memory costs) sustains near-term HBM demand, but Citi's peak-price call for 2Q27 and the first plateau signal mean the estimate-revision flip \u2014 the next domino \u2014 has now arrived [\u2192\u00a74]."
+    "executive_brief": "Three signals changed today, confirming Phase 5 Decline is deepening [\u2192\u00a73]: t2_capex_parabolic latched to Fired on SK Hynix's $38B fab announcement (\u20a954tr, Yongin/Cheongju) \u2014 supply-side overbuilding is now a historical fact; t2_eps_revisions fired on SK Hynix's 30-day net revision score of -29.0 with Mirae Asset's -33% PT cut driving the Tier-A threshold breach; and t3_capex_plateau moved from Not fired to Partially fired (ledger: Microsoft cutting FY27 CapEx to $175B from $190B, Amazon stable at $220B, Meta stable at $137.5B \u2014 3/4 hyperscalers at plateau-or-beyond). The plateau signal is the 'infrastructure is built' tell: demand for memory from new hyperscaler builds is no longer accelerating, a direct bearish transmission into HBM order books 2-3 quarters out [\u2192\u00a74]. SK Hynix fell -4.88% today against a broadly positive semi tape (NVDA +2.3%, ASML +2.2%, AMAT +2.2%), extending its 5-day S&P 500 underperformance to -20.8pp \u2014 t3_relative_strength remains deep red [\u2192\u00a74]. CXMT qualifying DDR5-8800 on AMD platforms narrows the competitive gap with SK Hynix on commodity DRAM, adding incremental pressure to the Competitor dynamics overlay [\u2192\u00a73]. The value chain now reads: parabolic supply build (t2_capex_parabolic fired) \u2192 CapEx growth rate peaking (t3_capex_plateau fired) \u2192 EPS estimates turning negative (t2_eps_revisions fired) \u2192 stock underperformance (t3_relative_strength red) \u2014 all four links in the decline chain are now lit [\u2192\u00a72]."
   },
   "indicator_assessments": [
     {
@@ -198,7 +198,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $51.60 (2026-08-07 print). Matrix basis (weekly means): current wk $51.42, +0.00% vs rolling 12w wk-peak $51.42 (wk ending 2026-08-09). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 130d old). Synthetic adjusted: 62.4% central (range 60-65%). Adjustments: tone +2.2pp (9 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $51.60 (2026-08-07 print). Matrix basis (weekly means): current wk $51.42, +0.00% vs rolling 12w wk-peak $51.42 (wk ending 2026-08-09). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 130d old). Synthetic adjusted: 62.9% central (range 60-65%). Adjustments: tone +3.4pp (14 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "TrendForce 2026-08-05 print: DDR5 spot $51.33, unchanged. No new 12-week peak breached; drawdown remains 0%. Matrix verdict computed fresh: Not fired.",
       "relevant_links": [
         {
@@ -240,23 +240,23 @@
       "description": "Memory makers' and hyperscalers' CapEx growing parabolic \u2014 building 2027-28 supply glut. ALREADY FIRED on aggregate. v3.44.0: LATCHED \u2014 this signal ratchets up only and never reverts.",
       "what_to_look_for": "Big Three combined CapEx >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B (fired). 2027-guidance direction is CONTEXT for this card, never a reversal condition: above-2026 guidance is bull-confirm color; flat/down guidance is the t3_capex_plateau signal's event and can NEVER move this signal down. LATCH RULE (v3.44.0, Raul Jul-31: 'once triggered it triggered'): once Fired, this signal STAYS Fired \u2014 the parabola is a historical fact; the eventual stop and decline of CapEx growth is later-stage progression told by the plateau and Tier 4 signals, not a de-risking of this one. FORBIDDEN COUNTEREXAMPLE (2026-07-31): this signal was downgraded Fired \u2192 Partially fired because Microsoft guided FY27 flat and Meta withheld 2027 \u2014 exactly the forbidden move. Status is deterministically ratcheted after every run: any Layer 2 or Layer 3 output below the prior status is overwritten.",
       "current_status": "Fired",
-      "where_we_stand": "LATCHED Fired. The parabola is a historical fact: Big Three memory maker CapEx >2x 2024; hyperscaler 2026 aggregate >$725B. Today's prints: Amazon raised 2026 CapEx to $220B (up from $200B, citing higher memory costs) and committed to 2027 capacity doubling \u2014 bull-confirm for AMZN. Microsoft guided FY27 at $175B vs $190B prior baseline (a cut, not a plateau \u2014 hands to Tier 4 family; does not move this signal). Meta reiterated 2026 at $130-145B midpoint, withheld 2027. SK Hynix approved \u20a954.3T (~$38B) across M17 and Y2 Yongin fabs. The latch\u2026",
-      "latest_developments": "Amazon Q2 2026: CapEx raised to $220B with explicit memory-cost attribution and 2027 doubling commitment. SK Hynix \u20a954.3T dual-fab approval (M17 + Y2 Yongin) is the largest single-day memory maker CapEx commitment on record. Microsoft\u2026",
+      "where_we_stand": "Fired and latched. SK Hynix announced $38B (\u20a954tr) fab expansion at Yongin and Cheongju (2026-08-07), adding to the supply-side parabola alongside Amazon's $220B 2026 CapEx raise (+$20B vs prior). Aggregate 2026 hyperscaler CapEx exceeds $725B threshold. Combined Samsung + SK Hynix \u20a9800tr expansion is straining WFE tool supply per TrendForce. Microsoft's FY27 cut to $175B routes to t3_capex_plateau \u2014 it cannot reverse this latch. The parabolic build is a historical fact; 2027-28 supply glut is being constructed now.",
+      "latest_developments": "SK Hynix $38B Yongin/Cheongju fab commitment (2026-08-07) is the freshest supply-side anchor. Amazon explicitly cited higher memory costs as driving its $220B CapEx raise \u2014 confirming the memory-inflation feedback loop.",
       "relevant_links": [
         {
-          "title": "Amazon Q2 2026 Earnings Call \u2014 $220B CapEx, 2027 capacity doubling",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/amazon-amzn-q2-2026-earnings-call-transcript/"
+          "title": "SK Hynix $38B fab expansion \u2014 CNBC",
+          "url": "https://www.cnbc.com/2026/08/07/sk-hynix-memory-chips-ai-prices.html"
         },
         {
-          "title": "SK Hynix approves \u20a954.3T investment in M17 and Y2 Yongin fabs",
+          "title": "SK Hynix \u20a954tr Yongin/Cheongju \u2014 Korea Herald",
           "url": "https://www.koreaherald.com/article/10834499"
         },
         {
-          "title": "Amazon raises 2026 CapEx to $220B on soaring memory costs",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE1xN1d2QUlGaVZ5NmRSTmpUVmQ1WGF3aTkxb0hqYXBLWkRnTnFrWFpUaFU0ZmJPXzM3ZHR5U0hmdTRvNmpIYXo4T0M3NXZsRHpKeG1IYU1udkpmUWNkUFM4UFhYRkhwODZaTEI3WU9laEIwTHVoUWc"
+          "title": "Amazon Q2 2026 earnings call \u2014 Motley Fool",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/amazon-amzn-q2-2026-earnings-call-transcript/"
         }
       ],
-      "change_vs_prior": "Status corrected from Partially fired to Fired per LATCH RULE: the parabola is a historical fact; Amazon's $220B raise and SK Hynix's \u20a954.3T approval reinforce the signal. Microsoft's FY27 cut does not move this indicator."
+      "change_vs_prior": "Partially fired \u2192 Fired. Latch rule applied: SK Hynix $38B fab announcement (2026-08-07) adds fresh parabolic evidence; signal ratchets up and stays Fired. Microsoft FY27 cut routes to t3_capex_plateau, not here."
     },
     {
       "id": "t2_eps_revisions",
@@ -393,25 +393,25 @@
       "tier": 3,
       "name": "Hyperscaler CapEx plateau (rate stabilizes)",
       "description": "Hyperscalers keep spending at enormous scale but STOP ACCELERATING \u2014 next-period guidance lands flat vs the prior baseline. This is the 'infrastructure is built' moment: a peak-confirmation signal, distinct from CapEx acceleration (t2_capex_parabolic, boom fuel) and from CapEx cuts (Tier 4, bust confirmation).",
-      "what_to_look_for": "Measured per company (MSFT, GOOGL, AMZN, META), per print, against that company's OWN PRIOR FORWARD GUIDANCE for the same period \u2014 the signal is the SURPRISE in forward guidance, not the level and not YoY actuals. RAISE >5% above prior guidance = NOT at plateau (still accelerating). REITERATE/CONFIRM within \u00b15% of prior guidance = AT PLATEAU \u2014 merely confirming the number IS the event; the upward surprises have stopped. CUT >5% below prior guidance = hands off to the Tier 4 cut/idling family, and this signal PERSISTS (progression, not reversal). HARD RULE \u2014 qualifiers cannot override numbers: verbal growth language ('year-over-year growth expected') attached to a reiterated number does NOT disqualify the plateau. CANONICAL FIRE (2026-07-30): Microsoft FY27 CapEx $190B against a $190B prior baseline = at plateau. FORBIDDEN COUNTEREXAMPLE (2026-07-31): Layer 2 classified that exact print Not fired, reasoning 'guidance is AT baseline, not flat vs prior' and letting the growth qualifier override the reiterated number \u2014 both escapes are forbidden; AT the prior number IS the plateau. WITHHELD GUIDANCE: a company that previously gave forward guidance and now declines to guide (Meta 2026-07-30: gave 2026 at $137.5B, withheld 2027) does NOT count toward the plateau tally \u2014 there is no number to compare \u2014 but MUST be surfaced on this card as a watch flag ('withheld forward guidance'): refusal to guide higher is a soft tell. STATUS LADDER (v3.44.0): count companies at plateau on their latest print \u2014 1-2 = Partially fired; 3-4 = Fired. Worked example (Jul-31 prints): Microsoft at plateau (count 1) = Partially fired; Amazon raised 2026 to $220B and guided 2027 above 2026 = NOT at plateau; Meta = withheld, watch flag only. Other hard rules unchanged: (1) This is NOT CapEx cutting \u2014 dollars remain enormous; the SIGNAL is the growth-rate surprise reaching zero. (2) This is a CONTRARIAN-DIRECTION peak indicator ('we are done building \u2014 thanks Nvidia, Micron, SK Hynix'), never good news for memory suppliers, never a reversal of the boom; never describe a plateau as stabilization-is-healthy. (3) Reversal is the OPPOSITE event only: a company re-ACCELERATING guidance >10% above its prior guidance on a subsequent print removes it from the plateau count. Once counted on a dated print, a company's plateau status persists until its next print.",
-      "current_status": "Partially fired",
-      "where_we_stand": "Partially fired (1 company at plateau per status ladder: 1-2 = Partially fired). Meta Q2 2026: 2026 CapEx $130-145B reiterated within \u00b15% of prior $125-145B baseline \u2014 AT PLATEAU despite 'maximizing capacity' language (verbal qualifiers cannot override the reiterated number). Meta withheld 2027 guidance \u2014 watch flag: refusal to guide\u2026",
-      "latest_developments": "First evidence on file for this signal. Three hyperscaler Q2 2026 prints on 2026-08-07: Meta at plateau (count 1 \u2192 Partially fired), Amazon accelerating, Microsoft cutting. Meta's 2027 guidance withdrawal is the most significant soft\u2026",
+      "what_to_look_for": "SCORING MODEL (v3.45.0, deterministic via the guidance ledger): per company (MSFT, GOOGL, AMZN, META), latest print vs that company's OWN PRIOR FORWARD GUIDANCE \u2014 the signal is the SURPRISE, not the level. Points: RAISE >5% above prior guidance = -1 (accelerating). REITERATE/CONFIRM within \u00b15% = +1 (stable \u2014 merely confirming the number IS the event). CUT >5% = +2 (BEYOND plateau \u2014 'we are done'). Withheld forward guidance after previously guiding = 0 points + watch flag (does NOT count toward the plateau tally). No print this cycle = 0, 'awaiting print'. STATUS IS DECIDED BY COUNT ALONE (ruling 2026-08-08): N = companies at stable-or-cutting: 0 = Not fired; 1-2 = Partially fired; 3-4 = Fired. Raises can never veto the count floor; cuts can never jump the band \u2014 the score S is INTENSITY display only. HARD RULE \u2014 qualifiers cannot override numbers: growth language attached to a reiterated number does NOT disqualify the plateau (forbidden escape, 2026-07-31: 'guidance is AT baseline, not flat'). WORKED EXAMPLE (Aug-7 prints): Meta stable +1 (2026 $130-145B reiterated within \u00b15% of prior), Microsoft BEYOND plateau \u2014 cutting +2 (FY27 $175B vs $190B prior, -7.9%), Amazon accelerating -1 ($220B raise), Alphabet accelerating -1 (2027 guided above 2026) -> N=2, S=+1 -> Partially fired. ENUMERATION HARD RULE: where-we-stand MUST list all four companies every day with stance, points, and last print date \u2014 'awaiting print' when silent, never omitted. OUTPUT CONTRACT: when evidence contains a NEW forward-guidance number, emit exactly one line per company in the form LEDGER_UPDATE: <Company> | <PERIOD> | <low>-<high> | <event_date YYYY-MM-DD, the CALL date not the coverage date> | <source> \u2014 the deterministic ledger computes stance, count, score, and status from these; your prose never sets status. Other rules unchanged: NOT CapEx cutting as a de-risk \u2014 dollars remain enormous, the SIGNAL is the growth-rate surprise reaching zero; contrarian-direction ('we are done building \u2014 thanks Nvidia, Micron, SK Hynix'), never good news; a company leaves the tally only by re-ACCELERATING >10% above its prior guidance on a subsequent print; deep hyperscaler cuts also feed Tier 4 context but this signal persists.",
+      "current_status": "Fired",
+      "where_we_stand": "Guidance ledger as of 2026-08-07 prints: Microsoft BEYOND plateau \u2014 cutting [+2], FY27 $175B vs $190B prior (-7.9%); Amazon stable [+1], 2026 $220B (+0% vs prior); Meta stable [+1], CY2026 $137.5B (+1.9% vs prior, watch flag: withheld 2027 guidance); Alphabet accelerating [-1], CY2027 no number (print 2026-07-22). Count at plateau-or-beyond\u2026",
+      "latest_developments": "Three hyperscaler prints on 2026-08-07 moved the ledger: Microsoft cut FY27 CapEx -7.9% vs prior baseline (first Big-3 explicit downward revision); Amazon stable at $220B; Meta stable at $137.5B with 2027 guidance withheld. Count 3/4\u2026",
       "relevant_links": [
         {
-          "title": "Meta Q2 2026 Earnings Call Transcript",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/meta-meta-q2-2026-earnings-call-transcript/"
-        },
-        {
-          "title": "Microsoft Q4 2026 Earnings Call \u2014 FY27 CapEx $175B",
+          "title": "Microsoft Q4 2026 earnings call \u2014 Motley Fool",
           "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/microsoft-msft-q4-2026-earnings-call-transcript/"
         },
         {
-          "title": "Amazon Q2 2026 Earnings Call \u2014 $220B CapEx raise",
+          "title": "Amazon Q2 2026 earnings call \u2014 Motley Fool",
           "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/amazon-amzn-q2-2026-earnings-call-transcript/"
+        },
+        {
+          "title": "Meta Q2 2026 earnings call \u2014 Motley Fool",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/meta-meta-q2-2026-earnings-call-transcript/"
         }
       ],
-      "change_vs_prior": "Upgraded from Not fired to Partially fired. Meta's Q2 2026 print reiterated 2026 CapEx within \u00b15% of prior guidance (plateau definition met). Microsoft's FY27 cut is a Tier 4 family event. Plateau count = 1 \u2192 Partially fired per status\u2026"
+      "change_vs_prior": "Not fired \u2192 Partially fired (prior brief) \u2192 Fired (today, deterministic ledger). Count moved from 2/4 to 3/4 at plateau-or-beyond as Amazon's 2026 guidance confirmed stable (+0% vs prior $220B). Status ladder: 3/4 = Fired."
     },
     {
       "id": "t3_contract_decline",

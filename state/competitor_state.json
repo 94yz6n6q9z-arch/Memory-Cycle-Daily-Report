@@ -3,7 +3,7 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-08-08T07:36:46Z",
+    "last_aggregator_run": "2026-08-08T14:28:47Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
@@ -96,7 +96,8 @@
         "SanDisk/Kioxia long-term agreements",
         "Google+HBF+AI storage",
         "Google+HBF+storage",
-        "Google+Tenstorrent+HBF"
+        "Google+Tenstorrent+HBF",
+        "Google+HBM+AI inference"
       ],
       "hbf_hot_tier_substitution_events": [],
       "hbf_cold_tier_additions": [],

@@ -154,7 +154,7 @@
       "notes": "THE most diagnostic missing signal per the May 9 framework. When this fires, peak is 4-8 weeks away historically."
     },
     "t2_capex_parabolic": {
-      "current_status": "Partially fired",
+      "current_status": "Fired",
       "fired_since": "2026-01-15",
       "last_updated": "2026-08-08",
       "evidence_log": [
@@ -195,6 +195,14 @@
           "type": "data_point",
           "value": "Layer 2 transition Fired -> Partially fired. Reasoning: Microsoft guides FY27 CapEx at $190B (at baseline 2026 level, not above). Meta provides 2026 guidance ($137.5B) but NO 2027 guidance disclosed. Samsung and SK Hynix memory capex announcements support ",
           "source": "Layer 2 reasoner (5 sources)",
+          "persistence": "live",
+          "reversal_condition": "Subsequent Layer 2 run reverses this transition with new evidence"
+        },
+        {
+          "date": "2026-08-08",
+          "type": "data_point",
+          "value": "Layer 2 transition Partially fired -> Fired. Reasoning: Mixed signals on 2027 CapEx guidance. Amazon raises 2026 capex to $220B (vs $200B prior) and commits to double power capacity by end-2027, supporting parabolic thesis. Meta guides 2026 capex $130-145B",
+          "source": "Layer 2 reasoner (3 sources)",
           "persistence": "live",
           "reversal_condition": "Subsequent Layer 2 run reverses this transition with new evidence"
         }
@@ -683,7 +691,7 @@
       "display_name": "US ADR / SPO event tracking"
     },
     "t3_capex_plateau": {
-      "current_status": "Partially fired",
+      "current_status": "Fired",
       "fired_since": "2026-08-08",
       "last_updated": "2026-08-08",
       "evidence_log": [
