@@ -3,9 +3,9 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
-    "last_aggregator_run": "2026-08-08T14:28:47Z",
+    "last_aggregator_run": "2026-08-10T08:21:17Z",
     "description": "Accelerator catalog with HBM capacity per generation. Vendor sections feed frontier_hbm computation. Auto-updated by src/analysis/dhcr_accelerator_aggregator.py.",
-    "last_run_additions": 0
+    "last_run_additions": 1
   },
   "nvidia": [
     {
@@ -189,6 +189,14 @@
       "release_date": null,
       "generation": "Maia 200",
       "notes": "30% better performance per dollar than latest generation hardware; supporting OpenAI and MAI models"
+    },
+    {
+      "name": "MI450",
+      "vendor": "amd",
+      "hbm_gb": null,
+      "release_date": "2026-H2",
+      "generation": "MI450 Series",
+      "notes": "Custom MI450 architecture-based accelerators for Meta, Helios rack-scale platform integration with EPYC Venice CPUs"
     }
   ],
   "non_hbm_accelerators": [

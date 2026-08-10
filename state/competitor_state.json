@@ -3,19 +3,20 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-08-08T14:28:47Z",
+    "last_aggregator_run": "2026-08-10T08:21:18Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
     "current_status": "Fired",
-    "status_evaluated_at": "2026-08-08",
+    "status_evaluated_at": "2026-08-10",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 22.0,
     "current_state": {
       "cxmt_oem_mainstream_wins": [
         "HP, Asus, and Acer began limited use of CXMT DRAM",
         "HP, Asus, Acer",
-        "HP, Asus"
+        "HP, Asus",
+        "AMD platform"
       ],
       "cxmt_oem_lowend_wins": [],
       "cxmt_ddr5_share_pct": 2.0,
@@ -38,7 +39,7 @@
   },
   "sub_7b_samsung_hbm4": {
     "current_status": "Partially fired",
-    "status_evaluated_at": "2026-08-08",
+    "status_evaluated_at": "2026-08-10",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 10.0,
     "current_state": {
@@ -65,7 +66,7 @@
   },
   "sub_7c_micron": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-08",
+    "status_evaluated_at": "2026-08-10",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.5,
     "current_state": {
@@ -84,7 +85,7 @@
   },
   "sub_7d_hbf": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-08",
+    "status_evaluated_at": "2026-08-10",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.0,
     "current_state": {

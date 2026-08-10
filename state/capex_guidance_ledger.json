@@ -6,7 +6,12 @@
     "high": 175.0,
     "prior_mid": 190.0,
     "event_date": "2026-08-07",
-    "source": "Q4 FY26 earnings call transcript (Aug-7); prior FY27 $190B per Jul-30 print \u2014 provenance trace pending"
+    "source": "Q4 FY26 earnings call transcript (Aug-7); prior FY27 $190B per Jul-30 print \u2014 provenance trace pending [mig002: lease reclass, not an economic cut \u2014 provenance trace resolved]",
+    "stance_override": "stable",
+    "basis_change": true,
+    "flags": [
+      "accounting basis change \u2014 investment unchanged; ruled stable"
+    ]
   },
   "Meta": {
     "period": "CY2026",
@@ -19,13 +24,13 @@
     "withheld_forward": true
   },
   "Amazon": {
-    "period": "2026",
+    "period": "CY2026",
     "mid": 220.0,
     "low": 220.0,
     "high": 220.0,
-    "prior_mid": 220.0,
+    "prior_mid": 200.0,
     "event_date": "2026-08-07",
-    "source": "Motley Fool / Amazon / 2026-08-07. LEDGER_UPDATE: Meta | 2026 | 130-145 | 2026-08-07 | Motley Fool / Meta / 2026-08-07. LEDGER_UPDATE: Microsoft | FY27 | 175 | 2026-08-07 | Motley Fool / Microsoft / 2"
+    "source": "Motley Fool / Amazon / 2026-08-07. LEDGER_UPDATE: Meta | 2026 | 130-145 | 2026-08-07 | Motley Fool / Meta / 2026-08-07.  [mig001: prior restored to $200B \u2014 raise erased by same-event echo]"
   },
   "Alphabet": {
     "period": "CY2027",
@@ -36,5 +41,9 @@
     "event_date": "2026-07-22",
     "stance_override": "accelerating",
     "source": "Jul-2026 print: 2027 guided above 2026, no number disclosed"
-  }
+  },
+  "_migrations": [
+    "001_amazon_prior_200",
+    "002_msft_basis_stable"
+  ]
 }
