@@ -12,37 +12,46 @@
       "capex_2026_guidance_usd_b": 220,
       "capex_2026_prior_guidance_usd_b": 200,
       "aws_revenue_run_rate_usd_b": 169,
-      "aws_revenue_growth_yoy_pct": 36.7,
+      "aws_annualized_revenue_run_rate_usd_b": 169,
       "aws_operating_margin_pct": 39.4,
-      "aws_operating_margin_improvement_bps": 650,
-      "aws_operating_margin_improvement_ex_derivative_bps": 520,
-      "generative_ai_revenue_run_rate_usd_b": 25,
-      "custom_chips_revenue_run_rate_usd_b": 25,
+      "aws_operating_margin_underlying_bps_improvement": 520,
       "aws_backlog_usd_b": 496,
-      "aws_backlog_growth_pct": "triple_digit",
-      "capex_2027_guidance_usd_b": null,
-      "capex_2027_capacity_guidance": "double_power_capacity_by_end_2027_vs_2025",
-      "memory_cost_inflation_impact": "higher_costs_pushing_capex_up",
+      "aws_backlog_growth_rate": "triple-digit",
+      "generative_ai_revenue_run_rate_usd_b": 25,
+      "generative_ai_growth_rate": "triple-digit",
+      "custom_chips_revenue_run_rate_usd_b": 25,
+      "custom_chips_growth_rate": "triple-digit",
+      "trainium_growth_rate": "triple-digit",
+      "graviton_adoption_pct_top_1000_ec2": 98,
+      "graviton5_adoption_growth_vs_graviton4": 2.0,
+      "q2_revenue_yoy_growth_pct": 20,
+      "q2_operating_income_yoy_growth_pct": 43,
+      "aws_revenue_yoy_growth_pct": 36.7,
+      "aws_revenue_qoq_increase_usd_b": 4.6,
+      "q3_revenue_guidance_low_usd_b": 197,
+      "q3_revenue_guidance_high_usd_b": 202,
+      "q3_operating_income_guidance_low_usd_b": 22.5,
+      "q3_operating_income_guidance_high_usd_b": 26.5,
+      "cash_capex_q2_usd_b": 53.1,
       "architecture_signals": {
         "custom_silicon_memory_arch": "mixed",
         "custom_silicon_named": [
           "Trainium",
+          "Graviton",
           "Graviton5"
         ],
-        "trainium_revenue_run_rate_usd_b": 25,
-        "trainium_growth_pct": "triple_digit",
-        "graviton_ec2_customer_adoption_pct": 98,
-        "graviton5_growth_vs_graviton4_multiplier": 2.0,
+        "deployed_speculative_decoding": null,
         "deployed_quantization": null,
         "deployed_moe": null,
-        "deployed_speculative_decoding": null,
-        "deployed_disaggregated_serving": null,
         "enterprise_ai_workload_context_tokens": null,
         "enterprise_ai_customer_name": null,
-        "enterprise_ai_use_case": "inference_production_deployment_at_scale",
+        "enterprise_ai_use_case": "inference production deployment, agentic AI, coding agents, business process automation",
         "enterprise_ai_revenue_growth_qoq_pct": null,
-        "agent_product_usage_disclosure": "Amazon Q production deployment across 3M, Allianz, AstraZeneca, Autodesk, BMW, Exxon, FINRA, Hyundai, Intuit, Mondel\u0113z, Moody's, NBA, NFL, Sun Life, Southwest Airlines",
-        "architecture_freetext": "AWS emphasizes AI inference workloads moving to production at scale; core CPU (Graviton) driving post-training and agentic tool use; multi-year, multi-gigawatt commitments from Anthropic and OpenAI for Trainium; custom silicon revenue run rate $25B+ with triple-digit growth"
+        "agent_product_usage_disclosure": "Amazon Q 3M+ customers; Kiro coding agent 50% more cost-effective, tripled usage QoQ",
+        "new_frontier_model_release": null,
+        "new_accelerator_announcement": null,
+        "enterprise_ai_quarterly_revenue": null,
+        "architecture_freetext": "AWS emphasizes AI inference moving to production at enterprise scale; Trainium multi-year commitments from Anthropic/OpenAI; Graviton 98% adoption in top 1000 EC2 customers; agentic AI stack (Bedrock Agents, Amazon Q, Kiro) driving enterprise workload adoption."
       },
       "competitor_signals": {
         "cxmt_oem_mainstream_win": null,
@@ -85,19 +94,19 @@
     },
     "signal_relevance": [
       "t2_capex_parabolic",
-      "t2_hyperscaler_capex_revenue",
-      "t3_capex_plateau"
+      "t1_decode_hbm_captive_ratio",
+      "t2_hyperscaler_capex_revenue"
     ],
     "key_quotes": [
-      "We will still not have enough capacity to meet all the demand we have in 2026",
-      "Higher cost of memory pushing this number up from our prior estimate of about $200 billion",
-      "AWS could become a trillion-dollar annual revenue business for us in time"
+      "We will still not have enough capacity to meet all the demand we have in 2026.",
+      "AWS backlog growing triple-digit percentage rate as customers commit multiyear cloud AI contracts.",
+      "Higher cost of memory pushing CapEx guidance up from $200 billion to $220 billion."
     ],
     "target_price_action": null,
     "fired_status_evidence": "supports_fire",
     "raw_url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/amazon-amzn-q2-2026-earnings-call-transcript/",
-    "digested_at_iso": "2026-08-08T07:33:15.845193"
+    "digested_at_iso": "2026-08-10T08:16:18.816084"
   },
   "diff_with_prior": null,
-  "saved_at_iso": "2026-08-08T07:33:15.845244"
+  "saved_at_iso": "2026-08-10T08:16:18.816122"
 }
