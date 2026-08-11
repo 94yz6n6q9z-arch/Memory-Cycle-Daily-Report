@@ -1,7 +1,7 @@
 {
   "level": 3,
   "level_since": "2026-07-31",
-  "updated": "2026-08-10",
+  "updated": "2026-08-11",
   "last_verdict": {
     "level": 3,
     "action": "SELL \u2014 thesis stopped out",
@@ -26,11 +26,11 @@
         "stopout_depth": true,
         "stopout_depth_base": true,
         "stopout_gate_pct": -20.0,
-        "drawdown_pct": -51.35,
+        "drawdown_pct": -51.18,
         "peak_price": 2919000.0,
         "peak_date": "2026-06-22",
-        "last_close": 1420000.0,
-        "last_date": "2026-08-10"
+        "last_close": 1425000.0,
+        "last_date": "2026-08-11"
       },
       "distribution": {
         "fired": true,
@@ -38,19 +38,19 @@
         "days": 9,
         "needed": 5,
         "mode": "v2",
-        "udvr": 0.62,
+        "udvr": 0.75,
         "mature": true,
         "lower_highs": true,
         "watermark": 2919000.0,
         "raw_today": true,
-        "asof": "2026-08-10"
+        "asof": "2026-08-11"
       },
       "trend_break": {
         "status": "data_ok",
         "fired": true,
-        "close": 1420000.0,
-        "ma50": 2107120.0,
-        "ma20": 1687300.0,
+        "close": 1425000.0,
+        "ma50": 2088960.0,
+        "ma20": 1666300.0,
         "ma50_falling": true,
         "ma20_below_ma50": true,
         "reason": null
@@ -62,9 +62,9 @@
     },
     "peak_price": 2919000.0,
     "peak_date": "2026-06-22",
-    "drawdown_pct": -51.35,
-    "last_close": 1420000.0,
-    "last_date": "2026-08-10",
+    "drawdown_pct": -51.18,
+    "last_close": 1425000.0,
+    "last_date": "2026-08-11",
     "data_status": "fresh",
     "deescalation": {
       "closes_above_ma50_streak_ok": false,
@@ -74,8 +74,8 @@
       "status": "data_ok",
       "active": true,
       "latched": true,
-      "warning": false,
-      "idio_count": 3,
+      "warning": true,
+      "idio_count": 2,
       "gate_pct": -20.0,
       "phase_late": true,
       "recent_shocks": [
@@ -150,7 +150,7 @@
           "class": "IDIO"
         }
       ],
-      "armed_now": true
+      "armed_now": false
     },
     "stopout_gate_pct": -20.0
   }

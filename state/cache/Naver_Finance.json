@@ -1,7 +1,7 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-08-10T08:18:20.352359+00:00",
+    "fetched_at_iso": "2026-08-11T07:52:42.449323+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
@@ -333,6 +333,32 @@
         "code": "005930",
         "actions": [
           {
+            "broker_korean": "KB",
+            "broker_english": "KB Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 600000,
+            "prior_target_krw": 600000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-08-10",
+            "raw": "KB | 26/08/10 | 600,000 | 600,000 | 0.00 | BUY | BUY"
+          },
+          {
+            "broker_korean": "DB",
+            "broker_english": "DB Financial Investment",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 360000,
+            "prior_target_krw": 360000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-07-31",
+            "raw": "DB | 26/07/31 | 360,000 | 360,000 | 0.00 | Buy | Buy"
+          },
+          {
             "broker_korean": "\uc0bc\uc131",
             "broker_english": "Samsung Securities",
             "rating": "BUY",
@@ -396,32 +422,6 @@
             "direction": "maintained",
             "published_date_iso": "2026-07-31",
             "raw": "\ud55c\ud654\ud22c\uc790 | 26/07/31 | 580,000 | 580,000 | 0.00 | Buy | Buy"
-          },
-          {
-            "broker_korean": "KB",
-            "broker_english": "KB Securities",
-            "rating": "BUY",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 600000,
-            "prior_target_krw": 600000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-07-31",
-            "raw": "KB | 26/07/31 | 600,000 | 600,000 | 0.00 | BUY | BUY"
-          },
-          {
-            "broker_korean": "DB",
-            "broker_english": "DB Financial Investment",
-            "rating": "Buy",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 360000,
-            "prior_target_krw": 360000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-07-31",
-            "raw": "DB | 26/07/31 | 360,000 | 360,000 | 0.00 | Buy | Buy"
           },
           {
             "broker_korean": "\ud604\ub300\ucc28",
@@ -650,7 +650,7 @@
           "avg_opinion_score": 4.04,
           "avg_target_price_krw": 493542,
           "avg_eps_krw": 47929,
-          "avg_per": 4.82,
+          "avg_per": 4.8,
           "num_estimating_institutions": 24
         }
       },
@@ -832,11 +832,11 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 853692,
           "avg_eps_krw": 125347,
-          "avg_per": 4.05,
+          "avg_per": 4.09,
           "num_estimating_institutions": 13
         }
       }
     }
   },
-  "fetched_at_iso": "2026-08-10T08:19:00.632359"
+  "fetched_at_iso": "2026-08-11T07:53:23.234654"
 }
