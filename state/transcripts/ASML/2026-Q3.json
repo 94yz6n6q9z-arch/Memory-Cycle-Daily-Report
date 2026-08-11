@@ -3,22 +3,24 @@
   "company": "ASML",
   "quarter_key": "2026-Q3",
   "digest": {
-    "source_id": "Yahoo Finance / ASML / 2026-07-17",
+    "source_id": "Yahoo Finance / ASML / 2026-08-11",
     "source_type": "earnings_transcript",
-    "published_date_iso": "2026-07-17",
-    "title": "ASML earnings call 2026-07-17",
+    "published_date_iso": "2026-08-11",
+    "title": "ASML earnings call 2026-08-11",
     "char_count_input": 50698,
     "key_metrics": {
       "q2_2026_total_net_sales_eur_b": 9.3,
       "q2_2026_net_system_sales_eur_b": 6.6,
       "q2_2026_euv_system_sales_eur_b": 3.8,
       "q2_2026_non_euv_system_sales_eur_b": 2.8,
+      "q2_2026_ibm_sales_eur_b": 2.8,
       "q2_2026_gross_margin_pct": 54,
       "q2_2026_net_income_eur_b": 2.9,
       "q2_2026_eps_eur": 7.59,
       "q2_2026_free_cash_flow_eur_b": 1.3,
       "q3_2026_guidance_total_sales_eur_b_low": 11,
       "q3_2026_guidance_total_sales_eur_b_high": 12,
+      "q3_2026_guidance_ibm_sales_eur_b": 2.9,
       "q3_2026_guidance_gross_margin_pct_low": 55,
       "q3_2026_guidance_gross_margin_pct_high": 57,
       "fy2026_guidance_total_sales_eur_b_low": 43,
@@ -29,33 +31,37 @@
       "fy2026_euv_yoy_growth_pct": 45,
       "fy2026_immersion_duv_shipments_units": 130,
       "fy2026_non_euv_growth_pct": 25,
-      "fy2026_installed_base_management_growth_pct": 30,
-      "fy2026_china_sales_pct": 20,
-      "fy2026_advanced_logic_foundry_growth_pct": 25,
+      "fy2026_ibm_growth_pct": 30,
       "fy2026_memory_net_system_sales_growth_pct": 75,
-      "fy2027_low_na_euv_capacity_increase_pct": 30,
-      "fy2027_low_na_euv_units_planned": 85,
+      "fy2026_advanced_logic_growth_pct": 25,
+      "fy2026_china_sales_pct_of_total": 20,
+      "fy2027_euv_low_na_capacity_increase_pct": 30,
+      "fy2027_euv_low_na_planned_shipments_units": 85,
       "fy2027_immersion_capacity_increase_pct": 30,
-      "fy2028_low_na_euv_capacity_increase_pct": 30,
-      "fy2028_low_na_euv_units_investigated": 110,
+      "fy2028_euv_low_na_capacity_increase_pct": 30,
+      "fy2028_euv_low_na_investigated_shipments_units": 110,
       "fy2028_immersion_capacity_increase_pct": 30,
-      "high_na_euv_systems_rev_rec_fy2026": "4 to 5",
+      "fy2026_high_na_euv_rev_rec_units_low": 4,
+      "fy2026_high_na_euv_rev_rec_units_high": 5,
+      "fy2026_effective_tax_rate_pct": 17.5,
+      "fy2026_expected_annualized_tax_rate_pct": 17,
       "_transcript_availability": "full_transcript"
     },
     "signal_relevance": [
+      "t3_wfe_orders_crack",
       "t2_capex_parabolic",
-      "t3_wfe_orders_crack"
+      "t1_demand_destruction"
     ],
     "key_quotes": [
+      "Strong end market demand motivated customers to aggressively add capacity on leading-edge nodes.",
       "Memory-related net system sales to grow by over 75% this year.",
-      "Backlog continues to increase with broad mix of customers.",
-      "Strong demand forecasts led us to investigate further 30% capacity increase."
+      "Backlog continues to increase with broad mix of customers."
     ],
     "target_price_action": null,
     "fired_status_evidence": "supports_not_fired",
     "raw_url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-649658.html",
-    "digested_at_iso": "2026-07-17T08:43:34.825629"
+    "digested_at_iso": "2026-08-11T07:49:48.129348"
   },
   "diff_with_prior": null,
-  "saved_at_iso": "2026-07-17T08:43:34.825702"
+  "saved_at_iso": "2026-08-11T07:49:48.129414"
 }
