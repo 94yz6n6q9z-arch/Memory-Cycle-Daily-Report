@@ -53,30 +53,30 @@
       "evidence_count": 10
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-08-08",
+      "last_full_regen_date": "2026-08-14",
       "current_status": "Fired",
-      "where_we_stand": "Fired since 2026-03-24 (Google TurboQuant: 6x KV-cache compression, 8x speedup on H100). Permanent persistence \u2014 published in literature, cannot be unannounced. Today's developments add directional confirmation: Microsoft reports 4x Copilot throughput increase YTD via silicon/software optimization (Maia custom silicon, 40% efficiency gain per Nadella); Anthropic co-designing custom inference chips with\u2026",
-      "latest_developments": "Microsoft Maia delivers 40% AI chip efficiency gains (Nadella, Q4 2026 call); Anthropic custom inference silicon with Samsung manufacturing partner signals further memory-per-token reduction at scale. NVIDIA Rubin Ultra HBM reduction consideration is a design-level\u2026",
+      "where_we_stand": "Fired on two independent primary-lab events. Google TurboQuant (Mar 24, 2026): 6x KV-cache compression, 8x speedup on H100 \u2014 permanent literature record. OpenAI GPT-5.6 Sol Ultrafast (Aug 13, 2026): up to 14x inference speed improvement, published on official OpenAI blog, exceeding the >2x multiplier threshold. Cerebras Q2 call (Aug 13)\u2026",
+      "latest_developments": "OpenAI Blog (Aug 13) announced GPT-5.6 Sol Ultrafast at up to 14x speed \u2014 a new primary-lab confirmation independent of TurboQuant. Cerebras earnings call confirmed SRAM disaggregated inference at 5x throughput with no HBM dependency.",
       "relevant_links": [
         {
-          "title": "Microsoft AI chips drive 40% efficiency gains \u2014 Nadella",
-          "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTE5KNzVORWFPVGhheEFCZ3lNeXRxbjdMMFV0YkRhWEVZY25IM3JYcnpJeVZmVDdycWx0WlA3VUN1bXBPc1pQQUdNRkpyWFlRNjBGMnN5ZHYzelYzaEk0OTd0ekQ1dVhzcUNjTnJiZWxvdl9Td25Jc0V2bGRjdw"
+          "title": "OpenAI: Previewing Ultrafast mode \u2014 GPT-5.6 Sol at up to 14X the speed",
+          "url": "https://openai.com/index/previewing-ultrafast"
         },
         {
-          "title": "Anthropic co-designing custom AI inference chips; Samsung manufacturing partner",
-          "url": "https://www.tomshardware.com/tech-industry/anthropic-to-build-its-own-co-designed-custom-ai-accelerator-for-inferencing-workloads-samsung-reported-to-be-partnering-with-the-claude-ai-maker-for-manufacturing"
+          "title": "Cerebras Q2 2026 earnings call",
+          "url": "https://finance.yahoo.com/quote/CBRS/earnings/CBRS-Q2-2026-earnings_call-686677.html"
         },
         {
-          "title": "NVIDIA considers reducing memory in next-gen Rubin Ultra GPU",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFBuNTloZlEzaXA2dzhMeXJ0WDhyNkY1T09tbTFTZ3pscWUzcUJoVFQzbWVLa2VTN3hFelVVT19DZDFZb1lVMTFDX1NUa2t1bHd0c1A0WmdJM3luWF9lN0lMWVQ5Y1owcDFLVW1CUEtpdDJ6X1YxaFE"
+          "title": "SanDisk: KV cache driving 35% of AI data center NAND workloads by 2030",
+          "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTFBTN05IOXhkRnZvbkh5TDNEMkNKNzhKSXZFMVY4YXYxQW5wSE56alppUm5LNmhTTHNvSFVLNE9JekJIY1d5dmE2cS1jMHY3cTg4aU9RR2N1Ym9GLWF3aDRmM2MzaEoyaWd4ZExoR0pRWWczcjA"
         }
       ],
-      "change_vs_prior": null,
+      "change_vs_prior": "Status unchanged at Fired. New corroborating evidence: OpenAI GPT-5.6 Sol Ultrafast (14x speedup, Aug 13) adds a second independent primary-lab confirmation alongside Google TurboQuant. Signal strength increases; no reversal condition met.",
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-08",
+      "updated_date": "2026-08-14",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 3
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-08-10",
@@ -307,30 +307,30 @@
       "evidence_count": 6
     },
     "t2_pe_compressed": {
-      "last_full_regen_date": "2026-08-13",
+      "last_full_regen_date": "2026-08-14",
       "current_status": "Fired",
-      "where_we_stand": "SK Hynix forward FY27 P/E: 3.5x (below 5x threshold \u2014 Fired). Samsung forward FY27 P/E: 3.9x (below 6x threshold \u2014 Fired). Micron forward P/E: 5.88x per computed metrics (above 8x threshold \u2014 not individually fired, but the aggregate picture is compressed). Mirae Asset (2026-08-13) explicitly cites SK Hynix at '12-month\u2026",
-      "latest_developments": "Mirae Asset (Aug 12-13) confirms SK Hynix 3.5x and Samsung 3.9x forward P/E in back-to-back notes. Both remain below thresholds. Micron at 5.88x is above its 8x threshold individually but the memory-pure-play compression picture is\u2026",
+      "where_we_stand": "SK Hynix forward FY27 P/E: 3.61x (computed: 1,645,000 KRW price \u00f7 454,969 KRW FY+1 EPS est; Mirae Asset confirms 3.5x range in Aug 12-14 notes) \u2014 well below the 5x fire threshold. Samsung forward FY27 P/E: 4.09x (computed: 274,500 KRW \u00f7 67,174 KRW; Mirae confirms ~3.9x) \u2014 below the 6x\u2026",
+      "latest_developments": "Four Mirae Asset notes (Aug 12-14) confirm SK Hynix 12-month forward P/E at 3.5x and Samsung at ~3.9x. No EPS upgrades accompanied the maintained targets \u2014 compression is price-led. Stock down 51% from peak per\u2026",
       "relevant_links": [
         {
-          "title": "Mirae Asset \u2014 SK Hynix Buy, target 2,800,000 KRW (Aug 13)",
+          "title": "Mirae Asset: SK Hynix \u2014 Multiple uncertainties clearing at once (Aug 14)",
+          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342066"
+        },
+        {
+          "title": "Mirae Asset: SK Hynix \u2014 A series of landmark achievements (Aug 13)",
           "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341973"
         },
         {
-          "title": "Mirae Asset \u2014 Samsung Electronics Buy, target 370,000 KRW (Aug 13)",
+          "title": "Mirae Asset: Samsung Electronics \u2014 An opportune time to increase exposure (Aug 13)",
           "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341972"
-        },
-        {
-          "title": "Micron 6.26x Forward Multiple \u2014 Investing.com",
-          "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxPV1NfMy1lZ0lJSDVlRVUtaFVfVTVjckJzelRSNTVKY2VsWUtzekRIRFpCZnFzYVptR2NlcXRKQjlYZUt0dk5JTlRJbjNtQ0NYR3lxTHJCYTlBM2dmU3dXMVJxYTNpYzdLek9tRzR3V3pDajRhSkdvUUZYWUEtTFVzMFNqMWUxM2Q1MmZQa21fdEpfSF9hbjRtejlMNTQ3NW5mT3hSbUZ0UU1ITlRWQWJ4U1o4aDRiRFE"
         }
       ],
-      "change_vs_prior": "Status unchanged (Fired). New corroborating evidence from Mirae Asset Aug 12-13 confirms SK Hynix 3.5x and Samsung 3.9x, both below thresholds. No reversal condition met.",
+      "change_vs_prior": "Status unchanged at Fired. SK Hynix P/E compressed further to 3.5-3.6x from 4.6x on Jul 29; Samsung at 3.9x vs 4.5x on Jul 29. Compression deepened on price decline, not estimate cuts \u2014 consistent with peak-denominator dynamic.",
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-13",
+      "updated_date": "2026-08-14",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 3
+      "evidence_count": 4
     },
     "t2_spot_contract_spread": {
       "last_full_regen_date": "2026-08-12",

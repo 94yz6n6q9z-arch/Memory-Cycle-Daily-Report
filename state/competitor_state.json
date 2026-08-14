@@ -3,12 +3,12 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-08-13T08:10:35Z",
+    "last_aggregator_run": "2026-08-14T08:06:39Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
     "current_status": "Fired",
-    "status_evaluated_at": "2026-08-13",
+    "status_evaluated_at": "2026-08-14",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 22.0,
     "current_state": {
@@ -43,7 +43,7 @@
   },
   "sub_7b_samsung_hbm4": {
     "current_status": "Partially fired",
-    "status_evaluated_at": "2026-08-13",
+    "status_evaluated_at": "2026-08-14",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 10.0,
     "current_state": {
@@ -70,7 +70,7 @@
   },
   "sub_7c_micron": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-13",
+    "status_evaluated_at": "2026-08-14",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.5,
     "current_state": {
@@ -89,7 +89,7 @@
   },
   "sub_7d_hbf": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-13",
+    "status_evaluated_at": "2026-08-14",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.0,
     "current_state": {
@@ -134,7 +134,8 @@
         "SanDisk and SK hynix release first OCP technical specification for HBF",
         "SK Hynix and SanDisk publish first High Bandwidth Flash specification",
         "SK Hynix HBF standard for AI memory",
-        "SanDisk and SK Hynix High Bandwidth Flash standard launch"
+        "SanDisk and SK Hynix High Bandwidth Flash standard launch",
+        "Sandisk guided mid-to-high-teen revenue growth and 75% OP margin for FY2028-30"
       ],
       "sk_hynix_solidigm_hbf_integration": true
     },
