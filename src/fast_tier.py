@@ -129,6 +129,7 @@ from src.config import HYPERSCALERS
 from src.analysis.signal_reasoner import reason_all_signals
 from src.analysis.tape_circuit_breaker import run_tape_circuit_breaker
 from src.analysis.computed_verdicts import (
+    apply_reversal_gate,
     evaluate_all as evaluate_computed_verdicts,
     apply_to_objects as apply_computed_verdicts,
     apply_status_ratchet,
@@ -1044,6 +1045,10 @@ def run_fast_tier() -> int:
                 signal_reasonings, _prior_cx, status_attr="fired_status",
                 id_attr="signal_id", note_attr="evidence_for_change_vs_yesterday",
                 stage="pre-store")
+            apply_reversal_gate(
+                signal_reasonings, _prior_cx, status_attr="fired_status",
+                id_attr="signal_id", note_attr="evidence_for_change_vs_yesterday",
+                stage="pre-store")
         except Exception as _cve:
             logger.warning(f"[computed-verdict] pre-store apply failed (non-fatal): {_cve}")
     except Exception as e:
@@ -1362,6 +1367,10 @@ def run_fast_tier() -> int:
                       for a in (load_prior_state() or {}).get(
                           "indicator_assessments", [])}
         apply_status_ratchet(
+            analysis.indicator_assessments or [], _prior_cx2,
+            status_attr="current_status", id_attr="id",
+            note_attr="change_vs_prior", stage="assessment")
+        apply_reversal_gate(
             analysis.indicator_assessments or [], _prior_cx2,
             status_attr="current_status", id_attr="id",
             note_attr="change_vs_prior", stage="assessment")
@@ -2269,20 +2278,19 @@ def _gate_t4_layoffs(signal_reasonings: list) -> None:
 
 
 def _reanchor_bear_case(analysis, price_history) -> None:
-    """v3.41.17 — deterministic bear-case return, anchored to current price.
-
-    The Phase-4 bear return was a Sonnet judgment number with no anchor
-    declaration — "-40%" indistinguishable between from-here and
-    peak-to-trough, static across days, and blind to the ~30% drawdown
-    already realized. Now: bear trough = cycle peak × (1 +
-    BEAR_TROUGH_FROM_PEAK_PCT/100), cycle peak = SK Hynix max close over the
-    3y price history; bear return = trough vs CURRENT close. The anchor
-    numbers are attached to the ExecutiveSummary (runtime attr, not
-    serialized) for a context line in the email. Probabilities and the
-    base/bull path estimates stay Sonnet's.
+    """v3.41.17 bear-only re-anchor, superseded v3.47.0: ALL THREE cases
+    re-anchor from the cycle peak. Sonnet's static from-current numbers,
+    authored for Phase-5 entry near the peak, double-count realized
+    drawdown (Aug-12 brief: bear -18% vs base -40% — bear better than
+    base). Now: trough_i = peak x (1 + anchor_i/100); return_i =
+    trough_i vs CURRENT close, capped at 0; ordering bear <= base <= bull
+    holds by anchor construction. Months-to-trough derived from each
+    case's own window midpoint (kills "trough in 0mo ... Q1-Q3 2027").
+    Probabilities and window strings stay Sonnet's.
     """
     try:
-        from src.config import BEAR_TROUGH_FROM_PEAK_PCT, BEAR_TROUGH_BAND_PCT
+        from src.config import (PHASE5_TROUGH_ANCHORS_FROM_PEAK,
+                                BEAR_TROUGH_BAND_PCT)
         if price_history is None or getattr(price_history, "empty", True):
             return
         if "SK Hynix" not in getattr(price_history, "columns", []):
@@ -2295,24 +2303,65 @@ def _reanchor_bear_case(analysis, price_history) -> None:
         if current <= 0 or peak <= 0:
             return
         drawdown_now_pct = (current / peak - 1.0) * 100.0
-        trough = peak * (1.0 + BEAR_TROUGH_FROM_PEAK_PCT / 100.0)
-        bear_from_here_pct = (trough / current - 1.0) * 100.0
         es = analysis.executive_summary
-        old = getattr(es.bear_case, "return_to_peak_pct", None)
-        es.bear_case.return_to_peak_pct = bear_from_here_pct
+
+        def _from_here(anchor_pct: float) -> float:
+            trough = peak * (1.0 + anchor_pct / 100.0)
+            return min(0.0, (trough / current - 1.0) * 100.0)
+
+        def _months_from_window(case) -> "float | None":
+            import re as _re
+            from datetime import date as _date
+            mids = []
+            for s in (getattr(case, "peak_window_start", "") or "",
+                      getattr(case, "peak_window_end", "") or ""):
+                m = _re.search(r"Q([1-4])\s*(20\d\d)", str(s))
+                if m:
+                    mids.append(_date(int(m.group(2)),
+                                      {1: 2, 2: 5, 3: 8, 4: 11}[int(m.group(1))], 15))
+            if not mids:
+                return None
+            mid = mids[0] if len(mids) == 1 else _date.fromordinal(
+                (mids[0].toordinal() + mids[1].toordinal()) // 2)
+            return max(0.0, round((mid - _date.today()).days / 30.44, 1))
+
+        applied = {}
+        for name, anchor in PHASE5_TROUGH_ANCHORS_FROM_PEAK.items():
+            case = getattr(es, f"{name}_case", None)
+            if case is None:
+                continue
+            old = getattr(case, "return_to_peak_pct", None)
+            case.return_to_peak_pct = _from_here(anchor)
+            months = _months_from_window(case)
+            if months is not None:
+                case.peak_months_away = months
+            applied[name] = (old, case.return_to_peak_pct, months)
+        # ordering sanity (anchors guarantee it; assert loudly if not)
+        try:
+            b, ba, bu = (es.bear_case.return_to_peak_pct,
+                         es.base_case.return_to_peak_pct,
+                         es.bull_case.return_to_peak_pct)
+            if not (b <= ba <= bu):
+                logger.warning(f"[scenario-anchor] ordering violated after "
+                               f"re-anchor: bear={b:+.1f} base={ba:+.1f} "
+                               f"bull={bu:+.1f}")
+        except Exception:
+            pass
         setattr(es, "scenario_anchor", {
             "current_price": current,
             "peak_price": peak,
             "drawdown_now_pct": drawdown_now_pct,
-            "bear_trough_from_peak_pct": BEAR_TROUGH_FROM_PEAK_PCT,
+            "bear_trough_from_peak_pct": PHASE5_TROUGH_ANCHORS_FROM_PEAK["bear"],
+            "anchors_from_peak": dict(PHASE5_TROUGH_ANCHORS_FROM_PEAK),
             "band": tuple(BEAR_TROUGH_BAND_PCT),
+            "all_cases_reanchored": True,
         })
         logger.info(
             f"[scenario-anchor] SKH current={current:,.0f} peak={peak:,.0f} "
-            f"({drawdown_now_pct:+.1f}% off peak); bear trough "
-            f"{BEAR_TROUGH_FROM_PEAK_PCT:.1f}% from peak → "
-            f"{bear_from_here_pct:+.1f}% from here (Sonnet had "
-            f"{old if old is None else format(old, '+.0f')}%)"
+            f"({drawdown_now_pct:+.1f}% off peak); re-anchored all cases "
+            + "; ".join(f"{k}: {v[0] if v[0] is None else format(v[0], '+.0f')}%"
+                        f" -> {v[1]:+.1f}% ({v[2]}mo)"
+                        for k, v in applied.items())
         )
     except Exception as e:
         logger.warning(f"[scenario-anchor] failed (non-fatal): {e}")

@@ -172,6 +172,54 @@ def evaluate_capex_plateau_verdict() -> dict:
 
 
 
+# v3.47.0 — reversal-gated downgrade guard. The Aug-12 brief downgraded
+# t1_demand_destruction Fired -> Partially fired while its own prose said
+# the evidence was "INTENSIFYING" — the exact failure the v3.39.7.3
+# INVALID-DOWNGRADES prompt section was written to prevent, recurring on
+# the very indicator it names. Prompt guards are advisory; this gate is
+# deterministic: for cumulative-state indicators, a downgrade from Fired
+# is rejected at both legs unless the rationale cites an explicit
+# "REVERSAL:" token naming the stored reversal condition met. Escalations
+# pass untouched.
+REVERSAL_GATED_IDS = ("t1_demand_destruction", "t1_oem_inventory")
+
+
+def apply_reversal_gate(objs: list, prior_status_by_id: dict, status_attr: str,
+                        id_attr: str, note_attr, stage: str) -> None:
+    rank = {"Not fired": 0, "Partially fired": 1, "Fired": 2}
+    by_id = {getattr(o, id_attr, None): o for o in (objs or [])}
+    for ind_id in REVERSAL_GATED_IDS:
+        obj = by_id.get(ind_id)
+        prior = (prior_status_by_id or {}).get(ind_id)
+        if obj is None or prior != "Fired":
+            continue
+        cur = getattr(obj, status_attr, None)
+        if cur not in rank or rank[cur] >= rank["Fired"]:
+            continue
+        blob = " ".join(
+            str(getattr(obj, a, "") or "")
+            for a in (note_attr, "evidence_for_change_vs_yesterday",
+                      "where_we_stand", "latest_developments",
+                      "fired_status_evidence") if a
+        )
+        if "REVERSAL:" in blob.upper().replace("REVERSAL :", "REVERSAL:"):
+            logger.warning(f"[status-guard] {stage}: {ind_id} downgrade "
+                           f"ACCEPTED — explicit REVERSAL cited")
+            continue
+        note = (f"[status-guard v3.47.0] {stage}: downgrade Fired -> {cur} "
+                f"REJECTED — cumulative signal; no REVERSAL cited. Silence "
+                f"or partial daily coverage is not reversal; intensifying "
+                f"evidence never is.")
+        setattr(obj, status_attr, "Fired")
+        try:
+            prev = getattr(obj, note_attr, "") or ""
+            setattr(obj, note_attr, (note + " " + str(prev)).strip())
+        except Exception:
+            pass
+        logger.warning(f"[status-guard] {stage}: {ind_id} '{cur}' -> "
+                       f"'Fired' (downgrade rejected, no REVERSAL cited)")
+
+
 def apply_status_ratchet(objs: list, prior_status_by_id: dict, status_attr: str,
                          id_attr: str, note_attr, stage: str) -> None:
     """v3.44.0 — latched signals ratchet up only (Raul, Jul-31: 'once

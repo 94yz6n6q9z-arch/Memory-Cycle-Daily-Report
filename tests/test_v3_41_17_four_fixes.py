@@ -178,7 +178,9 @@ def test_bear_reanchored_from_current_price():
     es = SimpleNamespace(bear_case=SimpleNamespace(return_to_peak_pct=-40.0))
     analysis = SimpleNamespace(executive_summary=es)
     _reanchor_bear_case(analysis, _price_history())
-    expected = (2_620_000 * (1 + BEAR_TROUGH_FROM_PEAK_PCT / 100) / 1_840_000 - 1) * 100
+    # v3.47.0 — all cases re-anchor; bear = full historical magnitude (-65).
+    from src.config import PHASE5_TROUGH_ANCHORS_FROM_PEAK
+    expected = (2_620_000 * (1 + PHASE5_TROUGH_ANCHORS_FROM_PEAK["bear"] / 100) / 1_840_000 - 1) * 100
     assert abs(es.bear_case.return_to_peak_pct - expected) < 0.1
     sa = es.scenario_anchor
     assert abs(sa["drawdown_now_pct"] - ((1_840_000 / 2_620_000 - 1) * 100)) < 0.1

@@ -2632,8 +2632,18 @@ USE_NEWS_EVENT_EXTRACTOR = True
 # produced steeper declines"). The bear-case return in the brief is now
 # computed deterministically: trough = cycle peak x (1 + this/100), return
 # shown FROM CURRENT PRICE, with the realized drawdown displayed alongside.
-BEAR_TROUGH_FROM_PEAK_PCT = -57.5
+BEAR_TROUGH_FROM_PEAK_PCT = -57.5   # retained for back-compat; superseded below
 BEAR_TROUGH_BAND_PCT = (-65.0, -50.0)
+# v3.47.0 — ALL THREE cases re-anchor deterministically from the peak each
+# run. Root cause of the Aug-12 scramble: only bear was re-anchored
+# (v3.41.17) while base/bull passed Sonnet's static from-current numbers
+# through — authored for Phase-5 entry near the peak, they double-count
+# once a large drawdown is realized (rendered bear -18% vs base -40%).
+# Anchors from memory_supercycle_analysis.docx historical band (-65..-50
+# peak-to-trough): bear = full historical magnitude, base = band mid,
+# bull = shallow edge. From-here returns are computed vs current price,
+# capped at 0 (anchor above current price = trough band reached).
+PHASE5_TROUGH_ANCHORS_FROM_PEAK = {"bear": -65.0, "base": -57.5, "bull": -50.0}
 
 # Stage 2 — mid-tier reasoning model for tier classification, probability
 # synthesis, exec summary composition. Currently resolves to Sonnet 4.6;

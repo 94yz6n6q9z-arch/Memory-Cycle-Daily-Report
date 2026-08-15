@@ -1,43 +1,29 @@
-# v3.46.1 (2026-08-08) — event-anchored guidance ledger · TrendForce re-point · fetch hardening
+# v3.47.0 (2026-08-12) — deterministic trough scenarios · reversal-gated downgrades
 
-Root cause (Aug-8 live defect): Layer 2 re-reported Amazon's Aug-7 call;
-the duplicate guard compared raw period strings ("2026" != "CY2026"),
-the echo superseded, prior_mid := 220 erased the $200B->$220B raise ->
-stance accelerating->stable -> plateau 3/4 Fired instead of 2/4. The
-v3.45.0 spec's own worked example already stated the correct answer.
-
-- capex_ledger.py: period canonicalizer (2026==CY2026, FY27==FY2027);
-  same-(company,period,event_date) updates are no-ops (same-event echo);
-  older-than-stored prints rejected; EVENT ANCHORING — updates must land
-  on a known earnings-call date (state/earnings_calendar_cache.json, ±1d)
-  or carry an explicit revision verb + stated prior (flagged intra-quarter
-  revision); coverage restating an old print is rejected by construction.
-  LEDGER_UPDATE contract gains optional prior= / verb= / basis= tokens: a
-  print carries its own baseline; verbs are tripwires (VERB-ARITHMETIC
-  MISMATCH flag), ARITHMETIC DECIDES (Jul-31 rule); announced basis change
-  + unchanged-verb + arithmetic-cut => stable with flag (MSFT ruling).
-- Versioned ledger migrations applied on load (both legs, idempotent,
-  ids persisted): 001 Amazon CY2026 prior 220->200 (raise restored);
-  002 Microsoft stance_override=stable + basis_change (lease reclass —
-  the $190B/$175B provenance trace is RESOLVED: CFO "investment
-  expectations remain unchanged"). Expected verdict after deploy:
-  2/4 Partially fired, score 0, Amazon accelerating.
-- Spec worked example + v3.44/45 spec-consistency tests updated to the
-  ruling; Layer 2 contract text gains the Amazon-echo and MSFT-basis
-  named counterexamples and the new-event-only emission rule.
-- TrendForce: keyword gate gains "memory price"/"price forecast" (the
-  Jul-3 3Q26 forecast title matched ZERO old keywords — 130d stale
-  anchor); one-time seeds for the two missed public press releases
-  (20260703-13134, 20260709-13140) so the EXISTING extractor writes the
-  3Q26 anchor row itself; new scrape_trendforce_presscenter() discovery
-  source (collector.track pattern, parser_no_match observability).
-- Fetch hardening: Google News 503 -> 2 retries with backoff+jitter
-  (Aug-8 force-run threw 78x 503 under same-day burst); Benzinga/Cloudflare
-  fetched via curl-cffi Chrome impersonation when available (dependency
-  already in requirements since v3.4.6-era; graceful requests fallback).
-- Tests: +13 (echo no-op, September-coverage rejection, next-call
-  reiteration = legitimate plateau, stated-prior, verb tripwire, MSFT
-  basis fixture, intra-quarter revision path, migration idempotency,
-  Jul-3 title gate, presscenter parser, retry presence). Suite 1,375
-  passed in sandbox; pre-existing failing set byte-identical.
+Two defects from the Aug-12 brief (Raul):
+(1) SCENARIO SCRAMBLE — bear -18% vs base -40% vs bull -25% from-here at
+-48% realized drawdown. Root cause: v3.41.17 re-anchored ONLY bear to the
+peak band; base/bull passed Sonnet's static from-current anchors through
+(authored for Phase-5 entry near the peak) — double-counting the realized
+fall. Fix: PHASE5_TROUGH_ANCHORS_FROM_PEAK (bear -65 full historical
+magnitude / base -57.5 band mid / bull -50 shallow edge, docx band);
+ALL THREE cases re-anchor from the cycle peak every run, from-here return
+capped at 0, ordering guaranteed; months-to-trough derived from each
+case's own window midpoint (kills "trough in 0mo ... Q1-Q3 2027").
+Sonnet keeps probabilities + windows; never authors the returns again.
+Today's print: bear -32% / base -18% / bull -3%.
+(2) DOWNGRADE-ON-INTENSIFICATION — t1_demand_destruction Fired ->
+Partially fired while its own prose said evidence was "INTENSIFYING"
+(Windows OEM -7% YoY, Intel low-DD client guide, AMD shipment cuts).
+Recurrence of the exact v3.39.7.3 INVALID-DOWNGRADES case on the named
+indicator — prompt guards are advisory. Fix: apply_reversal_gate()
+(computed_verdicts) at BOTH legs beside the ratchet: for
+t1_demand_destruction + t1_oem_inventory, Fired -> lower is rejected
+unless the rationale carries a literal "REVERSAL: <condition met>"
+token; rejection logged [status-guard] and Fired preserved. Reasoner
+prompt gains the Aug-12 counterexample + the REVERSAL contract.
+- Superseded expectations updated: v3.41.17 bear test (bear now -65).
+- Tests: +7 (scramble fixed w/ today's numbers, months-from-window,
+  trough-reached cap, no-op guards, gate reject/allow/scope). Suite
+  1,382 passed; failing set byte-identical.
 
