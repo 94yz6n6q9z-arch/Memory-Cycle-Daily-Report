@@ -3,12 +3,12 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-08-15T07:13:33Z",
+    "last_aggregator_run": "2026-08-17T07:37:40Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
     "current_status": "Fired",
-    "status_evaluated_at": "2026-08-15",
+    "status_evaluated_at": "2026-08-17",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 22.0,
     "current_state": {
@@ -20,7 +20,8 @@
         "Apple iPhone/MacBook",
         "Apple",
         "PC memory (DDR5)",
-        "Apple (memory qualification)"
+        "Apple (memory qualification)",
+        "Apple iPhone and MacBook"
       ],
       "cxmt_oem_lowend_wins": [],
       "cxmt_ddr5_share_pct": 2.0,
@@ -43,7 +44,7 @@
   },
   "sub_7b_samsung_hbm4": {
     "current_status": "Partially fired",
-    "status_evaluated_at": "2026-08-15",
+    "status_evaluated_at": "2026-08-17",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 10.0,
     "current_state": {
@@ -70,7 +71,7 @@
   },
   "sub_7c_micron": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-15",
+    "status_evaluated_at": "2026-08-17",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.5,
     "current_state": {
@@ -89,7 +90,7 @@
   },
   "sub_7d_hbf": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-15",
+    "status_evaluated_at": "2026-08-17",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.0,
     "current_state": {
@@ -102,7 +103,8 @@
         "Google+HBF+AI storage",
         "Google+HBF+storage",
         "Google+Tenstorrent+HBF",
-        "Google+HBM+AI inference"
+        "Google+HBM+AI inference",
+        "NVIDIA 2nm HBM base dies"
       ],
       "hbf_hot_tier_substitution_events": [],
       "hbf_cold_tier_additions": [],
@@ -139,7 +141,11 @@
         "Sandisk tapes out first HBF die, targets product samples in 2027",
         "Sandisk tapes out first HBF product, targets 2027 samples and 2028 production",
         "SanDisk tapes out first High Bandwidth Flash memory die, targets 2027 samples",
-        "SanDisk guided mid-to-high-teen revenue growth and 75% OP margin for FY2028-30"
+        "SanDisk guided mid-to-high-teen revenue growth and 75% OP margin for FY2028-30",
+        "2nm HBM base dies roadmap extension",
+        "HBF tape-out with 2027 product samples targeting 2028 production",
+        "HBF tape-out targeting 2027 samples and 2028 production",
+        "SanDisk guided mid- to high-teen revenue growth and 75% OP margin for FY2028-30"
       ],
       "sk_hynix_solidigm_hbf_integration": true
     },
