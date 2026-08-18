@@ -1,7 +1,7 @@
 {
   "level": 3,
   "level_since": "2026-07-31",
-  "updated": "2026-08-17",
+  "updated": "2026-08-18",
   "last_verdict": {
     "level": 3,
     "action": "SELL \u2014 thesis stopped out",
@@ -25,12 +25,12 @@
         "watch": true,
         "stopout_depth": true,
         "stopout_depth_base": true,
-        "stopout_gate_pct": -20.0,
-        "drawdown_pct": -43.65,
+        "stopout_gate_pct": -30.0,
+        "drawdown_pct": -43.06,
         "peak_price": 2919000.0,
         "peak_date": "2026-06-22",
-        "last_close": 1645000.0,
-        "last_date": "2026-08-14"
+        "last_close": 1662000.0,
+        "last_date": "2026-08-18"
       },
       "distribution": {
         "fired": true,
@@ -38,19 +38,19 @@
         "days": 7,
         "needed": 5,
         "mode": "v2",
-        "udvr": 0.77,
+        "udvr": 0.94,
         "mature": true,
         "lower_highs": true,
         "watermark": 2919000.0,
         "raw_today": false,
-        "asof": "2026-08-14"
+        "asof": "2026-08-18"
       },
       "trend_break": {
         "status": "data_ok",
         "fired": true,
-        "close": 1645000.0,
-        "ma50": 2043380.0,
-        "ma20": 1611550.0,
+        "close": 1662000.0,
+        "ma50": 2035220.0,
+        "ma20": 1606450.0,
         "ma50_falling": true,
         "ma20_below_ma50": true,
         "reason": null
@@ -62,9 +62,9 @@
     },
     "peak_price": 2919000.0,
     "peak_date": "2026-06-22",
-    "drawdown_pct": -43.65,
-    "last_close": 1645000.0,
-    "last_date": "2026-08-14",
+    "drawdown_pct": -43.06,
+    "last_close": 1662000.0,
+    "last_date": "2026-08-18",
     "data_status": "fresh",
     "deescalation": {
       "closes_above_ma50_streak_ok": false,
@@ -72,11 +72,11 @@
     },
     "breaking": {
       "status": "data_ok",
-      "active": true,
-      "latched": true,
-      "warning": true,
-      "idio_count": 2,
-      "gate_pct": -20.0,
+      "active": false,
+      "latched": false,
+      "warning": false,
+      "idio_count": 1,
+      "gate_pct": -30.0,
       "phase_late": true,
       "recent_shocks": [
         {
@@ -117,29 +117,29 @@
         {
           "date": "2026-07-24",
           "ret_pct": -8.34,
-          "sp_day_sig": -1.47,
-          "sp_dd_sig": -3.21,
+          "sp_day_sig": -0.58,
+          "sp_dd_sig": -3.28,
           "class": "IDIO"
         },
         {
           "date": "2026-07-28",
           "ret_pct": -14.65,
           "sp_day_sig": 0.02,
-          "sp_dd_sig": -3.15,
+          "sp_dd_sig": -3.22,
           "class": "IDIO"
         },
         {
           "date": "2026-07-29",
           "ret_pct": -9.61,
-          "sp_day_sig": -1.81,
-          "sp_dd_sig": -4.62,
+          "sp_day_sig": -1.84,
+          "sp_dd_sig": -4.68,
           "class": "MACRO-excused"
         },
         {
           "date": "2026-08-03",
           "ret_pct": -8.79,
-          "sp_day_sig": 0.82,
-          "sp_dd_sig": -1.84,
+          "sp_day_sig": 1.97,
+          "sp_dd_sig": -2.69,
           "class": "IDIO"
         },
         {
@@ -152,6 +152,6 @@
       ],
       "armed_now": false
     },
-    "stopout_gate_pct": -20.0
+    "stopout_gate_pct": -30.0
   }
 }

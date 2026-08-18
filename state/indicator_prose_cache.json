@@ -101,26 +101,26 @@
       "evidence_count": 0
     },
     "t1_oem_inventory": {
-      "last_full_regen_date": "2026-08-11",
+      "last_full_regen_date": "2026-08-18",
       "current_status": "Fired",
-      "where_we_stand": "Fired. TrendForce Q3 2025 baseline: supplier ~2-3 weeks, buyer ~10 weeks (~7-week gap). Dell Q1 2027 (2026-08-11) confirms memory as primary constraint with AI server backlog $51.3B and demand outpacing supply. Samsung Q2 2026 (2026-08-10) projects supply shortage through 2028. Neither source provides granular inventory-week counts to trigger reversal. Reversal\u2026",
-      "latest_developments": "Dell Q1 2027 (2026-08-11): 'Memory as primary constraint; demand continues to exceed supply.' Samsung Q2 2026 (2026-08-10): 'Supply shortage will persist through 2028.' No explicit inventory-week disclosure from either source to contradict TrendForce baseline.",
+      "where_we_stand": "Fired since TrendForce Q3 2025 print (2025-09-01): supplier inventory ~2-3 weeks, OEM/buyer inventory ~10 weeks \u2014 a 7+ week gap exceeding the >5-week trigger. Both legs of the stitched signal remain satisfied: supplier side tight (SK Hynix/Micron inventory weeks <3), buyer side elevated (Dell/HPE/Lenovo >7 weeks). Micron's Q2\u2192Q3 transcript diff\u2026",
+      "latest_developments": "Micron Q3 transcript dropped OEM inventory language entirely \u2014 no reversal evidence, consistent with quarterly persistence. No new TrendForce or OEM earnings print today.",
       "relevant_links": [
         {
-          "title": "Dell Q1 2027 earnings call",
-          "url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q1-2027-earnings_call-559834.html"
+          "title": "TrendForce DRAM Spot Price (2026-08-18)",
+          "url": "https://www.trendforce.com/price/dram/dram_spot"
         },
         {
-          "title": "Samsung Q2 2026 earnings call",
-          "url": "https://finance.yahoo.com/quote/SSU.F/earnings/SSU.F-Q2-2026-earnings_call-645485.html"
+          "title": "SK Hynix $38B fab approval (AOL/AD HOC)",
+          "url": "https://news.google.com/rss/articles/CBMifEFVV95cUxNRVFNY0FsbHQwazZqRUxpMjNPM19RWHlRbGVWTEpkNFRBYmJmbTdha2xYU0ltMFV4M3ljRVlRZFJoM3hqc1VNNUhOa0E0Qk80bEdHeEZDbWFSSmljRERFUU1KNW5hS040UlRJV2hUMEJEXzEzME8wUnVlZ2dEaHc"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-11",
+      "updated_date": "2026-08-18",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 2
+      "evidence_count": 0
     },
     "t1_price_cuts_no_demand": {
       "last_full_regen_date": "2026-08-17",
@@ -189,30 +189,30 @@
       "evidence_count": 0
     },
     "t2_capex_parabolic": {
-      "last_full_regen_date": "2026-08-11",
+      "last_full_regen_date": "2026-08-18",
       "current_status": "Fired",
-      "where_we_stand": "Fired (latched \u2014 ratchets up only, never reverts). Aggregate 2026 hyperscaler CapEx: Amazon $220B (raised from $200B, memory cost cited as driver), Microsoft FY27 $175B (growth guided YoY), Meta $130-145B, Alphabet accelerating. ASML guides memory-related net system sales +75% YoY. Micron guides FY27 CapEx above mid-40% increase with $10B quarterly run-rate. Broadcom extends hyperscaler visibility to 2028 with $100B+ AI semi TAM. Big Three memory CapEx >2x 2024 threshold met. Amazon's $20B raise explicitly attributing the increase to higher memory costs is the session's most direct parabolic-CapEx confirmation \u2014 it\u2026",
-      "latest_developments": "Amazon Q2 2026 (2026-08-11): raises 2026 CapEx $200B\u2192$220B, explicitly citing 'higher cost of memory.' Micron Q3 2026 (2026-08-11): FY27 CapEx above mid-40% increase, $10B quarterly run-rate. ASML Q2 2026 (2026-08-11): memory-related net system sales +75%\u2026",
+      "where_we_stand": "Latched Fired since January 15, 2026 ($725B hyperscaler 2026 aggregate + memory-maker splurge). Today's evidence deepens the parabolic case on two fronts: (1) NVIDIA-backed $105B financing for OpenAI's Ohio data center \u2014 the largest single AI infrastructure commitment on record, extending the demand chain into 2027-28; (2) SK Hynix $38B new fab approval (no output before December 2028), with Micron's Q3 transcript raising FY2027 capex guidance to above mid-40% increase at a $10B quarterly run rate. Applied Materials Q2\u2192Q3 transcript escalated semiconductor equipment growth guidance from >30% to 'another strong\u2026",
+      "latest_developments": "NVIDIA/OpenAI $105B Ohio data-center financing (CNBC, Aug 17) and SK Hynix $38B fab approval (Dec 2028 production) add to the parabolic evidence base. Micron Q3 call raised FY2027 capex to above mid-40% increase, $10B quarterly\u2026",
       "relevant_links": [
         {
-          "title": "Amazon Q2 2026 earnings call",
-          "url": "https://finance.yahoo.com/quote/AMZN/earnings/AMZN-Q2-2026-earnings_call-657334.html"
+          "title": "NVIDIA backs $105B OpenAI Ohio data center (CNBC)",
+          "url": "https://www.cnbc.com/2026/08/17/nvidia-financing-open-ai-data-center-ohio.html"
         },
         {
-          "title": "Micron Q3 2026 earnings call",
-          "url": "https://finance.yahoo.com/quote/MU/earnings/MU-Q3-2026-earnings_call-695617.html"
+          "title": "SK Hynix $38B fab approval (AOL)",
+          "url": "https://news.google.com/rss/articles/CBMifEFVV95cUxNRVFNY0FsbHQwazZqRUxpMjNPM19RWHlRbGVWTEpkNFRBYmJmbTdha2xYU0ltMFV4M3ljRVlRZFJoM3hqc1VNNUhOa0E0Qk80bEdHeEZDbWFSSmljRERFUU1KNW5hS040UlRJV2hUMEJEXzEzME8wUnVlZ2dEaHc"
         },
         {
-          "title": "ASML Q2 2026 earnings call",
-          "url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-649658.html"
+          "title": "Morgan Stanley: Hyperscaler AI Capex +57% in 2027",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5DcjVKeTlOSU1MUW9SX1Bici1LWGZZV2JrVGlGbTdwbndsb1hoU0xmQVRvVEVXNURJUTktZXNtV0hNWXhyRGpodHlGamQyYlJuQjBPcENkdkF5N3V1dnB3eUlwdHo5RXlsZ00zQWhCbG5NWEw1Tnc"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-11",
+      "updated_date": "2026-08-18",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 12
+      "evidence_count": 1
     },
     "t2_eps_revisions": {
       "last_full_regen_date": "2026-08-15",
@@ -443,26 +443,22 @@
       "evidence_count": 0
     },
     "t3_wfe_orders_crack": {
-      "last_full_regen_date": "2026-08-11",
+      "last_full_regen_date": "2026-08-18",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. ASML Q2 2026 (2026-08-11): backlog continues to increase with broad customer mix; memory-related net system sales guided +75% YoY; FY2026 guidance raised to \u20ac43-45B; Q3 2026 guided \u20ac11-12B. No QoQ bookings decline, no book-to-bill below 1.0. Applied Materials Q2 2026 (2026-08-11): record revenue, highest gross margin in 25\u2026",
-      "latest_developments": "ASML Q2 2026 (2026-08-11): memory net system sales +75% YoY, backlog expanding, FY2026 guidance raised. Applied Materials Q2 2026 (2026-08-11): record revenue, 8-quarter customer visibility extended to 2027+. No weakness signal in either print.",
+      "where_we_stand": "Not fired. Applied Materials Q3 transcript (most recent equipment print) is unambiguously bullish: revenue +25% YoY, guidance for 'another strong growth year in 2027,' 5-year customer roadmap visibility, and advanced packaging growth now expected at 70% (up from 50% prior). No ASML or SEMI WFE billings data in today's feed.\u2026",
+      "latest_developments": "Applied Materials Q3 call escalated 2027 growth language and extended customer visibility to 5 years \u2014 directional opposite of the trigger condition. No ASML print or SEMI WFE billings update today.",
       "relevant_links": [
         {
-          "title": "ASML Q2 2026 earnings call",
-          "url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q2-2026-earnings_call-649658.html"
-        },
-        {
-          "title": "Applied Materials Q2 2026 earnings call",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings/AMAT-Q2-2026-earnings_call-543062.html"
+          "title": "Samsung and SK Hynix step up semiconductor investment (New Electronics)",
+          "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxNaVI2bWFLTjlEdTRaYTlxckN4RkNZYlhXQWE4UXpHZklibzZhb29OVVNyaklGYlJDY1pOa04waEZxUzBKNmFacF9aNVVuOF8zejFxc09aZlJObG15aDY1RFBVdHRBYkJJSFFpS3BScmVNUVVwbjJrMkloSGx0YjlXN2dKY3Q1eV9FWkRBTjZOdEJDVTRpRU9Oc045UVVZaGo5dklleDRvdW1xWVVvOExwLWcxcGhMbkpOSUxUbQ"
         }
       ],
-      "change_vs_prior": "Status confirmed Not fired. ASML Q2 2026 print (2026-08-11) is the first fresh equipment earnings in this brief cycle; result is unambiguously bullish for WFE, contradicting any crack thesis.",
+      "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-08-11",
+      "updated_date": "2026-08-18",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 0
     },
     "t4_capex_slashed": {
       "last_full_regen_date": "2026-08-17",
@@ -553,30 +549,26 @@
       "evidence_count": 2
     },
     "t3_capex_plateau": {
-      "last_full_regen_date": "2026-08-11",
+      "last_full_regen_date": "2026-08-18",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired. Guidance ledger (N=2 stable-or-cutting, threshold 3-4 for Fired): META: stable +1 \u2014 CY2026 $130-145B reiterated within \u00b15% of prior $125-145B (narrowed lower end), print 2026-08-07. MICROSOFT: stable +1 \u2014 FY27 $175B vs $190B prior is finance-to-operating lease reclassification (accounting basis change, not economic cut), ruled 2026-08-08; investment unchanged.\u2026",
-      "latest_developments": "Amazon Q2 2026 (2026-08-11) reconfirms $220B 2026 CapEx raise from $200B, citing memory costs \u2014 acceleration, -1 point. No new guidance prints from Meta, Microsoft, or Alphabet today. Ledger unchanged from prior brief; status holds\u2026",
+      "where_we_stand": "Guidance ledger as of today \u2014 all four companies enumerated per hard rule: \u2022 Microsoft: stable [+1] | FY27 $175B | print 2026-08-07 | accounting basis change (finance\u2192operating lease reclassification), investment unchanged; ruled stable. -7.9% vs prior $190B. \u2022 Meta: stable [+1] | CY2026 $137.5B | print 2026-08-07 | +1.9%\u2026",
+      "latest_developments": "No new hyperscaler earnings call or capex revision today. Applied Materials Q3 call added 'customers giving us longer-term commitments and rolling eight-quarter forecasts' \u2014 corroborates Amazon/Alphabet acceleration stance.",
       "relevant_links": [
         {
-          "title": "Amazon Q2 2026 earnings call (Aug-7)",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/amazon-amzn-q2-2026-earnings-call-transcript/"
+          "title": "Applied Materials Q3 transcript (AMAT earnings)",
+          "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxNaVI2bWFLTjlEdTRaYTlxckN4RkNZYlhXQWE4UXpHZklibzZhb29OVVNyaklGYlJDY1pOa04waEZxUzBKNmFacF9aNVVuOF8zejFxc09aZlJObG15aDY1RFBVdHRBYkJJSFFpS3BScmVNUVVwbjJrMkloSGx0YjlXN2dKY3Q1eV9FWkRBTjZOdEJDVTRpRU9Oc045UVVZaGo5dklleDRvdW1xWVVvOExwLWcxcGhMbkpOSUxUbQ"
         },
         {
-          "title": "Meta Q2 2026 earnings call",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/meta-meta-q2-2026-earnings-call-transcript/"
-        },
-        {
-          "title": "Microsoft Q4 2026 earnings call",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/07/microsoft-msft-q4-2026-earnings-call-transcript/"
+          "title": "Samsung/SK Hynix 1H26 capex +35% (TrendForce)",
+          "url": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxONzNRc2VHdFVJaWUwS1ZrQks5MWhDU0hUcGVURmZGQkk0OU90Xzc3TXJCdEFuNGxsN0tPbE9WQXdaekhCOVFJUlhuc2licnNiaHFvSklWdmFMdE1sNWg4RzRtRm9pLUdQNC04VGtJYU5lRmJxUElkczU1YlN4ejMtcFBJcjhzZzhCLWFOQWxBMk5pQ0hwYWNFZGlhd1B6WG9iRjZjRDZUWVZZRTJYQnVRZi1oc1lWcWFUMU5DSS1LRURhempJVjl0VEEweUVzMmY1TXBYdjNHNnpYLXZnd1N3"
         }
       ],
-      "change_vs_prior": "t3_capex_plateau status confirmed Partially fired (from Fired). Transition logged 2026-08-10T08:32:23. Today's evidence (Amazon Q2 2026 reconfirmation) corroborates N=2 count. No new guidance prints move the ledger.",
+      "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "fingerprint_algo": "v3-fired-status",
       "status": "Partially fired",
-      "evidence_count": 10,
-      "updated_date": "2026-08-11"
+      "evidence_count": 0,
+      "updated_date": "2026-08-18"
     }
   }
 }
