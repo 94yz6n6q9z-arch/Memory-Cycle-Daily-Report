@@ -1,13 +1,38 @@
 {
   "source_id": "DART API",
   "payload": {
-    "fetched_at_iso": "2026-08-18T07:16:39.658459",
+    "fetched_at_iso": "2026-08-19T08:12:19.389911",
     "tickers": {
       "SK Hynix": {
         "corp_code": "00164779",
-        "n_disclosures": 0,
-        "n_material": 0,
-        "disclosures": []
+        "n_disclosures": 3,
+        "n_material": 1,
+        "disclosures": [
+          {
+            "report_nm": "\uc8fc\uc694\uc0ac\ud56d\ubcf4\uace0\uc11c(\uc790\uae30\uc8fc\uc2dd\ucde8\ub4dd\uacb0\uc815)",
+            "rcept_dt": "20260819",
+            "rcept_no": "20260819000254",
+            "flr_nm": "SK\ud558\uc774\ub2c9\uc2a4",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260819000254"
+          },
+          {
+            "report_nm": "\uc8fc\uc2dd\uc18c\uac01\uacb0\uc815              ",
+            "rcept_dt": "20260819",
+            "rcept_no": "20260819800340",
+            "flr_nm": "SK\ud558\uc774\ub2c9\uc2a4",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260819800340"
+          },
+          {
+            "report_nm": "\uc218\uc2dc\uacf5\uc2dc\uc758\ubb34\uad00\ub828\uc0ac\ud56d(\uacf5\uc815\uacf5\uc2dc)              ",
+            "rcept_dt": "20260819",
+            "rcept_no": "20260819800338",
+            "flr_nm": "SK\ud558\uc774\ub2c9\uc2a4",
+            "is_material": true,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260819800338"
+          }
+        ]
       },
       "Samsung Electronics": {
         "corp_code": "00126380",
@@ -23,5 +48,5 @@
       }
     }
   },
-  "fetched_at_iso": "2026-08-18T07:16:53.052832"
+  "fetched_at_iso": "2026-08-19T08:12:33.063209"
 }
