@@ -1,7 +1,7 @@
 {
   "level": 3,
   "level_since": "2026-07-31",
-  "updated": "2026-08-19",
+  "updated": "2026-08-20",
   "last_verdict": {
     "level": 3,
     "action": "SELL \u2014 thesis stopped out",
@@ -26,11 +26,11 @@
         "stopout_depth": true,
         "stopout_depth_base": true,
         "stopout_gate_pct": -30.0,
-        "drawdown_pct": -48.61,
+        "drawdown_pct": -42.07,
         "peak_price": 2919000.0,
         "peak_date": "2026-06-22",
-        "last_close": 1500000.0,
-        "last_date": "2026-08-19"
+        "last_close": 1691000.0,
+        "last_date": "2026-08-20"
       },
       "distribution": {
         "fired": true,
@@ -38,19 +38,19 @@
         "days": 6,
         "needed": 5,
         "mode": "v2",
-        "udvr": 0.8,
+        "udvr": 0.97,
         "mature": true,
         "lower_highs": true,
         "watermark": 2919000.0,
         "raw_today": false,
-        "asof": "2026-08-19"
+        "asof": "2026-08-20"
       },
       "trend_break": {
         "status": "data_ok",
         "fired": true,
-        "close": 1500000.0,
-        "ma50": 2027000.0,
-        "ma20": 1589650.0,
+        "close": 1691000.0,
+        "ma50": 2016520.0,
+        "ma20": 1582700.0,
         "ma50_falling": true,
         "ma20_below_ma50": true,
         "reason": null
@@ -62,9 +62,9 @@
     },
     "peak_price": 2919000.0,
     "peak_date": "2026-06-22",
-    "drawdown_pct": -48.61,
-    "last_close": 1500000.0,
-    "last_date": "2026-08-19",
+    "drawdown_pct": -42.07,
+    "last_close": 1691000.0,
+    "last_date": "2026-08-20",
     "data_status": "fresh",
     "deescalation": {
       "closes_above_ma50_streak_ok": false,
@@ -117,29 +117,29 @@
         {
           "date": "2026-07-24",
           "ret_pct": -8.34,
-          "sp_day_sig": -0.58,
-          "sp_dd_sig": -3.28,
+          "sp_day_sig": -1.47,
+          "sp_dd_sig": -3.21,
           "class": "IDIO"
         },
         {
           "date": "2026-07-28",
           "ret_pct": -14.65,
           "sp_day_sig": 0.02,
-          "sp_dd_sig": -3.22,
+          "sp_dd_sig": -3.15,
           "class": "IDIO"
         },
         {
           "date": "2026-07-29",
           "ret_pct": -9.61,
-          "sp_day_sig": -1.84,
-          "sp_dd_sig": -4.68,
+          "sp_day_sig": -1.81,
+          "sp_dd_sig": -4.62,
           "class": "MACRO-excused"
         },
         {
           "date": "2026-08-03",
           "ret_pct": -8.79,
-          "sp_day_sig": 1.97,
-          "sp_dd_sig": -2.69,
+          "sp_day_sig": 0.82,
+          "sp_dd_sig": -1.84,
           "class": "IDIO"
         },
         {
@@ -152,8 +152,8 @@
         {
           "date": "2026-08-19",
           "ret_pct": -9.75,
-          "sp_day_sig": -0.79,
-          "sp_dd_sig": -1.57,
+          "sp_day_sig": -0.8,
+          "sp_dd_sig": -1.6,
           "class": "IDIO"
         }
       ],
