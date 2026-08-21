@@ -49,30 +49,30 @@
       "evidence_count": 1
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-08-14",
+      "last_full_regen_date": "2026-08-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired on two independent primary-lab events. Google TurboQuant (Mar 24, 2026): 6x KV-cache compression, 8x speedup on H100 \u2014 permanent literature record. OpenAI GPT-5.6 Sol Ultrafast (Aug 13, 2026): up to 14x inference speed improvement, published on official OpenAI blog, exceeding the >2x multiplier threshold. Cerebras Q2 call (Aug 13)\u2026",
-      "latest_developments": "OpenAI Blog (Aug 13) announced GPT-5.6 Sol Ultrafast at up to 14x speed \u2014 a new primary-lab confirmation independent of TurboQuant. Cerebras earnings call confirmed SRAM disaggregated inference at 5x throughput with no HBM dependency.",
+      "where_we_stand": "Fired since Google TurboQuant (March 24, 2026): 6x KV-cache compression, 8x speedup on H100 \u2014 a permanent algorithmic entry in the literature. Today's feed adds Anthropic's $250M pre-revenue contract with Fractile for custom inference silicon, signaling continued investment in non-HBM inference architectures. Nvidia's reported Rubin Ultra HBM reduction is a\u2026",
+      "latest_developments": "Anthropic committed $250M to Fractile for custom inference silicon before revenue; Nvidia cutting Rubin Ultra HBM allocation. Both developments are directional confirmation that efficiency-driven memory footprint reduction is transmitting into hardware design decisions.",
       "relevant_links": [
         {
-          "title": "OpenAI: Previewing Ultrafast mode \u2014 GPT-5.6 Sol at up to 14X the speed",
-          "url": "https://openai.com/index/previewing-ultrafast"
+          "title": "Anthropic $250M Fractile custom silicon contract",
+          "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxNc3ltVTVfb2x3UTZOV0E4RjFoTzBHT0tsejZYVVV4UTI5QzVpZGdMektWUEhrdHFCZ0pDTUNRWFhLU0R3TXBZbm9YeTJJcU0xY09Md3dmcUJBNFUwZW96RWxoX2hwMmpjLTczZGFBV1BXUkZUZkZ2MnhxUndaQ3E1VTVRV3Z4N2FBZFd0VXZlWEdVbHZMUmwtM0Z3UUtrbnJ3d2dJMDZ6Z3A5T01iYzZnUzBkU2JfT0VSUzRGWmo2UUlrUHZLdW1PRkdOWnc"
         },
         {
-          "title": "Cerebras Q2 2026 earnings call",
-          "url": "https://finance.yahoo.com/quote/CBRS/earnings/CBRS-Q2-2026-earnings_call-686677.html"
+          "title": "Nvidia cutting Rubin Ultra HBM \u2014 Micron HBM demand at risk",
+          "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPZFpSbF9hNXIwbHM2enBqVFN5eDFIWmRpYndvQWRrV011ck4tanZzai1YTEliSE10aEMxXzEtVTlDZkhsNjZnVThVRnZJZjJSMGtEbDAxMGN3RURQdW0tY2MyWjNrTmI1WDU1ejkzVHpkbDVlcl9SZ2FlQWJwX2duTXFEZw"
         },
         {
-          "title": "SanDisk: KV cache driving 35% of AI data center NAND workloads by 2030",
-          "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTFBTN05IOXhkRnZvbkh5TDNEMkNKNzhKSXZFMVY4YXYxQW5wSE56alppUm5LNmhTTHNvSFVLNE9JekJIY1d5dmE2cS1jMHY3cTg4aU9RR2N1Ym9GLWF3aDRmM2MzaEoyaWd4ZExoR0pRWWczcjA"
+          "title": "Applied Materials Q3 2026 earnings transcript",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/20/applied-materials-amat-q3-2026-earnings-call-transcript/"
         }
       ],
-      "change_vs_prior": "Status unchanged at Fired. New corroborating evidence: OpenAI GPT-5.6 Sol Ultrafast (14x speedup, Aug 13) adds a second independent primary-lab confirmation alongside Google TurboQuant. Signal strength increases; no reversal condition met.",
+      "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-14",
+      "updated_date": "2026-08-21",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 3
+      "evidence_count": 0
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-08-17",
@@ -177,30 +177,30 @@
       "evidence_count": 0
     },
     "t2_capex_parabolic": {
-      "last_full_regen_date": "2026-08-18",
+      "last_full_regen_date": "2026-08-21",
       "current_status": "Fired",
-      "where_we_stand": "Latched Fired since January 15, 2026 ($725B hyperscaler 2026 aggregate + memory-maker splurge). Today's evidence deepens the parabolic case on two fronts: (1) NVIDIA-backed $105B financing for OpenAI's Ohio data center \u2014 the largest single AI infrastructure commitment on record, extending the demand chain into 2027-28; (2) SK Hynix $38B new fab approval (no output before December 2028), with Micron's Q3 transcript raising FY2027 capex guidance to above mid-40% increase at a $10B quarterly run rate. Applied Materials Q2\u2192Q3 transcript escalated semiconductor equipment growth guidance from >30% to 'another strong\u2026",
-      "latest_developments": "NVIDIA/OpenAI $105B Ohio data-center financing (CNBC, Aug 17) and SK Hynix $38B fab approval (Dec 2028 production) add to the parabolic evidence base. Micron Q3 call raised FY2027 capex to above mid-40% increase, $10B quarterly\u2026",
+      "where_we_stand": "Latched Fired since January 2026. Applied Materials Q3 2026 (Aug 20) is the most material fresh corroboration: DRAM revenue +52% YoY to a record, advanced packaging guiding >70% growth in 2026, and customers now providing 8-quarter rolling forecasts \u2014 the longest forward visibility disclosed this cycle. Micron's QoQ transcript diff shows FY2027 capex guided above mid-40% increase with a $10B quarterly run-rate (up from 40%+ prior). Samsung breaking ground on a KRW 6T Onyang HBM fab in September with a P5 triple-fab shift adds a third simultaneous supply build. Aggregate\u2026",
+      "latest_developments": "Applied Materials Q3: DRAM +52% YoY record, advanced packaging +70% 2026 guidance, 8-quarter customer visibility. Micron FY2027 capex run-rate $10B/quarter. Samsung KRW 6T Onyang HBM fab groundbreaking September 2026. All three confirm the parabola is\u2026",
       "relevant_links": [
         {
-          "title": "NVIDIA backs $105B OpenAI Ohio data center (CNBC)",
-          "url": "https://www.cnbc.com/2026/08/17/nvidia-financing-open-ai-data-center-ohio.html"
+          "title": "Applied Materials Q3 2026 earnings transcript",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/20/applied-materials-amat-q3-2026-earnings-call-transcript/"
         },
         {
-          "title": "SK Hynix $38B fab approval (AOL)",
-          "url": "https://news.google.com/rss/articles/CBMifEFVV95cUxNRVFNY0FsbHQwazZqRUxpMjNPM19RWHlRbGVWTEpkNFRBYmJmbTdha2xYU0ltMFV4M3ljRVlRZFJoM3hqc1VNNUhOa0E0Qk80bEdHeEZDbWFSSmljRERFUU1KNW5hS040UlRJV2hUMEJEXzEzME8wUnVlZ2dEaHc"
+          "title": "Samsung KRW 6T Onyang HBM fab groundbreaking",
+          "url": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxOYlV3aDJodDdfTjF0dVpEUTljZW91bmNRVXBVUG1GWFdYc20ybC1mYWtaVGFrVTdNS1lBcnRTczc3MVlYSXpuMnFLOTItcEs3YUhydEI1OVZUazRQNG1yY2RtbjN4VjRud2dNcHFVckx4MzJ2M2dyYzVaWVNVSTRWWm9iVWNjOVZnV0YwNVRoV3NmaXZkSTU4V2dQbWJHSzg2NGg0WC1Cc3pMT2ZYMWU1QXlDN2VZZFZ5ZWVpZm0waGdhZ0pxNEsyLWZiN2lkVWdOY2F0WlluUHRreTNvaVNZeDZUZEFTM3RmT2p3"
         },
         {
-          "title": "Morgan Stanley: Hyperscaler AI Capex +57% in 2027",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5DcjVKeTlOSU1MUW9SX1Bici1LWGZZV2JrVGlGbTdwbndsb1hoU0xmQVRvVEVXNURJUTktZXNtV0hNWXhyRGpodHlGamQyYlJuQjBPcENkdkF5N3V1dnB3eUlwdHo5RXlsZ00zQWhCbG5NWEw1Tnc"
+          "title": "Micron $10B AI memory research lab announcement",
+          "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTE0yN3VQLTBhaGFBTF9KTEIxdW5YbEFEaDgyajVVRi16WnF2Q2dDOXB3cXVPTVk5UW5vREJtWEdXSWpJSF80ZC1CTFBld2VVY3E3dUxlSjdUSDZHQ0NzZnVYeE9fRU8zaHh3LTN0NW9RMGJxU2g2T0Nndl84V08"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-18",
+      "updated_date": "2026-08-21",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 2
     },
     "t2_eps_revisions": {
       "last_full_regen_date": "2026-08-15",
@@ -291,30 +291,22 @@
       "evidence_count": 2
     },
     "t2_pe_compressed": {
-      "last_full_regen_date": "2026-08-14",
+      "last_full_regen_date": "2026-08-21",
       "current_status": "Fired",
-      "where_we_stand": "SK Hynix forward FY27 P/E: 3.61x (computed: 1,645,000 KRW price \u00f7 454,969 KRW FY+1 EPS est; Mirae Asset confirms 3.5x range in Aug 12-14 notes) \u2014 well below the 5x fire threshold. Samsung forward FY27 P/E: 4.09x (computed: 274,500 KRW \u00f7 67,174 KRW; Mirae confirms ~3.9x) \u2014 below the 6x\u2026",
-      "latest_developments": "Four Mirae Asset notes (Aug 12-14) confirm SK Hynix 12-month forward P/E at 3.5x and Samsung at ~3.9x. No EPS upgrades accompanied the maintained targets \u2014 compression is price-led. Stock down 51% from peak per\u2026",
+      "where_we_stand": "Fired. Last confirmed computation (2026-07-29): SK Hynix forward FY27 P/E 3.78x (threshold <5x \u2014 Fired); Samsung 4.18x (threshold <6x \u2014 Fired); Micron 6.26x (threshold <8x \u2014 Fired). Today's prices: SK Hynix 1,730,000 KRW (+2.31%), Micron $974.33 (+3.97%), Samsung 281,500 KRW (+3.87%). The price moves modestly expand the P/E denominators but\u2026",
+      "latest_developments": "No new P/E computation today. Analyst consensus (SK Hynix: 40 analysts, Fwd P/E 3.78x; Micron: 44 analysts, 6.26x; Samsung: 36 analysts, 4.18x) remains below all three thresholds. Status persists.",
       "relevant_links": [
         {
-          "title": "Mirae Asset: SK Hynix \u2014 Multiple uncertainties clearing at once (Aug 14)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342066"
-        },
-        {
-          "title": "Mirae Asset: SK Hynix \u2014 A series of landmark achievements (Aug 13)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341973"
-        },
-        {
-          "title": "Mirae Asset: Samsung Electronics \u2014 An opportune time to increase exposure (Aug 13)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341972"
+          "title": "SK Hynix vs Micron valuation comparison",
+          "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNV2lLZHBTaGp0Z3hwLUpfcVFXaEJNNEJiNEtJMThGQ0dxQWZuSU9TSkVmekE4OHhrQUNfSEp2YlVxQVdYUmtTWXNzM2xIb1Z2R3R3Wm9IMW45YmRBTFIwSlVSV0tEQkdPdHlLaFdqbXlKcjBnQ2phOUJhNnB1WVhuVmFJckp5RFJCMlJ6YkNWZ0dVUzdPb25OcGxkSE81VkVwbHJjaTJCU1NBWmt2UExRZTZMckpKOFBWUFhSXzRyMUo"
         }
       ],
-      "change_vs_prior": "Status unchanged at Fired. SK Hynix P/E compressed further to 3.5-3.6x from 4.6x on Jul 29; Samsung at 3.9x vs 4.5x on Jul 29. Compression deepened on price decline, not estimate cuts \u2014 consistent with peak-denominator dynamic.",
+      "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-14",
+      "updated_date": "2026-08-21",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 4
+      "evidence_count": 0
     },
     "t2_spot_contract_spread": {
       "last_full_regen_date": "2026-08-19",
@@ -516,26 +508,22 @@
       "evidence_count": 0
     },
     "t3_capex_plateau": {
-      "last_full_regen_date": "2026-08-18",
+      "last_full_regen_date": "2026-08-21",
       "current_status": "Partially fired",
-      "where_we_stand": "Guidance ledger as of today \u2014 all four companies enumerated per hard rule: \u2022 Microsoft: stable [+1] | FY27 $175B | print 2026-08-07 | accounting basis change (finance\u2192operating lease reclassification), investment unchanged; ruled stable. -7.9% vs prior $190B. \u2022 Meta: stable [+1] | CY2026 $137.5B | print 2026-08-07 | +1.9%\u2026",
-      "latest_developments": "No new hyperscaler earnings call or capex revision today. Applied Materials Q3 call added 'customers giving us longer-term commitments and rolling eight-quarter forecasts' \u2014 corroborates Amazon/Alphabet acceleration stance.",
+      "where_we_stand": "Partially fired. Guidance ledger as of today \u2014 all four companies enumerated: \u2022 Microsoft: stable [+1] \u2014 FY27 $175B (accounting reclassification finance\u2192operating lease, investment unchanged; ruled stable 2026-08-08), last print 2026-08-07. \u2022 Meta: stable [+1] \u2014 CY2026 $137.5B reiterated within \u00b15% of prior (+1.9%), last print 2026-08-07. Watch flag: withheld\u2026",
+      "latest_developments": "No new hyperscaler guidance events today. Applied Materials' 8-quarter customer visibility and DRAM +52% YoY corroborate sustained capex deployment but do not alter the ledger. Status Partially fired (N=2) persists pending Q3 earnings cycle.",
       "relevant_links": [
         {
-          "title": "Applied Materials Q3 transcript (AMAT earnings)",
-          "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxNaVI2bWFLTjlEdTRaYTlxckN4RkNZYlhXQWE4UXpHZklibzZhb29OVVNyaklGYlJDY1pOa04waEZxUzBKNmFacF9aNVVuOF8zejFxc09aZlJObG15aDY1RFBVdHRBYkJJSFFpS3BScmVNUVVwbjJrMkloSGx0YjlXN2dKY3Q1eV9FWkRBTjZOdEJDVTRpRU9Oc045UVVZaGo5dklleDRvdW1xWVVvOExwLWcxcGhMbkpOSUxUbQ"
-        },
-        {
-          "title": "Samsung/SK Hynix 1H26 capex +35% (TrendForce)",
-          "url": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxONzNRc2VHdFVJaWUwS1ZrQks5MWhDU0hUcGVURmZGQkk0OU90Xzc3TXJCdEFuNGxsN0tPbE9WQXdaekhCOVFJUlhuc2licnNiaHFvSklWdmFMdE1sNWg4RzRtRm9pLUdQNC04VGtJYU5lRmJxUElkczU1YlN4ejMtcFBJcjhzZzhCLWFOQWxBMk5pQ0hwYWNFZGlhd1B6WG9iRjZjRDZUWVZZRTJYQnVRZi1oc1lWcWFUMU5DSS1LRURhempJVjl0VEEweUVzMmY1TXBYdjNHNnpYLXZnd1N3"
+          "title": "Applied Materials Q3 2026 earnings \u2014 hyperscaler capex corroboration",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/20/applied-materials-amat-q3-2026-earnings-call-transcript/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "fingerprint_algo": "v3-fired-status",
       "status": "Partially fired",
-      "evidence_count": 0,
-      "updated_date": "2026-08-18"
+      "evidence_count": 1,
+      "updated_date": "2026-08-21"
     }
   }
 }

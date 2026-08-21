@@ -1,0 +1,1831 @@
+{
+  "run_at": "2026-08-21T07:33:29.808836+00:00",
+  "min_score": 3,
+  "dropped_count": 304,
+  "dropped_items": [
+    {
+      "title": "[REPORTER'S NOTEBOOK] Hyundai Motor's stock rally puts Munoz to test",
+      "source": "Korea Times Business",
+      "score": 1,
+      "reason": "ADJACENT/NOT RELEVANT: Hyundai Motor automotive unrelated to memory semiconductor cycle"
+    },
+    {
+      "title": "Anthropic to file for IPO that could top SpaceX record - Proactive financial news",
+      "source": "Google News (OpenAI public listing)",
+      "score": 0,
+      "reason": "Anthropic IPO filing \u2014 no memory, chip supply, or capex commitment detail. Pure financial news without infrastructure implication."
+    },
+    {
+      "title": "Anthropic Aims to Top SpaceX's IPO Record - \uc870\uc120\uc77c\ubcf4",
+      "source": "Google News (OpenAI public listing)",
+      "score": 0,
+      "reason": "Duplicate Anthropic IPO headline \u2014 no memory or capex signal."
+    },
+    {
+      "title": "Samsung may return to No. 1 rank, beating Apple in 2026 smartphone market - Sammy Fans",
+      "source": "Google News (Counterpoint smartphone shipment forecast)",
+      "score": 1,
+      "reason": "Samsung smartphone market share forecast \u2014 unrelated to memory cycle, DRAM/HBM pricing, or chip supply. Consumer device narrative only."
+    },
+    {
+      "title": "Hanwha Insurance&apos;s Indonesian unit posts record H1 results",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "Hanwha Insurance Indonesia results \u2014 no relevance to semiconductors or memory cycle."
+    },
+    {
+      "title": "Musinsa enters Vietnam with local retail giant IPPG affiliate",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "Musinsa Vietnam retail expansion \u2014 no relevance to semiconductors or memory cycle."
+    },
+    {
+      "title": "Anthropic Puts Finishing Touches on IPO Machinery as Citigroup Joins Banker Lineup - Ad-hoc-news.de",
+      "source": "Google News (OpenAI IPO filing)",
+      "score": 2,
+      "reason": "Anthropic IPO process news; no memory demand, capex commitment, or infrastructure investment detail disclosed. IPO filing alone \u2260 capex signal without explicit AI infrastructure spend commitment."
+    },
+    {
+      "title": "Quantifying Event Impacts on Time Series via Multiscale Contrastive Learning",
+      "source": "arxiv cs.LG (filtered)",
+      "score": 0,
+      "reason": "Pure ML research paper (time-series analysis); no memory, semiconductor, or AI infrastructure implication."
+    },
+    {
+      "title": "Beyond Multimodal Alignment: Certifying Physical Language through Response Substitution and Ordered Execution",
+      "source": "arxiv cs.LG (filtered)",
+      "score": 0,
+      "reason": "Pure ML research paper (multimodal learning); no relevance to memory cycle or semiconductor demand."
+    },
+    {
+      "title": "Data-Driven Time-Varying Control Barrier Functions for Adaptive Safe-Set Learning with Online Decremental Support Vector Machines",
+      "source": "arxiv cs.LG (filtered)",
+      "score": 0,
+      "reason": "Pure ML research paper (control theory); no relevance to memory cycle or semiconductor demand."
+    },
+    {
+      "title": "Transformer See, Transformer Do: Copying as an Intermediate Step in Learning Analogical Reasoning",
+      "source": "arxiv cs.LG (filtered)",
+      "score": 0,
+      "reason": "Pure ML research paper (analogical reasoning); no relevance to memory cycle or semiconductor demand."
+    },
+    {
+      "title": "Kakao to split into two listed firms",
+      "source": "Korea Herald Business",
+      "score": 1,
+      "reason": "ADJACENT: Kakao corporate restructuring has no direct memory semiconductor demand or supply implication."
+    },
+    {
+      "title": "S. Korea to launch &apos;future fund&apos; with &apos;windfall revenue&apos; amid chip boom",
+      "source": "Korea Herald Business",
+      "score": 2,
+      "reason": "ADJACENT: S. Korea macro windfall fund announcement. Policy-level commentary without naming memory makers or capex commitments. Too broad."
+    },
+    {
+      "title": "Anthropic IPO Nears: 10 Tickers to Watch for Pre-IPO Exposure - Moomoo",
+      "source": "Google News (Anthropic IPO)",
+      "score": 2,
+      "reason": "ADJACENT: Anthropic IPO pre-exposure ticker list. Financial engineering without infrastructure or memory-demand implications."
+    },
+    {
+      "title": "Hyundai Motor union stages first full-day strike in 10 years",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "Hyundai Motor unrelated to memory chip production \u2014 automotive labor news without memory tie-in"
+    },
+    {
+      "title": "Watch AI Trade: Can Anthropic Beat SpaceX\u2019s Record IPO Size? - Bloomberg.com",
+      "source": "Google News (Anthropic IPO)",
+      "score": 2,
+      "reason": "Anthropic IPO size comparison \u2014 no memory, capex, or chip-supply signal. Pure financial/valuation noise."
+    },
+    {
+      "title": "Report: Anthropic hopes to surpass SpaceX\u2019s record IPO raise when it finally floats - SiliconANGLE",
+      "source": "Google News (OpenAI public listing)",
+      "score": 2,
+      "reason": "Anthropic IPO size record chase \u2014 no memory, capex, or infrastructure detail. Pure financial narrative."
+    },
+    {
+      "title": "Foldable Smartphone Market Set to Nearly Double by 2028 on Samsung, Apple Push - finance.biggo.com",
+      "source": "Google News (Counterpoint smartphone shipment forecast)",
+      "score": 2,
+      "reason": "Smartphone foldable market forecast \u2014 consumer device demand, not AI/HBM/datacenter memory cycle. No hyperscaler or chip designer signal."
+    },
+    {
+      "title": "Samsung and Apple the Only Key Brands to Grow in a Declining LATAM Market in Q2 2026 - Counterpoint Research",
+      "source": "Google News (memory shortage consumer electronics prices)",
+      "score": 2,
+      "reason": "Consumer electronics market share in LATAM \u2014 no memory cycle, pricing, or supply/demand signal for semiconductor memory makers"
+    },
+    {
+      "title": "Engineer Who Stole Samsung Technologies Sentenced to 7 Years - Zamin.uz",
+      "source": "Google News (ChangXin Memory production)",
+      "score": 1,
+      "reason": "IP theft prosecution \u2014 legal/criminal matter, no bearing on ChangXin production capacity or memory supply"
+    },
+    {
+      "title": "Daily Digest: Anthropic IPO could eclipse SpaceX, Rippling and Runlayer drop competing lawsuits - The Business Journals",
+      "source": "Google News (Anthropic IPO)",
+      "score": 2,
+      "reason": "Anthropic IPO banking update \u2014 duplicate IPO process news without infrastructure capex commitment or memory demand signal"
+    },
+    {
+      "title": "Citi, JPM Reportedly In Talks To Join OpenAI IPO Bank Lineup - Stocktwits",
+      "source": "Google News (OpenAI IPO filing)",
+      "score": 2,
+      "reason": "OpenAI IPO banking speculation \u2014 IPO process noise without capex guidance, memory commitment, or infrastructure investment detail"
+    },
+    {
+      "title": "Anthropic IPO: What to know before you buy the stock - Yahoo Finance",
+      "source": "Google News (OpenAI IPO filing)",
+      "score": 1,
+      "reason": "Anthropic IPO filing \u2014 AI lab funding is Tier C, but IPO prospectuses rarely contain forward capex/infrastructure commitments; no memory demand signal until capex guidance materializes post-listing"
+    },
+    {
+      "title": "Anthropic Poised to Challenge SpaceX for Largest IPO Ever, Filing Expected This Month - finance.biggo.com",
+      "source": "Google News (OpenAI IPO filing)",
+      "score": 2,
+      "reason": "Anthropic IPO size comparison to SpaceX \u2014 valuation/market structure noise; no memory cycle implication without explicit capex or chip-supply commentary"
+    },
+    {
+      "title": "Samsung and Apple are the only key smartphone brands to grow in a declining Latin America market - MacTech.com",
+      "source": "Google News (Counterpoint smartphone shipment forecast)",
+      "score": 0,
+      "reason": "Samsung smartphone market share in Latin America \u2014 unrelated to memory semiconductor cycle; consumer phone NAND/DRAM is not the focus of this brief"
+    },
+    {
+      "title": "Experts weigh in on the market's ability to handle Anthropic and OpenAI going public - CNBC",
+      "source": "Google News (Anthropic public listing)",
+      "score": 1,
+      "reason": "Market capacity for multiple large IPOs \u2014 macro equity market commentary; no memory cycle signal"
+    },
+    {
+      "title": "Anthropic Expects to Match or Top SpaceX\u2019s Record IPO Size - Bloomberg.com",
+      "source": "Google News (Anthropic IPO)",
+      "score": 2,
+      "reason": "Anthropic IPO size record \u2014 same as headline 2; valuation event noise without capex commitment detail"
+    },
+    {
+      "title": "Anthropic could publicly file IPO paperwork as soon as this month - Yahoo Finance",
+      "source": "Google News (OpenAI IPO filing)",
+      "score": 1,
+      "reason": "Anthropic IPO filing timing \u2014 procedural announcement; no memory or capex implication until S-1/capex guidance disclosed"
+    },
+    {
+      "title": "Anthropic expects to at least match SpaceX\u2019s record IPO - AFR",
+      "source": "Google News (OpenAI public listing)",
+      "score": 1,
+      "reason": "Anthropic IPO vs. SpaceX \u2014 market structure/valuation comparison; no memory demand or capex signal"
+    },
+    {
+      "title": "Jim Cramer's Market Watch: Micron Labs, Merck Analyst Divide, and Walmart's Tariff Cushion - finance.biggo.com",
+      "source": "Google News (Goldman Sachs SK Hynix Micron)",
+      "score": 2,
+      "reason": "Jim Cramer opinion piece mixing Micron with unrelated companies (Merck, Walmart); no analyst action, pricing, or memory cycle signal"
+    },
+    {
+      "title": "MU 260821 165.00P (MU260821P165000) Stock Options Chain | Quotes & News - Moomoo",
+      "source": "Google News (memory cycle peak)",
+      "score": 1,
+      "reason": "Options chain quote \u2014 financial derivative noise, no memory cycle or supply/demand signal"
+    },
+    {
+      "title": "Microsoft joins Apple in raising prices as fans await new 'Grand Theft Auto' game - ABC News - Breaking News, Latest News and Videos",
+      "source": "Google News (Apple raises prices memory chip cost)",
+      "score": 1,
+      "reason": "Apple/Microsoft consumer product pricing \u2014 no memory cycle, HBM demand, or datacenter AI capex implication"
+    },
+    {
+      "title": "Stripe to buy OpenRouter as fintech expands deeper into AI",
+      "source": "CNBC Technology",
+      "score": 2,
+      "reason": "Stripe fintech M&A unrelated to memory makers, chip designers, or hyperscaler AI infrastructure"
+    },
+    {
+      "title": "Microsoft's MAI-Image-2.5-Pro Just Topped an AI Image Editing Leaderboard - Startup Fortune",
+      "source": "Google News (Artificial Analysis tokens per dollar)",
+      "score": 1,
+      "reason": "Microsoft image model leaderboard performance. No memory, chip supply, or infrastructure capex implication."
+    },
+    {
+      "title": "Fortrade Adds SK Hynix Following Record $26.5 Billion Nasdaq Listing - The Manila Times",
+      "source": "Google News (SK Hynix US listing pricing)",
+      "score": 2,
+      "reason": "SK Hynix Nasdaq listing pricing is capital market event, not memory cycle signal. No supply, demand, or analyst action on fundamentals."
+    },
+    {
+      "title": "The Capex Confirmation \u2014 India's AI-Infrastructure Bench Compounded Through Q1 FY27, Not Cushioned - MarketSmith India",
+      "source": "Google News (hyperscaler 2027 CapEx)",
+      "score": 2,
+      "reason": "India AI infra bench is macro context; no memory maker, chip designer, or hyperscaler capex commitment specificity. 'Compounded through Q1 FY27' lacks quantified capex dollar figures or memory demand signal."
+    },
+    {
+      "title": "Michigan township combats nuclear weapons data center by passing ban on new electrical infrastructure \u2014 220,000-square-foot hyperscale project is backed by University of Michigan and the Los Alamos National Laboratory",
+      "source": "Tom's Hardware RAM",
+      "score": 1,
+      "reason": "Hyperscale data center regulatory/infrastructure news with no memory demand implication. Los Alamos partnership doesn't quantify AI capex or chip orders."
+    },
+    {
+      "title": "Why Retail Traders Couldn\u2019t Take Their Eyes Off These Stocks Last Week: AAPL, MSFT, AMZN, META, TSLA - Stocktwits",
+      "source": "Google News (Apple raises prices memory chip cost)",
+      "score": 0,
+      "reason": "Apple retail stock ticker news with no memory maker, chip designer, or memory demand signal. Unrelated to semiconductor cycle."
+    },
+    {
+      "title": "Dell XPS 13 (2026) review: the new bar for mainstream Windows laptop excellence",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "Dell XPS 13 consumer laptop review. Zero relevance to memory cycle, HBM, chip designer capex, or hyperscaler demand."
+    },
+    {
+      "title": "SK hynix will pay staff $50,000 apiece according to a tentative agreement with disgruntled workers \u2014 $1.79 billion potential profit pool will be split between cash and stock grants - Tom's Hardware",
+      "source": "Google News (Samsung Electronics labor dispute)",
+      "score": 0,
+      "reason": "Headline mismatch: text references SK Hynix labor but header claims Samsung Electronics \u2014 unclear sourcing, noise"
+    },
+    {
+      "title": "GPT-5.6 Could Arrive This Month As OpenAI Preps For Wall Street - Yellow.com",
+      "source": "Google News (OpenAI IPO filing)",
+      "score": 2,
+      "reason": "OpenAI IPO/GPT-5.6 speculation \u2014 AI lab news without capex commitment detail, funding scale, or infrastructure build-out specificity. No memory demand signal."
+    },
+    {
+      "title": "OpenAI CFO Sarah Friar says IPO is coming in 2027 - qz.com",
+      "source": "Google News (OpenAI IPO filing)",
+      "score": 2,
+      "reason": "OpenAI IPO timing is Tier C capex signal but 2027 is too distant; no near-term memory demand implication"
+    },
+    {
+      "title": "OpenAI\u2019s CFO told staff it will go public in 2027, or sooner - The Next Web",
+      "source": "Google News (OpenAI public listing)",
+      "score": 2,
+      "reason": "Duplicate of #1; same timeline issue \u2014 no immediate memory cycle relevance"
+    },
+    {
+      "title": "2026 Q2 CEX Trading Data Review: Whose OI and Trading Volume Were Inflated? - Substack",
+      "source": "Google News (memory supercycle 2026)",
+      "score": 1,
+      "reason": "CEX trading data unrelated to memory semiconductor cycle; clickbait headline"
+    },
+    {
+      "title": "Get an astonishing OLED 5090 gaming laptop for $3,599, $800 off \u2014 Gigabyte Aorus Master 16 features a 24-core Arrow Lake CPU, 32GB RAM, 2TB SSD",
+      "source": "Tom's Hardware RAM",
+      "score": 1,
+      "reason": "TIER D/Gaming: Gaming laptop RAM spec \u2014 no relevance to datacenter/AI memory cycle, DRAM pricing, or chip designer demand"
+    },
+    {
+      "title": "Amazon delivery drone dumps Texas woman's parcel straight into her swimming pool \u2014 viral video surfaces the same week the company announces 500-city Prime Air expansion",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "Not relevant \u2014 Amazon Prime Air drone story has no memory/semiconductor implication; automotive/logistics noise"
+    },
+    {
+      "title": "Chip Squeeze Drives up Smartphone Prices in India, Boosting Apple and Samsung over Chinese Rivals - RetailNews Asia",
+      "source": "Google News (Apple raises prices memory chip cost)",
+      "score": 2,
+      "reason": "Peripheral \u2014 smartphone memory cost pass-through without DRAM/HBM pricing data or supply signal; retail-level commodity pricing noise"
+    },
+    {
+      "title": "Merit Financial Group LLC Buys 6,446 Shares of Micron Technology, Inc. $MU - MarketBeat",
+      "source": "Google News (memory analyst upgrade downgrade)",
+      "score": 1,
+      "reason": "Not relevant \u2014 institutional buying activity (Merit Financial) is noise-level insider/small-cap filing; no analyst action or fundamental signal"
+    },
+    {
+      "title": "OpenAI\u2019s CFO Said the Company Will Go Public by the End of 2027 - incrypted",
+      "source": "Google News (OpenAI public listing)",
+      "score": 2,
+      "reason": "TIER C adjacent: OpenAI IPO timing (end-2027) is macro-level capex signal but no memory/chip-supply detail; too distant and speculative for cycle relevance"
+    },
+    {
+      "title": "North Korea fires over 10 SRBMs from Pyongyang toward East Sea: JCS",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "NOT RELEVANT: North Korea military news has no semiconductor supply chain implication"
+    },
+    {
+      "title": "Micron Technology, Inc. $MU Shares Acquired by Farther Finance Advisors LLC - MarketBeat",
+      "source": "Google News (Morgan Stanley memory semiconductor)",
+      "score": 1,
+      "reason": "Farther Finance Advisors LLC equity acquisition in Micron \u2014 noise. Unrelated to memory cycle fundamentals, supply/demand, or analyst action."
+    },
+    {
+      "title": "Ballentine Partners LLC Has $73.56 Million Stock Holdings in Micron Technology, Inc. $MU - MarketBeat",
+      "source": "Google News (Morgan Stanley memory semiconductor)",
+      "score": 0,
+      "reason": "Ballentine Partners LLC equity holdings in Micron \u2014 noise. No cycle, supply, demand, or analyst action signal."
+    },
+    {
+      "title": "Recently, as Samsung Electronics and SK Hynix have shown a strong rebound every day and have begun t.. - \ub9e4\uc77c\uacbd\uc81c",
+      "source": "Google News (SK Hynix target price)",
+      "score": 2,
+      "reason": "Korean macro/sentiment note on Samsung + SK Hynix rebound. No production, pricing, supply/demand, or cycle-specific data. Tone commentary without Indicator input."
+    },
+    {
+      "title": "Archford Capital Strategies LLC Sells 2,217 Shares of Micron Technology, Inc. $MU - MarketBeat",
+      "source": "Google News (memory analyst upgrade downgrade)",
+      "score": 0,
+      "reason": "Archford Capital Strategies LLC equity sale in Micron \u2014 noise. No cycle indicator."
+    },
+    {
+      "title": "Introducing AI Futures",
+      "source": "OpenAI Blog",
+      "score": 2,
+      "reason": "OpenAI blog post on futures framework \u2014 no memory/chip supply/capex commitment detail; generic AI lab news below 5B infrastructure threshold"
+    },
+    {
+      "title": "Nexon launches W250b hunt for next global game IP",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "Nexon game IP launch \u2014 unrelated to memory, semiconductors, or AI infrastructure; pure gaming news"
+    },
+    {
+      "title": "Samsung to push smartphone volumes despite profit squeeze: mobile chief",
+      "source": "Korea Herald Business",
+      "score": 2,
+      "reason": "Samsung smartphone volumes despite profit squeeze \u2014 Samsung hardware business news; no memory maker production, HBM demand, or cycle implication"
+    },
+    {
+      "title": "Kakao Mobility files for $1b US IPO as TPG seeks exit",
+      "source": "Korea Herald Business",
+      "score": 1,
+      "reason": "Not relevant: Kakao Mobility IPO is unrelated to memory cycle, chip design, or hyperscaler AI capex"
+    },
+    {
+      "title": "BitGo becomes first foreign crypto firm to win Korean license",
+      "source": "Korea Herald Business",
+      "score": 1,
+      "reason": "Not relevant: BitGo crypto licensing is unrelated to memory, semiconductors, or AI infrastructure"
+    },
+    {
+      "title": "League of Legends champion DRX sets sights beyond gaming",
+      "source": "Korea Herald Business",
+      "score": 1,
+      "reason": "NOT RELEVANT: Gaming esports news; no memory, semiconductor, or AI infrastructure implication"
+    },
+    {
+      "title": "Banks Slash Cost Of Leveraged Bets On SK Hynix's Korean Shares - NDTV Profit",
+      "source": "Google News (SK Hynix US listing pricing)",
+      "score": 2,
+      "reason": "Financial instrument pricing on SK Hynix shares; no memory cycle, supply/demand, or production impact signal."
+    },
+    {
+      "title": "S. Korea&apos;s Kakao Mobility confidentially files for US listing",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "Kakao Mobility (mobility/ride-sharing). No memory, semiconductor, or AI infrastructure relevance."
+    },
+    {
+      "title": "Banks Slash Cost of Leveraged Bets on SK Hynix\u2019s Korean Shares - Bloomberg.com",
+      "source": "Google News (SK Hynix US listing pricing)",
+      "score": 2,
+      "reason": "Duplicate of headline 1 \u2014 financial instrument pricing on SK Hynix shares; no cycle signal."
+    },
+    {
+      "title": "Inside India newsletter: Chip squeeze hits Chinese smartphones in India as Apple, Samsung gain an edge - CNBC",
+      "source": "Google News (Apple raises prices memory chip cost)",
+      "score": 2,
+      "reason": "Apple/Samsung smartphone competitive pricing in India; memory chip cost angle is tangential and consumer-focused, not datacenter/AI memory cycle relevant"
+    },
+    {
+      "title": "Louis Navellier sets eye-opening Nvidia stock price target for rest of this year - thestreet.com",
+      "source": "Google News (Micron revenue EPS estimate cut)",
+      "score": 1,
+      "reason": "Navellier NVIDIA price target prediction; no memory supply/demand, analyst action on memory makers, or HBM volume specifics"
+    },
+    {
+      "title": "Billionaire Stanley Druckenmiller Just Dumped Micron and Intel While Adding These 2 AI Stocks. Should Investors Follow Suit? - The Motley Fool",
+      "source": "Google News (memory supercycle 2026)",
+      "score": 2,
+      "reason": "Billionaire portfolio shift (Druckenmiller); market sentiment piece without quantified capex commitment, memory pricing data, or supply/demand signal"
+    },
+    {
+      "title": "Samsung's Consumer Arm Vows to Fight Losses by Grabbing Market Share - Seoul Economic Daily",
+      "source": "Google News (Samsung Electronics chip workers)",
+      "score": 2,
+      "reason": "Samsung consumer arm competitive strategy; unrelated to memory semiconductor cycle, HBM, DRAM, or NAND production"
+    },
+    {
+      "title": "The Dell XPS 13 (2026) proves budget laptops don't have to skimp on battery life - Reviewed",
+      "source": "Google News (PC laptop price increase memory shortage)",
+      "score": 1,
+      "reason": "Dell XPS 13 laptop battery/design review; consumer product launch without AI or datacenter memory demand signal"
+    },
+    {
+      "title": "OpenAI 'will be a public company in 2027' or sooner, CFO Friar tells employees",
+      "source": "CNBC Technology",
+      "score": 2,
+      "reason": "Repeat of headline 1 with slightly different wording. OpenAI IPO announcement lacks memory cycle or capex commitment specificity."
+    },
+    {
+      "title": "Go master Shin cracks AI barrier with win over KataGo, sets up series decider",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "Go/AI game-playing milestone is unrelated to memory semiconductor cycle, pricing, or infrastructure capex."
+    },
+    {
+      "title": "AI trade isn\u2019t just about tech stocks but also power, TCW says",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 2,
+      "reason": "Macro AI energy commentary without memory maker, chip designer, or capex commitment specificity."
+    },
+    {
+      "title": "Global OLED Monitor Shipments Grew 26.1% QoQ in 2Q26; ASUS Extended Its Lead Over Samsung While MSI Closed the Gap, Says TrendForce",
+      "source": "TrendForce Press Center",
+      "score": 1,
+      "reason": "OLED monitor demand unrelated to memory semiconductor cycle (DRAM/HBM/NAND datacenter); no TIER A/B/C/D relevance; consumer display market noise"
+    },
+    {
+      "title": "Travel Wallet names lead underwriters for upcoming IPO",
+      "source": "Korea Times Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Doosan Enerbility secures $670 mil. gas power plant deal in Oman",
+      "source": "Korea Times Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Toss Bank turns overseas transfers into no-fee, trackable service",
+      "source": "Korea Times Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Genesis to boost profits via Hyundai Motor Group ties",
+      "source": "Korea Times Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Hyundai Motor workers stage full-scale strike over wage disputes",
+      "source": "Korea Times Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Choi Si-won steps in to stop a tourist from smoking at Gyeongbokgung",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Two brothers found dead in Uijeongbu",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Bitcoin hits RSI 94.4 at $75,921 all-time high: Live levels",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Lee names new trade minister week after predecessor\u2019s dismissal",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "UK investors lead Korean stock sell-off as US funds keep buying",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Why Supreme Court picks have become Lee\u2019s latest political headache",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Oppo, OnePlus Hike Smartphone Prices: Why Phones Are Getting More Expensive - NDTV Profit",
+      "source": "Google News (smartphone price hike memory cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Tech stock boom hints at fresh path - chinadailyasia.com",
+      "source": "Google News (ChangXin Memory production)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Qwen3.8-27B-DFlash2: A Guide to Faster Qwen Inference - HackerNoon",
+      "source": "Google News (vLLM release inference)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Seoul sees US-N. Korea dialogue as most realistic way to halt Pyongyang\u2019s nuclear advance",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "iPhone 18 Pro and Pro Max Price Increases: What You\u2019ll Actually Pay - Geeky Gadgets",
+      "source": "Google News (memory shortage consumer electronics prices)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Hyundai workers strike as AI, retirement age and pay talks hit deadlock - Storyboard18",
+      "source": "Google News (Samsung union strike)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Celltrion expands Japan push with SteQeyma IV launch",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Japanese influencer slammed for racist eye gesture mocking Ateez\u2019s San",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Bearish: Analysts Just Cut Their Nordic Halibut AS (OB:NOHAL) Revenue and EPS estimates - simplywall.st",
+      "source": "Google News (Micron revenue EPS estimate cut)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "YMTC Speeds Up IPO as China\u2019s Memory Push Raises Pressure on Korea - \uc778\uc0ac\uc774\ud2b8\ucf54\ub9ac\uc544",
+      "source": "Google News (ChangXin Memory production)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "This Western Bulk Chartering AS (OB:WEST) Analyst Is Way More Bearish Than They Used To Be - simplywall.st",
+      "source": "Google News (Micron revenue EPS estimate cut)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Bitcoin surges above $75k as Trump spurs U.S. regulatory hopes",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "South Korea plans chip windfall fund to back youth, AI investment - Reuters",
+      "source": "Google News (Samsung Electronics chip workers)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "AI\u2019s hunger for chips is driving up the price of tech toys - Business Post",
+      "source": "Google News (Apple raises prices memory chip cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "R\\'enyi Sharpness: A Novel Sharpness that Strongly Correlates with Generalization",
+      "source": "arxiv cs.LG (filtered)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Does Softer EPS Outlook With Rising Sales Change The Bull Case For Trip.com Group (TCOM)? - simplywall.st",
+      "source": "Google News (Micron revenue EPS estimate cut)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Doosan Enerbility wins W930b contract for Oman power plant",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "What Hyperscalers Should Know About CXL - HPCwire",
+      "source": "Google News (CXL 3.0 memory pooling production)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Lee&apos;s approval rating inches up from record low to 45%: poll",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Former airline pilot gets life for murder, plot to kill 5 others",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Hyundai Motor\u2019s union stages first full strike in 10 years - Free Malaysia Today",
+      "source": "Google News (Samsung union strike)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Rethinking AI performance scaling beyond parameter count - \ub514\uc9c0\ud138\ud22c\ub370\uc774",
+      "source": "Google News (MoE Mixture of Experts efficiency)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Cardano Climbs 10% As Investors Gain Confidence",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "S. Korea-US combined exercise to conclude ahead of schedule after Trump order",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Kingsoft Cloud (NasdaqGS:KC) Stock Sinks As AI Growth Meets Capex Strain - simplywall.st",
+      "source": "Google News (Micron memory CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Seoul shares open lower as US bond yields climb again",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Exports up 56% in first 20 days of Aug. on robust chip shipments",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Merck\u2019s Cancer-Vaccine Trial Results Surpassed Expectations \u2013 So, Why Did RBC Downgrade MRK Stock? - Stocktwits",
+      "source": "Google News (memory analyst upgrade downgrade)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Producer prices fall for 1st time in 11 months in July on declining oil prices",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Bessent urges US allies to join economic pressure campaign on Iran",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Eqqualberry packs booth at Olive Young&apos;s US festival",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[News] Chip Packaging Experts Flag Heat as AI\u2019s Biggest Bottleneck; AI-Driven Design, CPO and STCO May Help - TrendForce",
+      "source": "Google News (HBM AI bottleneck)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Why This Memory Chip Boom May Have More Staying Power Than History Suggests - AOL.com",
+      "source": "Google News (memory cycle peak)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Why you could soon be paying more to install solar - moneymag.com.au",
+      "source": "Google News (PC laptop price increase memory shortage)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Hyundai Motor Union Launches First Full-Scale Strike in 10 Years, Halting All Plants - news.sbs.co.kr",
+      "source": "Google News (Samsung union strike)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Wafer supply bottleneck drives longer-term contracts - \ub514\uc9c0\ud138\ud22c\ub370\uc774",
+      "source": "Google News (HBM4 yield)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Jim Cramer says there's an 'incredibly jarring gulf between stock prices and reality'",
+      "source": "CNBC Technology",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Qwen3.8-27B: Running a Frontier-class Open Model on Your Local GPU - SitePoint",
+      "source": "Google News (vLLM release inference)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Bitcoin at $72k, highest since May after Trump calls for clear crypto legislation",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The Biggest Risk Facing the Roundhill Memory ETF (DRAM) Right Now - AOL.com",
+      "source": "Google News (Micron memory CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Back-to-school tech prices soar as AI creates computer memory shortage - WJAR",
+      "source": "Google News (memory shortage consumer electronics prices)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The Best PCs (Desktop Computers) for 2026 - PCMag UK",
+      "source": "Google News (PC laptop price increase memory shortage)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The Biggest Risk Facing the First Trust Nasdaq Semiconductor ETF (FTXL) Right Now - 24/7 Wall St.",
+      "source": "Google News (hyperscaler 2027 CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Primemas Targets $200 Million in Revenue With CXL Memory Solution - thelec.net",
+      "source": "Google News (CXL 3.0 memory pooling production)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "XRP Climbs 13% In a Green Day",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Nexo Australia Launches Pioneering Credit Lines After Securing Credit Authorisation",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Windows 11 Licensing Fees Reportedly Rise by 10% | Which PCs Are Affected? - Techeconomy",
+      "source": "Google News (PC laptop price increase memory shortage)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "SanDisk makes first 3D Matrix Memory chips \u2014 aiming for half the cost per bit of DRAM - Notebookcheck",
+      "source": "Google News (HBF High Bandwidth Flash SanDisk)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Why Are Gaming Laptops Moving to 64GB RAM in 2026? - Analytics Insight",
+      "source": "Google News (PC laptop price increase memory shortage)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Weyerhaeuser (WY) Latest Quarter: The Available Earnings Metric Delivers a Beat; Market Reaction: Shares Finish 1.30% Higher in the Latest Session - Upward Estimate Revision - Vinanet",
+      "source": "Google News (SK Hynix earnings estimate revision)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Hyperscaler AI Capex: What The Headlines Miss - Seeking Alpha",
+      "source": "Google News (hyperscaler 2027 CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Memory Darlings MU, SNDK Surge Today \u2013 This Analyst Says AI Memory Trade Has Only Reached \u2018Mid-Innings\u2019 - Stocktwits",
+      "source": "Google News (Mizuho semiconductor memory)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "A tenth of the Silver in electronics is heading to one buyer - FXStreet",
+      "source": "Google News (TrendForce DRAM contract)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Windows license price hikes could make PCs even more expensive, report says - Mashable",
+      "source": "Google News (PC laptop price increase memory shortage)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Up to 3.2x Faster Inference with LFM2.5-DSpark",
+      "source": "HuggingFace Blog",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Cooler Master V Platinum 3000 power supply review: Verified Platinum efficiency for workstations, with a stellar 12-year warranty",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "A fintech app built by crypto exchange Kraken just launched a cash back debit card in bid for consumer wallets",
+      "source": "CNBC Technology",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Seagate Has Already Surged 900% in 5 Years. Where Will it be In 2027? - AOL.com",
+      "source": "Google News (hyperscaler 2027 CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Bitcoin surges 12% in two days as Trump, crypto execs lead last ditch effort for Clarity Act",
+      "source": "CNBC Technology",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Credo vs. Astera Labs: Which AI Connectivity Stock Is the Better Buy? - The Globe and Mail",
+      "source": "Google News (Astera Labs CXL revenue)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "AI data center outrage is showing up everywhere from ads to elections",
+      "source": "CNBC Technology",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Grab Keychron's compact K8 wireless mechanical keyboard for an all-time low of $34 \u2014 87-keys, Gateron Red switches, and white backlight keeb is 56% off",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "THEO is Now Live on Hydrex \u2014 Autheo\u2019s Internet Operating System Token Begins Trading",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Prediction: Marvell\u2019s New AI Catalyst Could Drive 21% Upside - 24/7 Wall St.",
+      "source": "Google News (hyperscaler 2027 CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "PlayStation and Xbox Sales Are in Big Trouble After Massive Price Hikes - Polygon.com",
+      "source": "Google News (memory shortage consumer electronics prices)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The effect of the U.S. Treasury bond repurcha...\uff5cLong-term government bonds, Nasdaq futures - ChainCatcher",
+      "source": "Google News (Goldman Sachs SK Hynix Micron)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "What RAM crisis? B&H Photo has up to $400 off Apple's most powerful MacBook Pros - Creative Bloq",
+      "source": "Google News (PC laptop price increase memory shortage)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Thinking of buying a foldable? Waiting for Diwali may not pay off this year - 91mobiles.com",
+      "source": "Google News (smartphone price hike memory cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Transcend Launches Full Range of DDR5-7200 Embedded DRAM Modules - TechPowerUp",
+      "source": "Google News (CXMT DDR5)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Bitcoin technical analysis: daily momentum stretched as Clarity Act drives rally",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "US Tablet Shipments Plummet by 32% on Memory Crunch - PCMag Australia",
+      "source": "Google News (memory shortage consumer electronics prices)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Billionaire George Soros makes sevenfold move on AI chip stock in latest 13F - thestreet.com",
+      "source": "Google News (Micron memory CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Xiaomi Sees Smartphone Cost Pressures Easing, Looks to EVs for Growth - ASHARQ AL-AWSAT English",
+      "source": "Google News (smartphone price hike memory cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Kodiak (KDK) Latest Quarter: The EPS Result Is Below Expectation; Post-Report: Shares Move 1.43% Down in the Current Update - Final Results - Vinanet",
+      "source": "Google News (SK Hynix earnings estimate revision)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Myro (MYRO) Price Prediction: 2025, 2026, 2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Toncoin (TON) Price Prediction 2025, 2026, 2027-2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "PancakeSwap (CAKE) Price Prediction: 2025, 2026, 2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Algorand (ALGO) Price Prediction: 2025, 2026, 2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Hedera Hashgraph (HBAR) Price Prediction: 2025, 2026, 2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Arweave (AR) Price Prediction: 2025, 2026, 2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Bittensor (TAO) Price Prediction: 2025, 2026, 2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Uniswap (UNI) Price Prediction: 2025, 2026, 2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Polkadot (DOT) Price Prediction: 2025, 2026, 2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Filecoin (FIL) Price Prediction: 2025, 2025, 2030",
+      "source": "Benzinga Analyst Ratings",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Catastrophic GTA VI leak is a full working build \u2014 notorious hacker CyberLeek taunts Rockstar Games by spraying the word 'leek' onto a wall in-game with bullets",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Korea still must outwork its rivals - upi.com",
+      "source": "Google News (Samsung Electronics chip workers)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Alibaba shares fall 5% as AI spending drives 75% drop in net income",
+      "source": "CNBC Technology",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "What Aptiv (APTV)'s Zacks Downgrade and Earnings Cuts Mean For Shareholders - simplywall.st",
+      "source": "Google News (Micron revenue EPS estimate cut)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Synopsys validates a PCIe 6.0 PHY inside a face-to-face 3D stack at 64 GT/s \u2014 says it got there by pulling apart an existing 2D test chip",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "DRAM: The $29 Billion Buyback Just Changed The Memory Trade (BATS:DRAM) - Seeking Alpha",
+      "source": "Google News (Micron memory CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "SpaceX IPO Frenzy on Wall Street: $1.75 Trillion Valuation - tovima.com",
+      "source": "Google News (OpenAI IPO filing)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Will RAM prices go down in 2027? - WION",
+      "source": "Google News (TrendForce DRAM contract)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Virginia county with 250 data centers begins to rein in building \u2014 Loudoun\u2019s more than 250 data centers made it one of the richest counties in the US, but residents are pushing back",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Shared responsibilities - China Daily",
+      "source": "Google News (ChangXin Memory production)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "DDR4 May Jump 50% on Tight Supply - Businesskorea",
+      "source": "Google News (Morgan Stanley memory semiconductor)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "N.K. leader&apos;s sister says reduced military exercise put Seoul &apos;in poor plight of canceling war games&apos;",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Astera Labs: Scorpio Is Becoming The Real Story (NASDAQ:ALAB) - Seeking Alpha",
+      "source": "Google News (Astera Labs CXL revenue)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The Treasury's debt buyback, Walmart earnings, Boise's AI boom and more in Morning Squawk",
+      "source": "CNBC Technology",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Why This Memory Chip Boom May Have More Staying Power Than History Suggests - AOL.ca",
+      "source": "Google News (TrendForce DRAM contract)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Bitcoin rallies above $71k after White House talks: Is a new bull run starting?",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The $1 Trillion Stock Wall Street Says Could Grow Earnings 107% a Year - 24/7 Wall St.",
+      "source": "Google News (SK Hynix earnings)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Seasonic unveils world's first 80 Plus Ruby ATX power supply \u2014 Prime Enterprise RX-1600 delivers 1600W with up to 95.4% efficiency",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Get 32GB of RAM for only $241 in this 3-item gaming combo from Newegg \u2014save $249 on this inclusive bundle with Ryzen 7 9800X3D, Corsair Vengeance RAM, and a Gigabyte X870E motherboard",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The supercomputer race no longer means what it used to, as rankings lose relevance in the AI era \u2014 as privately held compute clusters are built, running HPL becomes a distraction",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "iPhone 18 Pro could face shortages amid RAM crisis, here\u2019s what to know - The Independent",
+      "source": "Google News (Apple raises prices memory chip cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "SMIC posts record $3B quarter and hikes wafer prices \u2014 US sanctions hand Chinese foundry a captive AI market",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[Key Points] Trump\u2019s \u201857 nukes\u2019 claim raises questions over changes to N, Korea strategy",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Industry minister says &apos;meaningful progress&apos; achieved in talks with U.S.",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "N. Korea fires barrage of short-range ballistic missiles despite Trump overture",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Physical media nostalgia sees fundraisers flock to Blu-Ray Kickstarter \u2014 drive with 9-in-1 dock achieves 160x funding goal halfway through campaign",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "G.Skill pays out $2.4M settlement over misleading DDR4 and DDR5 speed marketing \u2014 buyers get $20 to $25 as vendor agrees to XMP and EXPO packaging warnings",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "G.Skill pays out $2.4M settlement over misleading DDR4 and DDR5 speed marketing \u2014 buyers get $20 to $25 as vendor agrees to XMP and EXPO packaging warnings - Tom's Hardware",
+      "source": "Google News (DDR5 spot price)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The CPU Comeback Is Upon Us - AOL.com",
+      "source": "Google News (Goldman Sachs SK Hynix Micron)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Seoul, Beijing agree to \u2018close communication\u2019 on Peninsula affairs: Cheong Wa Dae",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Memory: Up to 10% Share Reduction, CPO Adds New Optionality - Moomoo",
+      "source": "Google News (memory cycle peak)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "BYDFi Joins Coinfest Asia 2026, Connecting with Institutions, Builders and Traders in Bali",
+      "source": "Investing.com Asia Equities",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Pine64 halts all Linux hardware manufacturing through at least mid-2027 due to shortages \u2014 memory crunch forces open-source maker to freeze SBCs, tablets, and phones",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "iPhone 18 Pro series: Apple could raise prices, but would it hurt demand? - Business Standard",
+      "source": "Google News (Apple raises prices memory chip cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "This Stock Has Become Too Important to the AI Revolution to Ignore - AOL.ca",
+      "source": "Google News (hyperscaler 2027 CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Why Phones Are Getting More Expensive in 2026, and It Is Not the Brands - ProductNation",
+      "source": "Google News (Counterpoint smartphone shipment forecast)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Korean-Style 'Top 10' ETFs Make U.S. Market Debut - finance.biggo.com",
+      "source": "Google News (ChangXin Memory production)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Smartphone buyers feel the pinch as prices rise - The Times of India",
+      "source": "Google News (smartphone price hike memory cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Federal judge strikes down ATF 'ghost gun' rule for 3D printed parts \u2014 says restrictions violate Fifth Amendment and historical tradition of DIY gunsmithing",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Console modder builds working Switch 2 Joy-Cons inside original Wii Remote shells \u2014 motion-sensing controllers snap magnetically onto a Switch 2",
+      "source": "Tom's Hardware RAM",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "AI Semiconductor Battleground Shifts from Advanced Nodes to Packaging\u2026 130 Million GPUs and ASICs Over Five Years - finance.biggo.com",
+      "source": "Google News (Samsung memory HBM)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Thailand introduces privilege card to Koreans",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Memory Stocks Swing Wildly: Can AI and HBM Break the Traditional Cycle? - Moomoo",
+      "source": "Google News (memory cycle peak)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "AI Hardware Sparks Air Cargo Rush: Asia-North America Demand Posts Double-Digit Growth for Fifth Straight Month - finance.biggo.com",
+      "source": "Google News (DDR5 spot price)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Lee meets China\u2019s top diplomat amid Trump overtures to NK",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The National Pension Service plans to participate in the initial public offering (IPO) of Antropic w.. - \ub9e4\uc77c\uacbd\uc81c",
+      "source": "Google News (OpenAI public listing)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Fubon Hyundai Life swings to H1 profit on stronger earnings base",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "AI memory shortage could push car prices up to $60,000 - BurgasMedia",
+      "source": "Google News (PC laptop price increase memory shortage)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Advanced packaging shifts AI chip race as 130m accelerators ship, bottlenecks move - CHOSUNBIZ - Chosunbiz",
+      "source": "Google News (HBM AI bottleneck)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Dog meat restaurants seek damages over looming ban",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Is Yongsan Park a quick fix for Seoul\u2019s housing shortage?",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Why AI Squeeze Changes Everything For Consumer Tech Costs - streamlinefeed.co.ke",
+      "source": "Google News (Morgan Stanley memory semiconductor)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Korea's growth outlook keeps improving, but people aren't feeling it - The Korea Times",
+      "source": "Google News (Korea memory chip industry)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Why Gates\u2019 visit matters for Korea\u2019s SMR ambitions",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Hugel\u2019s Wellage lands at Sephora US",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "US Ambassador meets AmCham leaders in first business talks",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Paik\u2019s Coffee opens first two stores in Tokyo",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[Contribution] Building a safer digital order through global cooperation",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Stripe acquires OpenRouter for over $8 billion in major AI bet, boosting token optimization for businesses - ET CIO",
+      "source": "Google News (Artificial Analysis tokens per dollar)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Defense Minister shares N. Korea nuke estimate above Trump&apos;s",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "What is behind Trump&apos;s claim of &apos;57 North Korean nuclear weapons&apos;?",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "AI Memory Play DRAM ETF Is Up 90% Since Launch: A Huge Korea Risk Unraveled It Today - Stocktwits",
+      "source": "Google News (Samsung union strike)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Ram Mandir Construction Nears Completion Amid Technological Marvels - Devdiscourse",
+      "source": "Google News (Morgan Stanley memory semiconductor)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Korea considers hacking sites to stop illegal sexual content",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Daniel Han: Shrinking an AI Model 86% Doesn't Make It 86% Dumber - finance.biggo.com",
+      "source": "Google News (KV cache compression)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Homeplus sees no profit until 2029 under revised plan",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Woori completes Korean bank\u2019s first offshore bond settlement",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[Key Points] Lee backs Trump\u2019s North Korea outreach, supports scaling back drills",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "KakaoBank Union Plans Five-Day Strike - Businesskorea",
+      "source": "Google News (Samsung union strike)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Memory Price Storm Sweeps Smartphone Industry: Flagships Return to 8GB Era, OnePlus Raises Prices Five Times in Nine Months in India - finance.biggo.com",
+      "source": "Google News (smartphone price hike memory cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Kakao Games bets on \u2018Realm of Dokkaebi\u2019 for turnaround",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "\u2018We shall overcome someday\u2019",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[Photo News] Genesis takes luxury electric",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "2026 AI Cost Report: How AICC Data Shows Enterprises Slash Inference Costs by 80% Without Sacrificing Performance - Issuewire",
+      "source": "Google News (Artificial Analysis tokens per dollar)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Korean Air-Asiana unused miles top W4tr amid regulatory delay",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Some Analysts Just Cut Their Allianz SE (ETR:ALV) Estimates - simplywall.st",
+      "source": "Google News (Micron revenue EPS estimate cut)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "AI Memory Stocks Slide as U.S. Treasury Yields Spike - Seoul Economic Daily",
+      "source": "Google News (memory supercycle 2026)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Korean Won Firms to 1,397, Below 1,400 for First Time in 10 Months - Seoul Economic Daily",
+      "source": "Google News (memory supercycle 2026)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Korean textbooks moving beyond stereotypes of Africa: NGO",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "6 in 10 South Koreans back female conscription: poll",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Mom\u2019s Touch opens first Singapore store under FairPrice Group partnership",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Dongwha takes 129-year-old digestive remedy global with K.O.D",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Employer errors should not cost foreign workers their legal status: rights watchdog",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Seoul estimates N. Korea has &apos;80-120&apos; nukes: defense minister",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Euro Trading Pairs: What the USDT Detour Costs in Tax - CryptoTicker",
+      "source": "Google News (Artificial Analysis tokens per dollar)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Lee backs Trump\u2019s N. Korea outreach, even if it means cutting allied drills",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "LG CNS deploys robot security guard at Seoul luxury complex",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "92% of Koreans live in just 17% of the country",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Smartphone Price Shifts in India as Memory Chip Costs Rise - GuruFocus",
+      "source": "Google News (Apple raises prices memory chip cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Korean semiconductor sector projected to add 8,000 jobs in H2 - \ub9e4\uc77c\uacbd\uc81c",
+      "source": "Google News (Korea memory chip industry)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The Second Half of AI Commercialization: Shovel Sellers Are Thriving, Shovel Users Are Still Doing the Math - finance.biggo.com",
+      "source": "Google News (hyperscaler 2027 CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "744-Billion Parameter GLM-5.2 Model Runs on 25GB RAM Consumer Machine - Fenado AI",
+      "source": "Google News (INT4 quantization LLM inference)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Seoul shares open higher as US bond yields retreat",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Why the S&P 500\u2019s Path to 9,000 Runs Into Trouble in 2027 - Mitrade",
+      "source": "Google News (hyperscaler 2027 CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "iPhone 18 Pro Leaks: Price, Chip, Camera, Battery, 5 Ways It May Beat iPhone 17 Pro - Esquire India",
+      "source": "Google News (Apple raises prices memory chip cost)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "AI Workloads Reshaping the Memory Hierarchy - EE Times Asia",
+      "source": "Google News (KV cache compression inference)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Consumer Wearables Set To Generate More Than US$1 Trillion By 2032 - channelnews.com.au",
+      "source": "Google News (Counterpoint smartphone shipment forecast)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Lee says respects Trump&apos;s decision to promote dialogue with NK through scaled-back military exercises",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "KeyBanc reiterates Synopsys stock rating ahead of earnings By Investing.com - Investing.com South Africa",
+      "source": "Google News (SK Hynix earnings estimate revision)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Stampli cuts launch hours by 68% using ChatGPT Work",
+      "source": "OpenAI Blog",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "South Korea\u2019s rookie investors lose small fortunes amid AI stocks frenzy - Al Jazeera",
+      "source": "Google News (Korea memory chip industry)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "South Korean container ship will test Arctic route to Europe amid Western concern",
+      "source": "Korea Herald Business",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Big Tech Embarks on 'Memory Diet' as AI Memory Costs Surge - finance.biggo.com",
+      "source": "Google News (Samsung memory HBM)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Trump says he will meet Kim Jong-un this year, puts North Korea&apos;s nukes at 57",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[Graphic News] Foreign tourists explore Seoul\u2019s markets, hiking trails",
+      "source": "Korea Herald National",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "South Korea's Semiconductor Jobs to Top 160,000 in H2 on 8,000-Person Gain; Textiles to Shed 5,000 - finance.biggo.com",
+      "source": "Google News (Korea memory chip industry)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "The Memory Supercycle Just Changed Albania (Vpt78rfEhW) - Mshale",
+      "source": "Google News (memory supercycle 2026)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "US Lead in the AI Race With China Is Rapidly Narrowing - Bloomberg.com",
+      "source": "Google News (Artificial Analysis tokens per dollar)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Major domestic listed companies are expected to continue their all-time earnings growth in the third.. - \ub9e4\uc77c\uacbd\uc81c",
+      "source": "Google News (DRAM NAND price increase device makers)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Are You Sure You Want a Car With a Giant Touch Screen? - The Atlantic",
+      "source": "Google News (PC laptop price increase memory shortage)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Tech Stock Correction Signals \u2018Speed Bump,\u2019 Not End To AI Investment Boom, Says Merrill\u2019s Hyzy - TradingView",
+      "source": "Google News (hyperscaler 2027 CapEx)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "xETFs Launches KSMH to Provide Targeted Exposure to Korea\u2019s AI Semiconductor Ecosystem - FF News",
+      "source": "Google News (Korea memory chip industry)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Top Go player to take on KataGo in biggest human\u2011AI showdown since AlphaGo",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Kayne Anderson expects capital inflows to US alternative real estate sectors to accelerate",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "For global property investors, real test comes after acquisition: executing business plan",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Chungho Nais sale faces fresh questions amid Carlyle talks",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Korean shipbuilders sweep up LNG, ammonia orders as energy demand holds firm",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Partners Group eyes special opportunities, royalties to outplay market swings",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "South Korean stock market value tops $4.1 trillion, nearly tripling in a year",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Hyundai Motor profit falls 30% as Middle East disruption, US tariffs bite",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Reactor refurbishments to drive near-term nuclear growth: Candu Energy",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "New BOK chief maps out cautious policy stance, wider financial stability role",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "South Korean ETF issuers in space race to ride SpaceX IPO buzz",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "BOK holds fire amid Iran war uncertainty; outgoing Gov. Rhee expects won\u2019s swift relief",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "European structured credit beckons Korean investors with potential for higher returns, defense: M&G Investments",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Asset-heavy, cash-flow-backed investments gain appeal in lower-return world, Principal Asset Management CEO says",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Iran names S.Korea-built UAE nuclear plant among potential targets",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "No career ambition, no ego: AI plays devil's advocate at Audax Private Equity",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "EuBiologics partners with Korea's health agency to develop Nipah virus vaccine candidate",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "South Korea to import 6 million barrels of UAE crude to curb fuel price surge",
+      "source": "KED Global (Korea Economic Daily English)",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[News] Apple Price Hikes Erode Neo\u2019s Cost Edge as Xbox Cites 2.5x Memory Surge for New Increase",
+      "source": "TrendForce",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[News] Qualcomm Reportedly Plans China AI Chip Push With Export-Control-Compliant Custom Chips",
+      "source": "TrendForce",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[Insights] Memory Spot Price Update: DRAM Spot Prices See Gains in Low-Density DDR4 and DDR3 Amid Sideways Market",
+      "source": "TrendForce",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "[News] Lenovo Reportedly Sees Higher Memory Prices Becoming the New Normal Into 2030",
+      "source": "TrendForce",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "China\u2019s Humanoid Robot Market to Reach CNY 15 Billion in 2026 as Commercial Validation Begins, Says TrendForce",
+      "source": "TrendForce Press Center",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "Liquid Cooling Becomes Standard for High-End AI Infrastructure, with Penetration Expected to Reach 53% in 2026, Says TrendForce",
+      "source": "TrendForce Press Center",
+      "score": 0,
+      "reason": "no keyword match"
+    },
+    {
+      "title": "ASSBs Enter Engineering Validation Phase as Japanese, Korean, and Chinese Suppliers Accelerating Auto Testing and Broaden beyond Auto to New Frontiers, Says TrendForce",
+      "source": "TrendForce Press Center",
+      "score": 0,
+      "reason": "no keyword match"
+    }
+  ]
+}

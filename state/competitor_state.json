@@ -3,12 +3,12 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-08-20T07:28:27Z",
+    "last_aggregator_run": "2026-08-21T07:33:31Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
     "current_status": "Fired",
-    "status_evaluated_at": "2026-08-20",
+    "status_evaluated_at": "2026-08-21",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 22.0,
     "current_state": {
@@ -21,7 +21,8 @@
         "Apple",
         "PC memory (DDR5)",
         "Apple (memory qualification)",
-        "Apple iPhone and MacBook"
+        "Apple iPhone and MacBook",
+        "Gigabyte"
       ],
       "cxmt_oem_lowend_wins": [],
       "cxmt_ddr5_share_pct": 2.0,
@@ -44,7 +45,7 @@
   },
   "sub_7b_samsung_hbm4": {
     "current_status": "Partially fired",
-    "status_evaluated_at": "2026-08-20",
+    "status_evaluated_at": "2026-08-21",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 10.0,
     "current_state": {
@@ -71,7 +72,7 @@
   },
   "sub_7c_micron": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-20",
+    "status_evaluated_at": "2026-08-21",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.5,
     "current_state": {
@@ -90,7 +91,7 @@
   },
   "sub_7d_hbf": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-20",
+    "status_evaluated_at": "2026-08-21",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.0,
     "current_state": {
@@ -148,7 +149,8 @@
         "SanDisk guided mid- to high-teen revenue growth and 75% OP margin for FY2028-30",
         "SanDisk tapes out first HBF memory die, targets 2027 for inference product samples"
       ],
-      "sk_hynix_solidigm_hbf_integration": true
+      "sk_hynix_solidigm_hbf_integration": true,
+      "hbf_hot_tier_displacement": true
     },
     "evidence_log": [
       {

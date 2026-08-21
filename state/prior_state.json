@@ -1,44 +1,35 @@
 {
-  "saved_at_iso": "2026-08-20T07:47:04.748793+00:00",
+  "saved_at_iso": "2026-08-21T07:57:23.666967+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
     "tier_status_summary": "T1: 4/6 fired (1 partial) | T2: 7/7 fired | T3: 1/5 fired (1 partial) | T4: 0/4 fired",
-    "new_triggers_today": [
-      {
-        "tier": 3,
-        "indicator_id": "t3_relative_strength",
-        "indicator_name": "Memory pure-plays underperform the market (S&P 500)",
-        "old_status": "Fired",
-        "new_status": "Not fired",
-        "description": "the model computed metrics show recovery in 5-day relative strength for both names. SK Hynix moved from underperformance to +17.83pp outperformance vs SPX on 5-day window. Micron at +8.79pp on 5-day. The sticky-release latch (which requires 5 consecutive sessions above -5pp to unfire) is now satisfied by today's \u2026"
-      }
-    ],
+    "new_triggers_today": [],
     "base_case": {
       "probability_pct": 50.0,
       "peak_months_away": 8.8,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q3 2027",
-      "return_to_peak_pct": -26.63660555884091
+      "return_to_peak_pct": -28.290462427745656
     },
     "bull_case": {
       "probability_pct": 25.0,
       "peak_months_away": 17.8,
       "peak_window_start": "Q4 2027",
       "peak_window_end": "Q2 2028",
-      "return_to_peak_pct": -13.690124186871678
+      "return_to_peak_pct": -15.635838150289016
     },
     "bear_case": {
       "probability_pct": 25.0,
       "peak_months_away": 5.8,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -39.583086930810175
+      "return_to_peak_pct": -40.945086705202314
     },
-    "delta_from_prior_text": "Indicator distribution shifted vs prior: t3_relative_strength moved Not fired \u2192 Not fired (already Not fired in prior state per yesterday's brief; today's transition log confirms the reversion was logged at 08:29 UTC on 2026-08-19 and carries forward). T3 fired count moves from 1/5 to 0/5 (the partial remains). Applied Rule B (Tier 3 unfires): bear -5pp, bull +3pp, base extends ~1-2mo. Bear return_to_peak_pct calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); with T4 still at 0/4 fired and T3 now 0/5, bear band is 'Any T3 fired' \u2192 -40 to -50%, anchored at -45%. Bull probability nudged +2pp on the relative-strength recovery. Base trough window unchanged at Q1-Q3 2027.",
+    "delta_from_prior_text": "Indicator distribution unchanged vs prior: 4/6 T1 fired (1 partial), 7/7 T2 fired, 0/5 T3 fired (1 partial), 0/4 T4 fired. No probability recalculation required \u2014 zero status changes. Bear case return_to_peak_pct held at -45% (calibrated to historical average drawdown: -43% mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough; Any T3 fired band: -40 to -50%). Base case trough window unchanged at Q1-Q3 2027.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "Relative strength (t3) reverted to 'Not fired' as SK Hynix surged +12.73% and Samsung +9.49% today [\u2192\u00a71], driving 5-day spreads vs the S&P 500 back above the -5pp sticky-release threshold and satisfying the five-session latch condition [\u2192\u00a73]. The catalyst is SK Hynix's announcement of a 40 trillion won (~$29B) share buyback and cancellation program \u2014 the largest in Korean corporate history \u2014 paired with a tentative union wage agreement (6.3% raise, 60% stock-based bonus) that removes near-term labor disruption risk [\u2192\u00a75]. Samsung's +9.49% move accompanies reports of a 15% foundry price hike on new AI-driven orders, a directional confirmation of pricing power that supports the t1_spot_decline 'Not fired' read [\u2192\u00a73]. The broader semi tape diverged sharply: Broadcom -4.61%, AMAT -3.53%, Intel -4.02% \u2014 equipment and non-memory names sold off while memory pure-plays outperformed, a split tape that is market-driven rather than memory-specific [\u2192\u00a74]. CXMT's DDR5 validation at 8200MT/s on Gigabyte motherboards is a competitive milestone worth tracking for commodity DRAM pricing pressure over the next 3-9 months [\u2192\u00a74]. The Phase 5 decline thesis remains intact: T2 is fully fired (7/7), the cycle peak at 2,919,000 KRW is confirmed behind us at -42% drawdown, and today's buyback-driven rally is consistent with late-cycle capital return behavior, not a cycle reversal."
+    "executive_brief": "No tier-1-through-5 signals fired or unfired today; the indicator distribution is unchanged from yesterday's brief [\u2192\u00a73]. The most material development is Applied Materials' Q3 2026 print: DRAM revenue +52% YoY to a record, advanced packaging guiding >70% growth in 2026, and customers now providing 8-quarter rolling forecasts \u2014 corroborating the latched t2_capex_parabolic signal and reinforcing that the supply build-out is accelerating into 2027-28, not plateauing [\u2192\u00a74]. Micron's QoQ transcript diff adds a bearish undertone: FY2027 capex guided above mid-40% increase with a $10B quarterly run-rate, while OEM-inventory and supplier-inventory language was dropped entirely \u2014 consistent with Phase 5 dynamics where makers keep building even as demand signals soften [\u2192\u00a74]. On the competitive overlay, CXMT's IPO shares have surged 565% since July and a court hearing confirmed the firm planned to use stolen Samsung IP to accelerate DDR5 development; near-term (1-3 month) commodity spot pricing pressure on Samsung and SK Hynix is the transmission [\u2192\u00a74]. SK Hynix announced a \u20a940 trillion (~$29B) buyback and a tentative wage deal with its union, removing a near-term strike risk; Barclays cut its price target while reiterating Overweight, and JPMorgan recommended accumulation \u2014 the first sell-side price-target cut is directional confirmation of t2_eps_revisions [\u2192\u00a73]. Memory pure-plays outperformed the broad market on the 5-day window (SK Hynix +13.82pp, Micron +4.60pp vs S&P 500), keeping t3_relative_strength at Not fired [\u2192\u00a73]."
   },
   "indicator_assessments": [
     {
@@ -94,23 +85,23 @@
       "description": "Algorithmic or architectural improvement reducing memory-per-token by >2x. TurboQuant-class shocks. The cycle-breaking risk.",
       "what_to_look_for": "Major announcement from Google / OpenAI / Anthropic / Meta / DeepSeek / Mistral. Specific phrases: 'KV cache compression', 'inference efficiency 2x+', 'memory footprint reduction', 'quantization breakthrough'. Source must be official lab blog, arXiv, or 3+ mainstream tech publications within 48 hours.",
       "current_status": "Fired",
-      "where_we_stand": "Fired on two independent primary-lab events. Google TurboQuant (Mar 24, 2026): 6x KV-cache compression, 8x speedup on H100 \u2014 permanent literature record. OpenAI GPT-5.6 Sol Ultrafast (Aug 13, 2026): up to 14x inference speed improvement, published on official OpenAI blog, exceeding the >2x multiplier threshold. Cerebras Q2 call (Aug 13)\u2026",
-      "latest_developments": "OpenAI Blog (Aug 13) announced GPT-5.6 Sol Ultrafast at up to 14x speed \u2014 a new primary-lab confirmation independent of TurboQuant. Cerebras earnings call confirmed SRAM disaggregated inference at 5x throughput with no HBM dependency.",
+      "where_we_stand": "Fired since Google TurboQuant (March 24, 2026): 6x KV-cache compression, 8x speedup on H100 \u2014 a permanent algorithmic entry in the literature. Today's feed adds Anthropic's $250M pre-revenue contract with Fractile for custom inference silicon, signaling continued investment in non-HBM inference architectures. Nvidia's reported Rubin Ultra HBM reduction is a\u2026",
+      "latest_developments": "Anthropic committed $250M to Fractile for custom inference silicon before revenue; Nvidia cutting Rubin Ultra HBM allocation. Both developments are directional confirmation that efficiency-driven memory footprint reduction is transmitting into hardware design decisions.",
       "relevant_links": [
         {
-          "title": "OpenAI: Previewing Ultrafast mode \u2014 GPT-5.6 Sol at up to 14X the speed",
-          "url": "https://openai.com/index/previewing-ultrafast"
+          "title": "Anthropic $250M Fractile custom silicon contract",
+          "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxNc3ltVTVfb2x3UTZOV0E4RjFoTzBHT0tsejZYVVV4UTI5QzVpZGdMektWUEhrdHFCZ0pDTUNRWFhLU0R3TXBZbm9YeTJJcU0xY09Md3dmcUJBNFUwZW96RWxoX2hwMmpjLTczZGFBV1BXUkZUZkZ2MnhxUndaQ3E1VTVRV3Z4N2FBZFd0VXZlWEdVbHZMUmwtM0Z3UUtrbnJ3d2dJMDZ6Z3A5T01iYzZnUzBkU2JfT0VSUzRGWmo2UUlrUHZLdW1PRkdOWnc"
         },
         {
-          "title": "Cerebras Q2 2026 earnings call",
-          "url": "https://finance.yahoo.com/quote/CBRS/earnings/CBRS-Q2-2026-earnings_call-686677.html"
+          "title": "Nvidia cutting Rubin Ultra HBM \u2014 Micron HBM demand at risk",
+          "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPZFpSbF9hNXIwbHM2enBqVFN5eDFIWmRpYndvQWRrV011ck4tanZzai1YTEliSE10aEMxXzEtVTlDZkhsNjZnVThVRnZJZjJSMGtEbDAxMGN3RURQdW0tY2MyWjNrTmI1WDU1ejkzVHpkbDVlcl9SZ2FlQWJwX2duTXFEZw"
         },
         {
-          "title": "SanDisk: KV cache driving 35% of AI data center NAND workloads by 2030",
-          "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTFBTN05IOXhkRnZvbkh5TDNEMkNKNzhKSXZFMVY4YXYxQW5wSE56alppUm5LNmhTTHNvSFVLNE9JekJIY1d5dmE2cS1jMHY3cTg4aU9RR2N1Ym9GLWF3aDRmM2MzaEoyaWd4ZExoR0pRWWczcjA"
+          "title": "Applied Materials Q3 2026 earnings transcript",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/20/applied-materials-amat-q3-2026-earnings-call-transcript/"
         }
       ],
-      "change_vs_prior": "Status unchanged at Fired. New corroborating evidence: OpenAI GPT-5.6 Sol Ultrafast (14x speedup, Aug 13) adds a second independent primary-lab confirmation alongside Google TurboQuant. Signal strength increases; no reversal condition met."
+      "change_vs_prior": null
     },
     {
       "id": "t1_lead_times",
@@ -182,7 +173,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $53.60 (2026-08-20 print). Matrix basis (weekly means): current wk $53.08, +0.00% vs rolling 12w wk-peak $53.08 (wk ending 2026-08-23). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 142d old). Synthetic adjusted: 62.8% central (range 60-65%). Adjustments: tone +3.3pp (10 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $54.10 (2026-08-21 print). Matrix basis (weekly means): current wk $53.29, +0.00% vs rolling 12w wk-peak $53.29 (wk ending 2026-08-23). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 143d old). Synthetic adjusted: 62.8% central (range 60-65%). Adjustments: tone +3.3pp (10 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "TrendForce Aug 19 spot print: DDR5 16Gb $53.27, +1.01% on the day. Spot at rolling 12-week peak \u2014 no drawdown. Matrix remains Not fired at R1\u00d7C1.",
       "relevant_links": [
         {
@@ -216,20 +207,20 @@
       "description": "Memory makers' and hyperscalers' CapEx growing parabolic \u2014 building 2027-28 supply glut. ALREADY FIRED on aggregate. v3.44.0: LATCHED \u2014 this signal ratchets up only and never reverts.",
       "what_to_look_for": "Big Three combined CapEx >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B (fired). 2027-guidance direction is CONTEXT for this card, never a reversal condition: above-2026 guidance is bull-confirm color; flat/down guidance is the t3_capex_plateau signal's event and can NEVER move this signal down. LATCH RULE (v3.44.0, Raul Jul-31: 'once triggered it triggered'): once Fired, this signal STAYS Fired \u2014 the parabola is a historical fact; the eventual stop and decline of CapEx growth is later-stage progression told by the plateau and Tier 4 signals, not a de-risking of this one. FORBIDDEN COUNTEREXAMPLE (2026-07-31): this signal was downgraded Fired \u2192 Partially fired because Microsoft guided FY27 flat and Meta withheld 2027 \u2014 exactly the forbidden move. Status is deterministically ratcheted after every run: any Layer 2 or Layer 3 output below the prior status is overwritten.",
       "current_status": "Fired",
-      "where_we_stand": "Latched Fired since January 15, 2026 ($725B hyperscaler 2026 aggregate + memory-maker splurge). Today's evidence deepens the parabolic case on two fronts: (1) NVIDIA-backed $105B financing for OpenAI's Ohio data center \u2014 the largest single AI infrastructure commitment on record, extending the demand chain into 2027-28; (2) SK Hynix $38B new fab approval (no output before December 2028), with Micron's Q3 transcript raising FY2027 capex guidance to above mid-40% increase at a $10B quarterly run rate. Applied Materials Q2\u2192Q3 transcript escalated semiconductor equipment growth guidance from >30% to 'another strong\u2026",
-      "latest_developments": "NVIDIA/OpenAI $105B Ohio data-center financing (CNBC, Aug 17) and SK Hynix $38B fab approval (Dec 2028 production) add to the parabolic evidence base. Micron Q3 call raised FY2027 capex to above mid-40% increase, $10B quarterly\u2026",
+      "where_we_stand": "Latched Fired since January 2026. Applied Materials Q3 2026 (Aug 20) is the most material fresh corroboration: DRAM revenue +52% YoY to a record, advanced packaging guiding >70% growth in 2026, and customers now providing 8-quarter rolling forecasts \u2014 the longest forward visibility disclosed this cycle. Micron's QoQ transcript diff shows FY2027 capex guided above mid-40% increase with a $10B quarterly run-rate (up from 40%+ prior). Samsung breaking ground on a KRW 6T Onyang HBM fab in September with a P5 triple-fab shift adds a third simultaneous supply build. Aggregate\u2026",
+      "latest_developments": "Applied Materials Q3: DRAM +52% YoY record, advanced packaging +70% 2026 guidance, 8-quarter customer visibility. Micron FY2027 capex run-rate $10B/quarter. Samsung KRW 6T Onyang HBM fab groundbreaking September 2026. All three confirm the parabola is\u2026",
       "relevant_links": [
         {
-          "title": "NVIDIA backs $105B OpenAI Ohio data center (CNBC)",
-          "url": "https://www.cnbc.com/2026/08/17/nvidia-financing-open-ai-data-center-ohio.html"
+          "title": "Applied Materials Q3 2026 earnings transcript",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/20/applied-materials-amat-q3-2026-earnings-call-transcript/"
         },
         {
-          "title": "SK Hynix $38B fab approval (AOL)",
-          "url": "https://news.google.com/rss/articles/CBMifEFVV95cUxNRVFNY0FsbHQwazZqRUxpMjNPM19RWHlRbGVWTEpkNFRBYmJmbTdha2xYU0ltMFV4M3ljRVlRZFJoM3hqc1VNNUhOa0E0Qk80bEdHeEZDbWFSSmljRERFUU1KNW5hS040UlRJV2hUMEJEXzEzME8wUnVlZ2dEaHc"
+          "title": "Samsung KRW 6T Onyang HBM fab groundbreaking",
+          "url": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxOYlV3aDJodDdfTjF0dVpEUTljZW91bmNRVXBVUG1GWFdYc20ybC1mYWtaVGFrVTdNS1lBcnRTczc3MVlYSXpuMnFLOTItcEs3YUhydEI1OVZUazRQNG1yY2RtbjN4VjRud2dNcHFVckx4MzJ2M2dyYzVaWVNVSTRWWm9iVWNjOVZnV0YwNVRoV3NmaXZkSTU4V2dQbWJHSzg2NGg0WC1Cc3pMT2ZYMWU1QXlDN2VZZFZ5ZWVpZm0waGdhZ0pxNEsyLWZiN2lkVWdOY2F0WlluUHRreTNvaVNZeDZUZEFTM3RmT2p3"
         },
         {
-          "title": "Morgan Stanley: Hyperscaler AI Capex +57% in 2027",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5DcjVKeTlOSU1MUW9SX1Bici1LWGZZV2JrVGlGbTdwbndsb1hoU0xmQVRvVEVXNURJUTktZXNtV0hNWXhyRGpodHlGamQyYlJuQjBPcENkdkF5N3V1dnB3eUlwdHo5RXlsZ00zQWhCbG5NWEw1Tnc"
+          "title": "Micron $10B AI memory research lab announcement",
+          "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTE0yN3VQLTBhaGFBTF9KTEIxdW5YbEFEaDgyajVVRi16WnF2Q2dDOXB3cXVPTVk5UW5vREJtWEdXSWpJSF80ZC1CTFBld2VVY3E3dUxlSjdUSDZHQ0NzZnVYeE9fRU8zaHh3LTN0NW9RMGJxU2g2T0Nndl84V08"
         }
       ],
       "change_vs_prior": null
@@ -325,23 +316,15 @@
       "description": "Forward P/E compresses on PEAK earnings denominator \u2014 bearish, not bullish.",
       "what_to_look_for": "SK Hynix forward FY27 P/E below 5x. Micron below 8x. Samsung below 6x. Thresholds only \u2014 today's computed values render on the card with their dates (v3.41.16: spec text carries no point-in-time numbers).",
       "current_status": "Fired",
-      "where_we_stand": "SK Hynix forward FY27 P/E: 3.61x (computed: 1,645,000 KRW price \u00f7 454,969 KRW FY+1 EPS est; Mirae Asset confirms 3.5x range in Aug 12-14 notes) \u2014 well below the 5x fire threshold. Samsung forward FY27 P/E: 4.09x (computed: 274,500 KRW \u00f7 67,174 KRW; Mirae confirms ~3.9x) \u2014 below the 6x\u2026",
-      "latest_developments": "Four Mirae Asset notes (Aug 12-14) confirm SK Hynix 12-month forward P/E at 3.5x and Samsung at ~3.9x. No EPS upgrades accompanied the maintained targets \u2014 compression is price-led. Stock down 51% from peak per\u2026",
+      "where_we_stand": "Fired. Last confirmed computation (2026-07-29): SK Hynix forward FY27 P/E 3.78x (threshold <5x \u2014 Fired); Samsung 4.18x (threshold <6x \u2014 Fired); Micron 6.26x (threshold <8x \u2014 Fired). Today's prices: SK Hynix 1,730,000 KRW (+2.31%), Micron $974.33 (+3.97%), Samsung 281,500 KRW (+3.87%). The price moves modestly expand the P/E denominators but\u2026",
+      "latest_developments": "No new P/E computation today. Analyst consensus (SK Hynix: 40 analysts, Fwd P/E 3.78x; Micron: 44 analysts, 6.26x; Samsung: 36 analysts, 4.18x) remains below all three thresholds. Status persists.",
       "relevant_links": [
         {
-          "title": "Mirae Asset: SK Hynix \u2014 Multiple uncertainties clearing at once (Aug 14)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342066"
-        },
-        {
-          "title": "Mirae Asset: SK Hynix \u2014 A series of landmark achievements (Aug 13)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341973"
-        },
-        {
-          "title": "Mirae Asset: Samsung Electronics \u2014 An opportune time to increase exposure (Aug 13)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2341972"
+          "title": "SK Hynix vs Micron valuation comparison",
+          "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNV2lLZHBTaGp0Z3hwLUpfcVFXaEJNNEJiNEtJMThGQ0dxQWZuSU9TSkVmekE4OHhrQUNfSEp2YlVxQVdYUmtTWXNzM2xIb1Z2R3R3Wm9IMW45YmRBTFIwSlVSV0tEQkdPdHlLaFdqbXlKcjBnQ2phOUJhNnB1WVhuVmFJckp5RFJCMlJ6YkNWZ0dVUzdPb25OcGxkSE81VkVwbHJjaTJCU1NBWmt2UExRZTZMckpKOFBWUFhSXzRyMUo"
         }
       ],
-      "change_vs_prior": "Status unchanged at Fired. SK Hynix P/E compressed further to 3.5-3.6x from 4.6x on Jul 29; Samsung at 3.9x vs 4.5x on Jul 29. Compression deepened on price decline, not estimate cuts \u2014 consistent with peak-denominator dynamic."
+      "change_vs_prior": null
     },
     {
       "id": "t2_spot_contract_spread",
@@ -367,16 +350,12 @@
       "description": "Hyperscalers keep spending at enormous scale but STOP ACCELERATING \u2014 next-period guidance lands flat vs the prior baseline. This is the 'infrastructure is built' moment: a peak-confirmation signal, distinct from CapEx acceleration (t2_capex_parabolic, boom fuel) and from CapEx cuts (Tier 4, bust confirmation).",
       "what_to_look_for": "SCORING MODEL (v3.45.0, deterministic via the guidance ledger): per company (MSFT, GOOGL, AMZN, META), latest print vs that company's OWN PRIOR FORWARD GUIDANCE \u2014 the signal is the SURPRISE, not the level. Points: RAISE >5% above prior guidance = -1 (accelerating). REITERATE/CONFIRM within \u00b15% = +1 (stable \u2014 merely confirming the number IS the event). CUT >5% = +2 (BEYOND plateau \u2014 'we are done'). Withheld forward guidance after previously guiding = 0 points + watch flag (does NOT count toward the plateau tally). No print this cycle = 0, 'awaiting print'. STATUS IS DECIDED BY COUNT ALONE (ruling 2026-08-08): N = companies at stable-or-cutting: 0 = Not fired; 1-2 = Partially fired; 3-4 = Fired. Raises can never veto the count floor; cuts can never jump the band \u2014 the score S is INTENSITY display only. HARD RULE \u2014 qualifiers cannot override numbers: growth language attached to a reiterated number does NOT disqualify the plateau (forbidden escape, 2026-07-31: 'guidance is AT baseline, not flat'). WORKED EXAMPLE (Aug-7 prints): Meta stable +1 (2026 $130-145B reiterated within \u00b15% of prior), Microsoft stable +1 (accounting basis change: FY27 $175B vs $190B prior is a finance-to-operating lease reclassification, investment unchanged \u2014 ruled 2026-08-08, NOT an economic cut), Amazon accelerating -1 ($220B raise), Alphabet accelerating -1 (2027 guided above 2026) -> N=2, S=0 -> Partially fired. ENUMERATION HARD RULE: where-we-stand MUST list all four companies every day with stance, points, and last print date \u2014 'awaiting print' when silent, never omitted. OUTPUT CONTRACT: when evidence contains a NEW forward-guidance number, emit exactly one line per company in the form LEDGER_UPDATE: <Company> | <PERIOD> | <low>-<high> | <event_date YYYY-MM-DD, the CALL date not the coverage date> | prior=<the company's own prior guidance in $B, when the call states it, e.g. 'up from about $200 billion' -> prior=200> | verb=<raised|cut|unchanged|reiterated|narrowed> | basis=<changed|same, 'changed' only for accounting-basis moves like finance->operating lease reclassification> | <source> \u2014 the deterministic ledger computes stance, count, score, and status from these; your prose never sets status; verbs corroborate, ARITHMETIC DECIDES. EVENT RULE (Amazon-echo counterexample, 2026-08-08): emit a LEDGER_UPDATE ONLY for a NEW guidance event \u2014 an earnings call or an official company revision. Coverage that restates a known print (a September article saying 'Amazon has committed $220B') is NOT a new event and must NOT be emitted; the ledger will reject non-call-dated updates. BASIS COUNTEREXAMPLE (Microsoft, Jul-29-26): '$175B, expectations remain unchanged, finance->operating lease shift' is an accounting reclassification \u2014 emit with prior=190 | verb=unchanged | basis=changed; it is NOT an economic cut. Other rules unchanged: NOT CapEx cutting as a de-risk \u2014 dollars remain enormous, the SIGNAL is the growth-rate surprise reaching zero; contrarian-direction ('we are done building \u2014 thanks Nvidia, Micron, SK Hynix'), never good news; a company leaves the tally only by re-ACCELERATING >10% above its prior guidance on a subsequent print; deep hyperscaler cuts also feed Tier 4 context but this signal persists.",
       "current_status": "Partially fired",
-      "where_we_stand": "Guidance ledger as of today \u2014 all four companies enumerated per hard rule: \u2022 Microsoft: stable [+1] | FY27 $175B | print 2026-08-07 | accounting basis change (finance\u2192operating lease reclassification), investment unchanged; ruled stable. -7.9% vs prior $190B. \u2022 Meta: stable [+1] | CY2026 $137.5B | print 2026-08-07 | +1.9%\u2026",
-      "latest_developments": "No new hyperscaler earnings call or capex revision today. Applied Materials Q3 call added 'customers giving us longer-term commitments and rolling eight-quarter forecasts' \u2014 corroborates Amazon/Alphabet acceleration stance.",
+      "where_we_stand": "Partially fired. Guidance ledger as of today \u2014 all four companies enumerated: \u2022 Microsoft: stable [+1] \u2014 FY27 $175B (accounting reclassification finance\u2192operating lease, investment unchanged; ruled stable 2026-08-08), last print 2026-08-07. \u2022 Meta: stable [+1] \u2014 CY2026 $137.5B reiterated within \u00b15% of prior (+1.9%), last print 2026-08-07. Watch flag: withheld\u2026",
+      "latest_developments": "No new hyperscaler guidance events today. Applied Materials' 8-quarter customer visibility and DRAM +52% YoY corroborate sustained capex deployment but do not alter the ledger. Status Partially fired (N=2) persists pending Q3 earnings cycle.",
       "relevant_links": [
         {
-          "title": "Applied Materials Q3 transcript (AMAT earnings)",
-          "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxNaVI2bWFLTjlEdTRaYTlxckN4RkNZYlhXQWE4UXpHZklibzZhb29OVVNyaklGYlJDY1pOa04waEZxUzBKNmFacF9aNVVuOF8zejFxc09aZlJObG15aDY1RFBVdHRBYkJJSFFpS3BScmVNUVVwbjJrMkloSGx0YjlXN2dKY3Q1eV9FWkRBTjZOdEJDVTRpRU9Oc045UVVZaGo5dklleDRvdW1xWVVvOExwLWcxcGhMbkpOSUxUbQ"
-        },
-        {
-          "title": "Samsung/SK Hynix 1H26 capex +35% (TrendForce)",
-          "url": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxONzNRc2VHdFVJaWUwS1ZrQks5MWhDU0hUcGVURmZGQkk0OU90Xzc3TXJCdEFuNGxsN0tPbE9WQXdaekhCOVFJUlhuc2licnNiaHFvSklWdmFMdE1sNWg4RzRtRm9pLUdQNC04VGtJYU5lRmJxUElkczU1YlN4ejMtcFBJcjhzZzhCLWFOQWxBMk5pQ0hwYWNFZGlhd1B6WG9iRjZjRDZUWVZZRTJYQnVRZi1oc1lWcWFUMU5DSS1LRURhempJVjl0VEEweUVzMmY1TXBYdjNHNnpYLXZnd1N3"
+          "title": "Applied Materials Q3 2026 earnings \u2014 hyperscaler capex corroboration",
+          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/20/applied-materials-amat-q3-2026-earnings-call-transcript/"
         }
       ],
       "change_vs_prior": null
