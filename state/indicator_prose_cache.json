@@ -49,30 +49,30 @@
       "evidence_count": 1
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-08-21",
+      "last_full_regen_date": "2026-08-22",
       "current_status": "Fired",
-      "where_we_stand": "Fired since Google TurboQuant (March 24, 2026): 6x KV-cache compression, 8x speedup on H100 \u2014 a permanent algorithmic entry in the literature. Today's feed adds Anthropic's $250M pre-revenue contract with Fractile for custom inference silicon, signaling continued investment in non-HBM inference architectures. Nvidia's reported Rubin Ultra HBM reduction is a\u2026",
-      "latest_developments": "Anthropic committed $250M to Fractile for custom inference silicon before revenue; Nvidia cutting Rubin Ultra HBM allocation. Both developments are directional confirmation that efficiency-driven memory footprint reduction is transmitting into hardware design decisions.",
+      "where_we_stand": "Fired since 2026-03-24 (Google TurboQuant: 6x KV-cache compression, 8x speedup \u2014 permanent literature record). Today's feed adds three corroborating items: vLLM disaggregated serving delivering 2.5x higher goodput on identical hardware; GLM-5.3 MoE achieving 6x efficiency gains; NVIDIA linear-math KV-cache compression reducing memory bandwidth demand. None of these reverse the March\u2026",
+      "latest_developments": "vLLM 2.5x goodput improvement, GLM-5.3 6x MoE gains, and NVIDIA KV-cache linear-math work all published this cycle \u2014 corroborating the efficiency-shock thesis without altering the Fired status set on the March 24 TurboQuant anchor.",
       "relevant_links": [
         {
-          "title": "Anthropic $250M Fractile custom silicon contract",
-          "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxNc3ltVTVfb2x3UTZOV0E4RjFoTzBHT0tsejZYVVV4UTI5QzVpZGdMektWUEhrdHFCZ0pDTUNRWFhLU0R3TXBZbm9YeTJJcU0xY09Md3dmcUJBNFUwZW96RWxoX2hwMmpjLTczZGFBV1BXUkZUZkZ2MnhxUndaQ3E1VTVRV3Z4N2FBZFd0VXZlWEdVbHZMUmwtM0Z3UUtrbnJ3d2dJMDZ6Z3A5T01iYzZnUzBkU2JfT0VSUzRGWmo2UUlrUHZLdW1PRkdOWnc"
+          "title": "vLLM Disaggregated Serving \u2014 2.5x Goodput",
+          "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxPbmxLcVEySjFhdXNlekNGMFgwZWF4ZTZLRk13akp0em44ZkYyOFFZS2xvMmFBOTk3aGxyN3d3Y1Z1OGpyWXFlM3M4djZNOVZQand3cF91OVhvbGI0SXNKN2RWRnc2STZ4alFMV1R6aUlBM09RWWdRSkRTY2N1by1BLURXUUhUWTZ5aTNSd25LRVI0MmFaSWV2UFFTbXNWTi12OWI4QlhGMHM2WkM3OEQ2WWhsVmZDdXI1a2ctYkl5dGk?oc=5"
         },
         {
-          "title": "Nvidia cutting Rubin Ultra HBM \u2014 Micron HBM demand at risk",
-          "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPZFpSbF9hNXIwbHM2enBqVFN5eDFIWmRpYndvQWRrV011ck4tanZzai1YTEliSE10aEMxXzEtVTlDZkhsNjZnVThVRnZJZjJSMGtEbDAxMGN3RURQdW0tY2MyWjNrTmI1WDU1ejkzVHpkbDVlcl9SZ2FlQWJwX2duTXFEZw"
+          "title": "NVIDIA Linear-Math KV Cache Compression",
+          "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxNeU8xWkZyeV8xejRGYlduVVNhVE1jM3RVS1ZQLTBQbHB3WFVHaXpLT21wakdubWVwQnZnYS1fQU5EVmRTZ1dwVE1xSVpORWUtTlM4cXRCcjJKTVdfRkZsOU5DVnc5WnAwdlZoTXgxOTJsZkQ0WkxZOWg2b29YU2RMX2gzWVdHMUdOU2drTFRkamV4MHA2WDhpVU9qcFlWaHZ6eFMwY3BLNEA1UmJZ?oc=5"
         },
         {
-          "title": "Applied Materials Q3 2026 earnings transcript",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/20/applied-materials-amat-q3-2026-earnings-call-transcript/"
+          "title": "SK Hynix CPO Roadmap \u2014 Beyond HBM to AI Infrastructure",
+          "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTFBCYllMUmwzMUl2RzdfU1ZzS3k4TlJGWUdwMkRrREVyRmt4Mll2eWxxWkFic2FVcDhjSFZ2RTlBX2JzMWNuSGpVbllOUXZIWTlwNS1BMTJ5MTNjeUVJQ2hhTQ?oc=5"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-21",
+      "updated_date": "2026-08-22",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 0
+      "evidence_count": 5
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-08-17",
@@ -203,30 +203,30 @@
       "evidence_count": 2
     },
     "t2_eps_revisions": {
-      "last_full_regen_date": "2026-08-15",
+      "last_full_regen_date": "2026-08-22",
       "current_status": "Fired",
-      "where_we_stand": "Rolling 30-day net score: -29.5 (bearish -32.5 vs bullish +3.0). Signal fired since 2026-08-08 on sustained downward revision pressure anchored by Mirae Asset's -33% PT cut on 2026-07-29. Today introduces the first structural split in the consensus: New Street Research upgraded Micron to Buy arguing memory is no longer cyclical (bullish +3.0 contribution), while a separate analyst downgraded MU citing 'next AI bottleneck 2026.' SK Hynix 30d revision count: Up30d=11, Down30d=11 \u2014 exactly balanced, a notable deterioration from the prior all-up consensus. Micron: Up30d=30, Down30d=0 \u2014 still net positive but\u2026",
-      "latest_developments": "New Street Research upgraded MU to Buy (memory no longer cyclical thesis); a separate analyst downgraded MU on 'HBM bottleneck 2026' framing \u2014 first two-sided sell-side action on Micron in this cycle. SK Hynix Up30d/Down30d\u2026",
+      "where_we_stand": "Fired. Rolling 30-day net EPS revision score for SK Hynix: -25.0 (bearish -28 vs bullish +3), above the net-negative threshold. Mirae Asset Securities cut SK Hynix target -33% (\u20a94.2M \u2192 \u20a92.8M) on 2026-07-29 \u2014 the qualifying single-broker >-10% cut. Today adds three new broker actions: Goldman Sachs doubled Micron's price target but held Neutral (bullish on level, neutral on direction \u2014 does NOT reduce the net-negative score); Zacks downgraded MU to Hold (adds a down-revision to the Micron tally); Barclays cut SK Hynix SKHY target while reiterating Overweight (a cut\u2026",
+      "latest_developments": "Goldman Sachs doubled Micron target (Neutral maintained); Zacks downgraded MU to Hold; Barclays cut SK Hynix SKHY target (Overweight reiterated). First multi-broker divergence on Micron in the current cycle \u2014 directional confirmation of the net-negative\u2026",
       "relevant_links": [
         {
-          "title": "New Street upgrades Micron to Buy \u2014 memory no longer cyclical",
-          "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxPclRoOWNwVWQ4Mm1VaHJ6UGNXRGtFUzh1ZGJJeURVRXRMLXBpaTNxTG1sN3VFRk9sR3hSTVpPRTFXZGRCcEVPTVdjenBXX0VkMkstbWpHV3JELUtLakRtUTNwdk5qVndZTHJ2RGhvUmg1YTJ4NTVMRTdhQVFkY1Z1OTZyR0laNndxeC15NHJ6S3Y0SThyallUcll1UVlyUk9ZNXl4WHB6dGxWTTVIR1VnTDRJVzItcHNmZHB1ZDVaTVd5Y3l2MllGWFhyRjZSQjJKR1oyRw"
+          "title": "Goldman Sachs doubles MU target, keeps Neutral",
+          "url": "https://news.google.com/rss/articles/CBMi6gFBVV95cUxQZE5Xc2x6d0V2NHlyZWRyMnpSc2dsbFhwU3ZJTF9qY1dmdzRqWjh2NlVLMDlPSDFwOXdMa2FySldBVFZQNnBOU3lpbFNLYU1RV1ZWeWRiZE9kdGtIcU5XbENLem8zRG1WNU1ySjFIT0F3czhVZzRWYUdlZ3RlTl9adS1JMkt6YjNKNFA1Nm5qZDYtRlVCYzhsSXd5MGlJMnV5dGQ4dEoxM1BtV3JNUDYzMXdnQkVuaEFlU1VQRXNiLWNERnFRWTBNR2lWeVVrM3NwUVljZlZLcF84T2Y3RFJVV0RpM0RmcGcwdFE?oc=5"
         },
         {
-          "title": "Micron downgraded \u2014 Wall Street finds next AI bottleneck 2026",
-          "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE91SjEyVGF3VDdvdkduQktVa29hNVJxekpXLWpLLU9nOUFtalRNeXFKc0hzSndzSnpuZmpLODVMUldoRXVLdWVmSzE3VVhvNVMwYUd3VjBLQWpWUjQ"
+          "title": "Zacks downgrades Micron to Hold",
+          "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxQdEp5dWtCcS1Tei1MTlR5bVBXbkJpVzhPeWNvdUdkaUxFdEV0emxVLTRUaDVkekNPWWstM08tVDJUUkNRZk5hN3VWYUYzQWxubVNoQWFsenNqZ0FobHU1QlJuTVNEX1B5MFZMRFh1ak43a1J0dGxFVmRCcmc4TWtYY0pqYXFkWkJaUFcxRzFSQ19CZzBvRHRzbWx3QUVfRUtJdXVVeGFtRzNfSFliMkF5S1ktTmdOTUtw?oc=5"
         },
         {
-          "title": "Mirae Asset maintains SK Hynix Buy, \u20a92.8M PT \u2014 Aug 15",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342066"
+          "title": "Barclays cuts SK Hynix SKHY target, reiterates Overweight",
+          "url": "https://news.google.com/rss/articles/CBMigwJBVV95cUxNdGdwUmI2TlYweVQ5RlBOb2d1VVdldzN0bWNnRGp5N3hpN25QNTZpXzByN3BJeXctVGxUampUZ3JQV2lWckhQLVhULVJPMVNHR1ZNOG00SEFXYkplN0t3clFrbnBFM2ZfZVhfc1lhTmlaY3V1a081RXEyWVFWaWl6TGtHNlpUbWhhYUhaT3c0Tk84WnZOaS04QXNvYUswWkRIbm1LVjVDdEh4V1BYeHdVbktzdkoxeGUxSlRsd2swMm5nOFpxMFpmUU9QY1hUYTUtUFU3UDZ2enRCNExVSkg5Y2xZcEx1cUtMX1ZzVFJvazlqMnpFVW50Vmk5alpSVWtQa2pZ?oc=5"
         }
       ],
-      "change_vs_prior": "Status unchanged (Fired). Rolling 30d net score stable at -29.5. New development: first two-sided sell-side action on Micron (New Street upgrade + concurrent downgrade); SK Hynix Up30d/Down30d reached exact balance (11/11). Revision momentum has decelerated but not reversed; no escalation\u2026",
+      "change_vs_prior": "Status unchanged (Fired). Three new broker actions today \u2014 Goldman Sachs (MU target doubled, Neutral held), Zacks (MU downgraded to Hold), Barclays (SKHY target cut, Overweight reiterated) \u2014 deepen the net-negative revision picture. First two-broker divergence on Micron in the\u2026",
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-15",
+      "updated_date": "2026-08-22",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 2
+      "evidence_count": 1
     },
     "t2_hyperscaler_capex_revenue": {
       "last_full_regen_date": "2026-08-17",

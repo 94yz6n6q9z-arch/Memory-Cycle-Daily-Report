@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-08-21T07:57:23.666967+00:00",
+  "saved_at_iso": "2026-08-22T07:33:16.908130+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
@@ -21,15 +21,15 @@
     },
     "bear_case": {
       "probability_pct": 25.0,
-      "peak_months_away": 5.8,
+      "peak_months_away": 5.7,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
       "return_to_peak_pct": -40.945086705202314
     },
-    "delta_from_prior_text": "Indicator distribution unchanged vs prior: 4/6 T1 fired (1 partial), 7/7 T2 fired, 0/5 T3 fired (1 partial), 0/4 T4 fired. No probability recalculation required \u2014 zero status changes. Bear case return_to_peak_pct held at -45% (calibrated to historical average drawdown: -43% mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough; Any T3 fired band: -40 to -50%). Base case trough window unchanged at Q1-Q3 2027.",
+    "delta_from_prior_text": "No indicator status changes today; probability distribution unchanged from prior brief (base 50%, bull 25%, bear 25%). Trough window anchors preserved: base Q1-Q3 2027 at -28.3%, bull Q4 2027-Q2 2028 at -15.6%, bear Q4 2026-Q2 2027 at -40.9%. Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); current bear at -40.9% sits within the 'Any T3 fired' band (-40 to -50%) given one T3 Partially fired. Tape circuit breaker remains Level 3 Sell with -40.73% drawdown from 2026-06-22 peak of 2,919,000 KRW.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-through-5 signals fired or unfired today; the indicator distribution is unchanged from yesterday's brief [\u2192\u00a73]. The most material development is Applied Materials' Q3 2026 print: DRAM revenue +52% YoY to a record, advanced packaging guiding >70% growth in 2026, and customers now providing 8-quarter rolling forecasts \u2014 corroborating the latched t2_capex_parabolic signal and reinforcing that the supply build-out is accelerating into 2027-28, not plateauing [\u2192\u00a74]. Micron's QoQ transcript diff adds a bearish undertone: FY2027 capex guided above mid-40% increase with a $10B quarterly run-rate, while OEM-inventory and supplier-inventory language was dropped entirely \u2014 consistent with Phase 5 dynamics where makers keep building even as demand signals soften [\u2192\u00a74]. On the competitive overlay, CXMT's IPO shares have surged 565% since July and a court hearing confirmed the firm planned to use stolen Samsung IP to accelerate DDR5 development; near-term (1-3 month) commodity spot pricing pressure on Samsung and SK Hynix is the transmission [\u2192\u00a74]. SK Hynix announced a \u20a940 trillion (~$29B) buyback and a tentative wage deal with its union, removing a near-term strike risk; Barclays cut its price target while reiterating Overweight, and JPMorgan recommended accumulation \u2014 the first sell-side price-target cut is directional confirmation of t2_eps_revisions [\u2192\u00a73]. Memory pure-plays outperformed the broad market on the 5-day window (SK Hynix +13.82pp, Micron +4.60pp vs S&P 500), keeping t3_relative_strength at Not fired [\u2192\u00a73]."
+    "executive_brief": "No tier-1-5 signals fired or unfired today; the indicator distribution is unchanged from yesterday's brief. The most material fresh development is a split analyst read on Micron: Goldman Sachs doubled its price target while maintaining Neutral, and Zacks downgraded MU to Hold \u2014 the first two-broker divergence in a consensus that has been uniformly bullish, a directional confirmation of t2_eps_revisions [\u2192\u00a73], which remains Fired on a net -25 SK Hynix revision score. Barclays cut its SK Hynix (SKHY) target while reiterating Overweight, citing HBM strength and the NVIDIA partnership \u2014 a shallower dissent but a cut nonetheless [\u2192\u00a74]. Samsung's HBM4 yield reaching 80% is the week's most consequential competitive development: a production-ready Samsung HBM4 compresses SK Hynix's share advantage at NVIDIA and feeds directly into Competitor dynamics (Indicator 7, already Fired) [\u2192\u00a73]. On the supply side, NVIDIA has reportedly locked multi-year DRAM deals with both SK Hynix and Micron through 2028, reinforcing t2_ltas_signed [\u2192\u00a73], while SK Hynix's NASDAQ debut (SKHY) and a potential Japan fab at tens-of-billions scale extend t2_capex_parabolic [\u2192\u00a73]. DDR5 spot edged up +0.62% to $54.10 \u2014 no matrix movement, t1_spot_decline remains Not fired [\u2192\u00a74]. Cerebras (CBRS) fell -6.54%, the session's only big mover, on no fresh news; the move is noted as market noise with no framework read-through."
   },
   "indicator_assessments": [
     {
@@ -85,20 +85,20 @@
       "description": "Algorithmic or architectural improvement reducing memory-per-token by >2x. TurboQuant-class shocks. The cycle-breaking risk.",
       "what_to_look_for": "Major announcement from Google / OpenAI / Anthropic / Meta / DeepSeek / Mistral. Specific phrases: 'KV cache compression', 'inference efficiency 2x+', 'memory footprint reduction', 'quantization breakthrough'. Source must be official lab blog, arXiv, or 3+ mainstream tech publications within 48 hours.",
       "current_status": "Fired",
-      "where_we_stand": "Fired since Google TurboQuant (March 24, 2026): 6x KV-cache compression, 8x speedup on H100 \u2014 a permanent algorithmic entry in the literature. Today's feed adds Anthropic's $250M pre-revenue contract with Fractile for custom inference silicon, signaling continued investment in non-HBM inference architectures. Nvidia's reported Rubin Ultra HBM reduction is a\u2026",
-      "latest_developments": "Anthropic committed $250M to Fractile for custom inference silicon before revenue; Nvidia cutting Rubin Ultra HBM allocation. Both developments are directional confirmation that efficiency-driven memory footprint reduction is transmitting into hardware design decisions.",
+      "where_we_stand": "Fired since 2026-03-24 (Google TurboQuant: 6x KV-cache compression, 8x speedup \u2014 permanent literature record). Today's feed adds three corroborating items: vLLM disaggregated serving delivering 2.5x higher goodput on identical hardware; GLM-5.3 MoE achieving 6x efficiency gains; NVIDIA linear-math KV-cache compression reducing memory bandwidth demand. None of these reverse the March\u2026",
+      "latest_developments": "vLLM 2.5x goodput improvement, GLM-5.3 6x MoE gains, and NVIDIA KV-cache linear-math work all published this cycle \u2014 corroborating the efficiency-shock thesis without altering the Fired status set on the March 24 TurboQuant anchor.",
       "relevant_links": [
         {
-          "title": "Anthropic $250M Fractile custom silicon contract",
-          "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxNc3ltVTVfb2x3UTZOV0E4RjFoTzBHT0tsejZYVVV4UTI5QzVpZGdMektWUEhrdHFCZ0pDTUNRWFhLU0R3TXBZbm9YeTJJcU0xY09Md3dmcUJBNFUwZW96RWxoX2hwMmpjLTczZGFBV1BXUkZUZkZ2MnhxUndaQ3E1VTVRV3Z4N2FBZFd0VXZlWEdVbHZMUmwtM0Z3UUtrbnJ3d2dJMDZ6Z3A5T01iYzZnUzBkU2JfT0VSUzRGWmo2UUlrUHZLdW1PRkdOWnc"
+          "title": "vLLM Disaggregated Serving \u2014 2.5x Goodput",
+          "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxPbmxLcVEySjFhdXNlekNGMFgwZWF4ZTZLRk13akp0em44ZkYyOFFZS2xvMmFBOTk3aGxyN3d3Y1Z1OGpyWXFlM3M4djZNOVZQand3cF91OVhvbGI0SXNKN2RWRnc2STZ4alFMV1R6aUlBM09RWWdRSkRTY2N1by1BLURXUUhUWTZ5aTNSd25LRVI0MmFaSWV2UFFTbXNWTi12OWI4QlhGMHM2WkM3OEQ2WWhsVmZDdXI1a2ctYkl5dGk?oc=5"
         },
         {
-          "title": "Nvidia cutting Rubin Ultra HBM \u2014 Micron HBM demand at risk",
-          "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPZFpSbF9hNXIwbHM2enBqVFN5eDFIWmRpYndvQWRrV011ck4tanZzai1YTEliSE10aEMxXzEtVTlDZkhsNjZnVThVRnZJZjJSMGtEbDAxMGN3RURQdW0tY2MyWjNrTmI1WDU1ejkzVHpkbDVlcl9SZ2FlQWJwX2duTXFEZw"
+          "title": "NVIDIA Linear-Math KV Cache Compression",
+          "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxNeU8xWkZyeV8xejRGYlduVVNhVE1jM3RVS1ZQLTBQbHB3WFVHaXpLT21wakdubWVwQnZnYS1fQU5EVmRTZ1dwVE1xSVpORWUtTlM4cXRCcjJKTVdfRkZsOU5DVnc5WnAwdlZoTXgxOTJsZkQ0WkxZOWg2b29YU2RMX2gzWVdHMUdOU2drTFRkamV4MHA2WDhpVU9qcFlWaHZ6eFMwY3BLNEA1UmJZ?oc=5"
         },
         {
-          "title": "Applied Materials Q3 2026 earnings transcript",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/08/20/applied-materials-amat-q3-2026-earnings-call-transcript/"
+          "title": "SK Hynix CPO Roadmap \u2014 Beyond HBM to AI Infrastructure",
+          "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTFBCYllMUmwzMUl2RzdfU1ZzS3k4TlJGWUdwMkRrREVyRmt4Mll2eWxxWkFic2FVcDhjSFZ2RTlBX2JzMWNuSGpVbllOUXZIWTlwNS1BMTJ5MTNjeUVJQ2hhTQ?oc=5"
         }
       ],
       "change_vs_prior": null
@@ -173,7 +173,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $54.10 (2026-08-21 print). Matrix basis (weekly means): current wk $53.29, +0.00% vs rolling 12w wk-peak $53.29 (wk ending 2026-08-23). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 143d old). Synthetic adjusted: 62.8% central (range 60-65%). Adjustments: tone +3.3pp (10 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $54.10 (2026-08-21 print). Matrix basis (weekly means): current wk $53.29, +0.00% vs rolling 12w wk-peak $53.29 (wk ending 2026-08-23). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 144d old). Synthetic adjusted: 62.8% central (range 60-65%). Adjustments: tone +3.3pp (10 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "TrendForce Aug 19 spot print: DDR5 16Gb $53.27, +1.01% on the day. Spot at rolling 12-week peak \u2014 no drawdown. Matrix remains Not fired at R1\u00d7C1.",
       "relevant_links": [
         {
@@ -232,23 +232,23 @@
       "description": "First month with net negative FY27 or FY28 EPS revisions for SK Hynix or Micron. The single most important missing signal \u2014 currently NOT FIRED.",
       "what_to_look_for": ">5 analysts revise SK Hynix or MU FY27 EPS DOWN in a single month while <3 revise up. Single broker target price cut of >-10% vs prior is a strong early signal even before the count threshold.",
       "current_status": "Fired",
-      "where_we_stand": "Rolling 30-day net score: -29.5 (bearish -32.5 vs bullish +3.0). Signal fired since 2026-08-08 on sustained downward revision pressure anchored by Mirae Asset's -33% PT cut on 2026-07-29. Today introduces the first structural split in the consensus: New Street Research upgraded Micron to Buy arguing memory is no longer cyclical (bullish +3.0 contribution), while a separate analyst downgraded MU citing 'next AI bottleneck 2026.' SK Hynix 30d revision count: Up30d=11, Down30d=11 \u2014 exactly balanced, a notable deterioration from the prior all-up consensus. Micron: Up30d=30, Down30d=0 \u2014 still net positive but\u2026",
-      "latest_developments": "New Street Research upgraded MU to Buy (memory no longer cyclical thesis); a separate analyst downgraded MU on 'HBM bottleneck 2026' framing \u2014 first two-sided sell-side action on Micron in this cycle. SK Hynix Up30d/Down30d\u2026",
+      "where_we_stand": "Fired. Rolling 30-day net EPS revision score for SK Hynix: -25.0 (bearish -28 vs bullish +3), above the net-negative threshold. Mirae Asset Securities cut SK Hynix target -33% (\u20a94.2M \u2192 \u20a92.8M) on 2026-07-29 \u2014 the qualifying single-broker >-10% cut. Today adds three new broker actions: Goldman Sachs doubled Micron's price target but held Neutral (bullish on level, neutral on direction \u2014 does NOT reduce the net-negative score); Zacks downgraded MU to Hold (adds a down-revision to the Micron tally); Barclays cut SK Hynix SKHY target while reiterating Overweight (a cut\u2026",
+      "latest_developments": "Goldman Sachs doubled Micron target (Neutral maintained); Zacks downgraded MU to Hold; Barclays cut SK Hynix SKHY target (Overweight reiterated). First multi-broker divergence on Micron in the current cycle \u2014 directional confirmation of the net-negative\u2026",
       "relevant_links": [
         {
-          "title": "New Street upgrades Micron to Buy \u2014 memory no longer cyclical",
-          "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxPclRoOWNwVWQ4Mm1VaHJ6UGNXRGtFUzh1ZGJJeURVRXRMLXBpaTNxTG1sN3VFRk9sR3hSTVpPRTFXZGRCcEVPTVdjenBXX0VkMkstbWpHV3JELUtLakRtUTNwdk5qVndZTHJ2RGhvUmg1YTJ4NTVMRTdhQVFkY1Z1OTZyR0laNndxeC15NHJ6S3Y0SThyallUcll1UVlyUk9ZNXl4WHB6dGxWTTVIR1VnTDRJVzItcHNmZHB1ZDVaTVd5Y3l2MllGWFhyRjZSQjJKR1oyRw"
+          "title": "Goldman Sachs doubles MU target, keeps Neutral",
+          "url": "https://news.google.com/rss/articles/CBMi6gFBVV95cUxQZE5Xc2x6d0V2NHlyZWRyMnpSc2dsbFhwU3ZJTF9qY1dmdzRqWjh2NlVLMDlPSDFwOXdMa2FySldBVFZQNnBOU3lpbFNLYU1RV1ZWeWRiZE9kdGtIcU5XbENLem8zRG1WNU1ySjFIT0F3czhVZzRWYUdlZ3RlTl9adS1JMkt6YjNKNFA1Nm5qZDYtRlVCYzhsSXd5MGlJMnV5dGQ4dEoxM1BtV3JNUDYzMXdnQkVuaEFlU1VQRXNiLWNERnFRWTBNR2lWeVVrM3NwUVljZlZLcF84T2Y3RFJVV0RpM0RmcGcwdFE?oc=5"
         },
         {
-          "title": "Micron downgraded \u2014 Wall Street finds next AI bottleneck 2026",
-          "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE91SjEyVGF3VDdvdkduQktVa29hNVJxekpXLWpLLU9nOUFtalRNeXFKc0hzSndzSnpuZmpLODVMUldoRXVLdWVmSzE3VVhvNVMwYUd3VjBLQWpWUjQ"
+          "title": "Zacks downgrades Micron to Hold",
+          "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxQdEp5dWtCcS1Tei1MTlR5bVBXbkJpVzhPeWNvdUdkaUxFdEV0emxVLTRUaDVkekNPWWstM08tVDJUUkNRZk5hN3VWYUYzQWxubVNoQWFsenNqZ0FobHU1QlJuTVNEX1B5MFZMRFh1ak43a1J0dGxFVmRCcmc4TWtYY0pqYXFkWkJaUFcxRzFSQ19CZzBvRHRzbWx3QUVfRUtJdXVVeGFtRzNfSFliMkF5S1ktTmdOTUtw?oc=5"
         },
         {
-          "title": "Mirae Asset maintains SK Hynix Buy, \u20a92.8M PT \u2014 Aug 15",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342066"
+          "title": "Barclays cuts SK Hynix SKHY target, reiterates Overweight",
+          "url": "https://news.google.com/rss/articles/CBMigwJBVV95cUxNdGdwUmI2TlYweVQ5RlBOb2d1VVdldzN0bWNnRGp5N3hpN25QNTZpXzByN3BJeXctVGxUampUZ3JQV2lWckhQLVhULVJPMVNHR1ZNOG00SEFXYkplN0t3clFrbnBFM2ZfZVhfc1lhTmlaY3V1a081RXEyWVFWaWl6TGtHNlpUbWhhYUhaT3c0Tk84WnZOaS04QXNvYUswWkRIbm1LVjVDdEh4V1BYeHdVbktzdkoxeGUxSlRsd2swMm5nOFpxMFpmUU9QY1hUYTUtUFU3UDZ2enRCNExVSkg5Y2xZcEx1cUtMX1ZzVFJvazlqMnpFVW50Vmk5alpSVWtQa2pZ?oc=5"
         }
       ],
-      "change_vs_prior": "Status unchanged (Fired). Rolling 30d net score stable at -29.5. New development: first two-sided sell-side action on Micron (New Street upgrade + concurrent downgrade); SK Hynix Up30d/Down30d reached exact balance (11/11). Revision momentum has decelerated but not reversed; no escalation\u2026"
+      "change_vs_prior": "Status unchanged (Fired). Three new broker actions today \u2014 Goldman Sachs (MU target doubled, Neutral held), Zacks (MU downgraded to Hold), Barclays (SKHY target cut, Overweight reiterated) \u2014 deepen the net-negative revision picture. First two-broker divergence on Micron in the\u2026"
     },
     {
       "id": "t2_hyperscaler_capex_revenue",

@@ -3,7 +3,7 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session (pre-F-1; no SEC EDGAR filing yet detected)",
-    "last_aggregator_run": "2026-08-21T07:33:50Z",
+    "last_aggregator_run": "2026-08-22T07:23:56Z",
     "description": "Live state for Indicator 8 ADR event tracking. Auto-updated by src/analysis/adr_aggregator.py:aggregate_adr_extractions() \u2014 F-1 detection from SEC EDGAR atom feed, roadshow demand from news coverage, pricing-day from 424B filings, insider sales from Form 4 + DART."
   },
   "lifecycle_phase": "trading",
@@ -15,7 +15,7 @@
   "sub_8a_f1_filing": {
     "current_status": "Partially fired",
     "status_pill_label": "F-1 filed \u2014 peak-coincidence signal; syndicate pending disclosure",
-    "status_evaluated_at": "2026-08-21",
+    "status_evaluated_at": "2026-08-22",
     "status_evaluator": "adr_aggregator",
     "current_state": {
       "f1_filed": true,
@@ -36,7 +36,7 @@
   "sub_8b_roadshow_demand": {
     "current_status": "Not fired",
     "status_pill_label": "Roadshow demand strong (oversubscribed)",
-    "status_evaluated_at": "2026-08-21",
+    "status_evaluated_at": "2026-08-22",
     "status_evaluator": "adr_aggregator",
     "current_state": {
       "roadshow_active": false,
@@ -48,7 +48,7 @@
   "sub_8c_pricing_day": {
     "current_status": "Pre-event",
     "status_pill_label": "Awaiting 424B pricing",
-    "status_evaluated_at": "2026-08-21",
+    "status_evaluated_at": "2026-08-22",
     "status_evaluator": "adr_aggregator",
     "current_state": {
       "pricing_day": "2026-07-10",
@@ -59,9 +59,9 @@
     "evidence_log": []
   },
   "sub_8d_insider_sales_in_window": {
-    "current_status": "Pre-event",
-    "status_pill_label": "Monitoring SEC Form 4 + Korean DART",
-    "status_evaluated_at": "2026-08-21",
+    "current_status": "Partially fired",
+    "status_pill_label": "Insider sales $17.4M in window",
+    "status_evaluated_at": "2026-08-22",
     "status_evaluator": "adr_aggregator",
     "current_state": {
       "insider_sales_in_window": [
@@ -70,9 +70,15 @@
           "role": "SK Group Chairman",
           "usd_m": 3.41,
           "date": "2026-07-31"
+        },
+        {
+          "insider": "Micron EVP",
+          "role": "Executive Vice President",
+          "usd_m": 14.01,
+          "date": "2026-08-21"
         }
       ],
-      "insider_sales_total_usd_m_in_window": 3.41
+      "insider_sales_total_usd_m_in_window": 17.42
     },
     "evidence_log": []
   }
