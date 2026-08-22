@@ -1,17 +1,17 @@
 {
-  "written_at_iso": "2026-08-21T07:29:24.213668+00:00",
+  "written_at_iso": "2026-08-22T07:10:59.371481+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 1,
+    "full_transcript": 0,
     "materials_only": 0,
-    "nothing": 2,
-    "already_processed": 31,
+    "nothing": 3,
+    "already_processed": 32,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
       "Broadcom": "already_processed",
       "TSMC": "already_processed",
-      "Applied Materials": "full_transcript",
+      "Applied Materials": "nothing",
       "Microsoft": "already_processed",
       "Alphabet": "already_processed",
       "Meta": "already_processed",
@@ -33,6 +33,7 @@
       "Nvidia",
       "Broadcom",
       "TSMC",
+      "Applied Materials",
       "ASML",
       "Microsoft",
       "Alphabet",
@@ -82,10 +83,10 @@
     {
       "company": "Applied Materials",
       "ticker": "AMAT",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 64311
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "Microsoft",
@@ -237,6 +238,14 @@
       "availability": "already_processed",
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
+    },
+    {
+      "company": "Applied Materials",
+      "ticker": "AMAT",
+      "availability": "nothing",
+      "source_name": "Yahoo Finance",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
