@@ -1,7 +1,7 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-08-24T07:39:00.487439+00:00",
+    "fetched_at_iso": "2026-08-25T07:27:01.446403+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
@@ -325,13 +325,26 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 3317917,
           "avg_eps_krw": 349566,
-          "avg_per": 4.95,
+          "avg_per": 4.78,
           "num_estimating_institutions": 24
         }
       },
       "Samsung Electronics": {
         "code": "005930",
         "actions": [
+          {
+            "broker_korean": "\uc0bc\uc131",
+            "broker_english": "Samsung Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 400000,
+            "prior_target_krw": 400000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-08-24",
+            "raw": "\uc0bc\uc131 | 26/08/24 | 400,000 | 400,000 | 0.00 | BUY | BUY"
+          },
           {
             "broker_korean": "\uc720\uc9c4\ud22c\uc790",
             "broker_english": "Eugene Investment & Securities",
@@ -474,19 +487,6 @@
             "direction": "maintained",
             "published_date_iso": "2026-07-31",
             "raw": "DB | 26/07/31 | 360,000 | 360,000 | 0.00 | Buy | Buy"
-          },
-          {
-            "broker_korean": "\uc0bc\uc131",
-            "broker_english": "Samsung Securities",
-            "rating": "BUY",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 400000,
-            "prior_target_krw": 500000,
-            "target_change_pct": -20.0,
-            "direction": "lowered",
-            "published_date_iso": "2026-07-31",
-            "raw": "\uc0bc\uc131 | 26/07/31 | 400,000 | 500,000 | -20.00 | BUY | BUY"
           },
           {
             "broker_korean": "\uc2e0\ud55c\ud22c\uc790",
@@ -650,7 +650,7 @@
           "avg_opinion_score": 4.04,
           "avg_target_price_krw": 491875,
           "avg_eps_krw": 48135,
-          "avg_per": 5.85,
+          "avg_per": 5.34,
           "num_estimating_institutions": 24
         }
       },
@@ -819,11 +819,11 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 848167,
           "avg_eps_krw": 165157,
-          "avg_per": 3.55,
+          "avg_per": 3.32,
           "num_estimating_institutions": 12
         }
       }
     }
   },
-  "fetched_at_iso": "2026-08-24T07:39:41.551827"
+  "fetched_at_iso": "2026-08-25T07:27:41.596336"
 }

@@ -1,7 +1,7 @@
 {
   "level": 3,
   "level_since": "2026-07-31",
-  "updated": "2026-08-24",
+  "updated": "2026-08-25",
   "last_verdict": {
     "level": 3,
     "action": "SELL \u2014 thesis stopped out",
@@ -26,31 +26,31 @@
         "stopout_depth": true,
         "stopout_depth_base": true,
         "stopout_gate_pct": -30.0,
-        "drawdown_pct": -42.75,
+        "drawdown_pct": -42.51,
         "peak_price": 2919000.0,
         "peak_date": "2026-06-22",
-        "last_close": 1671000.0,
-        "last_date": "2026-08-24"
+        "last_close": 1678000.0,
+        "last_date": "2026-08-25"
       },
       "distribution": {
         "fired": true,
         "status": "data_ok",
-        "days": 7,
+        "days": 5,
         "needed": 5,
         "mode": "v2",
-        "udvr": 0.97,
+        "udvr": 0.98,
         "mature": true,
         "lower_highs": true,
         "watermark": 2919000.0,
         "raw_today": false,
-        "asof": "2026-08-24"
+        "asof": "2026-08-25"
       },
       "trend_break": {
         "status": "data_ok",
         "fired": true,
-        "close": 1671000.0,
-        "ma50": 2001560.0,
-        "ma20": 1568850.0,
+        "close": 1678000.0,
+        "ma50": 1992120.0,
+        "ma20": 1561950.0,
         "ma50_falling": true,
         "ma20_below_ma50": true,
         "reason": null
@@ -62,9 +62,9 @@
     },
     "peak_price": 2919000.0,
     "peak_date": "2026-06-22",
-    "drawdown_pct": -42.75,
-    "last_close": 1671000.0,
-    "last_date": "2026-08-24",
+    "drawdown_pct": -42.51,
+    "last_close": 1678000.0,
+    "last_date": "2026-08-25",
     "data_status": "fresh",
     "deescalation": {
       "closes_above_ma50_streak_ok": false,
