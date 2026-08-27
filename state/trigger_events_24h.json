@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "indicator_id": "t3_eps_miss_guidance",
+    "indicator_name": "EPS miss or beat narrowing on still-rising guidance",
+    "tier": 3,
+    "old_status": "Not fired",
+    "new_status": "Fired",
+    "description": "Status transitions from 'Not fired' (the model Jul 29 reversion) to 'Fired' PEAK indicator hard rules: (1) First miss with guidance maintained IS the fire condition, regardless of record absolute profit. (2) Jul 29 SK Hynix Q2 2026 earnings print is the dated trigger; status persists until next quarterly print \u2026",
+    "fired_at_iso": "2026-08-27T18:29:39.539810"
+  }
+]
