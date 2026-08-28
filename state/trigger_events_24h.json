@@ -1,11 +1,11 @@
 [
   {
-    "indicator_id": "t3_eps_miss_guidance",
-    "indicator_name": "EPS miss or beat narrowing on still-rising guidance",
-    "tier": 3,
-    "old_status": "Not fired",
-    "new_status": "Fired",
-    "description": "Status transitions from 'Not fired' (the model Jul 29 reversion) to 'Fired' PEAK indicator hard rules: (1) First miss with guidance maintained IS the fire condition, regardless of record absolute profit. (2) Jul 29 SK Hynix Q2 2026 earnings print is the dated trigger; status persists until next quarterly print \u2026",
-    "fired_at_iso": "2026-08-27T18:29:39.539810"
+    "indicator_id": "t2_eps_revisions",
+    "indicator_name": "Forward FY27/FY28 EPS revision direction \u2014 THE canonical Tier 2 signal",
+    "tier": 2,
+    "old_status": "Fired",
+    "new_status": "Partially fired",
+    "description": "Status remains Fired per signal history entry [5] (2026-08-08, Fired). However, today's data (2026-08-28) shows no new downward EPS revisions or PT cuts in the past 7 days\u2014only maintenance actions by Mirae (Tier-A). The rolling 30-day score of -26.0 is dominated by the July 29 -33% PT cut, which is now 30 days old and \u2026",
+    "fired_at_iso": "2026-08-28T19:14:19.240225"
   }
 ]
