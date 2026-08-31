@@ -1,6 +1,6 @@
 {
-  "written_at_iso": "2026-08-29T12:51:53.466787+00:00",
-  "run_date": "2026-08-29",
+  "written_at_iso": "2026-08-31T14:19:19.755221+00:00",
+  "run_date": "2026-08-31",
   "summary_counts": {
     "ok": 2,
     "warn": 3,
@@ -14,14 +14,14 @@
       "source_name": "Motley Fool",
       "source_type": "transcript",
       "reached": true,
-      "items_returned": 0,
+      "items_returned": 1,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-08-29T12:49:16.353341+00:00",
-      "detail": "15 co. \u00b7 0 full / 0 materials-only / 15 cached / 0 nothing",
+      "timestamp": "2026-08-31T14:17:09.074536+00:00",
+      "detail": "15 co. \u00b7 1 full / 0 materials-only / 14 cached / 0 nothing",
       "skipped": false,
       "expected_empty": false,
-      "health": "warn"
+      "health": "ok"
     },
     {
       "source_name": "Yahoo Finance",
@@ -30,8 +30,8 @@
       "items_returned": 0,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-08-29T12:49:16.353373+00:00",
-      "detail": "18 co. \u00b7 0 full / 0 materials-only / 18 cached / 0 nothing",
+      "timestamp": "2026-08-31T14:17:09.074571+00:00",
+      "detail": "17 co. \u00b7 0 full / 0 materials-only / 17 cached / 0 nothing",
       "skipped": false,
       "expected_empty": false,
       "health": "warn"
@@ -43,7 +43,7 @@
       "items_returned": 0,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-08-29T12:49:16.353386+00:00",
+      "timestamp": "2026-08-31T14:17:09.074585+00:00",
       "detail": "2 co. \u00b7 0 full / 0 materials-only / 0 cached / 2 nothing \u2014 investigate if expected coverage this window",
       "skipped": false,
       "expected_empty": false,
@@ -53,24 +53,24 @@
       "source_name": "Mirae Asset (EN broker PDFs)",
       "source_type": "broker_pdf",
       "reached": true,
-      "items_returned": 2,
+      "items_returned": 0,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-08-29T12:49:35.494830+00:00",
+      "timestamp": "2026-08-31T14:19:19.755039+00:00",
       "detail": null,
       "skipped": false,
       "expected_empty": false,
-      "health": "ok"
+      "health": "warn"
     },
     {
       "source_name": "Anthropic Haiku (digester)",
       "source_type": "llm",
       "reached": true,
-      "items_returned": 4,
+      "items_returned": 2,
       "latency_ms": 0,
       "error": null,
-      "timestamp": "2026-08-29T12:51:53.466631+00:00",
-      "detail": "2 transcript + 2 broker note digests",
+      "timestamp": "2026-08-31T14:19:19.755117+00:00",
+      "detail": "2 transcript + 0 broker note digests",
       "skipped": false,
       "expected_empty": false,
       "health": "ok"
