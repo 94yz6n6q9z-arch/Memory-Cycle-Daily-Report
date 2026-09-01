@@ -3,12 +3,12 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-08-31T14:22:53Z",
+    "last_aggregator_run": "2026-09-01T11:59:55Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
     "current_status": "Fired",
-    "status_evaluated_at": "2026-08-31",
+    "status_evaluated_at": "2026-09-01",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 22.0,
     "current_state": {
@@ -23,7 +23,8 @@
         "Apple (memory qualification)",
         "Apple iPhone and MacBook",
         "Gigabyte",
-        "Xiaomi 18 Fold"
+        "Xiaomi 18 Fold",
+        "Xiaomi"
       ],
       "cxmt_oem_lowend_wins": [],
       "cxmt_ddr5_share_pct": 2.0,
@@ -46,7 +47,7 @@
   },
   "sub_7b_samsung_hbm4": {
     "current_status": "Partially fired",
-    "status_evaluated_at": "2026-08-31",
+    "status_evaluated_at": "2026-09-01",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 10.0,
     "current_state": {
@@ -73,7 +74,7 @@
   },
   "sub_7c_micron": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-31",
+    "status_evaluated_at": "2026-09-01",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.5,
     "current_state": {
@@ -92,7 +93,7 @@
   },
   "sub_7d_hbf": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-08-31",
+    "status_evaluated_at": "2026-09-01",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.0,
     "current_state": {
@@ -111,7 +112,9 @@
         "Samsung+NVIDIA+custom NVHBM",
         "Samsung+NVIDIA+8-High HBM4E",
         "NVIDIA+NVHBM+custom",
-        "Qualcomm+custom+AI memory"
+        "Qualcomm+custom+AI memory",
+        "NVIDIA+HBM4E+AI",
+        "NVIDIA+NVL72+AI"
       ],
       "hbf_hot_tier_substitution_events": [],
       "hbf_cold_tier_additions": [],

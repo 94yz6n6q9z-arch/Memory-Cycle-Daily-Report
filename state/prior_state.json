@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-08-31T14:37:34.784884+00:00",
+  "saved_at_iso": "2026-09-01T12:21:52.029140+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
@@ -7,29 +7,29 @@
     "new_triggers_today": [],
     "base_case": {
       "probability_pct": 50.0,
-      "peak_months_away": 8.5,
+      "peak_months_away": 8.4,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q3 2027",
-      "return_to_peak_pct": -25.907641502389477
+      "return_to_peak_pct": -26.739156453041936
     },
     "bull_case": {
       "probability_pct": 23.0,
-      "peak_months_away": 17.5,
+      "peak_months_away": 17.4,
       "peak_window_start": "Q4 2027",
       "peak_window_end": "Q2 2028",
-      "return_to_peak_pct": -12.832519414575872
+      "return_to_peak_pct": -13.810772297696394
     },
     "bear_case": {
       "probability_pct": 27.0,
-      "peak_months_away": 5.5,
+      "peak_months_away": 5.4,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -38.982763590203106
+      "return_to_peak_pct": -39.667540608387476
     },
-    "delta_from_prior_text": "No indicator status changes today; probabilities held flat vs prior brief (base 50%, bull 23%, bear 27%). Trough window base Q1\u2013Q3 2027 unchanged. Bear magnitude -40% consistent with 'Any T3 fired' band (-40 to -50%) given t3_eps_miss_guidance and t3_capex_plateau Partially fired. Historical reference: mean SK Hynix peak-to-trough -43% (2014/-36%, 2018/-43%, 2022/-49%). LS Securities SK Hynix target cut is a directional EPS-revision development but does not yet cross the >5-analyst threshold to move probabilities.",
+    "delta_from_prior_text": "No indicator status changes today \u2014 probability distribution unchanged vs prior brief. Base -25.9% / Bull -12.8% / Bear -39.0% trough scenarios carry forward. Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); current bear at -39% sits in the 'Any T3 fired' band (-40 to -50%) and will deepen if t3_contract_decline or t3_supplier_inventory_rebuild fire. Peak is behind us (cycle peak 2,918,367 KRW on 2026-06-22; current drawdown -41.99%). Trough window base case Q1\u2013Q3 2027 unchanged.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-through-4 signals fired or unfired today; the framework's indicator distribution is unchanged from yesterday's brief [\u2192\u00a73]. The dominant development on the thesis is a sharp analyst divergence on SK Hynix vs. Samsung: LS Securities cut SK Hynix's target 27% to \u20a92.4M while raising Samsung to \u20a9450K on HBM4 qualification progress \u2014 the first material sell-side rotation away from the SK Hynix premium, a directional confirmation of the EPS-revisions signal [\u2192\u00a74]. Mirae Asset simultaneously maintained SK Hynix at \u20a92.8M citing tight supply through 2028 and >50% LTA coverage, so consensus has not broken, but the first dissent is now on record. CXMT's LPDDR6 mass-production announcement \u2014 ahead of Samsung and SK Hynix \u2014 with an 87% Q2 gross margin reinforces the competitor-dynamics overlay [\u2192\u00a73]; the near-term read is commodity LPDDR pricing pressure in 3\u20136 months as Xiaomi deployment scales. SK Hynix broke ground on its Indiana HBM fab and is reviewing a Japan JV, while Micron guided FY27 capex above mid-40% increase \u2014 both deepen the parabolic-capex signal already latched [\u2192\u00a74]. Memory pure-plays rose ~1.2\u20131.4% today in line with the broader tape; no stock-specific driver, no relative-strength read-through [\u2192\u00a73]. The cycle peak remains behind us at 2,919,000 KRW (detected 2026-08-08); the LS Securities dissent is the next domino to watch on the estimate-revision chain."
+    "executive_brief": "No tier-1-5 signals fired or unfired today; the framework holds at T1 4/6, T2 7/7, T3 2/5 with Phase 5 Decline confirmed [\u2192\u00a73]. The dominant development is CXMT beginning risk production of HBM3E with a 2027 mass-production target and simultaneously entering LPDDR6 mass production ahead of Samsung and SK Hynix \u2014 a dual-front competitive escalation that deepens the Competitor dynamics overlay [\u2192\u00a74] and introduces medium-term commodity DRAM pricing pressure on both contract and spot [\u2192\u00a73]. Samsung's counter-move \u2014 locking 70% of HBM capacity through 2031 at long-term agreement rates while HBM3E spot trades 4\u20135\u00d7 those LTA levels \u2014 reinforces t2_ltas_signed [\u2192\u00a73] and confirms the supply-side is still in peak-cycle behavior even as the tape is 42% off its June 22 peak. Applied Materials -5.0% today [\u2192\u00a71] is the session's only big mover; the Q3 transcript diff shows AMAT guiding Q4 EPS +85% YoY with DRAM revenue +52% YoY, a bullish equipment read that lags the tape's Phase 5 signal \u2014 equipment order strength is a coincident-to-lagging indicator here, not a cycle reversal. Anthropic's $35B compute deal and NVIDIA GB300 Blackwell Ultra at $89B scale sustain the demand-pull chain into HBM [\u2192\u00a74], but the CXMT supply-side entry is the new risk the framework is watching for transmission into SK Hynix/Micron estimate revisions \u2014 the first sell-side dissent on FY27 EPS remains the next domino [\u2192\u00a73]."
   },
   "indicator_assessments": [
     {
@@ -131,20 +131,16 @@
       "description": "Supplier-buyer inventory gap exposes prior double-ordering. Requires BOTH sides confirmed (stitched signal).",
       "what_to_look_for": "Supplier inventory <3 weeks AND OEM/buyer inventory >7 weeks. Gap >5 weeks is unprecedented (currently ~7 weeks per TrendForce Q3 2025). Trigger requires evidence from BOTH supplier-side (memory makers) AND buyer-side (Dell/HPE/Lenovo).",
       "current_status": "Fired",
-      "where_we_stand": "Fired. TrendForce Q3 2025 established supplier inventory ~2-3 weeks vs OEM/buyer inventory ~10 weeks \u2014 a 7+ week gap exceeding the >5-week unprecedented threshold. Both legs of the stitched signal remain satisfied (supplier <3w, buyer >7w). Micron's Q3 2026 transcript dropped explicit OEM inventory language, which is a notable absence\u2026",
-      "latest_developments": "Micron Q3 transcript dropped t1_oem_inventory from signal relevance \u2014 no inventory language present. No new TrendForce buyer-side data today. Signal holds on prior evidence.",
+      "where_we_stand": "Fired on TrendForce Q3 2025 data: supplier inventory ~2\u20133 weeks vs OEM/buyer inventory ~10 weeks \u2014 a 7+ week gap that exceeds the 5-week unprecedented threshold. Quarterly persistence rule holds: status does not revert absent explicit reversal evidence (buyer inventory <5w OR supplier inventory >5w). Today's Micron Q3 transcript diff\u2026",
+      "latest_developments": "Micron Q3 transcript diff dropped OEM inventory language entirely, replacing it with 'supply-demand intercept not visible through 2028' framing \u2014 management signaling demand absorption rather than buyer overhang. Watch for next TrendForce monthly print or\u2026",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price \u2014 2026-08-25",
+          "title": "TrendForce DRAM Spot Price \u2014 2026-09-01",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
         },
         {
-          "title": "Micron CEO: 'No End' to AI Memory Supply Crunch",
-          "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTFA2eS1jUVhRdTZWSE5uSlN6SU5mOHRLcDVjOXI5emh3RXRjREZEZ2VNTnVWZHlNaVMtMmhRUGEwZ084SEZ6ZzZvZFVEeGVFYm9sT3R1WERPR1JNR1BDRlMzY3UzTHhRdkl4a1VjWGZGNkxwTjQ"
-        },
-        {
-          "title": "Micron CEO: Memory No Longer a Commodity, $10B Capex Bet",
-          "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNMFM0d2YwQm9jQ1p5UFFWTGxLSzhwendZYmNZQkVNZ3Y2d09CbkgyU1BMUjJPVWdOSFl3N0ZzbTRYaWw1VHJfR2FCNHcwVlNmLTZFcWp0VVp1R1ZzNGpma19CNWNNQkNmVjNyLTlDcWpMRDdGcm5rNVJacG5NWE00R0ZaSkd3eUVwUFIyS1NjMjFQV2tMYmQtVEZMenk4a21GVUhzdE1aMk5TcDE1U0Z5T2xPem1UcUw2a2p6SmdsQ2NMejlYNGc"
+          "title": "Micron earnings investor page",
+          "url": "https://investors.micron.com/events-and-presentations"
         }
       ],
       "change_vs_prior": null
@@ -173,7 +169,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 2). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $53.92 (2026-08-31 print). Matrix basis (weekly means): current wk $53.92, -0.29% vs rolling 12w wk-peak $54.07 (wk ending 2026-08-30). 1w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 153d old). Synthetic adjusted: 63.5% central (range 61-66%). Adjustments: tone +5.0pp (6 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 2). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $54.08 (2026-09-01 print). Matrix basis (weekly means): current wk $54.00, -0.14% vs rolling 12w wk-peak $54.07 (wk ending 2026-08-30). 1w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 154d old). Synthetic adjusted: 63.5% central (range 61-66%). Adjustments: tone +5.0pp (5 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "TrendForce Aug 26 spot print: DDR5 $54.17, eTT $23.75 \u2014 both flat. No directional move in either spot tier. Matrix verdict: Not fired (R1\u00d7C1).",
       "relevant_links": [
         {
@@ -446,16 +442,16 @@
       "description": "Equipment makers' order books showing first weakness.",
       "what_to_look_for": "ASML or AMAT bookings -10% or worse QoQ. Book-to-bill below 1.0. SEMI worldwide WFE billings printing MoM decline.",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. No ASML or AMAT bookings data showing -10% QoQ decline or book-to-bill below 1.0 in today's feed. Applied Materials Q3 2026 transcript is materially bullish: Q4 guidance accelerated to +51% YoY revenue growth (vs +36% prior quarter), DRAM revenue up 52% YoY to record levels, advanced packaging growing\u2026",
-      "latest_developments": "Applied Materials Q3 transcript: Q4 EPS guidance +85% YoY, DRAM +52% YoY record, advanced packaging >70% growth \u2014 no order-book weakness. Broad tape decline in AMAT/ASML is market-wide, not bookings-driven.",
+      "where_we_stand": "Not fired. No ASML or AMAT bookings data showing -10% QoQ decline or book-to-bill below 1.0 in today's feed. AMAT -5.0% today [\u2192\u00a71] is a price move, not a bookings print. The Q3 AMAT transcript diff is strongly bullish: Q4 guidance +51% YoY revenue, DRAM +52% YoY, advanced packaging >70%\u2026",
+      "latest_developments": "AMAT Q3 transcript (QoQ diff) shows accelerating guidance: Q4 EPS +85% YoY, DRAM revenue +52% YoY to record levels, hybrid bonding adoption across all customers. No bookings weakness. AMAT price decline today lacks a fresh\u2026",
       "relevant_links": [
         {
-          "title": "Applied Materials Q3 2026 Earnings \u2014 AMAT investor relations",
-          "url": "https://investors.appliedmaterials.com/events-and-presentations"
+          "title": "Applied Materials Q3 2026 earnings \u2014 investor page",
+          "url": "https://ir.appliedmaterials.com/events-and-presentations"
         },
         {
-          "title": "SK Hynix HBM5 hybrid bonding \u2014 Tom's Hardware Hot Chips 2026",
-          "url": "https://www.tomshardware.com/tech-industry/semiconductors/sk-hynix-says-hybrid-bonding-wont-be-ready-for-hbm4e-as-ai-memory-runs-into-a-775-micron-ceiling"
+          "title": "ASML investor relations",
+          "url": "https://www.asml.com/en/investors"
         }
       ],
       "change_vs_prior": null
