@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-09-01T12:21:52.029140+00:00",
+  "saved_at_iso": "2026-09-02T12:10:42.096668+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
@@ -10,26 +10,26 @@
       "peak_months_away": 8.4,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q3 2027",
-      "return_to_peak_pct": -26.739156453041936
+      "return_to_peak_pct": -23.10563662430254
     },
     "bull_case": {
       "probability_pct": 23.0,
       "peak_months_away": 17.4,
       "peak_window_start": "Q4 2027",
       "peak_window_end": "Q2 2028",
-      "return_to_peak_pct": -13.810772297696394
+      "return_to_peak_pct": -9.536043087414757
     },
     "bear_case": {
       "probability_pct": 27.0,
       "peak_months_away": 5.4,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -39.667540608387476
+      "return_to_peak_pct": -36.67523016119033
     },
-    "delta_from_prior_text": "No indicator status changes today \u2014 probability distribution unchanged vs prior brief. Base -25.9% / Bull -12.8% / Bear -39.0% trough scenarios carry forward. Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); current bear at -39% sits in the 'Any T3 fired' band (-40 to -50%) and will deepen if t3_contract_decline or t3_supplier_inventory_rebuild fire. Peak is behind us (cycle peak 2,918,367 KRW on 2026-06-22; current drawdown -41.99%). Trough window base case Q1\u2013Q3 2027 unchanged.",
+    "delta_from_prior_text": "Indicator distribution unchanged vs prior: same fired/partial counts across all tiers. No probability recalculation required per mandatory recalculation rule (zero status changes). Base case trough window Q1\u2013Q3 2027 at -27% from peak, bear -40% (within the 'Any T3 fired' band of -40 to -50% per historical calibration: mean -43% across 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Bull case unchanged at -14%, 17 months. CXMT HBM3E risk-production news is a competitor-dynamics overlay development, not a tier-1-5 signal change, so no probability shift is applied today.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-5 signals fired or unfired today; the framework holds at T1 4/6, T2 7/7, T3 2/5 with Phase 5 Decline confirmed [\u2192\u00a73]. The dominant development is CXMT beginning risk production of HBM3E with a 2027 mass-production target and simultaneously entering LPDDR6 mass production ahead of Samsung and SK Hynix \u2014 a dual-front competitive escalation that deepens the Competitor dynamics overlay [\u2192\u00a74] and introduces medium-term commodity DRAM pricing pressure on both contract and spot [\u2192\u00a73]. Samsung's counter-move \u2014 locking 70% of HBM capacity through 2031 at long-term agreement rates while HBM3E spot trades 4\u20135\u00d7 those LTA levels \u2014 reinforces t2_ltas_signed [\u2192\u00a73] and confirms the supply-side is still in peak-cycle behavior even as the tape is 42% off its June 22 peak. Applied Materials -5.0% today [\u2192\u00a71] is the session's only big mover; the Q3 transcript diff shows AMAT guiding Q4 EPS +85% YoY with DRAM revenue +52% YoY, a bullish equipment read that lags the tape's Phase 5 signal \u2014 equipment order strength is a coincident-to-lagging indicator here, not a cycle reversal. Anthropic's $35B compute deal and NVIDIA GB300 Blackwell Ultra at $89B scale sustain the demand-pull chain into HBM [\u2192\u00a74], but the CXMT supply-side entry is the new risk the framework is watching for transmission into SK Hynix/Micron estimate revisions \u2014 the first sell-side dissent on FY27 EPS remains the next domino [\u2192\u00a73]."
+    "executive_brief": "No tier-1-through-4 signals fired or unfired today; the framework holds at 4/6 T1, 7/7 T2, 2/5 T3, 0/4 T4 with the cycle peak confirmed behind us at 2,919,000 KRW (Jun 22) [\u2192\u00a72]. The most material development is CXMT beginning risk production of HBM3E with 2027 mass-production targeted and confirmed shipments to Alibaba and Cambricon \u2014 a direct escalation of the competitor-dynamics overlay (Indicator 7) that tightens the dual-threat scenario for SK Hynix's HBM premium [\u2192\u00a74]. Dell's Q2 earnings (Sep 2) reported DRAM and NAND as primary supply constraints with $95B AI server backlog, corroborating the OEM-inventory signal's supplier-tight / buyer-flush gap [\u2192\u00a73] while reinforcing AI infrastructure demand; this does not reverse the April IDC PC or Counterpoint smartphone weakness embedded in t1_demand_destruction. Spot DRAM prices ticked higher \u2014 DDR5 16Gb +0.31%, DDR4 +0.68% \u2014 keeping t1_spot_decline at Not fired (matrix cell R1\u00d7C1) [\u2192\u00a73]. Samsung's Hot Chips 2026 three-phase HBM roadmap (HBM5 at 2\u00d7 HBM4E, zHBM logic-stacking) and capacity lock of 70% through 2031 at HBM3E spot prices 4\u20135\u00d7 LTA levels reinforce t2_ltas_signed and t2_capex_parabolic [\u2192\u00a74]. SK Hynix -4.73% and Samsung -4.02% today [\u2192\u00a71] moved broadly with a weak tape rather than on memory-specific news; both names outperform the S&P 500 on 5d and 20d windows, keeping t3_relative_strength at Not fired [\u2192\u00a73]."
   },
   "indicator_assessments": [
     {
@@ -85,20 +85,16 @@
       "description": "Algorithmic or architectural improvement reducing memory-per-token by >2x. TurboQuant-class shocks. The cycle-breaking risk.",
       "what_to_look_for": "Major announcement from Google / OpenAI / Anthropic / Meta / DeepSeek / Mistral. Specific phrases: 'KV cache compression', 'inference efficiency 2x+', 'memory footprint reduction', 'quantization breakthrough'. Source must be official lab blog, arXiv, or 3+ mainstream tech publications within 48 hours.",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup on H100). Today's Hot Chips 2026 cluster adds three independent corroborations: (1) OpenAI Jalape\u00f1o \u2014 700W ASIC, 1.9x throughput/kW and 3.6x lower latency vs. Nvidia GB300, official lab source; (2) Samsung LPDDR5X-PIM \u2014 3x inference speed, 8x bandwidth\u2026",
-      "latest_developments": "OpenAI Jalape\u00f1o benchmarks published (Tom's Hardware, Aug 25): 1.9x throughput/kW vs. GB300, co-developed with Broadcom. Samsung LPDDR5X-PIM at Hot Chips: 3x inference speed. Nvidia Vera Rubin disaggregated serving confirmed. Three independent efficiency vectors in 24\u2026",
+      "where_we_stand": "Fired since Mar 24, 2026: Google TurboQuant published 6\u00d7 KV-cache compression and 8\u00d7 speedup on H100 \u2014 a permanent algorithmic fact. Today's SanDisk HBF announcement (16\u00d7 capacity vs HBM at claimed bandwidth parity) adds an architectural substitution vector but does not meet the efficiency-shock threshold (no KV-cache compression claim, no\u2026",
+      "latest_developments": "SanDisk HBF claims HBM bandwidth parity at 16\u00d7 capacity \u2014 a disaggregation signal for the DHCR overlay but not a new efficiency-shock trigger. No qualifying lab announcement today.",
       "relevant_links": [
         {
-          "title": "OpenAI Jalape\u00f1o ASIC outpaces Nvidia GB300 \u2014 Tom's Hardware",
-          "url": "https://www.tomshardware.com/tech-industry/semiconductors/openai-says-its-jalapeno-chip-beats-nvidias-gb300-in-first-published-benchmarks"
+          "title": "SanDisk HBF: HBM bandwidth at 16\u00d7 capacity \u2014 DigiTimes",
+          "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxNblhleDc4c2t2UUpEQUUtalI1aFlmUGgzUktRMDNXV1h4TUZYbFJYNkYyMlhVcFFQUF9JNllOdWpSdnV3Y3pkdmh0b2phS3ZsbDlBUU9uVmdLTzZ6THRFT3VYaHlvcjl6Z3pjT0ZERGYzVGRpTG1Zc3hkTzBwWTBNZkxFOU1feUJCWFZpUU9EUThwUnVC"
         },
         {
-          "title": "Samsung LPDDR5X-PIM 3x inference speed \u2014 Tom's Hardware",
-          "url": "https://www.tomshardware.com/pc-components/dram/hot-chips-2026-samsung-makes-lpddr5x-smart-with-logic-unit-in-memory-lpddr5x-pim-is-3-01x-faster-than-lpddr5x-in-ai-inference-with-8x-the-bandwidth"
-        },
-        {
-          "title": "Nvidia Vera Rubin boosts AI throughput per megawatt",
-          "url": "https://news.google.com/rss/articles/CBMi2AFBVV95cUxOMm9JV1RMY3BrckctQjZBbDZkNWhLdXF3X0x2ZzdWQTM2aUtFU3loWlZMT1RvNnF0XzhCQjluaG41OVlpTzFlaEZ5NndzVlVsY05yRWdkcVhib2dsOEtON3QzRXFIazB0amVGNk1INzJwb3hOSkhTRHpYdUw1eGRxYlp6ZDRQXy1GaWVOSzh0WnRoZTJzU3NldlRiSmJrYThxZmd6NVVyRzBmSldkNS1ZTDZQdFBMNEFuRWVTT1gzMWFMOFJ4Wm9RVUFTWk9GVzlXZzFkMHR0WkQ"
+          "title": "Google TurboQuant \u2014 original Mar 2026 publication (permanent evidence)",
+          "url": "https://arxiv.org"
         }
       ],
       "change_vs_prior": null
@@ -131,19 +127,19 @@
       "description": "Supplier-buyer inventory gap exposes prior double-ordering. Requires BOTH sides confirmed (stitched signal).",
       "what_to_look_for": "Supplier inventory <3 weeks AND OEM/buyer inventory >7 weeks. Gap >5 weeks is unprecedented (currently ~7 weeks per TrendForce Q3 2025). Trigger requires evidence from BOTH supplier-side (memory makers) AND buyer-side (Dell/HPE/Lenovo).",
       "current_status": "Fired",
-      "where_we_stand": "Fired on TrendForce Q3 2025 data: supplier inventory ~2\u20133 weeks vs OEM/buyer inventory ~10 weeks \u2014 a 7+ week gap that exceeds the 5-week unprecedented threshold. Quarterly persistence rule holds: status does not revert absent explicit reversal evidence (buyer inventory <5w OR supplier inventory >5w). Today's Micron Q3 transcript diff\u2026",
-      "latest_developments": "Micron Q3 transcript diff dropped OEM inventory language entirely, replacing it with 'supply-demand intercept not visible through 2028' framing \u2014 management signaling demand absorption rather than buyer overhang. Watch for next TrendForce monthly print or\u2026",
+      "where_we_stand": "Fired since Sep 1, 2025 on TrendForce Q3 2025 data: supplier inventory ~2\u20133 weeks, buyer inventory ~10 weeks, gap ~7 weeks \u2014 unprecedented per framework threshold (>5 weeks). Dell Q2 FY2027 (Sep 2, 2026) adds fresh buyer-side corroboration: DRAM and NAND cited as primary supply constraints with 'demand outstripped supply'\u2026",
+      "latest_developments": "Dell Q2 earnings (Sep 2): 'DRAM, DRAM, followed by NAND, NAND' and 'demand outstripped supply' confirm supplier-tight conditions. No new TrendForce inventory-weeks print to update the canonical 2\u20133w / 10w gap.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price \u2014 2026-09-01",
-          "url": "https://www.trendforce.com/price/dram/dram_spot"
+          "title": "Dell Q2 FY2027 earnings \u2014 CNBC",
+          "url": "https://www.cnbc.com/2026/09/01/dell-q2-earnings-report-2027.html"
         },
         {
-          "title": "Micron earnings investor page",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "Dell Q2 FY2027 earnings transcript \u2014 Yahoo Finance",
+          "url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q2-2027-earnings_call-589603.html"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status unchanged (Fired). Dell earnings add corroborating buyer-side constraint language but no new inventory-weeks metric to update the canonical TrendForce Q3 2025 print."
     },
     {
       "id": "t1_price_cuts_no_demand",
@@ -169,15 +165,23 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 2). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $54.08 (2026-09-01 print). Matrix basis (weekly means): current wk $54.00, -0.14% vs rolling 12w wk-peak $54.07 (wk ending 2026-08-30). 1w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 154d old). Synthetic adjusted: 63.5% central (range 61-66%). Adjustments: tone +5.0pp (5 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
-      "latest_developments": "TrendForce Aug 26 spot print: DDR5 $54.17, eTT $23.75 \u2014 both flat. No directional move in either spot tier. Matrix verdict: Not fired (R1\u00d7C1).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $54.25 (2026-09-02 print). Matrix basis (weekly means): current wk $54.08, +0.00% vs rolling 12w wk-peak $54.08 (wk ending 2026-09-06). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 155d old). Synthetic adjusted: 63.5% central (range 61-66%). Adjustments: tone +5.0pp (5 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "latest_developments": "TrendForce Sep 2 spot print: DDR5 $54.25 (+0.31%), DDR4 $92.65 (+0.68%), eTT $24.00 (+0.42%). Goldman Sachs reiterates memory prices on upward trajectory. Matrix remains R1\u00d7C1.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price \u2014 Aug 26 2026",
+          "title": "TrendForce DRAM Spot Price \u2014 Sep 2, 2026",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
+        },
+        {
+          "title": "Goldman Sachs: memory prices upward trajectory, Buy Samsung/SK Hynix \u2014 Moomoo",
+          "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxOanltUFJCaU1HWjNrbmd6Y3RDczk4QTJjQU5FY0M4MGxpRXlWVWUzXzhSd0JDM2thblFQYksyb3JHRXhpcHV6NHVOZjVNbmVvLWEtVC1fZEtmZVQ5X3hwV19qVDc0N3ZNVWN6UE9jaV9FaWFnamZuYV9tY3FjYkR4YW9QUWlZRVk0U09kNHd3cjZEdmRpV2lqc1hZQWxvSm05YmVHVXp3Yw"
+        },
+        {
+          "title": "HBM3E spot 4\u20135\u00d7 LTA; Samsung locks 70% capacity through 2031 \u2014 TrendForce",
+          "url": "https://news.google.com/rss/articles/CBMi8gFBVV95cUxQRGc2dkhFYlNoSXIybzlWZnJyMFYwWUU2VGJKV0l1WlN6YjZwclZWS1poOWF0Tm9LWHBUV2VLR2F5eFBBTzYwSS1QbHJydEJWUWFiblppUllLSHp0aDRrSTlUTGZ4cHhDbU5OM0sweTVOa2Zua2VBU0cyNEdfOGs1aXZPX25FR2tmRFpfdlZpX2J1R29EbVR2N0FmcEhHSWR1SWE1cVJJTGtoSkRYd0g1SFoxVk5XVjFQbllMcDJMdDZ3THhGUU16VnpoSFNHa1VjT2ZjaWZGRW1RWi1UaGJ6aGNsNWVmOC1JQ0lJT3NxV1ZpQQ"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status unchanged (Not fired). Matrix recomputed fresh: R1\u00d7C1, spot at rolling 12-week peak, no drawdown."
     },
     {
       "id": "t1_us_adr_event",
@@ -333,12 +337,16 @@
       "description": "Spot prices weakening while contract still rises means spot has rolled. DDR4 inverted (fired). DDR5 not yet.",
       "what_to_look_for": "DDR5 spot below DDR5 server contract for any product variant. Spread narrowing toward zero.",
       "current_status": "Fired",
-      "where_we_stand": "Fired. DDR4 spot remains inverted below DDR4 contract (evidence entry 2026-04-01). DDR5 spot at $54.17 (flat); DDR5 server contract anchor at Q2 2026 +58-63% QoQ \u2014 spread remains wide and positive for DDR5, meaning DDR5 has not yet inverted. The signal fires on the DDR4 inversion, which persists. No reversal\u2026",
-      "latest_developments": "DDR5 spot flat at $54.17 (TrendForce, Aug 26). No new contract price data. DDR4 inversion persists per signal history. No reversal.",
+      "where_we_stand": "Fired on DDR4 spot/contract inversion (as of Apr 1, 2026, persistence=live). DDR4 16Gb spot $92.65 today \u2014 the inversion relative to DDR4 contract remains the canonical trigger. DDR5 spot $54.25 continues to trade above DDR5 server contract; no DDR5 inversion yet. HBM3E spot at 4\u20135\u00d7 LTA levels represents the extreme\u2026",
+      "latest_developments": "TrendForce Sep 2: DDR4 spot +0.68%, DDR5 spot +0.31%. HBM3E spot 4\u20135\u00d7 LTA per TrendForce. No new spread-inversion data for DDR5; DDR4 inversion persists.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price \u2014 Aug 26 2026",
+          "title": "TrendForce DRAM Spot Price \u2014 Sep 2, 2026",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
+        },
+        {
+          "title": "HBM3E spot 4\u20135\u00d7 LTA; Samsung locks 70% capacity \u2014 TrendForce",
+          "url": "https://news.google.com/rss/articles/CBMi8gFBVV95cUxQRGc2dkhFYlNoSXIybzlWZnJyMFYwWUU2VGJKV0l1WlN6YjZwclZWS1poOWF0Tm9LWHBUV2VLR2F5eFBBTzYwSS1QbHJydEJWUWFiblppUllLSHp0aDRrSTlUTGZ4cHhDbU5OM0sweTVOa2Zua2VBU0cyNEdfOGs1aXZPX25FR2tmRFpfdlZpX2J1R29EbVR2N0FmcEhHSWR1SWE1cVJJTGtoSkRYd0g1SFoxVk5XVjFQbllMcDJMdDZ3THhGUU16VnpoSFNHa1VjT2ZjaWZGRW1RWi1UaGJ6aGNsNWVmOC1JQ0lJT3NxV1ZpQQ"
         }
       ],
       "change_vs_prior": null
@@ -409,10 +417,19 @@
       "description": "Memory stocks losing relative strength vs the broad market. v3.43.0: benchmark is the S&P 500 ONLY \u2014 SOX removed (the SOX is ~40% memory, so the spread is self-referential and mean-reverts against memory names exactly during a memory unwind: fired Jul-6-2026, un-fired mid-crash, re-fired Jul-31).",
       "what_to_look_for": "FIRE (red): SK Hynix (000660.KS) or Micron (MU) underperforms the S&P 500 by >10pp on BOTH the 5-day AND 20-day windows \u2014 fast entry, trend-confirmed, so a single volatile session cannot trip it. WATCH (yellow): both windows beyond -5pp. STICKY RELEASE: once red, the signal STAYS red until the 5-day spread holds above -5pp for 5 consecutive sessions \u2014 it fires fast and releases slow; daily flapping is a defect, not a feature. The computed spreads are the sole authority for this signal's status (deterministic, two-sided). Where-we-stand and targets are expressed against the S&P 500 spread only; never reference the SOX. Thresholds provisional pending backtest.",
       "current_status": "Not fired",
-      "where_we_stand": "SK Hynix vs. S&P 500: 5d +1.15pp / 20d -11.16pp. Micron vs. S&P 500: 5d -0.64pp / 20d +10.36pp. Fire condition requires BOTH 5d AND 20d windows below -10pp for SK Hynix OR Micron simultaneously. SK Hynix 5d is positive (+1.15pp), well above the -10pp red threshold \u2014 fire condition not met. Micron 20d is strongly positive (+10.36pp). Neither name meets the dual-horizon fire condition. Yellow watch (both windows below -5pp) also not met. Signal remains Not fired. SK Hynix's 20d spread at -11.16pp is the only window in negative\u2026",
-      "latest_developments": "SK Hynix +0.60% today (1D); Micron +2.48%. Both names recovered on the 5-day window. SK Hynix 20d spread remains negative at -11.16pp vs. S&P 500 but the 5d gate is not breached. No status change.",
-      "relevant_links": [],
-      "change_vs_prior": null
+      "where_we_stand": "SK Hynix vs S&P 500: 5d +1.51pp / 20d +7.66pp. Micron vs S&P 500: 5d +0.65pp / 20d +5.93pp. Both names outperform the S&P 500 on both windows \u2014 neither the red threshold (\u2264 \u221210pp on both 5d and 20d) nor the yellow watch threshold (\u2264 \u22125pp on both) is approached. Today's SK Hynix \u22124.73% and Samsung \u22124.02% moves are broad tape co-moves (NVDA \u22121.51%, AMAT \u22123.61%) and do not represent memory-specific underperformance. Sticky-release rule is not in play; signal remains Not fired. Next session to watch: if the tape\u2026",
+      "latest_developments": "SK Hynix \u22124.73% and Samsung \u22124.02% today in line with broad semi weakness; no memory-specific catalyst. Computed spreads remain positive on both horizons \u2014 Not fired confirmed.",
+      "relevant_links": [
+        {
+          "title": "SK Hynix performance data \u2014 Yahoo Finance",
+          "url": "https://finance.yahoo.com/quote/000660.KS"
+        },
+        {
+          "title": "Micron performance data \u2014 Yahoo Finance",
+          "url": "https://finance.yahoo.com/quote/MU"
+        }
+      ],
+      "change_vs_prior": "Status unchanged (Not fired). Prior brief noted Not fired; today's computed spreads confirm continuation. SK Hynix and Micron both outperform S&P 500 on 5d and 20d windows."
     },
     {
       "id": "t3_supplier_inventory_rebuild",
@@ -463,12 +480,16 @@
       "description": "Memory makers announce major CapEx cuts.",
       "what_to_look_for": "Any Big Three announces CapEx reduction of >20% or fab idling.",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. No Big Three memory maker (Samsung, SK Hynix, Micron) has announced a CapEx reduction of >20% or fab idling. Micron Q3 transcript raises FY2027 CapEx guidance to above mid-40% increase with a $10B quarterly run-rate \u2014 the opposite direction. Applied Materials Q3 transcript (DRAM +52% YoY, manufacturing output\u2026",
-      "latest_developments": "Micron Q3 transcript: FY2027 CapEx quarterly run-rate $10B, above mid-40% increase \u2014 directional confirmation that memory-maker capex is accelerating, not cutting. No fab-idling announcements.",
+      "where_we_stand": "No Big Three memory maker has announced a CapEx reduction of >20% or fab idling. Micron's latest guidance (FY2027 capex above mid-40% increase, $10B quarterly run-rate per QoQ transcript diff) and SK Hynix's KRW 7.35T capacity expansion remain in force. Samsung's 70% capacity lock through 2031 at elevated HBM3E spot\u2026",
+      "latest_developments": "Micron transcript diff: FY2027 capex guided above mid-40% increase with $10B quarterly run-rate \u2014 acceleration, not a cut. Samsung locking 70% capacity through 2031. No cut signals from any Big Three.",
       "relevant_links": [
         {
-          "title": "Micron capex expansion \u2014 Boise transformation",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE1VMUJSSEtsaEp1RWdwSXpNOW02SUNhT0I1cC1HeGtRdWxMWXpVX25DampiMnhmZ3ZrZkhxdzExbDdzd2k4dUFiWkJ1LXFFVUNPN0JPekk2YW5tMUdDejRkS1R1RFBvdjMwSjZEa2QwRG5qNmhIV1E"
+          "title": "Micron FY2027 capex guidance \u2014 investors.micron.com",
+          "url": "https://investors.micron.com/events-and-presentations"
+        },
+        {
+          "title": "Samsung 70% capacity lock through 2031 \u2014 DigiTimes",
+          "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxQRDhXLWFuSEg5TGxVM3ZEeGtEY3liTS1PWGdRbEFFUjJzMzlZTDRVdHhvV1BtRmVHbTRWM0NaM2JtQ3g2VV9XeWJDUHYtaXNrV2hWeUt2aDBtek1KQWN3Yjhka2JORDh4bzBnSXNEX290aUlnZmFVVVd3Z0pqYWtoLXRfV2c5MnlMNkZfM3VfRTJzZw"
         }
       ],
       "change_vs_prior": null
