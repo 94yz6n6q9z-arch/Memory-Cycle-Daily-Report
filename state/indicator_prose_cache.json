@@ -27,48 +27,52 @@
       "evidence_count": 2
     },
     "t1_demand_destruction": {
-      "last_full_regen_date": "2026-08-29",
+      "last_full_regen_date": "2026-09-03",
       "current_status": "Partially fired",
-      "where_we_stand": "IDC PC forecast at -2.4% to -11.3% for 2026 (below -5% threshold, fired Apr 15 2026). Counterpoint smartphone at -2% (below 0% threshold). No reversal published by IDC, Counterpoint, or Gartner. Today's Applied Materials Q3 transcript diff shows record DRAM revenue growth (+52% YoY) and no demand-destruction language \u2014 a\u2026",
-      "latest_developments": "Applied Materials Q3 call (transcript diff) shows record DRAM +52% YoY with no demand-destruction language \u2014 weakens the intensification leg. Micron Q3 diff adds 'supply-demand intercept not visible' through 2028. No new IDC/Counterpoint/Gartner forecast revisions\u2026",
+      "where_we_stand": "Partially fired. Quantity signal remains active: IDC PC forecast -2.4% to -11.3% for 2026 (recorded 2026-04-15); Counterpoint smartphone -2%. Dell (2026-09-02) and HPE (2026-09-03) earnings show AI server demand far exceeding supply \u2014 'demand outstripped supply' and 'orders 3.5x faster than revenue' \u2014 which corroborates the signal change from Fired\u2026",
+      "latest_developments": "Dell Q2 FY2027 (2026-09-02): 'DRAM, DRAM, followed by NAND, NAND' \u2014 supply-constrained, not demand-destructive. HPE Q3 2026 (2026-09-03): 'Supply constraints continue to affect ability to fulfill increased customer demand.' Neither print reverses the underlying PC/smartphone\u2026",
       "relevant_links": [
         {
-          "title": "Mirae Asset: SK Hynix tight supply/demand through 2028",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342304"
+          "title": "Dell Q2 FY2027 earnings call",
+          "url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q2-2027-earnings_call-589603.html"
         },
         {
-          "title": "Micron supply-demand commentary \u2014 Investing.com",
-          "url": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxPNS1ZUTlKOERDWHJBR0pldlExcjhjeEpiOE1ZVVNZTUhIaFBpT2tmQUs3WFBPUVoxaUJJbVl5bWF3ZjN4NGRLX19XQTc2dU5jS0tWdVFKTFhOeEVyNUhURnRJOFVrMmw5SExfTEF1bUQ1YzFyMjZheXpEOFRCaFRmWTk1Yk9qNTRmOFdSZHB2VHpRT19fMW1zOUF4UTNTVk96cTl1eWJQbWxZZXRCV0ppVU10NGVhY0cxd29uVHNwdjFYbFJjalNrc1E2S0d6VUpHSlNsR0lwaw"
+          "title": "HPE Q3 2026 earnings call",
+          "url": "https://finance.yahoo.com/quote/HPE/earnings/HPE-Q3-2026-earnings_call-683499.html"
+        },
+        {
+          "title": "Dell CEO: AI boom means nonstop scrambling for parts",
+          "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxNZ3Z5NlZndUh5NXh4T1Y2UHN3X25KVjVoS1ZycUtyREJhYWR1V2p0ZkhOR3B4Vjh6YzY4S1dHSUlaNWRQemE0a25oTzJEeTI1QWRScXVfOFljb1Z2WkE2dHZnREx6Unhua29ERkt1QkFNX2Ftb3hNeDIwN1BrelJMbGZ2WFk0bGl0UzFzbjJfQUFtcmhIckxtY2ZSNWhQQW9zY3J1a3hrQURuN0RG"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "status": "Partially fired",
-      "updated_date": "2026-08-29",
+      "updated_date": "2026-09-03",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 2
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-09-02",
+      "last_full_regen_date": "2026-09-03",
       "current_status": "Fired",
-      "where_we_stand": "Fired since Mar 24, 2026: Google TurboQuant published 6\u00d7 KV-cache compression and 8\u00d7 speedup on H100 \u2014 a permanent algorithmic fact. Today's SanDisk HBF announcement (16\u00d7 capacity vs HBM at claimed bandwidth parity) adds an architectural substitution vector but does not meet the efficiency-shock threshold (no KV-cache compression claim, no\u2026",
-      "latest_developments": "SanDisk HBF claims HBM bandwidth parity at 16\u00d7 capacity \u2014 a disaggregation signal for the DHCR overlay but not a new efficiency-shock trigger. No qualifying lab announcement today.",
+      "where_we_stand": "Fired. Google TurboQuant (2026-03-24) \u2014 6x KV-cache compression, 8x speedup \u2014 remains the sole fired evidence under permanent persistence. Today's AMD 3D DRAM hybrid bonding '17x improvement over HBM' claim (2026-09-02) is a hardware architecture efficiency claim, not an inference-algorithm breakthrough; it does not cite a memory-per-token reduction multiplier from\u2026",
+      "latest_developments": "AMD 3D DRAM hybrid bonding '17x HBM efficiency' data published 2026-09-02 \u2014 hardware architecture claim, not an inference-algorithm multiplier; does not meet the official-lab-blog or arXiv + 3-publication threshold. Monitoring for follow-on coverage.",
       "relevant_links": [
         {
-          "title": "SanDisk HBF: HBM bandwidth at 16\u00d7 capacity \u2014 DigiTimes",
-          "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxNblhleDc4c2t2UUpEQUUtalI1aFlmUGgzUktRMDNXV1h4TUZYbFJYNkYyMlhVcFFQUF9JNllOdWpSdnV3Y3pkdmh0b2phS3ZsbDlBUU9uVmdLTzZ6THRFT3VYaHlvcjl6Z3pjT0ZERGYzVGRpTG1Zc3hkTzBwWTBNZkxFOU1feUJCWFZpUU9EUThwUnVC"
+          "title": "AMD 3D DRAM hybrid bonding 17x efficiency data",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE90Wm1sYS1VbUJUVnR5UUxSdXFnaXlNamM5Q0hmaXV3SFhhTFBrU3dpWU1vLWxYOGlwSl91blc4Z3d6cDVsUXJKREVkMGJfbHFZVGc5aU9wRW9wUEN6cWNwbXRjVmZlM3R4eEhETmU3aDgyNU9aNEE"
         },
         {
-          "title": "Google TurboQuant \u2014 original Mar 2026 publication (permanent evidence)",
-          "url": "https://arxiv.org"
+          "title": "SK Hynix: The real bottleneck \u2014 data, not compute",
+          "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE9OTG96cWFZQmdLZ29oMzZzb0tnRlpOOW14OGRpNzU3OGV4WjBXU0FQYXYzLTZidF9DbTZoUG1BRXk1aURDaVAzLTZVeGRpRWlBMWQybVZ4cVN4R1REUUxDNWhR"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-02",
+      "updated_date": "2026-09-03",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 0
+      "evidence_count": 1
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-08-31",
@@ -93,26 +97,26 @@
       "evidence_count": 0
     },
     "t1_oem_inventory": {
-      "last_full_regen_date": "2026-09-02",
+      "last_full_regen_date": "2026-09-03",
       "current_status": "Fired",
-      "where_we_stand": "Fired since Sep 1, 2025 on TrendForce Q3 2025 data: supplier inventory ~2\u20133 weeks, buyer inventory ~10 weeks, gap ~7 weeks \u2014 unprecedented per framework threshold (>5 weeks). Dell Q2 FY2027 (Sep 2, 2026) adds fresh buyer-side corroboration: DRAM and NAND cited as primary supply constraints with 'demand outstripped supply'\u2026",
-      "latest_developments": "Dell Q2 earnings (Sep 2): 'DRAM, DRAM, followed by NAND, NAND' and 'demand outstripped supply' confirm supplier-tight conditions. No new TrendForce inventory-weeks print to update the canonical 2\u20133w / 10w gap.",
+      "where_we_stand": "Fired. TrendForce Q3 2025 established supplier ~2-3 weeks vs buyer ~10 weeks (gap 7+ weeks) \u2014 quarterly persistence, no reversal print published. Dell (2026-09-02) and HPE (2026-09-03) earnings provide fresh corroboration: Dell 'demand outstripped supply; demand was even greater than results published'; HPE 'supply constraints continue to affect ability to\u2026",
+      "latest_developments": "Dell Q2 FY2027 and HPE Q3 2026 both confirm DRAM/NAND as binding supply constraints with demand exceeding supply. Reinforces the buyer-rebuilding dynamic without providing numeric inventory weeks for a metric update.",
       "relevant_links": [
         {
-          "title": "Dell Q2 FY2027 earnings \u2014 CNBC",
-          "url": "https://www.cnbc.com/2026/09/01/dell-q2-earnings-report-2027.html"
+          "title": "Dell Q2 FY2027 earnings call",
+          "url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q2-2027-earnings_call-589603.html"
         },
         {
-          "title": "Dell Q2 FY2027 earnings transcript \u2014 Yahoo Finance",
-          "url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q2-2027-earnings_call-589603.html"
+          "title": "HPE Q3 2026 earnings call",
+          "url": "https://finance.yahoo.com/quote/HPE/earnings/HPE-Q3-2026-earnings_call-683499.html"
         }
       ],
-      "change_vs_prior": "Status unchanged (Fired). Dell earnings add corroborating buyer-side constraint language but no new inventory-weeks metric to update the canonical TrendForce Q3 2025 print.",
+      "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-02",
+      "updated_date": "2026-09-03",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 2
     },
     "t1_price_cuts_no_demand": {
       "last_full_regen_date": "2026-08-31",
@@ -291,26 +295,22 @@
       "evidence_count": 6
     },
     "t2_pe_compressed": {
-      "last_full_regen_date": "2026-08-27",
+      "last_full_regen_date": "2026-09-03",
       "current_status": "Fired",
-      "where_we_stand": "Fired. Computed forward P/E: SK Hynix 3.74x (FY27, 39 analysts), Samsung 3.88x (FY27, 36 analysts), Micron 5.89x (FY27, 44 analysts). All three breach their respective thresholds (SK Hynix <5x, Samsung <6x, Micron <8x). Mirae Asset (Aug 27) separately cites Samsung 12-month forward P/E at 4.3x. Compression reflects peak-earnings denominator dynamics\u2026",
-      "latest_developments": "Mirae Asset (Aug 27) confirms Samsung forward P/E 4.3x (12m). Computed metrics show SK Hynix 3.74x and Micron 5.89x \u2014 all below thresholds. No reversal (P/E expansion above thresholds) in today's data.",
+      "where_we_stand": "Fired. signal history (2026-07-29): SK Hynix forward P/E 4.6x (threshold <5x) and Samsung 2026f P/E 4.5x (threshold <6x) \u2014 both below their respective thresholds. No computed P/E update in today's metrics block; prior computed state governs. SK Hynix at 1,596,000 KRW (-45.3% from 2,919,000 KRW cycle peak) with no FY+1\u2026",
+      "latest_developments": "Citi trimmed SK Hynix and Samsung targets on KRW strength (2026-09-03), maintaining Buy ratings. Currency-driven trim; no new EPS estimate revision that would alter the forward P/E computation.",
       "relevant_links": [
         {
-          "title": "Mirae Asset \u2014 Samsung forward P/E 4.3x (Aug 27)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342302"
-        },
-        {
-          "title": "Mirae Asset \u2014 SK Hynix Buy maintained (Aug 27)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342304"
+          "title": "Citi trims SK Hynix and Samsung targets on KRW strength",
+          "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQZmp3N1N6azV3b2F0WjdkZnVaNnhVRHdFWXRRaUk3c3liMXdXaVlEVmJsMTZ0YnNyM2NQUks4aDY5TjA3T1A1YTFuT0lBdEZMd2lXZEZCYk5VZEVEd1ktc29GejZwb3IzVy01STZPbE9JMFJRM1BzNm5scW5KOEhOd9IBlAFBVV95cUxQWEtoMjlvUU0yMktvdlFyRnhrQUt1cEJfNW5lNXEwYzAxTEMxZHkta1JWYm1uc25GZWFGbmpfTzJpRUVmWGtzMm1YX0w2RU5BYkYwMi12MlQ0MU1pNXlZeFBfZnhRQWJWcFFWbXU2aXN1WG5XMTRsNXNXM2Z4NmR0MndBS0ladVhFd3J0RFZYNkk1ZElr"
         }
       ],
-      "change_vs_prior": "Status unchanged (Fired). Computed P/E values (SK Hynix 3.74x, Samsung 3.88x, Micron 5.89x) all remain below thresholds. Mirae Aug 27 Samsung 4.3x corroborates.",
+      "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-27",
+      "updated_date": "2026-09-03",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 0
     },
     "t2_spot_contract_spread": {
       "last_full_regen_date": "2026-09-02",
@@ -357,26 +357,26 @@
       "evidence_count": 1
     },
     "t3_eps_miss_guidance": {
-      "last_full_regen_date": "2026-08-27",
+      "last_full_regen_date": "2026-09-03",
       "current_status": "Fired",
-      "where_we_stand": "Fired \u2014 corrected from prior erroneous 'Not fired' reversion. SK Hynix Q2 2026 (Jul 29) printed record profit (+557% YoY) that missed consensus \u2014 beat magnitude collapsed from prior 48.8% to a miss, with guidance maintained. This is the textbook Scenario B fire: first miss with guidance maintained is the\u2026",
-      "latest_developments": "Status corrected to Fired per hard rules: Jul 29 SK Hynix Q2 miss + guidance maintained = Scenario B. Next reset opportunity: Micron Q4 FY26 on Sep 30. Mirae Aug 27 report contains no new\u2026",
+      "where_we_stand": "Fired. SK Hynix Q2 2026 (2026-07-29): record profit +557% YoY that missed consensus EPS with guidance maintained \u2014 textbook Scenario B fire. Quarterly persistence: status holds until next quarterly print. Seeking Alpha piece 'Is the Memory Supercycle Peak Near for Micron and SK Hynix?' (2026-09-02) is a coverage echo of\u2026",
+      "latest_developments": "Seeking Alpha analyst projects Micron Q4 FY2026 as another record quarter (2026-09-03) \u2014 analyst forecast only, not a Micron earnings print. No new quarterly earnings from SK Hynix or Micron in today's feed; quarterly persistence\u2026",
       "relevant_links": [
         {
-          "title": "Micron Q4 FY26 earnings date \u2014 Sep 30",
-          "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPSDcxTTVWaVdYaFpfOTJidmxESm03N0JGLVhYSUFhS0EzNXJxZFhGc3ZwdS1YQzZDOEhzQlVpRk8wWGZvajdzaWxqQ2FYbDljOVFEMWplMWtFbDZFdEZoTTF5OU9UcEstTU9uYjJJeTJvU3RTMlc5UWFvZG1aUXUwSW9Ndmx5NGtjRFBIZWt0WjVhTUtqbUhiTGowaFB5TDJFYmljRUF6WQ"
+          "title": "Micron Q4 2026 record quarter analyst forecast",
+          "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxOZUJldGdlMk5hck50aUZJUkxIdFItSDdGWlNvOVE3UVdqZFdtb0VoN0RGVmlFSHA3aU9hRE9NNGtwMGt0WXFwMkZ3ZHlkWDkxLXRqV2RQRWxXTXc0ZkFBLUUxS1ZZVFdMcUhWX2lwVkY5YVdWem5SemtVMzMzSUxMdC04VmliUWhVaTUyZk5HdTF2dER5V2c"
         },
         {
-          "title": "Mirae Asset \u2014 SK Hynix Buy (Aug 27)",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342304"
+          "title": "Is the Memory Supercycle Peak Near for Micron and SK Hynix?",
+          "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxOdC1tSkVtMnljTm8xWFlpZHNTNGpoUDJySjIyNDNrX0VTT250MVgwX1BrNHBCelJzdHJpWE9sVC12YjY3NEVoMThseGFMeWY2NllXYjZpYW5YTkpqMnpzREJPaFIyZWZ2cm94eDZrbjFjbGNtaWcwckYxOXBlekhJSlFaYl9qS2dBUFB2cHF5UDJ1VmR5MlA4"
         }
       ],
-      "change_vs_prior": "Status corrected Not fired \u2192 Fired. Jul 29 SK Hynix Q2 miss with guidance maintained is the dated Scenario B trigger. Prior reversion to 'Not fired' was a framework violation hard rules; corrected today.",
+      "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-08-27",
+      "updated_date": "2026-09-03",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 2
+      "evidence_count": 0
     },
     "t3_relative_strength": {
       "last_full_regen_date": "2026-09-02",
@@ -489,20 +489,15 @@
       "evidence_count": 0
     },
     "t4_layoffs": {
-      "last_full_regen_date": "2026-08-27",
+      "last_full_regen_date": "2026-09-03",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. No layoffs, headcount reductions, or fab utilization cuts in memory operations (DRAM/NAND/HBM lines) at Samsung, SK Hynix, or Micron reported today or in the recent signal history. Micron's leadership reshuffle (new COO and CTO announced Aug 26) is a management change, not a workforce reduction, and does not\u2026",
-      "latest_developments": "Micron announced new COO and CTO (Aug 26) focused on breaking the HBM bottleneck \u2014 a leadership change, not a layoff event. No memory-division workforce reductions reported.",
-      "relevant_links": [
-        {
-          "title": "Micron leadership reshuffle \u2014 new COO and CTO (Aug 26)",
-          "url": "https://news.google.com/rss/articles/CBMi3gFBVV95cUxNRlM5MTRpUXJuWElPSkI3Slg0UHphclFOWDA2aWZJcEVwZGtaMUpZRkxCWUY3aEstdFJEMk1HcXY1RFZKQjZFLVBvdDhhOWFiMDVoR1RMbHB1OEFVT2VOYnlpSTlTejhlc21DN2FlaXg1VVdyTW5iV0o2dHVuaWprb0dXaThCcUdGeHdYWEdwZFpsNXZ5R013U05Obk5kZUFYMElvWXkzNXItdHlNdkJxY0NJbWRka1kyTUpCU1AtSUFTeTRuRm9sQjlnaEJzcFVGbWF3QVMtbGtNd1M3Qmc"
-        }
-      ],
+      "where_we_stand": "Not fired. No layoff, headcount reduction, or fab utilization cut in memory operations reported for Samsung, SK Hynix, or Micron in today's feed or recent signal history. Samsung and SK Hynix news today covers HBM competitive positioning, capacity expansion (Indiana fab, Japan partnership), and tariff-driven U.S. fab pressure \u2014 none\u2026",
+      "latest_developments": "",
+      "relevant_links": [],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-08-27",
+      "updated_date": "2026-09-03",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -529,22 +524,26 @@
       "evidence_count": 1
     },
     "t3_capex_plateau": {
-      "last_full_regen_date": "2026-08-28",
+      "last_full_regen_date": "2026-09-03",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired. Guidance ledger as of last prints: Microsoft stable [+1] \u2014 FY27 $175B (accounting basis change, investment unchanged, ruled 2026-08-08); Meta stable [+1] \u2014 CY2026 $137.5B reiterated within \u00b15% of prior (Aug 7); Amazon accelerating [-1] \u2014 CY2026 $220B (+10% vs prior, Aug 11); Alphabet accelerating [-1] \u2014 CY2027\u2026",
-      "latest_developments": "No new hyperscaler guidance prints today. Amazon's 3M NVIDIA GPU commitment and $1T 2028 revenue target are demand-side context, not a new CapEx guidance event \u2014 no LEDGER_UPDATE emitted. Ledger state unchanged from Aug 11\u2026",
+      "where_we_stand": "Partially fired. Guidance ledger (deterministic, count-based): Microsoft stable +1 (FY27 $175B, accounting reclassification, 2026-08-07, investment unchanged); Meta stable +1 (CY2026 $137.5B reiterated within \u00b15%, 2026-08-07); Amazon accelerating -1 (CY2026 $220B, +10% vs prior $200B, 2026-08-11); Alphabet accelerating -1 (CY2027 guided above 2026, no number, 2026-07-22). Count at plateau-or-beyond: 2/4 \u2192\u2026",
+      "latest_developments": "HPE Q3 2026 (2026-09-03) shows strong AI server demand but contains no hyperscaler CapEx guidance. No LEDGER_UPDATE triggered. Gene Munster commentary (2026-09-02) expects higher AI CapEx growth in 2027 \u2014 analyst forecast, not first-party guidance\u2026",
       "relevant_links": [
         {
-          "title": "Amazon to add 3M Nvidia GPUs; $1T revenue by 2028 (context only, not a new guidance event)",
-          "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxON0pZQmFLWlluelBQcE1JOHlaYkl1Zm5OLUVwajVPWWQtMl82NC0yekJOdG1QeXl5SmlfUzJsSWJzcWZMTG9XcmpaMElfb2dWX1VxX1oxNnhXSWV2eTlIVTVETXJWMXAzbjJiNmFLNTMyMlRVN2FPSWVjanFjdTljZ1Z0ZVRjdmJOQWp5bG02Tm1OamEyU1dIM0U0MjhFenk1MHE0aXFtV2lnMXVzLUFSOGFUSEphQVIyTlJyQjNnOWNiZWxsQWc"
+          "title": "HPE Q3 2026 earnings call",
+          "url": "https://finance.yahoo.com/quote/HPE/earnings/HPE-Q3-2026-earnings_call-683499.html"
+        },
+        {
+          "title": "Gene Munster: Higher AI CapEx growth in 2027",
+          "url": "https://news.google.com/rss/articles/CBMi7wFBVV95cUxQQmNHMGFITHYxSGRIWDRBTDEwMVJiYlpQOHpQdU5VVER5TldPM3hGZFM5c1UwU0pQUmhvaDZTek03Q0ZPTU1FWS11OFNZczQ3eW9rTW5fVHlmLUJyQXRyUUtha211MUd1TnJvV2I4Zi0xOHhlNVNST1dPaFUxb25XNW9Zb3dpanMtT19xV3lUSUdnZlkzajBRWm4wTUs5T0MtbWFLZFVwTlFrblNjQUtXUjF1bHBYOEhzdnh5M1UtckRORlZIQTBhUHRDVmtJNnRQOER5c3FmbWY1emVYcGxTMlh6MmVfTUFpbEo5NU1WUQ"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "fingerprint_algo": "v3-fired-status",
       "status": "Partially fired",
-      "evidence_count": 0,
-      "updated_date": "2026-08-28"
+      "evidence_count": 1,
+      "updated_date": "2026-09-03"
     }
   }
 }
