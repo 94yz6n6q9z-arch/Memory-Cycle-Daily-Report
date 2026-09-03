@@ -1,15 +1,15 @@
 {
-  "written_at_iso": "2026-09-02T11:44:15.561635+00:00",
+  "written_at_iso": "2026-09-03T11:35:34.654693+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 1,
+    "full_transcript": 2,
     "materials_only": 0,
     "nothing": 2,
-    "already_processed": 32,
+    "already_processed": 31,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
-      "Broadcom": "already_processed",
+      "Broadcom": "full_transcript",
       "TSMC": "already_processed",
       "Applied Materials": "already_processed",
       "Microsoft": "already_processed",
@@ -17,8 +17,8 @@
       "Meta": "already_processed",
       "Amazon": "already_processed",
       "Oracle": "already_processed",
-      "Dell": "full_transcript",
-      "HPE": "already_processed",
+      "Dell": "already_processed",
+      "HPE": "full_transcript",
       "ASML": "already_processed",
       "AMD": "already_processed",
       "Intel": "already_processed",
@@ -227,10 +227,10 @@
     {
       "company": "Broadcom",
       "ticker": "AVGO",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 40296
     },
     {
       "company": "TSMC",
@@ -299,18 +299,18 @@
     {
       "company": "Dell",
       "ticker": "DELL",
-      "availability": "full_transcript",
-      "source_name": "Yahoo Finance",
-      "note": null,
-      "char_count": 42288
-    },
-    {
-      "company": "HPE",
-      "ticker": "HPE",
       "availability": "already_processed",
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
+    },
+    {
+      "company": "HPE",
+      "ticker": "HPE",
+      "availability": "full_transcript",
+      "source_name": "Yahoo Finance",
+      "note": null,
+      "char_count": 55582
     },
     {
       "company": "AMD",
