@@ -53,26 +53,30 @@
       "evidence_count": 2
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-09-03",
+      "last_full_regen_date": "2026-09-04",
       "current_status": "Fired",
-      "where_we_stand": "Fired. Google TurboQuant (2026-03-24) \u2014 6x KV-cache compression, 8x speedup \u2014 remains the sole fired evidence under permanent persistence. Today's AMD 3D DRAM hybrid bonding '17x improvement over HBM' claim (2026-09-02) is a hardware architecture efficiency claim, not an inference-algorithm breakthrough; it does not cite a memory-per-token reduction multiplier from\u2026",
-      "latest_developments": "AMD 3D DRAM hybrid bonding '17x HBM efficiency' data published 2026-09-02 \u2014 hardware architecture claim, not an inference-algorithm multiplier; does not meet the official-lab-blog or arXiv + 3-publication threshold. Monitoring for follow-on coverage.",
+      "where_we_stand": "Fired since March 24, 2026 on Google TurboQuant: 6x KV-cache compression, 8x speedup on H100 \u2014 a permanent algorithmic fact. Today adds two fresh corroborating data points: NVIDIA RTX Spark (local AI acceleration at IFA 2026) and vLLM/llama.cpp optimizations delivering up to 1.9x compute gains on GPUs with 24+ GB\u2026",
+      "latest_developments": "NVIDIA RTX Spark announced at IFA 2026 with vLLM/llama.cpp optimizations boosting local inference compute up to 1.9x on 24+ GB VRAM GPUs. This compounds the existing TurboQuant-anchored efficiency trend and reinforces the per-inference memory-intensity decline\u2026",
       "relevant_links": [
         {
-          "title": "AMD 3D DRAM hybrid bonding 17x efficiency data",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE90Wm1sYS1VbUJUVnR5UUxSdXFnaXlNamM5Q0hmaXV3SFhhTFBrU3dpWU1vLWxYOGlwSl91blc4Z3d6cDVsUXJKREVkMGJfbHFZVGc5aU9wRW9wUEN6cWNwbXRjVmZlM3R4eEhETmU3aDgyNU9aNEE"
+          "title": "NVIDIA Accelerates Local AI at IFA 2026 (NVIDIA Blog)",
+          "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxOc19tWkhaOGg5NWFFWGN5R0dnVkctSk1OTlQzdlJFeGxyOFdpcDl2VllVZTU3Vl9CeWZLTEkxZ3MtUG9Xam4yeVlvU0wtZTdaWmtUOFppY0ZDdVFWczNNWWVQd1FVM05XS09NZ3diemlBYlNoc0RCcUttaTB4VUozci1qbw"
         },
         {
-          "title": "SK Hynix: The real bottleneck \u2014 data, not compute",
-          "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE9OTG96cWFZQmdLZ29oMzZzb0tnRlpOOW14OGRpNzU3OGV4WjBXU0FQYXYzLTZidF9DbTZoUG1BRXk1aURDaVAzLTZVeGRpRWlBMWQybVZ4cVN4R1REUUxDNWhR"
+          "title": "vLLM & llama.cpp Optimizations Boost Compute Up To 1.9x (Wccftech)",
+          "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNSVo1MERrc0VSTXFyNXY2MnExTkRBM0RCbGRsWHNkNUdpTmFEb0JGMGZFODhJbENQTVpFNWxaRWdudjR1LS1vRGg2RHFoZzY2c0gxOHBQNm5VNU1SZWtPekc5YTF4RzJ6emxwbEJUZi1yczZSeTctcWwtcDNZc0ZtQUtqOXVlWThhZVp5RmZqOUZqMG9DbDkxSnRMMlE1UkZ0ekd4MFh6cW7SAa4BQVVfeXFMTVNQSTlTMXo0VVRFUDFMOHhzSzdmTW5DVGhqNkVJSlI5WlFZQW1Fb3oxWmhtbG80bGU4MzZMTWJOS0lOQXRhbWl5ZVptRUd2NE5BU09KaVpiV2R1TXlTZ1NIbjVlelNNVWdoTi0tWURBNW5uVm44MHF6dUZwVEJhMlQ2d0I0MllMU2JiN01UZ0FMUXUtMFNEOFlSdjVSQzBHc19Sa3E4X2gwdjlicEVR"
+        },
+        {
+          "title": "SK Hynix KV-Cache Compression Context (Seeking Alpha HBF/HBS)",
+          "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQNlZtb3VQdHlHRnlVOVRTbWVUdUZFX3VTT3MtZXRkSERJYzFMd29TbzRJZVV5b1YxdG9wblZTQ18wbU5Od1pmZXhBTGZzcDlxMUJzNVVvdTU0RTRncVZIVGcyNjEzc3M2bDJTeEpWUXpjeWxxaTMwem0xUGc5eWxTVUJadWliMTBHV1E5Rk5nUnlCeEl5S0E"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-03",
+      "updated_date": "2026-09-04",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 4
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-08-31",

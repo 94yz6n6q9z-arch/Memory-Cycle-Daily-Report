@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-09-03T11:50:34.913141+00:00",
+  "saved_at_iso": "2026-09-04T12:07:48.953653+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
@@ -7,29 +7,29 @@
     "new_triggers_today": [],
     "base_case": {
       "probability_pct": 50.0,
-      "peak_months_away": 8.4,
+      "peak_months_away": 8.3,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q3 2027",
-      "return_to_peak_pct": -22.286586387844608
+      "return_to_peak_pct": -24.6930126745598
     },
     "bull_case": {
       "probability_pct": 23.0,
-      "peak_months_away": 17.4,
+      "peak_months_away": 17.3,
       "peak_window_start": "Q4 2027",
       "peak_window_end": "Q2 2028",
-      "return_to_peak_pct": -8.57245457393484
+      "return_to_peak_pct": -11.403544323011538
     },
     "bear_case": {
       "probability_pct": 27.0,
-      "peak_months_away": 5.4,
+      "peak_months_away": 5.3,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -36.00071820175439
+      "return_to_peak_pct": -37.982481026108076
     },
-    "delta_from_prior_text": "No indicator status changes today; probability distribution unchanged vs prior brief (base 50/bull 23/bear 27). Bear return_to_peak_pct held at -37% \u2014 within the 'Any T3 fired' band (-40 to -50%) given t3_eps_miss_guidance and t3_capex_plateau both active. Trough window base Q1-Q3 2027 unchanged. Historical calibration anchor: mean SK Hynix peak-to-trough -43% (2014/-36%, 2018/-43%, 2022/-49%).",
+    "delta_from_prior_text": "No indicator status changes today \u2014 zero tier-1-5 fires or unfires. Probability distribution unchanged vs prior brief (base 50%, bull 23%, bear 27%). t1_efficiency_shock prose updated with fresh NVIDIA RTX Spark / vLLM corroborating evidence; status remains Fired. Bear case magnitude calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); current -36% bear is within the 'Any T3 fired' band (-40 to -50%) lower bound \u2014 held given no new T3/T4 fires today. Base case trough window unchanged at Q1-Q3 2027.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-5 signals fired or unfired today; all 23 indicators hold their prior status. The most material development is CXMT's confirmed small-scale HBM3E production start \u2014 a competitive milestone that deepens the Competitor dynamics overlay (Indicator 7) and transmits forward as incremental HBM pricing pressure on SK Hynix 6-12 months out, even at sub-1% share [\u2192\u00a74]. Samsung's Q2 HBM share rising to ~33% (narrowing the gap with SK Hynix to 17pp) corroborates the same overlay [\u2192\u00a73]. Dell and HPE earnings both flag DRAM/NAND as the binding supply constraint \u2014 'demand outstripped supply' (Dell) and 'orders growing 3.5x faster than revenue' (HPE) \u2014 reinforcing the OEM inventory signal [\u2192\u00a73] while offering no reversal of the underlying IDC/Counterpoint demand-destruction forecasts that keep t1_demand_destruction at Partially fired. Citi trimmed targets on SK Hynix and Samsung citing KRW strength but maintained Buy ratings \u2014 directional confirmation of t2_eps_revisions' partial-fire state rather than a new downgrade catalyst [\u2192\u00a74]. SK Hynix -1.05% and Samsung -0.20% on the session while NVDA +3.21% and Cerebras +6.89% [\u2192\u00a71]; the memory pure-plays' modest underperformance versus AI-infrastructure names is consistent with Phase 5 divergence but does not yet cross the t3_relative_strength red threshold [\u2192\u00a73]."
+    "executive_brief": "No tier-1-5 signals fired or unfired today; the framework holds at T1 4/6, T2 7/7, T3 2/5 [\u2192\u00a73]. The sole changed card is t1_efficiency_shock, where NVIDIA's RTX Spark local-AI acceleration and vLLM/llama.cpp optimizations delivering up to 1.9x compute gains on 24+ GB VRAM GPUs add fresh corroborating evidence to the Google TurboQuant-anchored Fired status \u2014 the inference-efficiency ecosystem is actively compounding [\u2192\u00a74]. Samsung's HBM revenue share rose to 33% in Q2 (Counterpoint), narrowing SK Hynix's lead from ~60% toward 50%, a directional confirmation of Competitor dynamics pressure on SK Hynix's HBM margin thesis [\u2192\u00a73]. Nomura maintained buy ratings on both Samsung and SK Hynix, citing severe memory supply shortage, while the AOL/analyst item flagged a Micron EPS estimate cut tied to Fed rate-path risk \u2014 the first dissent in an otherwise bullish sell-side consensus, directional confirmation of t2_eps_revisions [\u2192\u00a74]. Google dismantling retired servers to recover DDR4 underscores extreme supply tightness, consistent with the fired OEM-inventory gap signal [\u2192\u00a73]. SK Hynix filed for Nasdaq debut under ticker SKHY, keeping the ADR event signal active [\u2192\u00a73]. The tape circuit breaker remains at Level 3 Sell with SK Hynix -43.6% from its June 22 cycle peak; today's +3.2% session move is a broad market co-move, not a thesis reversal [\u2192\u00a71]."
   },
   "indicator_assessments": [
     {
@@ -89,16 +89,20 @@
       "description": "Algorithmic or architectural improvement reducing memory-per-token by >2x. TurboQuant-class shocks. The cycle-breaking risk.",
       "what_to_look_for": "Major announcement from Google / OpenAI / Anthropic / Meta / DeepSeek / Mistral. Specific phrases: 'KV cache compression', 'inference efficiency 2x+', 'memory footprint reduction', 'quantization breakthrough'. Source must be official lab blog, arXiv, or 3+ mainstream tech publications within 48 hours.",
       "current_status": "Fired",
-      "where_we_stand": "Fired. Google TurboQuant (2026-03-24) \u2014 6x KV-cache compression, 8x speedup \u2014 remains the sole fired evidence under permanent persistence. Today's AMD 3D DRAM hybrid bonding '17x improvement over HBM' claim (2026-09-02) is a hardware architecture efficiency claim, not an inference-algorithm breakthrough; it does not cite a memory-per-token reduction multiplier from\u2026",
-      "latest_developments": "AMD 3D DRAM hybrid bonding '17x HBM efficiency' data published 2026-09-02 \u2014 hardware architecture claim, not an inference-algorithm multiplier; does not meet the official-lab-blog or arXiv + 3-publication threshold. Monitoring for follow-on coverage.",
+      "where_we_stand": "Fired since March 24, 2026 on Google TurboQuant: 6x KV-cache compression, 8x speedup on H100 \u2014 a permanent algorithmic fact. Today adds two fresh corroborating data points: NVIDIA RTX Spark (local AI acceleration at IFA 2026) and vLLM/llama.cpp optimizations delivering up to 1.9x compute gains on GPUs with 24+ GB\u2026",
+      "latest_developments": "NVIDIA RTX Spark announced at IFA 2026 with vLLM/llama.cpp optimizations boosting local inference compute up to 1.9x on 24+ GB VRAM GPUs. This compounds the existing TurboQuant-anchored efficiency trend and reinforces the per-inference memory-intensity decline\u2026",
       "relevant_links": [
         {
-          "title": "AMD 3D DRAM hybrid bonding 17x efficiency data",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE90Wm1sYS1VbUJUVnR5UUxSdXFnaXlNamM5Q0hmaXV3SFhhTFBrU3dpWU1vLWxYOGlwSl91blc4Z3d6cDVsUXJKREVkMGJfbHFZVGc5aU9wRW9wUEN6cWNwbXRjVmZlM3R4eEhETmU3aDgyNU9aNEE"
+          "title": "NVIDIA Accelerates Local AI at IFA 2026 (NVIDIA Blog)",
+          "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxOc19tWkhaOGg5NWFFWGN5R0dnVkctSk1OTlQzdlJFeGxyOFdpcDl2VllVZTU3Vl9CeWZLTEkxZ3MtUG9Xam4yeVlvU0wtZTdaWmtUOFppY0ZDdVFWczNNWWVQd1FVM05XS09NZ3diemlBYlNoc0RCcUttaTB4VUozci1qbw"
         },
         {
-          "title": "SK Hynix: The real bottleneck \u2014 data, not compute",
-          "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE9OTG96cWFZQmdLZ29oMzZzb0tnRlpOOW14OGRpNzU3OGV4WjBXU0FQYXYzLTZidF9DbTZoUG1BRXk1aURDaVAzLTZVeGRpRWlBMWQybVZ4cVN4R1REUUxDNWhR"
+          "title": "vLLM & llama.cpp Optimizations Boost Compute Up To 1.9x (Wccftech)",
+          "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNSVo1MERrc0VSTXFyNXY2MnExTkRBM0RCbGRsWHNkNUdpTmFEb0JGMGZFODhJbENQTVpFNWxaRWdudjR1LS1vRGg2RHFoZzY2c0gxOHBQNm5VNU1SZWtPekc5YTF4RzJ6emxwbEJUZi1yczZSeTctcWwtcDNZc0ZtQUtqOXVlWThhZVp5RmZqOUZqMG9DbDkxSnRMMlE1UkZ0ekd4MFh6cW7SAa4BQVVfeXFMTVNQSTlTMXo0VVRFUDFMOHhzSzdmTW5DVGhqNkVJSlI5WlFZQW1Fb3oxWmhtbG80bGU4MzZMTWJOS0lOQXRhbWl5ZVptRUd2NE5BU09KaVpiV2R1TXlTZ1NIbjVlelNNVWdoTi0tWURBNW5uVm44MHF6dUZwVEJhMlQ2d0I0MllMU2JiN01UZ0FMUXUtMFNEOFlSdjVSQzBHc19Sa3E4X2gwdjlicEVR"
+        },
+        {
+          "title": "SK Hynix KV-Cache Compression Context (Seeking Alpha HBF/HBS)",
+          "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQNlZtb3VQdHlHRnlVOVRTbWVUdUZFX3VTT3MtZXRkSERJYzFMd29TbzRJZVV5b1YxdG9wblZTQ18wbU5Od1pmZXhBTGZzcDlxMUJzNVVvdTU0RTRncVZIVGcyNjEzc3M2bDJTeEpWUXpjeWxxaTMwem0xUGc5eWxTVUJadWliMTBHV1E5Rk5nUnlCeEl5S0E"
         }
       ],
       "change_vs_prior": null
@@ -169,7 +173,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 2). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $54.00 (2026-09-03 print). Matrix basis (weekly means): current wk $54.06, -0.02% vs rolling 12w wk-peak $54.07 (wk ending 2026-08-30). 1w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 156d old). Synthetic adjusted: 63.5% central (range 61-66%). Adjustments: tone +5.0pp (5 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 2). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $54.07 (2026-09-04 print). Matrix basis (weekly means): current wk $54.06, -0.02% vs rolling 12w wk-peak $54.07 (wk ending 2026-08-30). 1w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 157d old). Synthetic adjusted: 63.5% central (range 61-66%). Adjustments: tone +5.0pp (5 src, weight 0.4); spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "TrendForce Sep 2 spot print: DDR5 $54.25 (+0.31%), DDR4 $92.65 (+0.68%), eTT $24.00 (+0.42%). Goldman Sachs reiterates memory prices on upward trajectory. Matrix remains R1\u00d7C1.",
       "relevant_links": [
         {
