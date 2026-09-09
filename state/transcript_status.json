@@ -1,11 +1,11 @@
 {
-  "written_at_iso": "2026-09-08T11:35:57.431661+00:00",
+  "written_at_iso": "2026-09-09T11:45:29.652867+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 0,
+    "full_transcript": 1,
     "materials_only": 0,
-    "nothing": 2,
-    "already_processed": 33,
+    "nothing": 3,
+    "already_processed": 30,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
@@ -17,8 +17,8 @@
       "Meta": "already_processed",
       "Amazon": "already_processed",
       "Oracle": "already_processed",
-      "Dell": "already_processed",
-      "HPE": "already_processed",
+      "Dell": "full_transcript",
+      "HPE": "nothing",
       "ASML": "already_processed",
       "AMD": "already_processed",
       "Intel": "already_processed",
@@ -40,7 +40,6 @@
       "Meta",
       "Amazon",
       "Oracle",
-      "Dell",
       "HPE",
       "AMD",
       "Intel",
@@ -131,10 +130,10 @@
     {
       "company": "Dell",
       "ticker": "DELL",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Motley Fool",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 56488
     },
     {
       "company": "HPE",
@@ -297,19 +296,11 @@
       "char_count": 0
     },
     {
-      "company": "Dell",
-      "ticker": "DELL",
-      "availability": "already_processed",
-      "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
-    },
-    {
       "company": "HPE",
       "ticker": "HPE",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
