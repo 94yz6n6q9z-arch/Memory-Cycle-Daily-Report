@@ -49,30 +49,30 @@
       "evidence_count": 0
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-09-04",
+      "last_full_regen_date": "2026-09-11",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026 on Google TurboQuant: 6x KV-cache compression, 8x speedup on H100 \u2014 a permanent algorithmic fact. Today adds two fresh corroborating data points: NVIDIA RTX Spark (local AI acceleration at IFA 2026) and vLLM/llama.cpp optimizations delivering up to 1.9x compute gains on GPUs with 24+ GB\u2026",
-      "latest_developments": "NVIDIA RTX Spark announced at IFA 2026 with vLLM/llama.cpp optimizations boosting local inference compute up to 1.9x on 24+ GB VRAM GPUs. This compounds the existing TurboQuant-anchored efficiency trend and reinforces the per-inference memory-intensity decline\u2026",
+      "where_we_stand": "Fired since March 24, 2026 (Google TurboQuant, 6x KV-cache compression). Today's evidence escalates convergence to six independent sources: DeepSeek V4.1 Flash (FP4 KV-cache, 3.8x HBM reduction, 8x SSD reduction), NVIDIA NIM (2.5x Nemotron throughput via speculative decoding), NVIDIA Dynamo (7x multimodal speedup), and Cambricon vLLM KV-cache optimizations. Each independently meets\u2026",
+      "latest_developments": "DeepSeek V4.1 Flash published Sept 10 with FP4 KV-cache achieving 3.8x HBM reduction. NVIDIA NIM technical blog (Sept 10) quantifies 2.5x user-density gain on Nemotron 3 Ultra via full-stack speculative decoding. Both are official lab/developer\u2026",
       "relevant_links": [
         {
-          "title": "NVIDIA Accelerates Local AI at IFA 2026 (NVIDIA Blog)",
-          "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxOc19tWkhaOGg5NWFFWGN5R0dnVkctSk1OTlQzdlJFeGxyOFdpcDl2VllVZTU3Vl9CeWZLTEkxZ3MtUG9Xam4yeVlvU0wtZTdaWmtUOFppY0ZDdVFWczNNWWVQd1FVM05XS09NZ3diemlBYlNoc0RCcUttaTB4VUozci1qbw"
+          "title": "DeepSeek V4.1 Flash \u2014 FP4 KV Cache, 3.8x HBM Reduction (Wccftech)",
+          "url": "https://news.google.com/rss/articles/CBMiqAJBVV95cUxNV3ctQTZSUVZlYUpnLU02cUVPVnZLa2pxYjJaZG1PNVdSenczUzVJTjZLNEcyZzIyRzVkaWJrS0tXaWtabElrYzYxbndqRlNsUnlMWFhCMkdYX2szU0FuQnV4MkdkYUJoczc1a3hWNmlPVnpwX3c0bDZ6RE9UejdOUE11TWlLa0dWdnFmZTZ6WERtdDdvU0FvdVVtR3FGcHZpaWFjdUZnN1g2VkFyTlN2UFo4R2dodFd5YjEtNzJUZThDRndoX0dicTd0eUxOdGFnQzdVdFFyVkJUQWdBX0JmOEpjN2lheDF4LUozMnowUm5KTHdHMjJWb0Nlc1FfQkVfUUhPUGpsanBNOEV0eUo3S1Npb1k1ZWVUUFV2ZzV3WHBiSjBhNWVyRdIBqAJBVV95cUxNV3ctQTZSUVZlYUpnLU02cUVPVnZLa2pxYjJaZG1PNVdSenczUzVJTjZLNEcyZzIyRzVkaWJrS0tXaWtabElrYzYxbndqRlNsUnlMWFhCMkdYX2szU0FuQnV4MkdkYUJoczc1a3hWNmlPVnpwX3c0bDZ6RE9UejdOUE11TWlLa0dWdnFmZTZ6WERtdDdvU0FvdVVtR3FGcHZpaWFjdUZnN1g2VkFyTlN2UFo4R2dodFd5YjEtNzJUZThDRndoX0dicTd0eUxOdGFnQzdVdFFyVkJUQWdBX0JmOEpjN2lheDF4LUozMnowUm5KTHdHMjJWb0Nlc1FfQkVfUUhPUGpsanBNOEV0eUo3S1Npb1k1ZWVUUFV2ZzV3WHBiSjBhNWVyRQ"
         },
         {
-          "title": "vLLM & llama.cpp Optimizations Boost Compute Up To 1.9x (Wccftech)",
-          "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNSVo1MERrc0VSTXFyNXY2MnExTkRBM0RCbGRsWHNkNUdpTmFEb0JGMGZFODhJbENQTVpFNWxaRWdudjR1LS1vRGg2RHFoZzY2c0gxOHBQNm5VNU1SZWtPekc5YTF4RzJ6emxwbEJUZi1yczZSeTctcWwtcDNZc0ZtQUtqOXVlWThhZVp5RmZqOUZqMG9DbDkxSnRMMlE1UkZ0ekd4MFh6cW7SAa4BQVVfeXFMTVNQSTlTMXo0VVRFUDFMOHhzSzdmTW5DVGhqNkVJSlI5WlFZQW1Fb3oxWmhtbG80bGU4MzZMTWJOS0lOQXRhbWl5ZVptRUd2NE5BU09KaVpiV2R1TXlTZ1NIbjVlelNNVWdoTi0tWURBNW5uVm44MHF6dUZwVEJhMlQ2d0I0MllMU2JiN01UZ0FMUXUtMFNEOFlSdjVSQzBHc19Sa3E4X2gwdjlicEVR"
+          "title": "NVIDIA NIM 2.5x Nemotron Throughput \u2014 Full-Stack Optimization (NVIDIA Developer Blog)",
+          "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQVnVRQktsTzVzYWxfeHV0MXpZaEVZWGc5aURfNVRleFI4S0daT1pDcDV0bG5rVFdNYXJsanF0NEVRQlFFU1E2dE9oQkdfWEk1Tm1aZ0NKU2VjalZMeUVCbXRTb2lnRG5tVG9mZm9xaUxSZ1Z0eTVHYkRTXzhVYVZ2NEFaV0tWV0NzUnl0ZzZmdU9jRmRleElhaHpZRnRlWkhuaXp4YU5TNG1HZjI0bE8tSg"
         },
         {
-          "title": "SK Hynix KV-Cache Compression Context (Seeking Alpha HBF/HBS)",
-          "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQNlZtb3VQdHlHRnlVOVRTbWVUdUZFX3VTT3MtZXRkSERJYzFMd29TbzRJZVV5b1YxdG9wblZTQ18wbU5Od1pmZXhBTGZzcDlxMUJzNVVvdTU0RTRncVZIVGcyNjEzc3M2bDJTeEpWUXpjeWxxaTMwem0xUGc5eWxTVUJadWliMTBHV1E5Rk5nUnlCeEl5S0E"
+          "title": "DeepSeek V4.1 Flash \u2014 KV Cache Architecture Detail (MarkTechPost)",
+          "url": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxQYjdKUl9jOVdkWG1HZEpzdTZDaTRHYmhwamlqaXExUFNJck1DUEl0c2E0Z3ZhQ1YyZ2FPdmtkT0dodG0xMTd0MVc2QTJvOVRKWUt6Mmw1WUo1OW9JUlh4SUtfY1luMjZlcEZjVzRrcGFlQ25RaUtUZjVlcDhLZ2I3WWw0YTlZdGFoemlCZDdtSW1nNjdxc1dwNXRPd0FaNGZVMV9kd0JLRVpmTDlmTGVWMEI5eTE3YnF3STlpSjBSQ3gxRF9tVjltSDNfZmNlUm9ya3N5VnlZY2liQdIB3wFBVV95cUxNV0hSR2lQQU5iODhFMmRBMklOMmRWYXotSEVTVFRORGJmMThZRzlRS00xdFowOFNBQjBULUhyR0ZXdUdOVzdJVktvR0w1Z3IxVjF3NEtndG1JRVNjcEtST2l3RGhzWjc5enE5TEM3cUtDV19HQXp1elVHeVVqYjgxVWxzMkI1NFMtbC1ONTVnM1hDWGlyakt4RVlvTWt0bVdRYVI2ekJnWEhlemRFUUJYUVJqT1dTU0N4amt0V2dnVENCYkJuSXNYVFRSQWpOcDVHbzBnY0N4ZlRiWnU0dlB3"
         }
       ],
-      "change_vs_prior": null,
+      "change_vs_prior": "Status unchanged (Fired). Convergence escalated from single-source (Google TurboQuant) to high-convergence multi-lab corroboration across six independent sources. DeepSeek V4.1 Flash (3.8x HBM reduction) and NVIDIA NIM (2.5x throughput) are new evidence entries added today.",
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-04",
+      "updated_date": "2026-09-11",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 4
+      "evidence_count": 6
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-09-07",
