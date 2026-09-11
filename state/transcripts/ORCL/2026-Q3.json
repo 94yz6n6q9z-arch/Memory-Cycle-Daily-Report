@@ -1,0 +1,278 @@
+{
+  "ticker": "ORCL",
+  "company": "Oracle",
+  "quarter_key": "2026-Q3",
+  "digest": {
+    "source_id": "Yahoo Finance / Oracle / 2026-09-11",
+    "source_type": "earnings_transcript",
+    "published_date_iso": "2026-09-11",
+    "title": "Oracle earnings call 2026-09-11",
+    "char_count_input": 46770,
+    "key_metrics": {
+      "capex_2027_guidance_usd_b": 90,
+      "capex_2027_guidance_range_usd_b": "90-95",
+      "net_cash_capex_2027_guidance_usd_b": 70,
+      "q1_fy27_capex_usd_b": 28,
+      "q1_fy27_net_cash_capex_usd_b": 18,
+      "q1_fy27_operating_cash_flow_usd_b": 23,
+      "q1_fy27_free_cash_flow_usd_b": -5,
+      "q1_fy27_revenue_usd_b": 19.3,
+      "q1_fy27_revenue_yoy_pct": 30,
+      "q1_fy27_cloud_infrastructure_revenue_usd_b": 7.4,
+      "q1_fy27_cloud_infrastructure_revenue_yoy_pct": 121,
+      "q1_fy27_cloud_apps_revenue_yoy_pct": 10,
+      "q1_fy27_fusion_revenue_yoy_pct": 14,
+      "q1_fy27_industry_apps_revenue_yoy_pct": 20,
+      "q1_fy27_operating_margin_non_gaap_pct": 42,
+      "q1_fy27_eps_non_gaap": 1.92,
+      "q1_fy27_eps_non_gaap_yoy_pct": 30,
+      "q2_fy27_revenue_guidance_yoy_pct_low": 30,
+      "q2_fy27_revenue_guidance_yoy_pct_high": 34,
+      "q2_fy27_cloud_revenue_guidance_yoy_pct_low": 65,
+      "q2_fy27_cloud_revenue_guidance_yoy_pct_high": 71,
+      "q2_fy27_eps_non_gaap_guidance_low": 1.85,
+      "q2_fy27_eps_non_gaap_guidance_high": 1.93,
+      "q2_fy27_eps_non_gaap_guidance_yoy_pct_low": 21,
+      "q2_fy27_eps_non_gaap_guidance_yoy_pct_high": 25,
+      "fy27_total_revenue_guidance_usd_b": 90,
+      "fy27_total_revenue_guidance_yoy_pct": 34,
+      "fy27_eps_non_gaap_guidance": 8.1,
+      "rpo_increase_q1_usd_b": 26,
+      "gpu_delivered_q1_count": 300000,
+      "gpu_delivered_q1_megawatts": 850,
+      "gpu_delivered_q4_fy26_megawatts": 300,
+      "gpu_delivered_fy26_total_megawatts": 1165,
+      "gpu_utilization_q1_pct": 97.9,
+      "gpu_renewal_premium_pct": 20,
+      "gpu_delivered_abilene_q1_count": 131000,
+      "abilene_capacity_delivered_megawatts": 618,
+      "abilene_capacity_delivered_pct": 75,
+      "abilene_customer_acceptance_hours": 24,
+      "multicloud_database_revenue_yoy_pct": 353,
+      "multicloud_database_customers_yoy_pct": 180,
+      "multicloud_database_regions": 70,
+      "multicloud_database_availability_zones": 119,
+      "embedded_ai_usage_q1_count": 150000000,
+      "embedded_ai_usage_growth_qoq_pct": 42,
+      "ai_agents_production_executions_q1_count": 3500000,
+      "ai_agents_production_executions_qoq_growth_pct": 100,
+      "ai_agents_in_production_count": 2300,
+      "ai_agents_in_production_qoq_growth_pct": 90,
+      "fusion_ai_tokens_consumed_q1_billions": 900,
+      "netsuite_ai_connector_customers_count": 10000,
+      "ai_contracts_closed_q1_usd_b": 30,
+      "rpo_conversion_36month_pct": 50,
+      "at_the_market_equity_issuance_completed_usd_b": 20,
+      "architecture_signals": {
+        "custom_silicon_named": "Vera Rubin",
+        "custom_silicon_memory_arch": "HBM",
+        "enterprise_ai_quarterly_revenue": {
+          "category": "oracle_ai_infra",
+          "quarter": "2027-Q1",
+          "revenue_usd_b": 7.4,
+          "qoq_growth_pct": 121,
+          "yoy_growth_pct": 121,
+          "source_quote": "Cloud infrastructure revenue for Q1 was $7.4 billion, up 121%"
+        },
+        "enterprise_ai_workload_context_tokens": 900000000000,
+        "enterprise_ai_use_case": "Fusion applications, AI agents, database workloads",
+        "deployed_quantization": null,
+        "deployed_moe": null,
+        "deployed_speculative_decoding": null,
+        "deployed_disaggregated_serving": null,
+        "cxl_production_deployment": null,
+        "lpddr_datacenter_design_win": null,
+        "hbm_bit_share_pct": null,
+        "hbm_capex_pct": null,
+        "lpddr_capex_pct": null,
+        "ddr_capex_pct": null,
+        "wafer_allocation_language": null,
+        "memory_pct_of_capex": null,
+        "inference_cost_reduction_pct": null,
+        "tokens_per_dollar_claim": null,
+        "hbf_mention": null,
+        "architecture_freetext": "Oracle delivering 850MW AI capacity in Q1 with 300K GPUs; Vera Rubin systems performing better than expected; 97.9% GPU utilization; 20% renewal premium on 4+ year old GPUs indicates strong long-term value and demand."
+      },
+      "_transcript_availability": "full_transcript"
+    },
+    "signal_relevance": [
+      "t2_capex_parabolic",
+      "t2_hyperscaler_capex_revenue",
+      "t1_decode_hbm_captive_ratio"
+    ],
+    "key_quotes": [
+      "We continue to anticipate $90 billion-$95 billion in CapEx for the full year",
+      "Fiscal 2027 and 2028 are peak CapEx years",
+      "GPU utilization remains extremely high at 97.9% in Q1"
+    ],
+    "target_price_action": null,
+    "fired_status_evidence": "supports_fire",
+    "raw_url": "https://finance.yahoo.com/quote/ORCL/earnings/ORCL-Q1-2027-earnings_call-689425.html",
+    "digested_at_iso": "2026-09-11T11:44:26.802712"
+  },
+  "diff_with_prior": {
+    "ticker": "ORCL",
+    "company": "Oracle",
+    "current_quarter": "2026-Q3",
+    "prior_quarter": "2026-Q2",
+    "current_digest_event_date": "2026-09-11",
+    "prior_digest_event_date": "2026-06-10",
+    "indicator_deltas": [
+      {
+        "indicator_id": "t2_capex_parabolic",
+        "direction": "strengthening",
+        "summary": "CapEx guidance raised from $70B net cash outlay to $90-95B reported total; FY2027-2028 now explicitly called 'peak CapEx years' with accelerated Q1 deployment (28B capex, 850MW capacity added)",
+        "prior_quote": "FY 2027 CapEx guidance $70 billion net cash outlay, excluding $20-25 billion prepayments",
+        "current_quote": "We continue to anticipate $90 billion-$95 billion in CapEx for the full year; Fiscal 2027 and 2028 are peak CapEx years"
+      },
+      {
+        "indicator_id": "t2_hyperscaler_capex_revenue",
+        "direction": "strengthening",
+        "summary": "New signal added; cloud infrastructure revenue $7.4B up 121% YoY with RPO increase of $26B in Q1 alone; 300K GPUs delivered in Q1 vs ~1.2GW annually prior",
+        "prior_quote": null,
+        "current_quote": "Cloud infrastructure revenue for Q1 was $7.4 billion, up 121%; rpo_increase_q1_usd_b: 26"
+      },
+      {
+        "indicator_id": "t1_decode_hbm_captive_ratio",
+        "direction": "strengthening",
+        "summary": "New signal added; Vera Rubin custom silicon with HBM explicitly named; 97.9% GPU utilization with 20% renewal premium on 4+ year old GPUs signals strong demand persistence and margin expansion",
+        "prior_quote": null,
+        "current_quote": "Vera Rubin systems performing better than expected; 97.9% GPU utilization; 20% renewal premium on 4+ year old GPUs indicates strong long-term value and demand"
+      },
+      {
+        "indicator_id": "t1_demand_destruction",
+        "direction": "weakening",
+        "summary": "Signal dropped from current call; no language about demand softening, customer deferrals, or pipeline contraction. GPU utilization rose to 97.9% from 97.5%; AI agents in production grew 90% QoQ",
+        "prior_quote": null,
+        "current_quote": null
+      }
+    ],
+    "metric_deltas": [
+      {
+        "metric_name": "capex_2027_guidance_usd_b",
+        "prior_value": "70",
+        "current_value": "90",
+        "direction": "up"
+      },
+      {
+        "metric_name": "capex_2027_reported_total_usd_b",
+        "prior_value": "90",
+        "current_value": "95",
+        "direction": "up"
+      },
+      {
+        "metric_name": "q1_fy27_capex_usd_b",
+        "prior_value": null,
+        "current_value": "28",
+        "direction": "new"
+      },
+      {
+        "metric_name": "q1_fy27_free_cash_flow_usd_b",
+        "prior_value": null,
+        "current_value": "-5",
+        "direction": "new"
+      },
+      {
+        "metric_name": "gpu_delivered_q1_count",
+        "prior_value": null,
+        "current_value": "300000",
+        "direction": "new"
+      },
+      {
+        "metric_name": "gpu_delivered_q1_megawatts",
+        "prior_value": null,
+        "current_value": "850",
+        "direction": "new"
+      },
+      {
+        "metric_name": "gpu_utilization_rate_pct",
+        "prior_value": "97.5",
+        "current_value": "97.9",
+        "direction": "up"
+      },
+      {
+        "metric_name": "q1_fy27_cloud_infrastructure_revenue_yoy_pct",
+        "prior_value": null,
+        "current_value": "121",
+        "direction": "new"
+      },
+      {
+        "metric_name": "rpo_increase_q1_usd_b",
+        "prior_value": null,
+        "current_value": "26",
+        "direction": "new"
+      },
+      {
+        "metric_name": "ai_agents_production_executions_q1_count",
+        "prior_value": null,
+        "current_value": "3500000",
+        "direction": "new"
+      },
+      {
+        "metric_name": "ai_agents_in_production_qoq_growth_pct",
+        "prior_value": null,
+        "current_value": "90",
+        "direction": "new"
+      },
+      {
+        "metric_name": "embedded_ai_usage_q1_count",
+        "prior_value": null,
+        "current_value": "150000000",
+        "direction": "new"
+      },
+      {
+        "metric_name": "embedded_ai_usage_growth_qoq_pct",
+        "prior_value": null,
+        "current_value": "42",
+        "direction": "new"
+      },
+      {
+        "metric_name": "multicloud_database_revenue_yoy_pct",
+        "prior_value": "404",
+        "current_value": "353",
+        "direction": "down"
+      },
+      {
+        "metric_name": "fy27_eps_non_gaap_guidance",
+        "prior_value": "8.05",
+        "current_value": "8.1",
+        "direction": "up"
+      },
+      {
+        "metric_name": "fy27_total_revenue_guidance_usd_b",
+        "prior_value": null,
+        "current_value": "90",
+        "direction": "new"
+      },
+      {
+        "metric_name": "gpu_renewal_premium_pct",
+        "prior_value": null,
+        "current_value": "20",
+        "direction": "new"
+      }
+    ],
+    "language_dropped": [
+      "FY 2027 CapEx guidance $70 billion net cash outlay (replaced by $90-95B reported)",
+      "q1 fy2027 infrastructure delivery guidance of ~1.0 GW (replaced by actual 850MW + 75% Abilene delivery)",
+      "33 customers purchased token bundles in Q4 (no follow-up token bundle language in Q1)",
+      "outcome-based commercial models for AI agents (no longer explicitly mentioned)"
+    ],
+    "language_added": [
+      "Fiscal 2027 and 2028 are peak CapEx years",
+      "Vera Rubin systems performing better than expected",
+      "20% renewal premium on 4+ year old GPUs indicates strong long-term value and demand",
+      "300K GPUs delivered with 850MW capacity in Q1",
+      "900 billion AI tokens consumed in Fusion applications",
+      "75% Abilene capacity delivered with 24-hour customer acceptance",
+      "3.5 million AI agent production executions in Q1, 100% QoQ growth",
+      "150 million embedded AI usage instances, 42% QoQ growth"
+    ],
+    "overall_tone_shift": "more bullish",
+    "computed_at_iso": "2026-09-11T11:44:26.802575",
+    "haiku_model": "claude-haiku-4-5",
+    "haiku_input_tokens": 4087,
+    "haiku_output_tokens": 1869,
+    "error": null
+  },
+  "saved_at_iso": "2026-09-11T11:44:26.802805"
+}

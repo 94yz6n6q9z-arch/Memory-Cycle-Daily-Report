@@ -1,24 +1,24 @@
 {
-  "written_at_iso": "2026-09-10T11:44:43.036119+00:00",
+  "written_at_iso": "2026-09-11T11:44:26.803523+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 2,
+    "full_transcript": 1,
     "materials_only": 0,
     "nothing": 2,
-    "already_processed": 29,
+    "already_processed": 31,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
-      "Broadcom": "full_transcript",
+      "Broadcom": "already_processed",
       "TSMC": "already_processed",
       "Applied Materials": "already_processed",
       "Microsoft": "already_processed",
       "Alphabet": "already_processed",
       "Meta": "already_processed",
       "Amazon": "already_processed",
-      "Oracle": "already_processed",
+      "Oracle": "full_transcript",
       "Dell": "already_processed",
-      "HPE": "full_transcript",
+      "HPE": "already_processed",
       "ASML": "already_processed",
       "AMD": "already_processed",
       "Intel": "already_processed",
@@ -31,6 +31,7 @@
       "Samsung Electronics",
       "Micron",
       "Nvidia",
+      "Broadcom",
       "TSMC",
       "Applied Materials",
       "ASML",
@@ -40,6 +41,7 @@
       "Amazon",
       "Oracle",
       "Dell",
+      "HPE",
       "AMD",
       "Intel",
       "Cerebras"
@@ -65,10 +67,10 @@
     {
       "company": "Broadcom",
       "ticker": "AVGO",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 45965
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "TSMC",
@@ -137,16 +139,16 @@
     {
       "company": "HPE",
       "ticker": "HPE",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 60746
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "ASML",
       "ticker": "ASML",
       "availability": "already_processed",
-      "source_name": "Motley Fool",
+      "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
@@ -195,7 +197,7 @@
       "ticker": "MU",
       "availability": "nothing",
       "source_name": "Micron IR",
-      "note": "IR page loaded but no earnings/transcript links matched. Site may have been redesigned \u2014 selectors need review. Reliability hint: high.",
+      "note": "IR page fetch failed (network or site down).",
       "char_count": 0
     },
     {
@@ -223,6 +225,14 @@
       "char_count": 0
     },
     {
+      "company": "Broadcom",
+      "ticker": "AVGO",
+      "availability": "already_processed",
+      "source_name": "Yahoo Finance",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
+    },
+    {
       "company": "TSMC",
       "ticker": "TSM",
       "availability": "already_processed",
@@ -233,14 +243,6 @@
     {
       "company": "Applied Materials",
       "ticker": "AMAT",
-      "availability": "already_processed",
-      "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
-    },
-    {
-      "company": "ASML",
-      "ticker": "ASML",
       "availability": "already_processed",
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
@@ -281,14 +283,22 @@
     {
       "company": "Oracle",
       "ticker": "ORCL",
+      "availability": "full_transcript",
+      "source_name": "Yahoo Finance",
+      "note": null,
+      "char_count": 46770
+    },
+    {
+      "company": "Dell",
+      "ticker": "DELL",
       "availability": "already_processed",
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
-      "company": "Dell",
-      "ticker": "DELL",
+      "company": "HPE",
+      "ticker": "HPE",
       "availability": "already_processed",
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
