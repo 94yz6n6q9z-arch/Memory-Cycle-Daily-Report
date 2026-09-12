@@ -1,5 +1,5 @@
 {
-  "written_at_iso": "2026-09-11T11:44:26.803523+00:00",
+  "written_at_iso": "2026-09-12T11:08:36.569606+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 1,
@@ -39,7 +39,6 @@
       "Alphabet",
       "Meta",
       "Amazon",
-      "Oracle",
       "Dell",
       "HPE",
       "AMD",
@@ -123,10 +122,10 @@
     {
       "company": "Oracle",
       "ticker": "ORCL",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Motley Fool",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 53966
     },
     {
       "company": "Dell",
@@ -148,7 +147,7 @@
       "company": "ASML",
       "ticker": "ASML",
       "availability": "already_processed",
-      "source_name": "Yahoo Finance",
+      "source_name": "Motley Fool",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
@@ -197,7 +196,7 @@
       "ticker": "MU",
       "availability": "nothing",
       "source_name": "Micron IR",
-      "note": "IR page fetch failed (network or site down).",
+      "note": "IR page loaded but no earnings/transcript links matched. Site may have been redesigned \u2014 selectors need review. Reliability hint: high.",
       "char_count": 0
     },
     {
@@ -249,6 +248,14 @@
       "char_count": 0
     },
     {
+      "company": "ASML",
+      "ticker": "ASML",
+      "availability": "already_processed",
+      "source_name": "Yahoo Finance",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
+    },
+    {
       "company": "Microsoft",
       "ticker": "MSFT",
       "availability": "already_processed",
@@ -279,14 +286,6 @@
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
-    },
-    {
-      "company": "Oracle",
-      "ticker": "ORCL",
-      "availability": "full_transcript",
-      "source_name": "Yahoo Finance",
-      "note": null,
-      "char_count": 46770
     },
     {
       "company": "Dell",
