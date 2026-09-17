@@ -27,24 +27,24 @@
       "evidence_count": 0
     },
     "t1_demand_destruction": {
-      "last_full_regen_date": "2026-09-10",
+      "last_full_regen_date": "2026-09-17",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired. IDC PC forecast -2.4% to -11.3% for 2026 and Counterpoint smartphone -2% remain on record from prior quarters. However, the model transitioned this to Partially fired on Aug 12 2026 because hyperscaler and supplier earnings show strong AI demand with supply constraints as the primary limiter \u2014 contradicting\u2026",
-      "latest_developments": "Applied Materials Q3 call dropped all demand-destruction language; record DRAM +52% YoY and advanced packaging >70% growth signal demand strength. No new forecast cuts from IDC, Counterpoint, or Gartner today.",
+      "where_we_stand": "IDC PC forecast -2.4% to -11.3% for 2026 and Counterpoint smartphone -2% remain the quantity anchors (both below threshold). Applied Materials Q3 transcript shows record DRAM revenue +52% YoY with no demand-destruction language \u2014 a counter-signal at the equipment layer. Samsung's 7-10% smartphone memory price increase guidance is a price-pass-through\u2026",
+      "latest_developments": "Samsung guiding 7-10% smartphone memory price increase \u2014 classic OEM price-pass-through, the leading edge of demand destruction. Watch for transmission into SK Hynix/Micron FY27 EPS estimate cuts (t2_eps_revisions) as the next domino; capex moderation is\u2026",
       "relevant_links": [
         {
-          "title": "Applied Materials Q3 2026 Earnings Transcript",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings-calls/"
+          "title": "Samsung eyes 7-10% smartphone memory price increase",
+          "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxOTHNKeXo5aEZWQnFOV2RMS2JiSFo5bnFqTzJ3Yk9JbnNOcE9PZDZWZThLRC01MVhwNUFCSUtSWl9uci1EZkpzSnhHODFQazMwSzZyMi1HRTFNbUdtRXZvM0NjVDlELTN2MVdHSEpaczRtMGpMYS1sdmEwZ1hicWV1VFRLcFJzYjlYOU8zSi0tTC1WQ3RuTW1ScVM3YWlNcEt1ZlduNmRReVlQYnFNU1praUJtUDhoazgyTEh0dXMwWVRsYVFlamozeWc"
         },
         {
-          "title": "Micron Q3 2026 Earnings Transcript",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "Applied Materials Q3 \u2014 record DRAM +52% YoY, no demand-destruction language",
+          "url": "https://news.google.com/rss/articles/CBMi4AFBVV95cUxNQTNlY0lqWVdoVDVNTDhUU1dmLU5GVXZ2RUJNODFXZ243UmVkaUxjTExSTlhBdnpYR2xwNThoYU1uX3hjR21nSi1lXzNVTjdQSnF1UC1ZVnRselJWZ3czWE83WGktTllFTEoxSDltV2hUQS1Cc21WMU5DaTdvMzJVOWtwQU41ZmdCOEZFVUhhTWRuN0RsdnZOdm5HeW05eHpWbldOVmlXeHFfRWRBWjZZcnpPVlFtSjVXZ3ZLSklXdVQ5clNNdXoycElQcmIzcER0dk1RZGlHUkF3d0FDRzRXaw"
         }
       ],
-      "change_vs_prior": null,
+      "change_vs_prior": "Status unchanged at Partially fired. Samsung price-pass-through guidance is an intensification data point, not a status change.",
       "fingerprint": "e72f7d9a182e4329",
       "status": "Partially fired",
-      "updated_date": "2026-09-10",
+      "updated_date": "2026-09-17",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -97,24 +97,20 @@
       "evidence_count": 0
     },
     "t1_oem_inventory": {
-      "last_full_regen_date": "2026-09-10",
+      "last_full_regen_date": "2026-09-17",
       "current_status": "Fired",
-      "where_we_stand": "Fired. TrendForce Q3 2025 (Sept 1 2025) documented supplier inventory at 2-3 weeks and OEM/buyer inventory at 10 weeks \u2014 a 7+ week gap satisfying the stitched trigger (both sides confirmed simultaneously, gap threshold >5 weeks). Wccftech (Sept 9 2026) reports Samsung and SK Hynix memory inventories have crashed below\u2026",
-      "latest_developments": "Wccftech (Sept 9) reports memory inventories below 10 days at Samsung and SK Hynix \u2014 if confirmed by TrendForce, would narrow the supplier-buyer gap. Micron Q3 transcript removed OEM inventory signal relevance tag. Formal reversal\u2026",
+      "where_we_stand": "TrendForce Q3 2025 documented supplier inventory 2-3 weeks vs OEM/buyer inventory 10 weeks \u2014 a 7+ week gap meeting the stitched trigger (both sides confirmed). Quarterly persistence: status holds until buyer inventory falls below 5 weeks OR supplier inventory rises above 5 weeks. Micron's Q3 transcript dropped OEM inventory language\u2026",
+      "latest_developments": "No new inventory prints today. Micron transcript diff shows OEM inventory language dropped from signal relevance \u2014 watch for next quarterly print to confirm whether the gap is narrowing.",
       "relevant_links": [
         {
-          "title": "Samsung + SK Hynix inventory crash below 10 days \u2014 Wccftech",
-          "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxQSTc2dzB4bHg1bjdLRjlMdkNqMktnRHJFT1F0amUxVjJ6TnFKNUFWVmQ4MFBGVnhDdW1RcVd5T0xGZWgydXQ4UDR2NzJHLTJHLTBQZXh4djJmNTh3QUs0OHczNEFpNHJ2ZmF0LTNvNmVkdWlTN216NHRiOHZJNjRXT3lzWFREbmx3bzRzd3N1UC1TZUtUc3FMOUU1UUsyUEVmcXNJTGpySjV6aE4wemZpTE1meVZjNzEtSmVsa0xWc2NSOWtsWUE3X1d2VGtKZ9IB0wFBVV95cUxNV2xsV1RKWk1LUUZsNzVvSUdwV1BaTGF2NW9HcUJJNUFIRTNseUREMFktM3QxOHA2eXRLdVdLWDhFcUZkSndFQm4xR1BRQ2xoMGZENG8zSzZCTzhEd1BHcWs5bnhsZEk5MTZQV2ljS1dJbG1zQV9MNFd3SHA3MzRJMGFMR0UtU3Z1dmxfYmEwREdFeEdKNk0xVXg3V1BPZVltc3VyODFBRjlrSlpzLUFnTVhwZU5kcGZDOUhHSFA4S3NWeVVFb3MzaXdpSENIdGxoLUZz"
-        },
-        {
-          "title": "Micron Q3 2026 Earnings Transcript",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "TrendForce DRAM Spot Price \u2014 2026-09-17",
+          "url": "https://www.trendforce.com/price/dram/dram_spot"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-10",
+      "updated_date": "2026-09-17",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -299,24 +295,20 @@
       "evidence_count": 0
     },
     "t2_pe_compressed": {
-      "last_full_regen_date": "2026-09-10",
+      "last_full_regen_date": "2026-09-17",
       "current_status": "Fired",
-      "where_we_stand": "Fired. Computed forward P/E: SK Hynix 3.92x (price 1,853,000 KRW \u00f7 FY27 consensus EPS 472,170 KRW) \u2014 below the 5x fire threshold. Samsung 3.89x (price 269,000 KRW \u00f7 FY27 consensus EPS 69,114 KRW) \u2014 below the 6x fire threshold. Micron 6.63x (price $1,027.77 \u00f7 FY27 consensus EPS $155.39) \u2014 below\u2026",
-      "latest_developments": "SK Hynix forward P/E 3.92x, Samsung 3.89x, Micron 6.63x \u2014 all below respective fire thresholds. Mirae Asset (Sept 8) raised Samsung target to 400,000 KRW; JPMorgan initiated SK Hynix ADR at $245. Neither action changes\u2026",
+      "where_we_stand": "SK Hynix forward FY27 P/E: 3.70x (price 1,745,000 KRW / FY+1 EPS est 471,356 KRW) \u2014 well below the 5x threshold. Samsung forward FY27 P/E: 3.58x \u2014 below the 6x threshold. Micron forward FY27 P/E: 5.93x \u2014 below the 8x threshold. All three names are in the compressed zone simultaneously\u2026",
+      "latest_developments": "Analyst estimates show SK Hynix 30d net revision +3.0 (4 up / 3 down) and Samsung 5 up / 7 down \u2014 Samsung showing first net-negative revision pressure. Micron 2 up / 2 down, balanced.\u2026",
       "relevant_links": [
         {
-          "title": "Mirae Asset Samsung target raise to 400,000 KRW",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342544"
-        },
-        {
-          "title": "JPMorgan SK Hynix Overweight initiation $245",
-          "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQLWFibnlGUEdXX0dwa3NaRzNORHlpX1pCTlRXd3VfdnBNYUVrQlJuQ3VVTkl3ZHVtbEV5NXlDREZlZTBYeWVKYU9RRHdWZDdxYVhha0QyZUtrazNHdDFnS0FzRkI3WkpidVNCUjA4VHNzbTdxTVQwNXRKbDBOQW9mNG5oQmdCQ2x6ZjFrVTV4eTlVdW9velItazBkbFAwSGZQckwxNWNDUlRRYUdRNUQ1MVpsdFBSbXAyWldLZEFhc3F6SWVFUGN1TEpB0gHKAUFVX3lxTFAtYWJueUZQR1dfR3Brc1pHM05EeWlfWkJOVFd3dV92cE1hRWtCUm5DdVVOSXdkdW1sRXk1eUNERmVlMFh5ZUphT1FEd1ZkN3FhWGFrRDJlS2trM0d0MWdLQXNGQjdaSmJ1U0JSMDhUc3NtN3FNVDA1dEpsME5Bb2Y0bmhCZ0JDbHpmMWtVNXh5OVV1b296Ui1rMGRsUDBIZlByTDE1Y0NSVFFhR1E1RDUxWmx0UFJtcDJaV0tkQWFzcXpJZUVQY3VMSkE"
+          "title": "SK Hynix ADR analyst target \u2014 42% upside per Wall Street consensus",
+          "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxNRjByZVNFVW91UHhBMUxadC1vel9rSlVnT3pmZ3FIa29yZVM1RkxKbkg1aF9peXZ0SnFobjhEbWRuMXVtTTA0Tk5mM0t3T1JQZlRDNzVSa05PRXlzb2l4XzN3WXR4OUVrZTk0bXpoNUxGTkRuRmlBYmVYN1gxZ0NLZVQ0UDZjWmdqRTBkUWhqSU9wUHNPLVBZ"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-10",
+      "updated_date": "2026-09-17",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -365,46 +357,38 @@
       "evidence_count": 0
     },
     "t3_eps_miss_guidance": {
-      "last_full_regen_date": "2026-09-10",
+      "last_full_regen_date": "2026-09-17",
       "current_status": "Fired",
-      "where_we_stand": "Fired. SK Hynix Q2 2026 (July 29 2026) missed consensus EPS with guidance not raised \u2014 textbook Scenario B fire: record absolute profit (+557% YoY) is irrelevant; only beat magnitude vs consensus and guidance direction matter. Beat collapsed from +48.8% (Q1 2026) to a miss. Quarterly persistence rule: status holds\u2026",
-      "latest_developments": "Micron Sept 30 earnings flagged as key catalyst by multiple sources. Micron operating margin >80% for first time \u2014 a late-cycle peak-margin signal. SK Hynix Q2 miss status persists; no new quarterly print to test\u2026",
+      "where_we_stand": "SK Hynix Q2 2026 missed consensus EPS with guidance not raised \u2014 Scenario B fire condition met (signal history entry 2026-08-27). Status persists until next quarterly print. Beat re-widening to \u226530% on a new print OR a guidance cut (which converts to T4) are the only reversal conditions. No new\u2026",
+      "latest_developments": "No new quarterly prints today. Signal persists on the 2026-08-27 SK Hynix Q2 miss. Micron earnings preview articles are coverage echo \u2014 no new estimate or guidance figure.",
       "relevant_links": [
         {
-          "title": "Micron Sept 30 earnings catalyst \u2014 Yahoo Finance",
-          "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNbUd3bUp4ZzFlZHVIMTV0VFhVZ1d0Q1oyTUE1eEdGakVUNHQ1T1JxUWV3elNZbDlaX1k1OExYSjE4RHZDTUFlZVJxR01FUm5UU2dRWVJyTmFRLVYtc1VXcmR3QkhFWjVVOUYzeGFYX2pCbXhudnhLTTB4STJZR3Jnd3pqSUwtY3I3Y2VLcWdneWJSRkdXM1BZTmJDSVRpNjR3"
-        },
-        {
-          "title": "Micron 80%+ operating margin \u2014 Globe and Mail",
-          "url": "https://news.google.com/rss/articles/CBMikwJBVV95cUxNWm1HMkRUazk5UXU4bFkzWVlzdWNrLXRGQ19wRDhwODFqbEdCMDBUWEEyNmdhYmpxa3ZaT2dyOWEzVnpCNzF6RkxpV19UaW9Sa1ZUYUtBZ3psM1hBQ2N3NUUxMDJITFZKYTIzektXelVmWXktR2t2dnNWN2g3UDdLYzJSU0h6SHlJaEs0czBlUzRiZi1mTUNCRlZnc3dDWG9EajFEREliN2Z2aTdWYjJ1RWd3N1Nnc1hDUlB3Q2YtRTNIZkd5d1JPeGE0MEVUODJaaW5UWnVWS2dwZXNEYWk5N2czcGs1WEpjVl83N3RYSEpfRXl1aENMSUZvdlZXTkw2UFpqVTBkT2ZDWHRZbVZMbVFzWQ"
-        },
-        {
-          "title": "Micron supercycle fork \u2014 AD HOC NEWS",
-          "url": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxPc3oxeWxKSGhILVAtR1liYi1sWFAxUnVKRGFobVFOUEpIdjNnTlZYRHNHakI3Yk9KMHlrTUdGNnpOZVJpN1RxTVduZnFfX1FyTk04MEhPNDhhVzFhcWpGSUdmM2Q0eXItZFJ4UWNuSmtEbTlHb21Ed18yX2hRTGpOYzYwenRhUE9hRXdfckhQUEVCVUpmUjJkai1LWGVfejNJUnkzTjBZY2E4UUprUnM5TDJkbV9LaEVRX0c2M2NNbm9iNWZaandveXd2UzVkb0l4TVlOU2hMYw"
+          "title": "Zacks Earnings Trends \u2014 Micron and Nvidia",
+          "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxPQXV0VGNuYjNIa0FVQXU2alhXUGNPZWNXdVdDcXVEckVhYXliOWRfNGYxNTNyN2IwdmRNZ0NhTF9ta3lFeVViZm1Nd2tjZjVqczBnOHI0Mk11ZGhqN3lKTW5MUnRkQXBIbnBUbTJ2MnpHSUNPRFo2MjRtcXk5X19nbkpXNlo4cndkTUdJbTlpN19RTm83VVAzcEpFbWxlQTRsMkh4MkpUd1BLT2NUaDZhUGlFbGlFdjc4WXZ1YjdYOE5EUVNwUlp1UmUxVHRUZw"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-10",
+      "updated_date": "2026-09-17",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t3_relative_strength": {
-      "last_full_regen_date": "2026-09-16",
-      "current_status": "Partially fired",
-      "where_we_stand": "Computed spreads vs S&P 500: SK Hynix 5d -4.60pp / 20d +5.33pp; Micron 5d -6.12pp / 20d -6.26pp. Overall red (fired) = false; overall severity = yellow. Micron is the active watch: both 5d and 20d windows are below -5pp (yellow threshold), but neither crosses -10pp on both simultaneously (red threshold). SK Hynix's +4.08% session today (strike resolution) pulled its 5d spread above -5pp, preventing a red trigger. The sticky-release rule requires 5 consecutive sessions with SK Hynix or Micron 5d spread above -5pp before yellow clears \u2014 Micron has\u2026",
-      "latest_developments": "SK Hynix +4.08% today on strike resolution improved its 5d spread to -4.60pp (above yellow threshold). Micron 5d -6.12pp / 20d -6.26pp remains in yellow watch zone. No red trigger crossed.",
+      "last_full_regen_date": "2026-09-17",
+      "current_status": "Not fired",
+      "where_we_stand": "Computed spreads vs S&P 500 (deterministic authority): SK Hynix 5d -4.12pp / 20d +7.68pp; Micron 5d -8.74pp / 20d +0.31pp. Red-fire threshold requires BOTH 5d AND 20d below -10pp for either name \u2014 not met. Yellow watch requires both windows below -5pp \u2014 Micron 5d is in yellow zone (-8.74pp) but 20d is +0.31pp, so yellow is also not met. SK Hynix is above yellow on both windows. Sticky release latch cleared; recovery streak resets to zero. Micron's 5d at -8.74pp is the watch item \u2014 one weak session could\u2026",
+      "latest_developments": "Transition from Partially fired (2026-09-16) to Not fired today. SK Hynix 20d spread recovered to +7.68pp, driven by the 1M +16.36% outperformance. Micron 5d remains in yellow watch at -8.74pp.",
       "relevant_links": [
         {
-          "title": "SK Hynix strike resolved, KOSPI surge (TradingKey)",
-          "url": "https://news.google.com/rss/articles/CBMi2AFBVV95cUxPbmc4RnFJanN6U2owWUJncHBiOFMzMENCTHNQSmthY3U0SDdZOU5rdTVVY2VRc1Y5NEVUQXJPS3g4djQzVU1TRDZOdk9laGxfQzBuUTBKWUNkTXFXOS02NGVlZnRVYk5BTGFOeVRaTlVWcEVfM3JYNGdWWkItN3R3eDZoX0VPX0VGWGR6Zmc5NGpESDNFWUlYWmgxenhZRFkxMFFpVFJhQXUtUFhadVpHanlBeTg2dHpKRXE4WjFBbUJhOHRXb3RHb0lra2Q5V2RXLVZYUGdGVy0"
+          "title": "SK Hynix stock falls 8% on AI development slowdown fears (prior session context)",
+          "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxOXzE4ZUdJd2NZZ1F0SFpZRFJLZldUd0hWZGx3QnVlSWhQMkpvTnVKQkxaaEdoSUdiU2YwRmJvRlRmU3JJckptWGtIQUlUOXFBNTJiVUJEWkNnMTlmdWJhbm5NSldXMVZFMng3dHdhMjRPY1FNZFlUXzlVd3h5UnBnN0FmNVFRS0JIbXczZGpUYmdGaVJPRFYtM29zUXRrdnRUVFp0MkJlRFlCejhHZl9JZWd2OGZjZ0U"
         }
       ],
-      "change_vs_prior": null,
-      "fingerprint": "e72f7d9a182e4329",
-      "status": "Partially fired",
-      "updated_date": "2026-09-16",
+      "change_vs_prior": "Reverted to 'Not fired' from 'Partially fired' (2026-09-16). Computed dual-window spreads no longer meet red or yellow thresholds. SK Hynix 20d recovered to +7.68pp; Micron 5d remains in watch zone at -8.74pp but 20d at +0.31pp prevents yellow trigger.",
+      "fingerprint": "d27284b5ba801ef4",
+      "status": "Not fired",
+      "updated_date": "2026-09-17",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 1
     },
@@ -541,18 +525,14 @@
       "evidence_count": 0
     },
     "t3_capex_plateau": {
-      "last_full_regen_date": "2026-09-10",
+      "last_full_regen_date": "2026-09-17",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired. Guidance ledger as of today \u2014 all four companies enumerated: \u2022 Microsoft: STABLE [+1] \u2014 FY27 $175B (print 2026-08-07); accounting basis change (finance\u2192operating lease reclassification), investment unchanged; ruled stable per 2026-08-08 determination. Prior=$190B basis-adjusted. \u2022 Meta: STABLE [+1] \u2014 CY2026 $137.5B reiterated (print 2026-08-07), +1.9% vs prior $135B\u2026",
-      "latest_developments": "Google announced $15B Finland AI infrastructure investment (Sept 9, CNBC) \u2014 a project-level capex commitment corroborating the accelerating stance but not a new quarterly guidance event; no ledger update. Gene Munster (Sept 9) expects higher\u2026",
+      "where_we_stand": "Guidance ledger \u2014 all four companies, as of today: \u2022 Microsoft: stable [+1] \u2014 FY27 $175B (accounting reclassification, investment unchanged), print 2026-08-07, -7.9% vs prior $190B basis-adjusted \u2022 Alphabet: accelerating [-1] \u2014 CY2027 guided above CY2026 (no specific number), print 2026-07-22 \u2022 Amazon: accelerating [-1] \u2014 CY2026 $220B (+10% vs\u2026",
+      "latest_developments": "No new guidance prints today. Meta's 1H27 in-house ASIC (TSMC-made) deployment news is context for the captive-ratio overlay but does not constitute a new CapEx guidance event \u2014 no LEDGER_UPDATE emitted.",
       "relevant_links": [
         {
-          "title": "Google $15B Finland AI infrastructure \u2014 CNBC",
-          "url": "https://www.cnbc.com/2026/09/09/google-finland-ai-infrastructure-investment.html"
-        },
-        {
-          "title": "Gene Munster: Higher AI capex growth 2027",
-          "url": "https://news.google.com/rss/articles/CBMi7wFBVV95cUxQQmNHMGFITHYxSGRIWDRBTDEwMVJiYlpQOHpQdU5VVER5TldPM3hGZFM5c1UwU0pQUmhvaDZTek03Q0ZPTU1FWS11OFNZczQ3eW9rTW5fVHlmLUJyQXRyUUtha211MUd1TnJvV2I4Zi0xOHhlNVNST1dPaFUxb25XNW9Zb3dpanMtT19xV3lUSUdnZlkzajBRWm4wTUs5T0MtbWFLZFVwTlFrblNjQUtXUjF1bHBYOEhzdnh5M1UtckRORlZIQTBhUHRDVmtJNnRQOER5c3FmbWY1emVYcGxTMlh6MmVfTUFpbEo5NU1WUQ"
+          "title": "Meta targets 1H27 deployment for TSMC-made AI chip",
+          "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxNMWRZYjJaSmpWLTFva3ZLcV9LMTB0TzlGUU9nMFdwczd4YS1RQktBMzJEOEdSV29uX0wxNVZlNnhaaklkZXVaVTNwV3VVTjV4ZVplaVVNZHlvYnRXSGNHODVyempkeWF0Z3AwWHpTUU5mTDcxUmRNNkZIUk5MdWVGNlZCX0lsSldEVDU5ZGVteWgwMk9ZLUcwaWFRNGFHamhGekdfMmg0ZXJaNUZWRjdPdU9FU1l0RkhzbFEyeklzSV9rSEJuZ1g4Vk4wWlppbmVvSVdUeQ"
         }
       ],
       "change_vs_prior": null,
@@ -560,7 +540,7 @@
       "fingerprint_algo": "v3-fired-status",
       "status": "Partially fired",
       "evidence_count": 0,
-      "updated_date": "2026-09-10"
+      "updated_date": "2026-09-17"
     }
   }
 }

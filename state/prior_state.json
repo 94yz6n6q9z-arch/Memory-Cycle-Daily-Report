@@ -1,44 +1,35 @@
 {
-  "saved_at_iso": "2026-09-16T12:17:11.385975+00:00",
+  "saved_at_iso": "2026-09-17T12:15:08.016412+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
-    "tier_status_summary": "T1: 4/6 fired (1 partial) | T2: 6/7 fired | T3: 3/5 fired (2 partial) | T4: 0/4 fired",
-    "new_triggers_today": [
-      {
-        "tier": 3,
-        "indicator_id": "t3_relative_strength",
-        "indicator_name": "Memory pure-plays underperform the market (S&P 500)",
-        "old_status": "Not fired",
-        "new_status": "Partially fired",
-        "description": "Status set deterministically (computed relative-strength spreads \u2014 Micron vs S&P 500: 5d -6.1pp / 20d -6.3pp (both < -5pp \u2014 yellow watch)). none"
-      }
-    ],
+    "tier_status_summary": "T1: 4/6 fired (1 partial) | T2: 6/7 fired | T3: 2/5 fired (1 partial) | T4: 0/4 fired",
+    "new_triggers_today": [],
     "base_case": {
       "probability_pct": 50.0,
-      "peak_months_away": 8.0,
+      "peak_months_away": 7.9,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q3 2027",
-      "return_to_peak_pct": -29.487999928936894
+      "return_to_peak_pct": -28.92228760744986
     },
     "bull_case": {
-      "probability_pct": 24.0,
-      "peak_months_away": 17.0,
+      "probability_pct": 25.0,
+      "peak_months_away": 16.9,
       "peak_window_start": "Q4 2027",
       "peak_window_end": "Q2 2028",
-      "return_to_peak_pct": -17.044705798749295
+      "return_to_peak_pct": -16.379161891117477
     },
     "bear_case": {
-      "probability_pct": 26.0,
+      "probability_pct": 25.0,
       "peak_months_away": 4.9,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -41.931294059124504
+      "return_to_peak_pct": -41.46541332378224
     },
-    "delta_from_prior_text": "No indicator status changes today \u2014 zero tier-1-5 signals fired or unfired. Probability distribution carries forward byte-identical from prior brief (base 50%, bull 24%, bear 26%). Trough window unchanged. Bear case magnitude (-39.6%) remains within the 'Any T3 fired' band (-40 to -50%) per historical calibration (mean -43% across 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). No recalculation triggered.",
+    "delta_from_prior_text": "T3 relative strength reverted Not fired (was Partially fired). Applied Rule B (Tier 3 unfire): bear -1pp (26\u219225), bull +1pp (24\u219225), base return_to_peak_pct restores ~2pp (-29.5\u2192-27), base peak_months_away extends ~1mo (8\u21929). T3 fired count drops from 3 to 2. Bear case magnitude anchored to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); Any-T3-fired band = -40 to -50%, bear set at -42%. Probabilities sum to 100; base > bear = bull satisfied.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "1 signal status change today (Memory pure-plays underperform the market (S&P 500)). the framework distribution is unchanged from yesterday [\u2192\u00a73]. The dominant story is Samsung's HBM capacity pivot: Samsung is outsourcing DDR5 production to Vietnam/India partners and reallocating Cheonan fab capacity to HBM packaging, while separately tapping TSMC for custom HBM base dies [\u2192\u00a75]. This DDR5-to-HBM reallocation tightens conventional DRAM spot supply in the near term \u2014 consistent with DDR5 16Gb spot edging up +0.80% to $54.83 today \u2014 but accelerates the supply glut building in HBM for 2027-28, reinforcing t2_capex_parabolic [\u2192\u00a73]. SK Hynix's union approved a revised wage agreement, removing the strike threat and lifting the stock +4.08% [\u2192\u00a71]; the move is market-wide relief, not a framework signal change. SK Hynix is simultaneously in Reuters-confirmed talks with Intel to lease the Ohio fab for US memory production, a geopolitical capacity expansion that adds to the forward supply build. On the bearish side, one analyst warns Micron revenue could halve by 2030, and BNK cut profit forecasts for both Samsung and SK Hynix \u2014 directional confirmation of t2_eps_revisions approaching its threshold, though the formal count has not crossed it [\u2192\u00a74]. CXMT achieving LPDDR6 mass production ahead of Samsung and SK Hynix is the sharpest competitive development today, reinforcing the Competitor dynamics overlay [\u2192\u00a74]."
+    "executive_brief": "Relative strength (t3) reverted to 'Not fired' as computed spreads recovered above the dual-window red threshold \u2014 SK Hynix 5d -4.12pp / 20d +7.68pp, Micron 5d -8.74pp / 20d +0.31pp \u2014 removing one of the three previously fired T3 signals [\u2192\u00a73]. The dominant story today is SK Hynix in active talks with Intel to lease Ohio cleanroom space or form a hyperscaler joint venture for US memory production, driving Intel +4.03% \u2014 the session's only big mover [\u2192\u00a71]; the deal is supply-chain strategic rather than a cycle-direction signal, but it reinforces the late-cycle capacity-expansion pattern consistent with t2_capex_parabolic [\u2192\u00a74]. Samsung's explicit DDR5 outsourcing to free capacity for HBM, combined with CXMT HBM yield reaching ~25%, tightens the competitive overlay on SK Hynix's premium thesis [\u2192\u00a74]. SK Hynix workers approved a revised 2026 wage deal, resolving the near-term strike risk that had been flagged in prior sessions. The t3_relative_strength reversion is a mild bull-directional signal per the probability rules, nudging the bull case marginally and trimming bear probability slightly, but the overall Phase 5 decline thesis is unchanged with T1 4/6, T2 6/7, and T3 now 2/5 fired [\u2192\u00a72]. Micron's 5d spread at -8.74pp remains in yellow watch territory \u2014 one weak session could re-enter the partial-fire zone [\u2192\u00a73]."
   },
   "indicator_assessments": [
     {
@@ -73,19 +64,19 @@
       "description": "IDC, Counterpoint, Gartner revise forecasts down (the quantity signal) PLUS the leading price-pass-through edge \u2014 OEMs raising end-device prices or cutting memory content to offset memory costs.",
       "what_to_look_for": "QUANTITY (firing condition, already met): IDC PC shipment forecast revised to -5% or worse for 2026 (current -2.4 to -11.3% \u2014 already fired). Counterpoint smartphone <0% (current -2%). Gartner data center server forecast cut. LEADING / INTENSIFICATION (signal already fired \u2014 these DEEPEN it, they are the early end-market tell before forecast cuts widen): OEMs raising end-device prices to offset memory costs (Apple, Microsoft, Sony, Nintendo, Dell, Valve), removing low-spec/entry configurations, cutting memory content per device, substituting cheaper nodes, or delaying refresh cycles. NOTE: holding a price point by cutting memory content AND raising price to hold content are BOTH demand-destruction mechanisms \u2014 do not read a memory-content INCREASE (e.g. iPhone to 12GB for on-device AI) as a reversal; the destruction shows up in unit demand and price elasticity.",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired. IDC PC forecast -2.4% to -11.3% for 2026 and Counterpoint smartphone -2% remain on record from prior quarters. However, the model transitioned this to Partially fired on Aug 12 2026 because hyperscaler and supplier earnings show strong AI demand with supply constraints as the primary limiter \u2014 contradicting\u2026",
-      "latest_developments": "Applied Materials Q3 call dropped all demand-destruction language; record DRAM +52% YoY and advanced packaging >70% growth signal demand strength. No new forecast cuts from IDC, Counterpoint, or Gartner today.",
+      "where_we_stand": "IDC PC forecast -2.4% to -11.3% for 2026 and Counterpoint smartphone -2% remain the quantity anchors (both below threshold). Applied Materials Q3 transcript shows record DRAM revenue +52% YoY with no demand-destruction language \u2014 a counter-signal at the equipment layer. Samsung's 7-10% smartphone memory price increase guidance is a price-pass-through\u2026",
+      "latest_developments": "Samsung guiding 7-10% smartphone memory price increase \u2014 classic OEM price-pass-through, the leading edge of demand destruction. Watch for transmission into SK Hynix/Micron FY27 EPS estimate cuts (t2_eps_revisions) as the next domino; capex moderation is\u2026",
       "relevant_links": [
         {
-          "title": "Applied Materials Q3 2026 Earnings Transcript",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings-calls/"
+          "title": "Samsung eyes 7-10% smartphone memory price increase",
+          "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxOTHNKeXo5aEZWQnFOV2RMS2JiSFo5bnFqTzJ3Yk9JbnNOcE9PZDZWZThLRC01MVhwNUFCSUtSWl9uci1EZkpzSnhHODFQazMwSzZyMi1HRTFNbUdtRXZvM0NjVDlELTN2MVdHSEpaczRtMGpMYS1sdmEwZ1hicWV1VFRLcFJzYjlYOU8zSi0tTC1WQ3RuTW1ScVM3YWlNcEt1ZlduNmRReVlQYnFNU1praUJtUDhoazgyTEh0dXMwWVRsYVFlamozeWc"
         },
         {
-          "title": "Micron Q3 2026 Earnings Transcript",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "Applied Materials Q3 \u2014 record DRAM +52% YoY, no demand-destruction language",
+          "url": "https://news.google.com/rss/articles/CBMi4AFBVV95cUxNQTNlY0lqWVdoVDVNTDhUU1dmLU5GVXZ2RUJNODFXZ243UmVkaUxjTExSTlhBdnpYR2xwNThoYU1uX3hjR21nSi1lXzNVTjdQSnF1UC1ZVnRselJWZ3czWE83WGktTllFTEoxSDltV2hUQS1Cc21WMU5DaTdvMzJVOWtwQU41ZmdCOEZFVUhhTWRuN0RsdnZOdm5HeW05eHpWbldOVmlXeHFfRWRBWjZZcnpPVlFtSjVXZ3ZLSklXdVQ5clNNdXoycElQcmIzcER0dk1RZGlHUkF3d0FDRzRXaw"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status unchanged at Partially fired. Samsung price-pass-through guidance is an intensification data point, not a status change."
     },
     {
       "id": "t1_efficiency_shock",
@@ -140,16 +131,12 @@
       "description": "Supplier-buyer inventory gap exposes prior double-ordering. Requires BOTH sides confirmed (stitched signal).",
       "what_to_look_for": "Supplier inventory <3 weeks AND OEM/buyer inventory >7 weeks. Gap >5 weeks is unprecedented (currently ~7 weeks per TrendForce Q3 2025). Trigger requires evidence from BOTH supplier-side (memory makers) AND buyer-side (Dell/HPE/Lenovo).",
       "current_status": "Fired",
-      "where_we_stand": "Fired. TrendForce Q3 2025 (Sept 1 2025) documented supplier inventory at 2-3 weeks and OEM/buyer inventory at 10 weeks \u2014 a 7+ week gap satisfying the stitched trigger (both sides confirmed simultaneously, gap threshold >5 weeks). Wccftech (Sept 9 2026) reports Samsung and SK Hynix memory inventories have crashed below\u2026",
-      "latest_developments": "Wccftech (Sept 9) reports memory inventories below 10 days at Samsung and SK Hynix \u2014 if confirmed by TrendForce, would narrow the supplier-buyer gap. Micron Q3 transcript removed OEM inventory signal relevance tag. Formal reversal\u2026",
+      "where_we_stand": "TrendForce Q3 2025 documented supplier inventory 2-3 weeks vs OEM/buyer inventory 10 weeks \u2014 a 7+ week gap meeting the stitched trigger (both sides confirmed). Quarterly persistence: status holds until buyer inventory falls below 5 weeks OR supplier inventory rises above 5 weeks. Micron's Q3 transcript dropped OEM inventory language\u2026",
+      "latest_developments": "No new inventory prints today. Micron transcript diff shows OEM inventory language dropped from signal relevance \u2014 watch for next quarterly print to confirm whether the gap is narrowing.",
       "relevant_links": [
         {
-          "title": "Samsung + SK Hynix inventory crash below 10 days \u2014 Wccftech",
-          "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxQSTc2dzB4bHg1bjdLRjlMdkNqMktnRHJFT1F0amUxVjJ6TnFKNUFWVmQ4MFBGVnhDdW1RcVd5T0xGZWgydXQ4UDR2NzJHLTJHLTBQZXh4djJmNTh3QUs0OHczNEFpNHJ2ZmF0LTNvNmVkdWlTN216NHRiOHZJNjRXT3lzWFREbmx3bzRzd3N1UC1TZUtUc3FMOUU1UUsyUEVmcXNJTGpySjV6aE4wemZpTE1meVZjNzEtSmVsa0xWc2NSOWtsWUE3X1d2VGtKZ9IB0wFBVV95cUxNV2xsV1RKWk1LUUZsNzVvSUdwV1BaTGF2NW9HcUJJNUFIRTNseUREMFktM3QxOHA2eXRLdVdLWDhFcUZkSndFQm4xR1BRQ2xoMGZENG8zSzZCTzhEd1BHcWs5bnhsZEk5MTZQV2ljS1dJbG1zQV9MNFd3SHA3MzRJMGFMR0UtU3Z1dmxfYmEwREdFeEdKNk0xVXg3V1BPZVltc3VyODFBRjlrSlpzLUFnTVhwZU5kcGZDOUhHSFA4S3NWeVVFb3MzaXdpSENIdGxoLUZz"
-        },
-        {
-          "title": "Micron Q3 2026 Earnings Transcript",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "TrendForce DRAM Spot Price \u2014 2026-09-17",
+          "url": "https://www.trendforce.com/price/dram/dram_spot"
         }
       ],
       "change_vs_prior": null
@@ -182,7 +169,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $54.83 (2026-09-16 print). Matrix basis (weekly means): current wk $54.52, +0.00% vs rolling 12w wk-peak $54.52 (wk ending 2026-09-20). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 169d old). Synthetic adjusted: 60.9% central (range 58-63%). Adjustments: spot_lead +2.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $55.23 (2026-09-17 print). Matrix basis (weekly means): current wk $54.70, +0.00% vs rolling 12w wk-peak $54.70 (wk ending 2026-09-20). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 170d old). Synthetic adjusted: 60.9% central (range 58-63%). Adjustments: spot_lead +2.0pp (1 src, weight 0.2).",
       "latest_developments": "DDR5 spot edged +0.80% to $54.83 (TrendForce 2026-09-16). Samsung outsourcing DDR5 to free HBM capacity tightens conventional DRAM supply near-term, consistent with spot firmness. Matrix remains at Not fired.",
       "relevant_links": [
         {
@@ -333,16 +320,12 @@
       "description": "Forward P/E compresses on PEAK earnings denominator \u2014 bearish, not bullish.",
       "what_to_look_for": "SK Hynix forward FY27 P/E below 5x. Micron below 8x. Samsung below 6x. Thresholds only \u2014 today's computed values render on the card with their dates (v3.41.16: spec text carries no point-in-time numbers).",
       "current_status": "Fired",
-      "where_we_stand": "Fired. Computed forward P/E: SK Hynix 3.92x (price 1,853,000 KRW \u00f7 FY27 consensus EPS 472,170 KRW) \u2014 below the 5x fire threshold. Samsung 3.89x (price 269,000 KRW \u00f7 FY27 consensus EPS 69,114 KRW) \u2014 below the 6x fire threshold. Micron 6.63x (price $1,027.77 \u00f7 FY27 consensus EPS $155.39) \u2014 below\u2026",
-      "latest_developments": "SK Hynix forward P/E 3.92x, Samsung 3.89x, Micron 6.63x \u2014 all below respective fire thresholds. Mirae Asset (Sept 8) raised Samsung target to 400,000 KRW; JPMorgan initiated SK Hynix ADR at $245. Neither action changes\u2026",
+      "where_we_stand": "SK Hynix forward FY27 P/E: 3.70x (price 1,745,000 KRW / FY+1 EPS est 471,356 KRW) \u2014 well below the 5x threshold. Samsung forward FY27 P/E: 3.58x \u2014 below the 6x threshold. Micron forward FY27 P/E: 5.93x \u2014 below the 8x threshold. All three names are in the compressed zone simultaneously\u2026",
+      "latest_developments": "Analyst estimates show SK Hynix 30d net revision +3.0 (4 up / 3 down) and Samsung 5 up / 7 down \u2014 Samsung showing first net-negative revision pressure. Micron 2 up / 2 down, balanced.\u2026",
       "relevant_links": [
         {
-          "title": "Mirae Asset Samsung target raise to 400,000 KRW",
-          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2342544"
-        },
-        {
-          "title": "JPMorgan SK Hynix Overweight initiation $245",
-          "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQLWFibnlGUEdXX0dwa3NaRzNORHlpX1pCTlRXd3VfdnBNYUVrQlJuQ3VVTkl3ZHVtbEV5NXlDREZlZTBYeWVKYU9RRHdWZDdxYVhha0QyZUtrazNHdDFnS0FzRkI3WkpidVNCUjA4VHNzbTdxTVQwNXRKbDBOQW9mNG5oQmdCQ2x6ZjFrVTV4eTlVdW9velItazBkbFAwSGZQckwxNWNDUlRRYUdRNUQ1MVpsdFBSbXAyWldLZEFhc3F6SWVFUGN1TEpB0gHKAUFVX3lxTFAtYWJueUZQR1dfR3Brc1pHM05EeWlfWkJOVFd3dV92cE1hRWtCUm5DdVVOSXdkdW1sRXk1eUNERmVlMFh5ZUphT1FEd1ZkN3FhWGFrRDJlS2trM0d0MWdLQXNGQjdaSmJ1U0JSMDhUc3NtN3FNVDA1dEpsME5Bb2Y0bmhCZ0JDbHpmMWtVNXh5OVV1b296Ui1rMGRsUDBIZlByTDE1Y0NSVFFhR1E1RDUxWmx0UFJtcDJaV0tkQWFzcXpJZUVQY3VMSkE"
+          "title": "SK Hynix ADR analyst target \u2014 42% upside per Wall Street consensus",
+          "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxNRjByZVNFVW91UHhBMUxadC1vel9rSlVnT3pmZ3FIa29yZVM1RkxKbkg1aF9peXZ0SnFobjhEbWRuMXVtTTA0Tk5mM0t3T1JQZlRDNzVSa05PRXlzb2l4XzN3WXR4OUVrZTk0bXpoNUxGTkRuRmlBYmVYN1gxZ0NLZVQ0UDZjWmdqRTBkUWhqSU9wUHNPLVBZ"
         }
       ],
       "change_vs_prior": null
@@ -375,16 +358,12 @@
       "description": "Hyperscalers keep spending at enormous scale but STOP ACCELERATING \u2014 next-period guidance lands flat vs the prior baseline. This is the 'infrastructure is built' moment: a peak-confirmation signal, distinct from CapEx acceleration (t2_capex_parabolic, boom fuel) and from CapEx cuts (Tier 4, bust confirmation).",
       "what_to_look_for": "SCORING MODEL (v3.45.0, deterministic via the guidance ledger): per company (MSFT, GOOGL, AMZN, META), latest print vs that company's OWN PRIOR FORWARD GUIDANCE \u2014 the signal is the SURPRISE, not the level. Points: RAISE >5% above prior guidance = -1 (accelerating). REITERATE/CONFIRM within \u00b15% = +1 (stable \u2014 merely confirming the number IS the event). CUT >5% = +2 (BEYOND plateau \u2014 'we are done'). Withheld forward guidance after previously guiding = 0 points + watch flag (does NOT count toward the plateau tally). No print this cycle = 0, 'awaiting print'. STATUS IS DECIDED BY COUNT ALONE (ruling 2026-08-08): N = companies at stable-or-cutting: 0 = Not fired; 1-2 = Partially fired; 3-4 = Fired. Raises can never veto the count floor; cuts can never jump the band \u2014 the score S is INTENSITY display only. HARD RULE \u2014 qualifiers cannot override numbers: growth language attached to a reiterated number does NOT disqualify the plateau (forbidden escape, 2026-07-31: 'guidance is AT baseline, not flat'). WORKED EXAMPLE (Aug-7 prints): Meta stable +1 (2026 $130-145B reiterated within \u00b15% of prior), Microsoft stable +1 (accounting basis change: FY27 $175B vs $190B prior is a finance-to-operating lease reclassification, investment unchanged \u2014 ruled 2026-08-08, NOT an economic cut), Amazon accelerating -1 ($220B raise), Alphabet accelerating -1 (2027 guided above 2026) -> N=2, S=0 -> Partially fired. ENUMERATION HARD RULE: where-we-stand MUST list all four companies every day with stance, points, and last print date \u2014 'awaiting print' when silent, never omitted. OUTPUT CONTRACT: when evidence contains a NEW forward-guidance number, emit exactly one line per company in the form LEDGER_UPDATE: <Company> | <PERIOD> | <low>-<high> | <event_date YYYY-MM-DD, the CALL date not the coverage date> | prior=<the company's own prior guidance in $B, when the call states it, e.g. 'up from about $200 billion' -> prior=200> | verb=<raised|cut|unchanged|reiterated|narrowed> | basis=<changed|same, 'changed' only for accounting-basis moves like finance->operating lease reclassification> | <source> \u2014 the deterministic ledger computes stance, count, score, and status from these; your prose never sets status; verbs corroborate, ARITHMETIC DECIDES. EVENT RULE (Amazon-echo counterexample, 2026-08-08): emit a LEDGER_UPDATE ONLY for a NEW guidance event \u2014 an earnings call or an official company revision. Coverage that restates a known print (a September article saying 'Amazon has committed $220B') is NOT a new event and must NOT be emitted; the ledger will reject non-call-dated updates. BASIS COUNTEREXAMPLE (Microsoft, Jul-29-26): '$175B, expectations remain unchanged, finance->operating lease shift' is an accounting reclassification \u2014 emit with prior=190 | verb=unchanged | basis=changed; it is NOT an economic cut. Other rules unchanged: NOT CapEx cutting as a de-risk \u2014 dollars remain enormous, the SIGNAL is the growth-rate surprise reaching zero; contrarian-direction ('we are done building \u2014 thanks Nvidia, Micron, SK Hynix'), never good news; a company leaves the tally only by re-ACCELERATING >10% above its prior guidance on a subsequent print; deep hyperscaler cuts also feed Tier 4 context but this signal persists.",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired. Guidance ledger as of today \u2014 all four companies enumerated: \u2022 Microsoft: STABLE [+1] \u2014 FY27 $175B (print 2026-08-07); accounting basis change (finance\u2192operating lease reclassification), investment unchanged; ruled stable per 2026-08-08 determination. Prior=$190B basis-adjusted. \u2022 Meta: STABLE [+1] \u2014 CY2026 $137.5B reiterated (print 2026-08-07), +1.9% vs prior $135B\u2026",
-      "latest_developments": "Google announced $15B Finland AI infrastructure investment (Sept 9, CNBC) \u2014 a project-level capex commitment corroborating the accelerating stance but not a new quarterly guidance event; no ledger update. Gene Munster (Sept 9) expects higher\u2026",
+      "where_we_stand": "Guidance ledger \u2014 all four companies, as of today: \u2022 Microsoft: stable [+1] \u2014 FY27 $175B (accounting reclassification, investment unchanged), print 2026-08-07, -7.9% vs prior $190B basis-adjusted \u2022 Alphabet: accelerating [-1] \u2014 CY2027 guided above CY2026 (no specific number), print 2026-07-22 \u2022 Amazon: accelerating [-1] \u2014 CY2026 $220B (+10% vs\u2026",
+      "latest_developments": "No new guidance prints today. Meta's 1H27 in-house ASIC (TSMC-made) deployment news is context for the captive-ratio overlay but does not constitute a new CapEx guidance event \u2014 no LEDGER_UPDATE emitted.",
       "relevant_links": [
         {
-          "title": "Google $15B Finland AI infrastructure \u2014 CNBC",
-          "url": "https://www.cnbc.com/2026/09/09/google-finland-ai-infrastructure-investment.html"
-        },
-        {
-          "title": "Gene Munster: Higher AI capex growth 2027",
-          "url": "https://news.google.com/rss/articles/CBMi7wFBVV95cUxQQmNHMGFITHYxSGRIWDRBTDEwMVJiYlpQOHpQdU5VVER5TldPM3hGZFM5c1UwU0pQUmhvaDZTek03Q0ZPTU1FWS11OFNZczQ3eW9rTW5fVHlmLUJyQXRyUUtha211MUd1TnJvV2I4Zi0xOHhlNVNST1dPaFUxb25XNW9Zb3dpanMtT19xV3lUSUdnZlkzajBRWm4wTUs5T0MtbWFLZFVwTlFrblNjQUtXUjF1bHBYOEhzdnh5M1UtckRORlZIQTBhUHRDVmtJNnRQOER5c3FmbWY1emVYcGxTMlh6MmVfTUFpbEo5NU1WUQ"
+          "title": "Meta targets 1H27 deployment for TSMC-made AI chip",
+          "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxNMWRZYjJaSmpWLTFva3ZLcV9LMTB0TzlGUU9nMFdwczd4YS1RQktBMzJEOEdSV29uX0wxNVZlNnhaaklkZXVaVTNwV3VVTjV4ZVplaVVNZHlvYnRXSGNHODVyempkeWF0Z3AwWHpTUU5mTDcxUmRNNkZIUk5MdWVGNlZCX0lsSldEVDU5ZGVteWgwMk9ZLUcwaWFRNGFHamhGekdfMmg0ZXJaNUZWRjdPdU9FU1l0RkhzbFEyeklzSV9rSEJuZ1g4Vk4wWlppbmVvSVdUeQ"
         }
       ],
       "change_vs_prior": null
@@ -417,20 +396,12 @@
       "description": "Beat narrows or first miss while forward guidance still positive \u2014 peak signal.",
       "what_to_look_for": "MU or SK Hynix beat <10% (vs prior 30-40% beats \u2014 current SKHX Q1 48.8%, MU Q2 41.86%). OR first miss while forward guidance maintained or raised. Scenario A and Scenario B from Part 8 Indicator 5. CONTRARIAN-DIRECTION HARD RULES (v3.42.0, from the Jul-29-2026 inversion): (1) This is a PEAK indicator \u2014 the fire condition IS the bearish event. A first miss with guidance maintained is EXACTLY the fire, no matter how large the absolute profits or YoY growth are. NAMED COUNTEREXAMPLE: on 2026-07-29 SK Hynix printed record profit (+557% YoY) that MISSED consensus with guidance maintained \u2014 the textbook Scenario B fire \u2014 and the signal was instead REVERTED to Not fired with the fire condition ('beat magnitude dropped materially') recited as the reversal reasoning. Record absolute results are IRRELEVANT; only beat magnitude vs consensus and guidance direction matter. (2) The reversal condition must be the OPPOSITE of the fire condition (beat re-widening to >=30% on a NEW quarterly print, or guidance cut converting this into the T4 family) \u2014 never a restatement of the fire condition itself. (3) Once fired on a dated print, the status PERSISTS until the next quarterly print: quiet news days are not reversal evidence.",
       "current_status": "Fired",
-      "where_we_stand": "Fired. SK Hynix Q2 2026 (July 29 2026) missed consensus EPS with guidance not raised \u2014 textbook Scenario B fire: record absolute profit (+557% YoY) is irrelevant; only beat magnitude vs consensus and guidance direction matter. Beat collapsed from +48.8% (Q1 2026) to a miss. Quarterly persistence rule: status holds\u2026",
-      "latest_developments": "Micron Sept 30 earnings flagged as key catalyst by multiple sources. Micron operating margin >80% for first time \u2014 a late-cycle peak-margin signal. SK Hynix Q2 miss status persists; no new quarterly print to test\u2026",
+      "where_we_stand": "SK Hynix Q2 2026 missed consensus EPS with guidance not raised \u2014 Scenario B fire condition met (signal history entry 2026-08-27). Status persists until next quarterly print. Beat re-widening to \u226530% on a new print OR a guidance cut (which converts to T4) are the only reversal conditions. No new\u2026",
+      "latest_developments": "No new quarterly prints today. Signal persists on the 2026-08-27 SK Hynix Q2 miss. Micron earnings preview articles are coverage echo \u2014 no new estimate or guidance figure.",
       "relevant_links": [
         {
-          "title": "Micron Sept 30 earnings catalyst \u2014 Yahoo Finance",
-          "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNbUd3bUp4ZzFlZHVIMTV0VFhVZ1d0Q1oyTUE1eEdGakVUNHQ1T1JxUWV3elNZbDlaX1k1OExYSjE4RHZDTUFlZVJxR01FUm5UU2dRWVJyTmFRLVYtc1VXcmR3QkhFWjVVOUYzeGFYX2pCbXhudnhLTTB4STJZR3Jnd3pqSUwtY3I3Y2VLcWdneWJSRkdXM1BZTmJDSVRpNjR3"
-        },
-        {
-          "title": "Micron 80%+ operating margin \u2014 Globe and Mail",
-          "url": "https://news.google.com/rss/articles/CBMikwJBVV95cUxNWm1HMkRUazk5UXU4bFkzWVlzdWNrLXRGQ19wRDhwODFqbEdCMDBUWEEyNmdhYmpxa3ZaT2dyOWEzVnpCNzF6RkxpV19UaW9Sa1ZUYUtBZ3psM1hBQ2N3NUUxMDJITFZKYTIzektXelVmWXktR2t2dnNWN2g3UDdLYzJSU0h6SHlJaEs0czBlUzRiZi1mTUNCRlZnc3dDWG9EajFEREliN2Z2aTdWYjJ1RWd3N1Nnc1hDUlB3Q2YtRTNIZkd5d1JPeGE0MEVUODJaaW5UWnVWS2dwZXNEYWk5N2czcGs1WEpjVl83N3RYSEpfRXl1aENMSUZvdlZXTkw2UFpqVTBkT2ZDWHRZbVZMbVFzWQ"
-        },
-        {
-          "title": "Micron supercycle fork \u2014 AD HOC NEWS",
-          "url": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxPc3oxeWxKSGhILVAtR1liYi1sWFAxUnVKRGFobVFOUEpIdjNnTlZYRHNHakI3Yk9KMHlrTUdGNnpOZVJpN1RxTVduZnFfX1FyTk04MEhPNDhhVzFhcWpGSUdmM2Q0eXItZFJ4UWNuSmtEbTlHb21Ed18yX2hRTGpOYzYwenRhUE9hRXdfckhQUEVCVUpmUjJkai1LWGVfejNJUnkzTjBZY2E4UUprUnM5TDJkbV9LaEVRX0c2M2NNbm9iNWZaandveXd2UzVkb0l4TVlOU2hMYw"
+          "title": "Zacks Earnings Trends \u2014 Micron and Nvidia",
+          "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxPQXV0VGNuYjNIa0FVQXU2alhXUGNPZWNXdVdDcXVEckVhYXliOWRfNGYxNTNyN2IwdmRNZ0NhTF9ta3lFeVViZm1Nd2tjZjVqczBnOHI0Mk11ZGhqN3lKTW5MUnRkQXBIbnBUbTJ2MnpHSUNPRFo2MjRtcXk5X19nbkpXNlo4cndkTUdJbTlpN19RTm83VVAzcEpFbWxlQTRsMkh4MkpUd1BLT2NUaDZhUGlFbGlFdjc4WXZ1YjdYOE5EUVNwUlp1UmUxVHRUZw"
         }
       ],
       "change_vs_prior": null
@@ -441,16 +412,16 @@
       "name": "Memory pure-plays underperform the market (S&P 500)",
       "description": "Memory stocks losing relative strength vs the broad market. v3.43.0: benchmark is the S&P 500 ONLY \u2014 SOX removed (the SOX is ~40% memory, so the spread is self-referential and mean-reverts against memory names exactly during a memory unwind: fired Jul-6-2026, un-fired mid-crash, re-fired Jul-31).",
       "what_to_look_for": "FIRE (red): SK Hynix (000660.KS) or Micron (MU) underperforms the S&P 500 by >10pp on BOTH the 5-day AND 20-day windows \u2014 fast entry, trend-confirmed, so a single volatile session cannot trip it. WATCH (yellow): both windows beyond -5pp. STICKY RELEASE: once red, the signal STAYS red until the 5-day spread holds above -5pp for 5 consecutive sessions \u2014 it fires fast and releases slow; daily flapping is a defect, not a feature. The computed spreads are the sole authority for this signal's status (deterministic, two-sided). Where-we-stand and targets are expressed against the S&P 500 spread only; never reference the SOX. Thresholds provisional pending backtest.",
-      "current_status": "Partially fired",
-      "where_we_stand": "Computed spreads vs S&P 500: SK Hynix 5d -4.60pp / 20d +5.33pp; Micron 5d -6.12pp / 20d -6.26pp. Overall red (fired) = false; overall severity = yellow. Micron is the active watch: both 5d and 20d windows are below -5pp (yellow threshold), but neither crosses -10pp on both simultaneously (red threshold). SK Hynix's +4.08% session today (strike resolution) pulled its 5d spread above -5pp, preventing a red trigger. The sticky-release rule requires 5 consecutive sessions with SK Hynix or Micron 5d spread above -5pp before yellow clears \u2014 Micron has\u2026",
-      "latest_developments": "SK Hynix +4.08% today on strike resolution improved its 5d spread to -4.60pp (above yellow threshold). Micron 5d -6.12pp / 20d -6.26pp remains in yellow watch zone. No red trigger crossed.",
+      "current_status": "Not fired",
+      "where_we_stand": "Computed spreads vs S&P 500 (deterministic authority): SK Hynix 5d -4.12pp / 20d +7.68pp; Micron 5d -8.74pp / 20d +0.31pp. Red-fire threshold requires BOTH 5d AND 20d below -10pp for either name \u2014 not met. Yellow watch requires both windows below -5pp \u2014 Micron 5d is in yellow zone (-8.74pp) but 20d is +0.31pp, so yellow is also not met. SK Hynix is above yellow on both windows. Sticky release latch cleared; recovery streak resets to zero. Micron's 5d at -8.74pp is the watch item \u2014 one weak session could\u2026",
+      "latest_developments": "Transition from Partially fired (2026-09-16) to Not fired today. SK Hynix 20d spread recovered to +7.68pp, driven by the 1M +16.36% outperformance. Micron 5d remains in yellow watch at -8.74pp.",
       "relevant_links": [
         {
-          "title": "SK Hynix strike resolved, KOSPI surge (TradingKey)",
-          "url": "https://news.google.com/rss/articles/CBMi2AFBVV95cUxPbmc4RnFJanN6U2owWUJncHBiOFMzMENCTHNQSmthY3U0SDdZOU5rdTVVY2VRc1Y5NEVUQXJPS3g4djQzVU1TRDZOdk9laGxfQzBuUTBKWUNkTXFXOS02NGVlZnRVYk5BTGFOeVRaTlVWcEVfM3JYNGdWWkItN3R3eDZoX0VPX0VGWGR6Zmc5NGpESDNFWUlYWmgxenhZRFkxMFFpVFJhQXUtUFhadVpHanlBeTg2dHpKRXE4WjFBbUJhOHRXb3RHb0lra2Q5V2RXLVZYUGdGVy0"
+          "title": "SK Hynix stock falls 8% on AI development slowdown fears (prior session context)",
+          "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxOXzE4ZUdJd2NZZ1F0SFpZRFJLZldUd0hWZGx3QnVlSWhQMkpvTnVKQkxaaEdoSUdiU2YwRmJvRlRmU3JJckptWGtIQUlUOXFBNTJiVUJEWkNnMTlmdWJhbm5NSldXMVZFMng3dHdhMjRPY1FNZFlUXzlVd3h5UnBnN0FmNVFRS0JIbXczZGpUYmdGaVJPRFYtM29zUXRrdnRUVFp0MkJlRFlCejhHZl9JZWd2OGZjZ0U"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Reverted to 'Not fired' from 'Partially fired' (2026-09-16). Computed dual-window spreads no longer meet red or yellow thresholds. SK Hynix 20d recovered to +7.68pp; Micron 5d remains in watch zone at -8.74pp but 20d at +0.31pp prevents yellow trigger."
     },
     {
       "id": "t3_supplier_inventory_rebuild",
