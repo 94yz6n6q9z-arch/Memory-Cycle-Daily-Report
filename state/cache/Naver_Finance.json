@@ -1,7 +1,7 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-09-17T12:00:06.379098+00:00",
+    "fetched_at_iso": "2026-09-18T11:39:01.030497+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
@@ -312,7 +312,7 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 3305652,
           "avg_eps_krw": 348994,
-          "avg_per": 5.04,
+          "avg_per": 5.0,
           "num_estimating_institutions": 23
         }
       },
@@ -611,13 +611,26 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 487045,
           "avg_eps_krw": 47949,
-          "avg_per": 5.29,
+          "avg_per": 5.27,
           "num_estimating_institutions": 22
         }
       },
       "SK Square": {
         "code": "034730",
         "actions": [
+          {
+            "broker_korean": "\ud0a4\uc6c0",
+            "broker_english": "Kiwoom Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 740000,
+            "prior_target_krw": 373000,
+            "target_change_pct": 98.39,
+            "direction": "raised",
+            "published_date_iso": "2026-09-16",
+            "raw": "\ud0a4\uc6c0 | 26/09/16 | 740,000 | 373,000 | 98.39 | BUY | BUY"
+          },
           {
             "broker_korean": "BNK\ud22c\uc790",
             "broker_english": "BNK Investment & Securities",
@@ -697,19 +710,6 @@
             "raw": "\ud55c\ud654\ud22c\uc790 | 26/08/18 | 800,000 | 970,000 | -17.53 | Buy | Buy"
           },
           {
-            "broker_korean": "NH\ud22c\uc790",
-            "broker_english": "NH Investment & Securities",
-            "rating": "Buy",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 950000,
-            "prior_target_krw": 950000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-08-18",
-            "raw": "NH\ud22c\uc790 | 26/08/18 | 950,000 | 950,000 | 0.00 | Buy | Buy"
-          },
-          {
             "broker_korean": "\ud558\ub098",
             "broker_english": "Hana Securities",
             "rating": "BUY",
@@ -721,6 +721,19 @@
             "direction": "raised",
             "published_date_iso": "2026-08-18",
             "raw": "\ud558\ub098 | 26/08/18 | 770,000 | 560,000 | 37.50 | BUY | BUY"
+          },
+          {
+            "broker_korean": "NH\ud22c\uc790",
+            "broker_english": "NH Investment & Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 950000,
+            "prior_target_krw": 950000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-08-18",
+            "raw": "NH\ud22c\uc790 | 26/08/18 | 950,000 | 950,000 | 0.00 | Buy | Buy"
           },
           {
             "broker_korean": "\ud55c\uad6d\ud22c\uc790",
@@ -762,16 +775,16 @@
             "raw": "iM | 26/06/22 | 950,000 | 330,000 | 187.88 | Buy | Buy"
           }
         ],
-        "n_actions": 11,
+        "n_actions": 12,
         "summary": {
           "avg_opinion_score": 4.0,
-          "avg_target_price_krw": 855273,
-          "avg_eps_krw": 161597,
-          "avg_per": 3.41,
-          "num_estimating_institutions": 11
+          "avg_target_price_krw": 845667,
+          "avg_eps_krw": 151538,
+          "avg_per": 3.56,
+          "num_estimating_institutions": 12
         }
       }
     }
   },
-  "fetched_at_iso": "2026-09-17T12:00:46.357172"
+  "fetched_at_iso": "2026-09-18T11:39:41.202410"
 }

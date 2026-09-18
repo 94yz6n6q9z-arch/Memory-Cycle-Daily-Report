@@ -1,35 +1,44 @@
 {
-  "saved_at_iso": "2026-09-17T12:15:08.016412+00:00",
+  "saved_at_iso": "2026-09-18T11:52:40.365827+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
     "tier_status_summary": "T1: 4/6 fired (1 partial) | T2: 6/7 fired | T3: 2/5 fired (1 partial) | T4: 0/4 fired",
-    "new_triggers_today": [],
+    "new_triggers_today": [
+      {
+        "tier": 3,
+        "indicator_id": "t3_relative_strength",
+        "indicator_name": "Memory pure-plays underperform the market (S&P 500)",
+        "old_status": "Partially fired",
+        "new_status": "Not fired",
+        "description": "Transition from Partially fired (2026-09-16) to Not fired. Today's computed relative strength shows both SK Hynix and Micron have recovered above the -10pp red-fire threshold on the 5-day window. SK Hynix now positive on both 5d and 20d spreads (+7.68pp 20d). Micron remains in yellow watch zone on 5-day (-8.74pp) but \u2026"
+      }
+    ],
     "base_case": {
       "probability_pct": 50.0,
       "peak_months_away": 7.9,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q3 2027",
-      "return_to_peak_pct": -28.92228760744986
+      "return_to_peak_pct": -33.209150175013455
     },
     "bull_case": {
-      "probability_pct": 25.0,
+      "probability_pct": 27.0,
       "peak_months_away": 16.9,
       "peak_window_start": "Q4 2027",
       "peak_window_end": "Q2 2028",
-      "return_to_peak_pct": -16.379161891117477
+      "return_to_peak_pct": -21.4225296176629
     },
     "bear_case": {
-      "probability_pct": 25.0,
+      "probability_pct": 23.0,
       "peak_months_away": 4.9,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -41.46541332378224
+      "return_to_peak_pct": -44.99577073236403
     },
-    "delta_from_prior_text": "T3 relative strength reverted Not fired (was Partially fired). Applied Rule B (Tier 3 unfire): bear -1pp (26\u219225), bull +1pp (24\u219225), base return_to_peak_pct restores ~2pp (-29.5\u2192-27), base peak_months_away extends ~1mo (8\u21929). T3 fired count drops from 3 to 2. Bear case magnitude anchored to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); Any-T3-fired band = -40 to -50%, bear set at -42%. Probabilities sum to 100; base > bear = bull satisfied.",
+    "delta_from_prior_text": "Indicator distribution shifted vs prior: t3_relative_strength moved Partially fired \u2192 Not fired. Applied Rule B (Tier 3 unfire): bear -2pp (25\u219223), bull +2pp (25\u219227), base return_to_trough restores ~5pp (-28.9\u2192-22), base trough window extends ~1mo (7.9\u21929mo). Bear case magnitude anchored to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); with T3/T4 signals still partially active, bear holds -41%. Probabilities sum to 100: base 50, bull 27, bear 23.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "Relative strength (t3) reverted to 'Not fired' as computed spreads recovered above the dual-window red threshold \u2014 SK Hynix 5d -4.12pp / 20d +7.68pp, Micron 5d -8.74pp / 20d +0.31pp \u2014 removing one of the three previously fired T3 signals [\u2192\u00a73]. The dominant story today is SK Hynix in active talks with Intel to lease Ohio cleanroom space or form a hyperscaler joint venture for US memory production, driving Intel +4.03% \u2014 the session's only big mover [\u2192\u00a71]; the deal is supply-chain strategic rather than a cycle-direction signal, but it reinforces the late-cycle capacity-expansion pattern consistent with t2_capex_parabolic [\u2192\u00a74]. Samsung's explicit DDR5 outsourcing to free capacity for HBM, combined with CXMT HBM yield reaching ~25%, tightens the competitive overlay on SK Hynix's premium thesis [\u2192\u00a74]. SK Hynix workers approved a revised 2026 wage deal, resolving the near-term strike risk that had been flagged in prior sessions. The t3_relative_strength reversion is a mild bull-directional signal per the probability rules, nudging the bull case marginally and trimming bear probability slightly, but the overall Phase 5 decline thesis is unchanged with T1 4/6, T2 6/7, and T3 now 2/5 fired [\u2192\u00a72]. Micron's 5d spread at -8.74pp remains in yellow watch territory \u2014 one weak session could re-enter the partial-fire zone [\u2192\u00a73]."
+    "executive_brief": "Relative strength (t3) reverted to 'Not fired' as SK Hynix's 5-day S&P 500 spread recovered to -6.44pp and the 20-day window flipped to +17.27pp outperformance \u2014 the sticky-release condition satisfied [\u2192\u00a73]. Today's broad tape surge (SK Hynix +6.42%, Micron +5.50%, Intel +7.67%, AMD +6.36%) is a market-wide co-move, not a memory-specific event; the driver is macro sentiment, not a thesis reversal [\u2192\u00a71]. The signal unfire is a mild bull-directional update: per Phase 5 rules, one Tier 3 unfire restores base return-to-trough by ~5-10pp and shifts probability modestly toward the bull case. Fundamentally, the decline thesis remains intact: 6/7 Tier 2 signals fired, including compressed forward P/Es (SK Hynix 3.96x, Samsung 3.70x), hyperscaler CapEx/OCF at 89.9% aggregate, and insider sales active [\u2192\u00a73]. Jensen Huang's public guidance for 2x chip sales next year and the SK Hynix\u2013Intel Ohio manufacturing partnership talks are demand-positive developments that bear on HBM order visibility [\u2192\u00a75], but neither reverses the supply-glut trajectory already locked in by parabolic CapEx commitments. CXMT's LPDDR5X win at Nubia and its NAND R&D push add incremental competitive pressure on Korean makers' commodity margins [\u2192\u00a74]. The cycle peak was confirmed at 2,919,000 KRW on 2026-08-08; SK Hynix trades 36% below that level."
   },
   "indicator_assessments": [
     {
@@ -169,7 +178,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $55.23 (2026-09-17 print). Matrix basis (weekly means): current wk $54.70, +0.00% vs rolling 12w wk-peak $54.70 (wk ending 2026-09-20). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 170d old). Synthetic adjusted: 60.9% central (range 58-63%). Adjustments: spot_lead +2.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $56.00 (2026-09-18 print). Matrix basis (weekly means): current wk $54.96, +0.00% vs rolling 12w wk-peak $54.96 (wk ending 2026-09-20). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 171d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "DDR5 spot edged +0.80% to $54.83 (TrendForce 2026-09-16). Samsung outsourcing DDR5 to free HBM capacity tightens conventional DRAM supply near-term, consistent with spot firmness. Matrix remains at Not fired.",
       "relevant_links": [
         {
@@ -282,15 +291,23 @@
       "description": "C-suite or board sales \u2014 material insider activity. Coverage is COMPREHENSIVE: Micron via SEC EDGAR Form 4 (US standard); SK Hynix + Samsung Electronics + SK Square via DART (Korean regulatory equivalent). Korean entities don't file SEC Form 4 \u2014 DART is the canonical source for them.",
       "what_to_look_for": "FOR MICRON: Form 4 filings via SEC EDGAR atom feed showing C-suite (CEO Mehrotra, CFO Murphy) or board sales with transaction code S, value >$1M. FOR SK HYNIX (corp_code 00164779): DART API disclosure types B (material event), D (ownership change), I (audit-related) \u2014 captures executive/board sales, stake reductions by major holders, board changes. FOR SAMSUNG ELECTRONICS (00126380): Same DART disclosure types as SK Hynix. Already fired Mar 2026 (Mehrotra Micron sales).",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 2026 on Micron CEO Mehrotra Form 4 sale (2026-03-15, transaction code S, >$1M). As of 2026-09-16, 185 days have elapsed \u2014 the 12-month aging window (365 days) has not expired. DART monitoring for SK Hynix (corp_code 00164779) and Samsung Electronics (00126380) shows 0 new material disclosures today.\u2026",
-      "latest_developments": "No new Form 4 or DART filings today. BNK cut profit forecasts for Samsung and SK Hynix (2026-09-15) \u2014 analyst action, not insider transaction; does not move the signal but is directional confirmation.",
+      "where_we_stand": "Fired on two legs: (1) Micron CEO Mehrotra Form 4 sale (2026-03-15, $1M+ threshold met, 187 days into 12-month persistence window \u2014 reversal date 2027-03-15); (2) SK Hynix DART material disclosure filed 2026-09-18 (rcept_no 20260918800583, type: \uc870\ud68c\uacf5\uc2dc\uc694\uad6c/\ub2f5\ubcc0) satisfies the 30-day DART trigger. DART shows 0 new ownership-change filings across 2\u2026",
+      "latest_developments": "New SK Hynix DART disclosure (2026-09-18, rcept_no 20260918800583) adds a fresh corroborating data point. Micron insider sale persistence continues through 2027-03-15. No new Form 4 filings from Micron C-suite detected today.",
       "relevant_links": [
         {
-          "title": "BNK cuts Samsung and SK Hynix profit forecasts (Seoul Economic Daily)",
-          "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxNRUxkbkJ3WFBsM1IwdmRTeVllMnk3NGNGSC04RmlUWmFLeUhkeUFMdDFqSi1JeENFMVZEZllmSFFRN3poUWxTSjJqLUpEV0pTdk91YmZXZU4wal9jMHZzLVZiZndRZDV0QW5fY2RpekJSeTJFX01TX0RibEJzQmMtQmhlOGJKNERXUVE4NmZXa1FtWDliVnB2VW0xOGg"
+          "title": "SEC EDGAR Form 4 Feed \u2014 Micron Technology",
+          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=MU&type=4&dateb=&owner=include&count=10"
+        },
+        {
+          "title": "DART \u2014 SK Hynix Disclosures (corp_code 00164779)",
+          "url": "https://dart.fss.or.kr/dsab007/main.do?autoSearch=true&textCrpNm=SK%ED%95%98%EC%9D%B4%EB%8B%89%EC%8A%A4"
+        },
+        {
+          "title": "DART \u2014 Samsung Electronics Disclosures (corp_code 00126380)",
+          "url": "https://dart.fss.or.kr/dsab007/main.do?autoSearch=true&textCrpNm=%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status remains Fired. New SK Hynix DART material disclosure (2026-09-18) adds fresh corroborating evidence within the 30-day window. Prior brief noted 0 DART disclosures; today's computed run confirms 1 new disclosure. No status change \u2014 signal continues Fired on dual-leg\u2026"
     },
     {
       "id": "t2_ltas_signed",
