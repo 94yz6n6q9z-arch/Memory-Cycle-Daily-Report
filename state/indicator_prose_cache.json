@@ -1,28 +1,28 @@
 {
   "cards": {
     "t1_competitor_dynamics": {
-      "last_full_regen_date": "2026-09-12",
+      "last_full_regen_date": "2026-09-19",
       "current_status": "Partially fired",
-      "where_we_stand": "Cumulative 4-sub EPS impact estimated at ~11.5%, placing the indicator at Partially fired. Sub-7B (Samsung HBM4 share at Nvidia approaching 40%) is the active sub-trigger. Sub-7A (CXMT DDR5 mainstream Tier-1 OEM win) remains Not fired despite CXMT's 82% Q2 EBIT margin and rising DDR5 share \u2014 the formal OEM win\u2026",
-      "latest_developments": "CXMT Q2 EBIT margin reported at 82%, surpassing both Samsung and SK Hynix per Global Times and Seoul Economic Daily (2026-09-11). Samsung and CXMT jointly supply LPDDR5X for Chinese AI flagship phones, marking CXMT's entry\u2026",
+      "where_we_stand": "Cumulative EPS impact ~11.5% meets the Partially fired threshold (\u22655%, <20%). Sub-indicator 7B drives this: Samsung holds ~28-30% of Nvidia HBM4/HBM4E qualification, estimated ~10% SK Hynix EPS impact. Sub-indicators 7A (CXMT DDR5 Tier-1 OEM win), 7C (Micron Vera Rubin primary SKU), and 7D (2+ hyperscaler HBF design wins) remain Not\u2026",
+      "latest_developments": "CXMT reportedly establishing 3D NAND R&D line at second Beijing fab \u2014 extends competitive threat into NAND but does not trigger 7A DDR5 threshold. Samsung union restructuring to semiconductor-only membership adds supply-continuity watch.",
       "relevant_links": [
         {
-          "title": "CXMT Q2 EBIT margin 82% \u2014 Global Times",
-          "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE1Qc3RCRWc0bkpLY1RIQTdxcW9uRTFSdktBaGlMdGEzNmpFZllsdHdvTkZZUURTTHlsQlpKRUtvb2pOS3pMVF95V1JhSlBGQ3hGemNWMTJuZDVGcm54LVAtOURR"
+          "title": "CXMT 3D NAND R&D line \u2014 Tom's Hardware",
+          "url": "https://www.tomshardware.com/pc-components/ssds/chinas-premiere-memory-maker-cxmt-eyes-producing-flash-for-ssds-report-claims-3d-nand-research-and-development-line-rumored-for-its-second-manufacturing-facility-near-beijing"
         },
         {
-          "title": "Samsung HBM share nears 40%, 2nm yield tops 70% \u2014 Businesskorea",
-          "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTFBPUmEtWWhVSDB2TUl3bC1aLVhkSC1DRWZYMTR0ZEhuTDdnRF8xU0d1VEEtZmFISG5uSzkzeFp3OGpVYXdSUlhPU3J5anZyaXFoTjZJeTVjTVB4cURnSUFwOHlkSkJMQ0NJZlZBeWRrak9sN0NX"
+          "title": "CXMT DRAM market share gains \u2014 NoobFeed",
+          "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5vazR5OS1RNE1pczdKd2lkREplam8zRk8ydWZMMVFsSW5PMHhaVEY1NmVra0hCSU1LN0toUTNkUnN4RERRT1VUS1lvQUcwUXJJTUFhMEdGTDR2TzFaSzRLaEJSZ1ZqSndPaWVuZQ"
         },
         {
-          "title": "Samsung, CXMT supply LPDDR5X for Chinese AI flagship",
-          "url": "https://news.google.com/rss/articles/CBMi7AFBVV95cUxNWkpDbElCUWVvMHNibW1CS24xLVA0YVF4cXpLWkFYNHZKcjd0NHlWM00zSFZCWVhIT1ExVHJMRm1EbUVKVktyR2tIeElnRlVBbHR4Smt6aDhzRzRJVzRHQXRaVGtEOHlobXZQQTJZR2lSNTNKMUQ1MS1BTWVQYjVwU1p5eXFmYXROblNNWVBpRzRyMWRxNWFZYWkzZ1BS"
+          "title": "Samsung zHBM HBM5 architectural claim",
+          "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxQQzh1VWxuWVpjNU4wc0JwdnExUjIxOHY4cHhPMEJBVkRXMEZVWnBjM3FvUExpanRoTXpYRmd2cE81MUtuOHE5QzIyaWtFZVBIQkVEcWlKWnJST2VxTGxTVzVXMTNoYlVWMDhRYW9FTHR5UkNLejR0VERnQTl4OFBsQg"
         }
       ],
-      "change_vs_prior": "Status moved from 'Fired' to 'Partially fired' per the model verdict. Prior brief carried 'Fired'; today's the model reassessment finds cumulative EPS impact ~11.5% (sub-7B Samsung HBM share partially fired; sub-7A CXMT DDR5, 7C Micron Vera Rubin, 7D HBF all\u2026",
+      "change_vs_prior": "Status moved from 'Fired' to 'Partially fired' per the model reassessment: cumulative EPS impact ~11.5% sits in the Partially fired band (\u22655%, <20%); prior 'Fired' status reflected an overstated impact estimate. Sub-indicators 7A/7C/7D remain Not fired.",
       "fingerprint": "e72f7d9a182e4329",
       "status": "Partially fired",
-      "updated_date": "2026-09-12",
+      "updated_date": "2026-09-19",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -49,30 +49,22 @@
       "evidence_count": 0
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-09-12",
+      "last_full_regen_date": "2026-09-19",
       "current_status": "Fired",
-      "where_we_stand": "Fired since Google TurboQuant (March 24, 2026): 6x KV-cache compression, 8x speedup \u2014 permanent algorithmic breakthrough. Today adds DeepSeek's new model claiming a sharp reduction in HBM usage per workload, confirmed by multiple mainstream publications within 24 hours (Seeking Alpha, Business Times, TradingView, finance.biggo.com). Samsung and SK Hynix fell 3%+\u2026",
-      "latest_developments": "DeepSeek new model (2026-09-11) claims material HBM usage reduction per inference workload; Samsung and SK Hynix fell 3%+ intraday. Multiple mainstream publications confirmed within 24-hour window. Micron and SanDisk held up relatively, per TradingView.",
+      "where_we_stand": "Fired since March 24, 2026 on Google TurboQuant: 6x KV-cache compression, 8x inference speedup on H100 \u2014 published on official lab blog and covered by 3+ mainstream outlets within 48 hours. This is an algorithmic result in the literature; it cannot be unannounced. No new efficiency breakthrough in today's feed.\u2026",
+      "latest_developments": "",
       "relevant_links": [
         {
-          "title": "DeepSeek HBM claim rattles Samsung and SK Hynix \u2014 NeoTeo",
-          "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxNbTZ3U3dOZmNMWlNNOUhBOFM4dHhycGRubGE1eDUxSUtycl9vWWdieFpoaW9KOXgzS01DYlhWUmNWYXhyODNuTl9WTUFmRlRoQ3Bxajk1Q1RtQ0t5cEtWeGY4ekhuMjhmWTNsR3hfc2l4c3FmX0xaaGxQdGM5N3pxeV9vbnZZU1g3NU44T1ZMdw"
-        },
-        {
-          "title": "DeepSeek efficiency gain sparks volatility for Korean chipmakers \u2014 Seeking Alpha",
-          "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxNWDVJWExfQVJmREU3TU12NnZMbkl5RTE0b2pVT29kZXVTaFdfNXJfb1lkcnRoS3ZwbGNFakZYMzVnaW0yUHpMQW5mUzlQSDhXekxLcTRfMktYRVY5Y0JodFo0Q0dKeHMtNk1zYm5IV092UThwbEx3OFY2SmRGMkdIN2xnQUZJeXMwc3NacE9YNGxsRGN1cXVUaFlsenNWOWJRZEdXeDRtT3VTVnEwUGlJM3BhaHhiM2d3NjZZazBQa21RaXJKZVBQOQ"
-        },
-        {
-          "title": "DeepSeek low-cost model hits memory makers \u2014 Business Times",
-          "url": "https://news.google.com/rss/articles/CBMi0wFBVV95cUxOdkRiUGpTZWV5MFYza3k0cWY2X0x2NEdYb1NkNVRJYXBHdXdPYWZfbjVhZE5WV3lGdndmbjJXWnJJZUJmdWNoUk4tT1dscGl1WWxlSXpMQVNzUmM2aWpxNmY5bmwwQ0pfSzFuX2oyejY3Z2NxTUFCUFI0eUl1UU9kWDR2VnZwWjlranlnTlQxN0E0RDJKd3dfempIVGRvM0wyOUpRd1BBUnloVGxlck9UWWlNZzVCeUZ3eHZpeHJ3ekZMeXE0VEE1cXdZSVA3Q0oxeWow"
+          "title": "Google TurboQuant \u2014 original March 2026 publication context",
+          "url": "https://news.skhynix.com/feed/rss/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-12",
+      "updated_date": "2026-09-19",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 7
+      "evidence_count": 0
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-09-14",
@@ -343,24 +335,20 @@
       "evidence_count": 0
     },
     "t3_contract_decline": {
-      "last_full_regen_date": "2026-09-12",
+      "last_full_regen_date": "2026-09-19",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. No TrendForce monthly contract price report showing a MoM decline in DDR5 server contract prices has been published. The most recent TrendForce anchor remains Q2 2026 DDR5 server contract +58\u201363% QoQ. DDR5 16Gb spot printed $54.33 on 2026-09-11 (flat vs prior session; 0% drawdown from rolling 12-week peak\u2026",
-      "latest_developments": "TrendForce spot print 2026-09-11: DDR5 16Gb $54.33 (flat), DDR4 16Gb $89.75 (-0.83%). No contract price decline reported. CXMT margin leadership and DDR5 share gains are the leading pressure indicator; contract impact expected 3\u20139 months out.",
+      "where_we_stand": "Not fired. No TrendForce monthly contract price report showing MoM decline in DDR5 server contract prices has been published. The most recent anchor is Q2 2026 DDR5 server contract +58-63% QoQ \u2014 still strongly positive. DDR5 16Gb spot printed $56.00 on 2026-09-18 (+1.39% on the session), at the rolling 12-week\u2026",
+      "latest_developments": "TrendForce spot print 2026-09-18: DDR5 16Gb $56.00, +1.39% session. No contract price data in today's feed.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price 2026-09-11",
+          "title": "TrendForce DRAM Spot Price \u2014 2026-09-18",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
-        },
-        {
-          "title": "CXMT rides DDR5 surge to lead operating margins \u2014 Chosunbiz",
-          "url": "https://news.google.com/rss/articles/CBMiekFVX3lxTE5pQ0JobS1mN2RRRHRld0xlRFFZU3RpTmoyVEFxZzdhTU41MnFFYmx4TDZEYS1nQWowQ0R5cS1KZVVvMGFncDlGSW5scTNCNEdpNlhEb19CWHJxcmtmNFBDXzRJZUJsOTBHZUx0QWgzWTducmRoNkFGV09B0gGOAUFVX3lxTE10WXpraWh3V3RpUllpX0kwTmVIQmY4TWUwdGVDMXFzbUZwcVJ2V0Mtb0NENzBuR3haaHYydUFmYTN6cEk4b0VwVWNXVWwxWldaa2xrTU5ob2wtOUJRdzZfSElONjVIejZRSUowcHQwOUFBMEpFb0VxbVRCQ3RJV0ZNcUJzVTN3M0Z3S1czSkE"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-09-12",
+      "updated_date": "2026-09-19",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -511,24 +499,24 @@
       "evidence_count": 0
     },
     "t4_yoy_asp_negative": {
-      "last_full_regen_date": "2026-09-12",
+      "last_full_regen_date": "2026-09-19",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. No TrendForce or supplier earnings print showing a negative YoY DRAM or NAND ASP has been published. DDR5 spot at $54.33 (2026-09-11) is flat session-over-session and at the rolling 12-week peak \u2014 no YoY decline is computable from today's data. The Micron QoQ transcript diff notes ASP language\u2026",
-      "latest_developments": "No new YoY ASP print from TrendForce or supplier earnings today. DDR4 spot -0.83% session-over-session (TrendForce 2026-09-11); DDR5 flat. Micron transcript diff: ASP language dropped from current call vs prior \u2014 watch flag only.",
+      "where_we_stand": "Not fired. No TrendForce or supplier earnings print showing negative YoY DRAM or NAND ASP has appeared. Micron's Q3 FY26 transcript diff shows HBM TAM language pulled forward to 2027 ('easily crossing $100B') with no ASP decline language; AMAT Q3 shows DRAM revenue +52% YoY. Both are consistent with still-positive\u2026",
+      "latest_developments": "Micron Q4 earnings imminent; AMAT Q3 DRAM +52% YoY reinforces positive ASP environment. No negative YoY ASP print in today's feed.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price 2026-09-11",
-          "url": "https://www.trendforce.com/price/dram/dram_spot"
+          "title": "Micron earnings investor page",
+          "url": "https://investors.micron.com/events-and-presentations"
         },
         {
-          "title": "Micron stock and AI memory demand read \u2014 Simply Wall St",
-          "url": "https://news.google.com/rss/articles/CBMizwFBVV95cUxObEExSmpYZF9jNzVROEhnaGhlS2piVm9MdThiNDRPel9ReURJR1JVdUctUG9zTWk0aThrWk8zb1Z1ZDNiWE5rWnM3aDNRZzJvbVZJRGZ6WVdBZnJxMVNLcVNXTFVCdEFHWmJSRXJVd0RjQ2NaOUV3S1Zjcnc1eVhFS1FoMzBvUGlVWTNiNl9WYlFqekpJTWdwYTNRVlBJaHB5NjdYdzJXRWdTdnVnTDhYQnBDUl9jMnBoM3BjcEtSUWFXUUJUQ3NQX2FLQkhKZ0U"
+          "title": "Memory shortage outlook through 2030 \u2014 finance.biggo.com",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFB1UVFMSUNTTWczaFFvYWhhSUF0WU1OMk02bkR2dkc2bjVLS0syV2drUFFrY0JBam5qdVA4VDZKV2JwRDRiNjRNdUF4cElxamc4Q3NHdlhzRHZsbHlXTHdZei04WE1ORkF3d3k0MVFxQUF3U0tkVnc"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-09-12",
+      "updated_date": "2026-09-19",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
