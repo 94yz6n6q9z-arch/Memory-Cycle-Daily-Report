@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-09-21T13:30:40.784276+00:00",
+  "saved_at_iso": "2026-09-22T12:13:43.993445+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
@@ -10,26 +10,26 @@
       "peak_months_away": 7.8,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q3 2027",
-      "return_to_peak_pct": -33.60245817719486
+      "return_to_peak_pct": -32.59206080163043
     },
     "bull_case": {
       "probability_pct": 27.0,
       "peak_months_away": 16.8,
       "peak_window_start": "Q4 2027",
       "peak_window_end": "Q2 2028",
-      "return_to_peak_pct": -21.88524491434689
+      "return_to_peak_pct": -20.69654211956522
     },
     "bear_case": {
       "probability_pct": 23.0,
-      "peak_months_away": 4.8,
+      "peak_months_away": 4.7,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -45.31967144004283
+      "return_to_peak_pct": -44.48757948369565
     },
-    "delta_from_prior_text": "No indicator status changes today \u2014 probability distribution unchanged vs prior brief. Base -33% / Bull -21% / Bear -45% held. Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); current T3/T4 signal density (2 T3 fired, 0 T4) places bear in the -40 to -50% band. CXMT mass-production news is a directional intensifier for Competitor dynamics (Indicator 7) but does not move a tier-1-5 signal today.",
+    "delta_from_prior_text": "No indicator status changes today; probability distribution unchanged vs prior brief. Base 50% / Bull 27% / Bear 23% preserved. Bear return_to_peak_pct -45.3% consistent with Any-T3-fired band (-40 to -50%), calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Trough window base Q1-Q3 2027 unchanged.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-5 signals fired or unfired today; the indicator distribution is unchanged from yesterday's brief. The dominant development on the thesis is CXMT's fifth-generation DRAM entering mass production with a 50%+ die-per-wafer yield improvement at 11.95nm half-pitch \u2014 achieved without ASML EUV \u2014 alongside a reported $8.5B IPO filing [\u2192\u00a74]. This is a direct intensification of Competitor dynamics (Indicator 7), adding commodity DDR5 oversupply risk to the cycle: short-term (1-3 months) spot pressure on conventional DRAM nodes, medium-term (3-9 months) contract price headwind for Samsung and SK Hynix's non-HBM mix [\u2192\u00a73]. Samsung's own response \u2014 doubling HBM4/HBM4E wafer capacity to 250K by 2027 and outsourcing DDR5/SSD production \u2014 confirms the wafer-mix reallocation chain: less Samsung DDR5 supply near-term tightens that segment, but CXMT's ramp offsets it on a 2-3 quarter lag [\u2192\u00a75]. Applied Materials surged +6.51% and Samsung +4.98% [\u2192\u00a71], the latter on record chip export data; AMAT's move aligns with its Q3 transcript showing DRAM revenue +52% YoY and Q4 guidance of +85% EPS growth, reinforcing t2_capex_parabolic [\u2192\u00a74]. Micron's September 30 earnings print is the next hard catalyst \u2014 analyst consensus sits at ~$31 EPS on AI demand; a beat-magnitude below 30% would be directional confirmation of t3_eps_miss_guidance [\u2192\u00a73]. Goldman Sachs projects U.S. hyperscaler CapEx reaching $1.4T by 2027, corroborating the t2_capex_parabolic latch but carrying no first-party guidance weight [\u2192\u00a74]."
+    "executive_brief": "No tier-1-through-5 signals fired or unfired today; the framework holds at T1 4/6, T2 6/7, T3 2/5 with zero T4 fires [\u2192\u00a73]. The most material development on the thesis is Micron's Q3 FY27 print \u2014 record $41.5B revenue on a 343% DRAM surge \u2014 which arrives ahead of the Sept 30 formal earnings call and is drawing heavy sell-side preview activity [\u2192\u00a75]; the beat magnitude and guidance direction will be the next read on t3_eps_miss_guidance (currently Fired on SK Hynix's Q2 miss). On the competitive overlay, CXMT's 5th-generation 12nm-class DRAM with 50% die-capacity gain via quadruple-patterning is a structural escalation in Chinese commodity supply, transmitting into spot pricing pressure on DDR4/DDR5 nodes over the next 3-9 months and reinforcing the Competitor dynamics indicator [\u2192\u00a74]. Samsung's HBM4/HBM4E wafer output targeting 250K units and 80% HBM4 share by 2027 intensifies the 7B sub-indicator pressure on SK Hynix's Nvidia allocation [\u2192\u00a74]. EPS revisions remain net positive \u2014 SK Hynix +3.0 net score (30d), Micron +7.0 (7d) \u2014 keeping t2_eps_revisions Not fired, the single most important missing bear signal [\u2192\u00a73]. AMD +9.95% and Intel +12.14% led today's tape on no memory-specific catalyst; the broad semi rally is market-wide and does not alter any framework signal."
   },
   "indicator_assessments": [
     {
@@ -153,7 +153,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $56.93 (2026-09-21 print). Matrix basis (weekly means): current wk $56.93, +0.00% vs rolling 12w wk-peak $56.93 (wk ending 2026-09-27). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 174d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $57.17 (2026-09-22 print). Matrix basis (weekly means): current wk $57.05, +0.00% vs rolling 12w wk-peak $57.05 (wk ending 2026-09-27). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 175d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "DDR5 spot edged +0.80% to $54.83 (TrendForce 2026-09-16). Samsung outsourcing DDR5 to free HBM capacity tightens conventional DRAM supply near-term, consistent with spot firmness. Matrix remains at Not fired.",
       "relevant_links": [
         {
@@ -195,20 +195,20 @@
       "description": "Memory makers' and hyperscalers' CapEx growing parabolic \u2014 building 2027-28 supply glut. ALREADY FIRED on aggregate. v3.44.0: LATCHED \u2014 this signal ratchets up only and never reverts.",
       "what_to_look_for": "Big Three combined CapEx >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B (fired). 2027-guidance direction is CONTEXT for this card, never a reversal condition: above-2026 guidance is bull-confirm color; flat/down guidance is the t3_capex_plateau signal's event and can NEVER move this signal down. LATCH RULE (v3.44.0, Raul Jul-31: 'once triggered it triggered'): once Fired, this signal STAYS Fired \u2014 the parabola is a historical fact; the eventual stop and decline of CapEx growth is later-stage progression told by the plateau and Tier 4 signals, not a de-risking of this one. FORBIDDEN COUNTEREXAMPLE (2026-07-31): this signal was downgraded Fired \u2192 Partially fired because Microsoft guided FY27 flat and Meta withheld 2027 \u2014 exactly the forbidden move. Status is deterministically ratcheted after every run: any Layer 2 or Layer 3 output below the prior status is overwritten.",
       "current_status": "Fired",
-      "where_we_stand": "Fired and latched. Aggregate 2026 hyperscaler CapEx confirmed >$725B; Big Three memory CapEx >2x 2024 levels. Applied Materials Q3 2026 transcript shows DRAM revenue +52% YoY to record levels, advanced packaging >70% growth, Q4 guidance +85% YoY EPS \u2014 equipment-side confirmation of the parabolic trajectory. Oracle raised FY2027 CapEx guidance to $90-95B (from $70B), calling FY2027-2028 'peak CapEx years.' Micron raised FY2027 CapEx to above mid-40% increase with $10B quarterly run-rate. Google commentary on $200B datacentre CapEx signals continued acceleration. Latch rule: signal stays Fired regardless of any single company's\u2026",
-      "latest_developments": "Applied Materials Q3 call: DRAM +52% YoY record, Q4 EPS guidance +85% YoY. Oracle raised FY27 CapEx to $90-95B. Google reaffirmed $200B datacentre spend. No reversal condition met.",
+      "where_we_stand": "Latched Fired since 2026-01-15. Aggregate 2026 hyperscaler CapEx >$725B confirmed. Applied Materials Q3\u2192Q4 transcript shows DRAM revenue +52% YoY to record levels, Q4 EPS guidance +85% YoY \u2014 equipment demand acceleration corroborates the parabolic CapEx thesis. Oracle raised FY27 CapEx guidance to $90-95B (from $70B), calling FY27-28 'peak CapEx years.' Micron FY27 quarterly capex run-rate disclosed at $10B (above mid-40% increase). JPMorgan CEO projects hyperscaler spend approaching $1T next year \u2014 analyst context, not first-party guidance, but directionally consistent. Latch rule: status cannot revert.",
+      "latest_developments": "Applied Materials Q3 transcript: DRAM +52% YoY record, advanced packaging >70% growth 2026, customers providing 8-quarter rolling forecasts with 5-year visibility roadmaps. Oracle Q3 transcript: CapEx raised to $90-95B, FY27-28 named peak CapEx years.",
       "relevant_links": [
         {
-          "title": "Applied Materials Q3 2026 Earnings Transcript",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "Applied Materials Q3 Earnings \u2014 DRAM +52% YoY Record",
+          "url": "https://news.google.com/rss/articles/CBMi9gFBVV95cUxNdzRJeUVLRG04eW15ZS1keGR3ancwT0U3S3dBVXFmRXB3LWtfWktSUEc2dmgxT2NmTUI4VHVOOWU1eVJpYlFBaExkZ2lHV0sxZjhsYXZlUkh2dDVSU1FYOTFzMGktWlVvZ1lYVnpUNWp5dFl1MEI5R1lQQ3FTemZaR2JqSENPMmgxajVlODhSN1IzYk1rallmZWZkTnFocE52LVp5bE9QNVl4WFVSRXg0VjNkOHdEZ0NVZ0tlX0pUbGpLc0l0a2ZDb09FenhCVUtoSGwyWDFRVEh0Q280SFpBMDdiMndocWl6dFlpeGotX2hzaGhHWVE"
         },
         {
-          "title": "Google unworried by $200bn datacentre capex",
-          "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE5BTExFMXg0RXI4N3FOVmk5YmxVLThKNzRTaFl2ZzVjXzNQOW55LUMtM1J1d0EzdmYyOFp5NklhUmRTVlBhUFoxZjk5SXJuSU42ZFZvaGxB"
+          "title": "JPMorgan CEO: Hyperscaler Spend Approaching $1T Next Year",
+          "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPRnZ1cl96UUNRVHlZdW9adkg2Qlkzc01ZT1ViaDh3U0hwdVRGaXVGZGczTk5HaFlkTjJxYzdseFVQSjBuOW5uRUpGRzRtc2xUTTh4c1RGbjJOb0dzb3B0bnNpLWxLR3F0Wlk5ZzlXNExHMHBHaW8wY21BUjZLd2xzV3hFS1RDbkJPOUFiNVhRRlp1d2tCUWpJMG9DSll4V0RDOWttUw"
         },
         {
-          "title": "Oracle FY27 CapEx raised to $90-95B",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "OpenAI $856B Compute Capex Through 2030",
+          "url": "https://www.tomshardware.com/tech-industry/artificial-intelligence/openai-projections-point-to-a-massive-usd278-billion-cash-burn-through-2030-that-exceeds-the-national-budgets-of-indonesia-and-norway-usd856-billion-compute-tab-outpaces-tenfold-revenue-surge"
         }
       ],
       "change_vs_prior": null
@@ -220,20 +220,20 @@
       "description": "First month with net negative FY27 or FY28 EPS revisions for SK Hynix or Micron. The single most important missing signal \u2014 currently NOT FIRED.",
       "what_to_look_for": ">5 analysts revise SK Hynix or MU FY27 EPS DOWN in a single month while <3 revise up. Single broker target price cut of >-10% vs prior is a strong early signal even before the count threshold.",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. Rolling 30-day net score +3.0 (bullish bias): SK Hynix 30d revisions show 4 up / 4 down per analyst data; Micron 30d shows 2 up / 2 down \u2014 no net negative pressure crossing the >5 down / <3 up threshold. BNK Securities cut both Samsung Electronics and SK Hynix targets today citing slowing chip prices and KRW strength \u2014 the first identifiable sell-side dissent in a predominantly bullish consensus. This does not yet meet the formal firing threshold but is a directional warning: the Rubin Ultra HBM-reduction\u2026",
-      "latest_developments": "BNK Securities cut SK Hynix and Samsung targets today \u2014 first sell-side dissent on chip-price deceleration and KRW. Goldman Sachs maintains bullish Micron view ahead of Sept 30 print. Net revision score still positive; threshold\u2026",
+      "where_we_stand": "SK Hynix rolling 30d net revision score +3.0 (3 up, 0 down). Micron rolling 7d net score +7.0 (all bullish, zero bearish). Analyst estimates data: SK Hynix FY27 EPS est 472,527 KRW (37 analysts, 4 up / 3 down in 30d); Micron FY27 EPS est $157.73 (46 analysts, 2 up / 2 down in 30d). No broker has cut a target price >10% in the rolling window. Micron Q3 FY27 record $41.5B revenue print is generating upward preview activity ahead of the Sept 30 formal call \u2014 the revision direction\u2026",
+      "latest_developments": "Micron Q3 FY27 record revenue ($41.5B, 343% DRAM surge) is driving bullish preview coverage. Benzinga and Seeking Alpha previews cite upward EPS estimate revisions ahead of Sept 30 call. No downward revisions or target cuts\u2026",
       "relevant_links": [
         {
-          "title": "BNK Securities cuts SK Hynix outlook",
-          "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxOR1h6NEJCRDViNHdtdWdvUVViUHp2VkRkVVFuc25NWWIyQ2t4blU1cGR1X1dVekhZX201T2RubnpXcGlCTGlRM21feExLaVVwOERQUE5zWVI1UjF0RlhLSElnUVFsUy0zZUdKZ2lOVERVb3RrcG02bW55T2hRRXM3M0RfSlp0SWVQWUkzWE1xMkFsNnRf0gGUAUFVX3lxTE5HWHo0QkJENWI0d211Z29RVWJQenZWRGRVUW5zbk1ZYjJDa3huVTlwZHVfV1V6SFlfbTVPZG5ueldwaUJMaVEzbV94TEtpVXA4RFBQTnNZUjVSMXRGWEtISWdRUWxTLTNlR0pnaU5URFVvdGtwbTZtbnlPaFFFczczRF9KWnRJZVBZSTNYTXEyQWw2dF8"
+          "title": "Micron Q3 FY27 Record $41.5B Revenue \u2014 343% DRAM Surge",
+          "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxNMHhtX1J1aXo4OW9WbHdTTFlXVHpwczZ2U2ViVk9aYVY1T09fb2laNVlydE85Nm9RTkFnaDdVSGsxU3lkTG9aVkNLcEZWUTNiek5XOEZYLUVNWUdLZEkyWklRelhLWWdjam45V183S0g0eVNZVnVLOXA0WmkwU2JkcFhrdnYtNzVoRVFpTnJkLWV5REN0ZWNQYTRqRTdVTFVuSmYydVZ6VHJkY2c1RHdHYTJKNURnX2ZIdEJvRTlDSEIxZDJr"
         },
         {
-          "title": "Goldman Sachs expects strong Micron Q4",
-          "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxOWEx4YXZMdVFDVVB3WVIxRi1qd2ZzUGs0d2Mta0tDNFFvdGNFbDFha1hBaXdMTWVYTG43YmozWXJIdExzVjNqbUlJQWg0WmJYZGR4TnhrY3RrQUItLVEtUWZYck4zQlFRRWUyS2R5RWpzTnQteEtfZXU1LWxtdmMydXJqam43LWdrMlhYalgxcHpPRmNZcEo1TldRQzk3VER3RGRvSTgtWS1najZSN2FNYzhNTFhjVnNDMGJDRg"
+          "title": "Micron Q4 Preview: Analyst EPS Revisions Ahead of Earnings",
+          "url": "https://news.google.com/rss/articles/CBMilAJBVV95cUxOaWxxbWxjVFJ3RFdNVWMzcy15STk1Sm1Uc1YtVmV3U3JySUEwNmx4dVE4V2JLSFN4SkhVX2V1eWNTTVZRME5VUUJ3N2ZwU3kxcXpWMEZpQzZ0bnRRNFhRSWpuU24zenFiMDFRRk9ZX1J6RUdQR0lQRUdsZ2RTODJacnZPZnlDYkFZRENDNWVRd2dXajU3LU93dDg2QUd0Q1N4VmFIbndiVU9rSldRSDRQanFBYk95c3BvTE8tZDhkb1U1NHhNak81d0dRWU1mYWYtUFNGaW9nNWdYOE9nWktERWZZVHQwMG9HeWtMVEoxUjEyMzBvakNuVDJXYkwzVlRpVy1RSlJ1OWQ0QVlxLUNleXJYcU4"
         },
         {
-          "title": "BNK cuts Samsung Electronics target to \u20a9270,000",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFBSTEdpdWVfVXNZUkkwUnBITDdqaWpYbko1TS1iaUYyclZyTTJXWGxpOUxiWmJFX2hXX0MxVUxoUTRpMVBBOHV3TURWLTdmYVdMYlVjSk0yX28xaTBWdDRVWm9SaU12am4teE5hSkhIMzJmeVVXS2c"
+          "title": "Micron Earnings Setup \u2014 AI Memory Cycle",
+          "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNLU8zS3ZBOHQ5em5EenhnYXlLeFEyd3VKZ3NTTjRsaEFGS2dXZmJqX1k4V01ZVGZVcERmRURYeld0bWdBRkNZSmVFVjQ3Tkx0X09fQnZuMy1LNnNPbEJaa2htdVZDRUlfNzVzc255Q2dVNW5URWtmSk1UUjEtalBQSmNDOXJ4Y1lnQVlHam1IZnZ0LURUTjZacVB2SzJ2V0haekE"
         }
       ],
       "change_vs_prior": null
@@ -291,16 +291,20 @@
       "description": "Buyers panic-locking long-term supply. Paradoxical bearish signal \u2014 already fired.",
       "what_to_look_for": "3+ year HBM LTA announcements. 'Sold out through 2027/2028' phrasing. Currently fired (HBM3E sold out through 2026; Hynix HBM4 LTAs with Nvidia).",
       "current_status": "Fired",
-      "where_we_stand": "Fired. HBM3E sold out through 2026; SK Hynix HBM4 LTAs with NVIDIA for Vera Rubin platform in place; OpenAI Stargate $300B Oracle commitment on record. Micron Q3 transcript confirms 16 long-term supply agreements signed with HBM TAM pulled forward to 'easily crossing $100B in 2027.' OpenAI LOI with SK Hynix\u2026",
-      "latest_developments": "Micron Q3 transcript: 16 LTAs signed, HBM TAM >$100B in 2027 (pulled forward from 2028). OpenAI LOI with SK Hynix noted in analyst recap. No cancellations.",
+      "where_we_stand": "Fired since 2025-12-01. HBM sold-out window now confirmed through 2027 (extended from prior 2026 record). Micron customers actively seeking allocation per 24/7 Wall St. Micron Q3 transcript: 16 long-term supply agreements signed; HBM TAM pulled forward to 'easily crossing $100B in 2027.' SK Hynix HBM4 LTAs with Nvidia remain binding.\u2026",
+      "latest_developments": "24/7 Wall St. confirms HBM sold out through 2027 with Micron customers begging for supply \u2014 extends the sold-out window beyond the prior 2026 horizon. Micron Q3 transcript reiterates 16 LTAs signed, HBM TAM >$100B\u2026",
       "relevant_links": [
         {
-          "title": "Weekly Recap: OpenAI LOI SK Hynix and Analyst raises target",
-          "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQVnRkcGdQRTdvSXRxakJaQ0h1ak1fc3RLNmxMeEVVTHp3V2NGMWRDcXR5by1laGpkRWdfYVdrSFdBcXFXcXZoMGcxb0tRQ0t1d3V0UFFXOFQ1eEhhYXhXV3pmb240VnRfRzQ0YUlFWFRNM012bnhYdEJzNjVSaTFlLWRzVVdoTVR5MVRadHFJQU9ValBPRHFBYnpGa2NDY0VjX0NISFprSTVTTjZIOGw3d3NaWWllU3gycHRRS2lpdE9pSnIzVEE"
+          "title": "HBM Sold Out Through 2027 \u2014 Micron Customers Seeking Allocation",
+          "url": "https://news.google.com/rss/articles/CBMi7AFBVV95cUxQMWhDZWRTOFEyc2ZUdEFFbm9vbGxPb2NPeDJ4MmFuRnlieFVlSjlVV1kwb2xQMXNjMkFOdk9PVV9LcUhxVjVjbkM1OUwtZlVOTWY1dlBPU2NBMnB4eDdlRU9feTVZSFUwbElyRkg4MXZGWHhTWHdEb28xZTV2NFo0dGtraHlpSG1hU3RZMkpkc1R5RW5lSFF0ZXJ6V3RLcy1uelVwRHZGRlYxTE5zSlZnZzhWR1ZqaHlmdHJieFhJTHN3Yi1MQWl1U3kwRDFVc1RKaFkxakl4ZXFQem9TZVo0WFp2MFQ0SThjejdkMQ"
         },
         {
-          "title": "Samsung edges SK Hynix as HBM4 lifts Korea chip earnings outlook",
-          "url": "https://news.google.com/rss/articles/CBMiekFBVV95cUxMUjhIUlFRaW9nMmRrQVd0cjk1RS1vQloybWgzWkVveFNLQ0NYRE9sV0xmT3dxeVdDUlk1WWZ3dUJybG10Y09EVks2dEhaRzl5Yl9xandDcnczLWxmYmlDT2RuZUZuS3E0TnFSNjlqZkdxVlFRMmRRQjhiMmlR0gGOAUFVX3lxTE1qRU1XNjBadUgzTnFnWS0xRVVNdVRTbGt4S0hYMlA1LW9IX25nNmRKLTlDU28wOUFuWnJBUGN1M1g2ZWZPamdqc3VLRS1tUGNwQmt6ZWk1VjBfY2JiRFZBa1o4VUVnNV9OV1hQRUJhWXZfZXVxYjFBaFFaMWVFaWFGSXNBLTJlUXhjZ2FWc0E"
+          "title": "Micron Earnings Preview: HBM4 Ramp and Long-term Contracts",
+          "url": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxQdWxGazQ3d0NwVnMwTS03UWdhRTl3Z1YzOGxMTG04U0U5WGZrM1hnLWxKdmhnMDhjOENCMFhzMlBsbXpfUFZSWTBYZUFQaWt0eDRnM2QyRjhRMEt2QkRwVVA3NEtRWTF2cHdHdGZEaVRUeVVZQWYwTWlTWUxNaFZZRThlcUd4VzFlMWVCUzlVZWxMWm56c3pIVjdRY1l4ZWxsWGQ1bl9QREd6U2JBNVhaLW9XOG9ackp0cjJQWWZubzB0emJiRjFEeG1qRjRrM1RLYW5sSlVQNA"
+        },
+        {
+          "title": "Micron Q3 FY27 Record Revenue \u2014 343% DRAM Surge",
+          "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxNMHhtX1J1aXo4OW9WbHdTTFlXVHpwczZ2U2ViVk9aYVY1T09fb2laNVlydE85Nm9RTkFnaDdVSGsxU3lkTG9aVkNLcEZWUTNiek5XOEZYLUVNWUdLZEkyWklRelhLWWdjam45V183S0g0eVNZVnVLOXA0WmkwU2JkcFhrdnYtNzVoRVFpTnJkLWV5REN0ZWNQYTRqRTdVTFVuSmYydVZ6VHJkY2c1RHdHYTJKNURnX2ZIdEJvRTlDSEIxZDJr"
         }
       ],
       "change_vs_prior": null
@@ -435,12 +439,12 @@
       "description": "Equipment makers' order books showing first weakness.",
       "what_to_look_for": "ASML or AMAT bookings -10% or worse QoQ. Book-to-bill below 1.0. SEMI worldwide WFE billings printing MoM decline.",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. No ASML or AMAT bookings data showing -10% QoQ decline or book-to-bill below 1.0 in today's feed. ASML -7.3% today on broad AI-slowdown sentiment, not a bookings print. Applied Materials Q3 transcript is strongly bullish: Q4 guidance +51% YoY revenue, DRAM +52% YoY record, customers providing 8-quarter rolling\u2026",
-      "latest_developments": "AMAT Q3 transcript: Q4 revenue guidance +51% YoY, DRAM record +52% YoY. ASML -7.3% today on sentiment, not a bookings event. No WFE order-book weakness data.",
+      "where_we_stand": "Not fired. Applied Materials Q3 transcript is the opposite of a crack: DRAM revenue +52% YoY to record, Q4 guidance +51% YoY revenue growth, advanced packaging >70% growth in 2026. Customers providing 8-quarter rolling forecasts and 5-year visibility roadmaps. No ASML or AMAT bookings decline reported; no book-to-bill below 1.0\u2026",
+      "latest_developments": "Applied Materials Q3 transcript: DRAM +52% YoY record, Q4 EPS guidance +85% YoY, manufacturing output doubling target 2028 with 1,500 new hires. No WFE weakness signals in today's feed.",
       "relevant_links": [
         {
-          "title": "Applied Materials Q3 2026 \u2014 DRAM +52% YoY, Q4 guidance +51% YoY",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "Applied Materials Q3 \u2014 DRAM Record, Q4 Guidance +51% YoY",
+          "url": "https://news.google.com/rss/articles/CBMi9gFBVV95cUxNdzRJeUVLRG04eW15ZS1keGR3ancwT0U3S3dBVXFmRXB3LWtfWktSUEc2dmgxT2NmTUI4VHVOOWU1eVJpYlFBaExkZ2lHV0sxZjhsYXZlUkh2dDVSU1FYOTFzMGktWlVvZ1lYVnpUNWp5dFl1MEI5R1lQQ3FTemZaR2JqSENPMmgxajVlODhSN1IzYk1rallmZWZkTnFocE52LVp5bE9QNVl4WFVSRXg0VjNkOHdEZ0NVZ0tlX0pUbGpLc0l0a2ZDb09FenhCVUtoSGwyWDFRVEh0Q280SFpBMDdiMndocWl6dFlpeGotX2hzaGhHWVE"
         }
       ],
       "change_vs_prior": null
@@ -490,20 +494,16 @@
       "description": "Workforce reductions or fab utilization cuts in the MEMORY operations of the major makers \u2014 a downturn tell for the memory business specifically, not for unrelated business units.",
       "what_to_look_for": "Layoffs, workforce/headcount reductions, or fab idling/utilization cuts IN THE MEMORY OPERATIONS (DRAM/NAND/HBM lines, memory fabs, the memory/DS-Memory division) of Samsung, SK Hynix, Micron, or other memory makers. BUSINESS-UNIT SCOPING IS MANDATORY: Samsung is a conglomerate \u2014 job cuts in its Mobile/smartphone, consumer-electronics, display, appliance, or other non-memory divisions do NOT satisfy this signal (example that must NOT fire: smartphone-division layoffs at Samsung's Texas headquarters). For pure-play memory makers (SK Hynix, Micron) company-level cuts count \u2014 they ARE the memory business. If the affected business unit is not identified as memory/semiconductor-memory, do NOT fire. 'Samsung announces layoffs' alone is NEVER sufficient \u2014 the report must explicitly state the cuts hit memory operations/employees.",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. Multiple labor stories in today's feed \u2014 SK Hynix union revote on revised wage deal (through Sept 16), SK Hynix shareholders filing breach-of-trust complaints over bonuses, Micron Taiwan workers rejecting $31,650 bonus and demanding 15% profit-sharing, Samsung union restricting membership to semiconductor division \u2014 but none of these\u2026",
-      "latest_developments": "SK Hynix union revote on wages through Sept 16. Micron Taiwan workers reject bonus, demand profit-sharing \u2014 strike threat active but no production stoppage confirmed. Samsung union restricts to semiconductor division (membership vote, not layoffs).",
+      "where_we_stand": "Not fired. Samsung union restructuring news (2026-09-21) relates to the union reorganizing to focus on the semiconductor division \u2014 this is a labor-organization event, not a layoff or fab idling in memory operations. No headcount reductions, fab utilization cuts, or memory-division workforce reductions reported at Samsung, SK Hynix, or Micron.\u2026",
+      "latest_developments": "Samsung union restructuring to focus on semiconductor division (2026-09-21) is a union organizational change, not a memory-operations layoff \u2014 does not satisfy trigger. Micron Taiwan union strike vote is a profit-sharing dispute; no production curtailment\u2026",
       "relevant_links": [
         {
-          "title": "SK Hynix Union Revotes on Revised Wage Deal",
-          "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxQOXlHYUdvZFNiZTlEeERlNU9qeEU0eGw0RVRWa2tCcHhXN2xfVDE3d1lfaW1lTzhFOGpUSU5IcWFzYURWbmVOcUpMMHZSMkhWd2pCZGJheW95VmExT2lRMzFTTE9YSVQwNUlCZHJBb1prMFNwRWZUdkxUeFZtck4wYVVkWHJkSFZpSmg3ZkZsel9pYUF5Z3JkNUQtMnp6a1VFdklqag"
+          "title": "Samsung Union Restructures to Focus on Semiconductor Division",
+          "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxOU2txSlVlRFpSMG9wOERCMlZkQm1Gd3ZabzktTkFnWF9McEpGejZOWENXakg5SUJ4WnBVR25jMklPTkdTNklmdWxCZHdkQVl3Z2hVMVhTMnU5d0pmdTR0VEx0enN3Z1ROUXFGY25YT0FwYVBHZ0VManEyYldaUy1haF9hcGEzNEgt"
         },
         {
-          "title": "Micron offers Taiwan employees $31,650 cash bonus as unions threaten strike",
-          "url": "https://www.tomshardware.com/tech-industry/semiconductors/micron-offers-taiwan-employees-usd31-650-cash-bonus-as-unions-threaten-strike-over-ai-windfall-workers-reject-record-payout-package-demand-15-percent-profit-sharing-plan"
-        },
-        {
-          "title": "Samsung Union Votes to Restrict Membership to Semiconductor Division",
-          "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxOQzVSbnlXMkFueEp1UnY1a3Y1aHI4clhzbmNJRFRGM2hRNjJKU2ZDMFZKcjNBRnFxejR3SmdLUzFaeTlvd3RnaWJSLWxXT1VuS2ZYbWNweHV3VnZqVng1V3l4ZVZCNm5nNW1zNHZjdjY0MF9CeV9rU0gzSFJjMTVQc08wTW1WLU9N"
+          "title": "Micron Taiwan Union Strike Vote Over Profit-Sharing",
+          "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQMWpYQldMTXMtZ081ZWRaRGNES3Jzb0V2emtkd1VqenJYc0hVMDNMZXdJYXBpYmREQlA0UmtyaEhBSzhvLXVZbGlvTGc2ZUN6N2dqckRubzd3UlA2RG9MbHVhemoxOXgwYzVsLVlJWnZyOUlBZFJQSWE1Y2JLam80czNOR3AxUlhm"
         }
       ],
       "change_vs_prior": null
