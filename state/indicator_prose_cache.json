@@ -121,28 +121,24 @@
       "evidence_count": 0
     },
     "t1_spot_decline": {
-      "last_full_regen_date": "2026-09-16",
+      "last_full_regen_date": "2026-09-23",
       "current_status": "Not fired",
-      "where_we_stand": "Matrix cell: Row 1 \u00d7 Col 1 \u2014 Not fired. DDR5 16Gb 4800/5600 spot at $54.83 (+0.80% today); rolling 12-week peak $54.52 (week ending 2026-09-20); current week mean $54.52, drawdown 0.0% from peak (Col 1, at peak). Contract anchor: Q2 2026 +58-63% QoQ (Row 1, \u2265+30%). No firing condition met \u2014 full position. DDR4 16Gb spot at $87.625 (-1.68%), continuing legacy node softness. Samsung's DDR5-to-HBM reallocation and Apple accepting Samsung's 1Q27 price hike both support near-term spot stability; no spot deterioration signal present.",
-      "latest_developments": "DDR5 spot edged +0.80% to $54.83 (TrendForce 2026-09-16). Samsung outsourcing DDR5 to free HBM capacity tightens conventional DRAM supply near-term, consistent with spot firmness. Matrix remains at Not fired.",
+      "where_we_stand": "Matrix cell: R1 \u00d7 C1 \u2014 Not fired. DDR5 16Gb 4800/5600 spot printed $57.50 on 2026-09-23 (+0.58% session), with DDR5 eTT +1.20%. Rolling 12-week peak is $57.20 (week ending 2026-09-27); current week mean $57.20 \u2014 drawdown 0.0% (C1, at peak). Contract anchor: Q2 2026 +58-63% QoQ (R1, \u2265+30%). Cell R1\u00d7C1 is the deepest 'Not fired' position in the matrix. Spot is not only holding but ticking higher, with DDR4 16Gb the only product printing a marginal decline (-0.15%). No firing condition is close to being met on either axis. The\u2026",
+      "latest_developments": "TrendForce September 23 spot print: DDR5 16Gb $57.50 (+0.58%), DDR5 eTT $25.30 (+1.20%), DDR4 16Gb $84.375 (-0.15%). Spot at rolling 12-week peak \u2014 no drawdown registered.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price 2026-09-16",
+          "title": "TrendForce DRAM Spot Price \u2014 2026-09-23",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
         },
         {
-          "title": "Samsung shifts DDR5 to outsourcing for HBM capacity (TrendForce)",
-          "url": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxNYkFrOU15WjNIYThBbjFEZk14YVhkdXREeFhZR1BIRVNLSm1uZFNfeXdlZUZQRERETGp4RzRDbGxWdlgyS2dFenI0blR1NTFoNkNDV2Y3TWU1QjV3dG41czdWQnM0REFCY0dlQjhNcDJlcXpoczdzZEpMZGtGdllSdXphVHkxb21vT200WVVuMG0yUnNtOHd3NU1saFZPMmNTRmRIR1kxeG5HWmxyVFFsd1d6VXQwR2tUaVdjaGtoV3oyNGdtdXViTkhQWTc4dWQxODZzTzRydGlnYXdNaXpz"
-        },
-        {
-          "title": "Apple accepts Samsung 1Q27 memory price hike (DigiTimes)",
-          "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxQRzZqaXNmR3hlQUF1T2xSOFZ6RWxPWTExVmFGRGhFWFhCLWtCUDZ3UGJiVGx6UGdxYzZDeEJnclBKYTFsdmYwclB5WTRMX0RaNjhtUWZiTGtSTEFwamMzNWdxR0szSTFOU2taR1N0QnROQUt0N1VmaE5WUDBWVWNCRkRBWEJIay1zZC12WkE"
+          "title": "Tom's Hardware: Memory chips more expensive than compute on per-area basis",
+          "url": "https://www.tomshardware.com/pc-components/dram/dram-is-now-more-expensive-than-compute-chips-on-per-area-basis-ai-demand-drives-memory-die-value-past-leading-edge-silicon"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-09-16",
+      "updated_date": "2026-09-23",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 1
     },
@@ -309,24 +305,20 @@
       "evidence_count": 0
     },
     "t2_spot_contract_spread": {
-      "last_full_regen_date": "2026-09-16",
+      "last_full_regen_date": "2026-09-23",
       "current_status": "Fired",
-      "where_we_stand": "Fired on DDR4 spot/contract inversion (recorded 2026-04-01, live persistence). DDR4 16Gb spot at $87.625 (-1.68% today) continues to soften. DDR5 16Gb spot at $54.83 (+0.80%) remains above DDR5 server contract \u2014 DDR5 spread has not yet inverted. Samsung's DDR5-to-HBM reallocation tightens DDR5 spot supply near-term, which works against DDR5 spread\u2026",
-      "latest_developments": "DDR4 spot -1.68% to $87.625 today; DDR5 spot +0.80% to $54.83. Samsung DDR5 outsourcing tightens near-term conventional DRAM supply, supporting spot. DDR4 inversion persists; no reversal condition met.",
+      "where_we_stand": "DDR4 spot/contract inversion fired April 1, 2026 and persists under live-persistence rules. DDR5 spot ($57.50 today) remains above DDR5 server contract \u2014 the DDR5 leg has not yet inverted. Today's spot print (+0.58%) moves DDR5 further from inversion, not closer. The signal is Fired on the DDR4 leg; DDR5 inversion\u2026",
+      "latest_developments": "DDR5 spot ticked up +0.58% to $57.50 on September 23 \u2014 no new DDR5 inversion evidence. DDR4 inversion from April 2026 persists; no reversal data in today's feed.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price 2026-09-16",
+          "title": "TrendForce DRAM Spot Price \u2014 2026-09-23",
           "url": "https://www.trendforce.com/price/dram/dram_spot"
-        },
-        {
-          "title": "Samsung outsources DDR5, shifts to HBM (SammyGuru)",
-          "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQR0FTZjFTRlpPZXBTVFdBZGFPd2JfYkg3VjF4YVlDS0tYRVMxUWFVLXVSNFpOTkEtb0dLakVYQV9fZ3FMTUNIVVBGekdfREpCOVVwSm5oMmR3WEdZaVVhcnhmZDU5aUNXX2x4S2J0QkhHZzk0MDhpcGx1S2dvTXdVMS10QmhjMmFh"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-16",
+      "updated_date": "2026-09-23",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -349,22 +341,30 @@
       "evidence_count": 0
     },
     "t3_eps_miss_guidance": {
-      "last_full_regen_date": "2026-09-17",
+      "last_full_regen_date": "2026-09-23",
       "current_status": "Fired",
-      "where_we_stand": "SK Hynix Q2 2026 missed consensus EPS with guidance not raised \u2014 Scenario B fire condition met (signal history entry 2026-08-27). Status persists until next quarterly print. Beat re-widening to \u226530% on a new print OR a guidance cut (which converts to T4) are the only reversal conditions. No new\u2026",
-      "latest_developments": "No new quarterly prints today. Signal persists on the 2026-08-27 SK Hynix Q2 miss. Micron earnings preview articles are coverage echo \u2014 no new estimate or guidance figure.",
+      "where_we_stand": "Fired on SK Hynix Q2 2026 print (signal history entry August 27, 2026): textbook Scenario B \u2014 missed consensus EPS with guidance not raised. Per framework rules, this is a quarterly-persistence event; status holds until the next quarterly print delivers a beat re-widening to \u226530% or guidance is cut (which\u2026",
+      "latest_developments": "Stocktwits market commentary confirms SK Hynix earnings miss and South Korea chip rout. Micron September 30 earnings is the next quarterly print; consensus previews (Seeking Alpha, Benzinga, kobaran.com) frame robust demand but the beat-magnitude trajectory\u2026",
       "relevant_links": [
         {
-          "title": "Zacks Earnings Trends \u2014 Micron and Nvidia",
-          "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxPQXV0VGNuYjNIa0FVQXU2alhXUGNPZWNXdVdDcXVEckVhYXliOWRfNGYxNTNyN2IwdmRNZ0NhTF9ta3lFeVViZm1Nd2tjZjVqczBnOHI0Mk11ZGhqN3lKTW5MUnRkQXBIbnBUbTJ2MnpHSUNPRFo2MjRtcXk5X19nbkpXNlo4cndkTUdJbTlpN19RTm83VVAzcEpFbWxlQTRsMkh4MkpUd1BLT2NUaDZhUGlFbGlFdjc4WXZ1YjdYOE5EUVNwUlp1UmUxVHRUZw"
+          "title": "KORU ETF / SK Hynix Earnings Miss \u2014 Stocktwits",
+          "url": "https://news.google.com/rss/articles/CBMijAJBVV95cUxNbU42QnhUeEhBWGxyMXJIMjRwNnY5OFJSOE5OSEs4S19WRktYUEQwWVo1MzRwNHY3ZTZsVFY5LXZONFVIb3htQW9PeVlDclB5V2w5dmROWktTWmpDeHZNWncxUmU1VVR5aDdNSDdPRlJXR0ZWQUpqN28zRUlXTkx2R3V5TDUxMFNFVFh6ZjlmQ0huZDlFY1F3MHlkU2ZJUkhfa2VxY3U3d0V3OVVLRmdoUEhsbHYzZGFpTDBlSUwwd1VzZUdBZkhXRXppbXVDaXJLeGdWeURZalZ5Y1FfbXpvOHBhRWlIOUd5anowWG5vb2lqRU9Fb1h1WldxN3c4LXlQWHN2NUJseGs4YnpH"
+        },
+        {
+          "title": "Micron Q4 Preview: Robust Memory Demand \u2014 Seeking Alpha",
+          "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPQjRmWUUxZkxGcDZNbFRud05mc1RORkRUTGlFa2VPZHdJTVRhWFkxaHVXekFSdlphNmx2LTQ5eTBIbFc4Z3ZpelM2VnJjbnBmTjJ0cUdLQVg4SVpHRTJ5NkJ0UGtoXzdLU0V6OWVoV1BSd2FFdDdsak1ZVnI4RlRUeWNLakxBQ0FXTWtfOHhGVjRZeGNpUnlxU3N5Q0lheWFFcVV1d2phVQ"
+        },
+        {
+          "title": "Micron Earnings: 2028 Demand Outlook in Focus \u2014 kobaran.com",
+          "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxPLU5zS2pKNjZYNXlPZTRDcFhiTHJ0clYzNFltSk1aOGdZemp5YmM5bE5GNHdpVVJOWHpoamFaR0QyV0hWVTBtcDJIbVFnUXRLQWl5TEJqVUV0bFZndkFJMUZwT19UbHhNNEpSSEVobnpySi1BZXFJekJsMUhuZ1d1UXNSZ2VGVnJIQlRiTDVVUkZFLUg3LVFfNVZvSDdEYWps"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-17",
+      "updated_date": "2026-09-23",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 0
+      "evidence_count": 1
     },
     "t3_relative_strength": {
       "last_full_regen_date": "2026-09-17",
@@ -421,24 +421,24 @@
       "evidence_count": 0
     },
     "t4_capex_slashed": {
-      "last_full_regen_date": "2026-09-16",
+      "last_full_regen_date": "2026-09-23",
       "current_status": "Not fired",
-      "where_we_stand": "No Big Three memory maker has announced a CapEx reduction of >20% or fab idling. The directional evidence today runs opposite: Samsung is reallocating Cheonan capacity toward HBM (not cutting), SK Hynix is in talks to expand into US production via Intel's Ohio fab, and Micron's most recent guidance (FY2027\u2026",
-      "latest_developments": "Samsung Cheonan restructuring toward HBM (not a cut). SK Hynix-Intel Ohio fab talks signal expansion. No CapEx reduction announcement from any Big Three maker today.",
+      "where_we_stand": "No Big Three memory maker has announced a CapEx reduction of >20% or fab idling. The directional evidence runs the opposite way: Samsung and SK Hynix are accelerating HBM output and the Korea JoongAng Daily reports an 800 trillion won chip cluster targeting 2030 mass production. Micron's transcript diff shows\u2026",
+      "latest_developments": "Samsung and SK Hynix 800T KRW chip cluster announced with 2030 mass production target. Micron FY2027 CapEx quarterly run-rate disclosed at $10B \u2014 acceleration, not cuts. No fab idling or CapEx reduction reported.",
       "relevant_links": [
         {
-          "title": "Samsung restructures Cheonan for HBM (Chosun)",
-          "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQQ0dFWmIyc1kzV1hEc1AxMk9fT29JeXhVc0hRWUFXd2tBcVFCT0ViZ2VqN1VNLW9hdGRzWG1WVXhCUEwwRllMUWJHWmNYaDZCeFNxNm92cXBmMTZQNWY3UmJhR2R2SnRLQkVwQi1BQVpWdElJaGJNX0EzV25RSDRCaHU1S0lVb1VU"
+          "title": "Samsung, SK Hynix 800T won chip cluster \u2014 Korea JoongAng Daily",
+          "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOZGZxWXdWZHBUOU9vNlktcEp1NGxuT1IzYVVtTlFXNFA3YjRkQ2R2UTM3aHpKQnNGMTZzb0JWc1hWdXZCbk9pT2hkZ1VuT2ZpXzVNcG9PUEFQV0I5VlVCek9IX2RmZDRVUlIxU2l4Z3BEU2t6a0QzWkQ1MXhqbDBqNUVqc2R5OUd2VTJrRS16djIwVU80NGtBZHdRZkVGTHBqLVZ5X2d6RXZURTRHTTRKeXlDN3NkS3loUXZ6VERON3FlV0dVeGxUSWdPVng"
         },
         {
-          "title": "SK Hynix-Intel Ohio fab talks (Reuters)",
-          "url": "https://news.google.com/rss/articles/CBMi0AFBVV95cUxOVW1TN09JajVCZlllYVppOUxpX1RKbnVZOEpHNlA5ZkxFaElCd3h2czNacjJ6QlRyM2NPM1A4Y2tUVmNUTzlRSVJhX29oUk9ZTjFnYjFLOE9NWm5jaTVGOWo1Mnc1VHBOMTRLYXR0NURtUlltQV9ZVlgybWNSWmlDbjdVOGxLTTRlWFhGcUNNcjhYZXA2Q3BocGFpUF9sZXhYdXNURk5CVkZ2UVptUlUxOVQ1UmdOY1RUT2FvZDVBQ2EtNWRRbnpaMHlEYl9XQ2Ny"
+          "title": "Samsung and SK Hynix accelerate HBM production \u2014 Sammy Fans",
+          "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxOSkdpTUh3UFlyUzVqZDRQbkFoamp5VzNPT0cxV2ZaYzJPMW1NZzhZV2tJQmxqb1E5eUpHbjdTREQwWjhvU1laYTFDVVV5M3dsV3Vld0o0eHpNdDFmZ3pBYThwYngxdUxwSXNqeDBaUU9WSzNPeXJHSWx5Yi1EYVZQMFU3Z0lMVUZmUlhsYQ"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-09-16",
+      "updated_date": "2026-09-23",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
