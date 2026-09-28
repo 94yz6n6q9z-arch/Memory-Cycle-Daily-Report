@@ -49,38 +49,38 @@
       "evidence_count": 0
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-09-21",
+      "last_full_regen_date": "2026-09-28",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026: Google TurboQuant published 6x KV-cache compression and 8x inference speedup on H100 \u2014 efficiency multiplier \u22652x threshold met. No new efficiency announcements in today's feed. Reversal condition is explicitly 'Not applicable' \u2014 a published algorithmic technique cannot be unannounced. Status persists. No competing announcements from\u2026",
-      "latest_developments": "",
+      "where_we_stand": "Fired since March 24, 2026: Google TurboQuant published a 6x KV-cache compression with 8x H100 speedup \u2014 a permanent, irreversible algorithmic event. Today's Google TPU v7 benchmark (56% faster than GB200 on Kimi K3) adds a hardware-efficiency dimension: in-house ASICs reducing HBM-per-inference-dollar at the margin. Neither development reverses TurboQuant; both\u2026",
+      "latest_developments": "TPU v7 outperforms Nvidia GB200 by 56% on Kimi K3 and closes gap with Cerebras on Qwen 3.8 \u2014 incremental in-house ASIC efficiency gain layered on top of the existing TurboQuant algorithmic fire.",
       "relevant_links": [
         {
-          "title": "Google TurboQuant announcement (March 2026)",
-          "url": "https://news.skhynix.com/feed/rss/"
+          "title": "Google TPU v7 beats Nvidia GB200 by 56% on Kimi K3",
+          "url": "https://news.google.com/rss/articles/CBMi2wFBVV95cUxPMWtRUjAtRGNaNnFKckdUTFVWMVZadU9zMjBmMGhadlg0VENNUGM0OXo2bGxScFZyUTZBNUU0RkhWNXlkbnFRdGJ1ck9QeVlvZk1veGpfYzRrQzd0M1pSb09VVldZMEt3eVlQT0ZUZ055Wm5MMkVYcHR3eDRfY0d6cjdOcExPM3dLTVdKSWRVcUlPenZONjNxN3ZPdVBXamlmRUxLWEt4NWFUNVBPMjNqX2g1TEpRVWRpSHNuTmY1S0xBRnUyLXhPNEZwYlRtVW9TdmhHMXF3WTJITjg?oc=5"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-21",
+      "updated_date": "2026-09-28",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 0
     },
     "t1_lead_times": {
-      "last_full_regen_date": "2026-09-21",
+      "last_full_regen_date": "2026-09-28",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. No evidence of LPDDR5X lead times falling below 26 weeks or HBM3E delivery slots opening. SK Hynix Indiana HBM fab construction confirmed via HanmiGlobal with 2028 completion \u2014 this is a capacity-addition signal, not a lead-time contraction signal. HBM3E remains sold out through 2026 per LTA evidence. No\u2026",
-      "latest_developments": "SK Hynix Indiana HBM fab construction confirmed under HanmiGlobal management through 2028 \u2014 capacity addition, not lead-time relief.",
+      "where_we_stand": "Not fired. No evidence of LPDDR5X lead times falling below 26 weeks or HBM3E delivery slots opening. Jensen Huang's active CEO-level meetings with Samsung and SK Hynix on next-gen HBM supply (reported today) confirm HBM remains sold out and delivery slots are still constrained through 2026. No earnings transcript or\u2026",
+      "latest_developments": "Jensen Huang scheduled to meet Samsung and SK Hynix chiefs in New York on next-gen HBM \u2014 active supply negotiation at CEO level is consistent with continued HBM slot scarcity, not lead-time normalization.",
       "relevant_links": [
         {
-          "title": "HanmiGlobal SK Hynix Indiana fab \u2014 Korea Herald",
-          "url": "https://www.koreaherald.com/article/10880579"
+          "title": "Jensen Huang to meet Samsung, SK chiefs on AI chips",
+          "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTFA5Z2pJOG1adXphNVZqdW1QbHJYejlGOWFTQkpndFVVV2RXTkxvNFhRdXFrX2tEck05aHZxZlljT2x4Yzc0ekktZ1loQlNCOWF6NU9ZbFlUT1FWQjZXaFo0VUZleG4tWjBXRmVDU1lR?oc=5"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-09-21",
+      "updated_date": "2026-09-28",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -107,20 +107,24 @@
       "evidence_count": 0
     },
     "t1_price_cuts_no_demand": {
-      "last_full_regen_date": "2026-09-21",
+      "last_full_regen_date": "2026-09-28",
       "current_status": "Fired",
-      "where_we_stand": "Fired since April 28, 2026: TrendForce explicit statement 'DDR4 price cuts failed to revive purchasing activity' recorded with quarterly persistence. No reversal evidence today \u2014 no TrendForce or peer statement that price cuts are reviving demand. Today's spot data shows DDR5 16Gb up +1.67% to $56.93 and DDR4 16Gb down\u2026",
-      "latest_developments": "DDR4 spot -0.88% to $85.00 (Sept 21 TrendForce print) \u2014 continued DDR4 softness with no demand-revival language in today's feed.",
+      "where_we_stand": "Fired since April 28, 2026: TrendForce stated 'DDR4 price cuts failed to revive purchasing activity' \u2014 the canonical demand-destruction phrase. Quarterly persistence rule applies; the signal holds until TrendForce or a peer source explicitly states price cuts ARE reviving demand. Today's news feed carries no such reversal. Multiple Micron pre-earnings\u2026",
+      "latest_developments": "Micron pre-earnings coverage frames the earnings print as a cycle-peak test ('86% margin guidance breaks every past memory cycle record'); no TrendForce or DigiTimes reversal language in today's feed.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price \u2014 Sept 21 2026",
-          "url": "https://www.trendforce.com/price/dram/dram_spot"
+          "title": "Micron's 86% Margin Gamble \u2014 cycle peak framing",
+          "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxPUDdWUzV0Z2xOejZ1WnZXLU1Kd3pXYkVCSDRORXdEVDdTdERKaTJTU2FZZG5VRDNHTWNBS1lLZHhTVGFLbzJhOF94b2dJa2F1aDhMU0IzTWNHNVhfRl94Q1Q4Sy1XSFYwd1ljZTNRRVhCTl9UMjdnTUd2Q19rdzJyZXlzM3dnNGxuSEUtTElWdlMtcTRESDFMcjlFbThkaUJFTHFKZHdyUUowcVd0clZySWxZa0prOW5vUXZXMHVscHVpa2k2WjZlS21XT0x4NzNONTBpWA?oc=5"
+        },
+        {
+          "title": "FXStreet: Micron earnings preview \u2014 peak memory or new regime?",
+          "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxPR2dndERHakR6TVZVci1xYkNDanhVNENiaGJlck9sSTd3cS1RUDZ2T0JOYldvWDRUZmt5SngzNWF4MmUzX1hiTHpMTS12NjIyaXpkTDRraWN5UUg0empQNEZUMHI0VE9CVkRXR29WLUU0WV91aVVLUDdiTkk0Z3VOTDJoU1FEZEhMSEg5ZDVpb3RobTJiVEluRmJB?oc=5"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-21",
+      "updated_date": "2026-09-28",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -147,20 +151,20 @@
       "evidence_count": 1
     },
     "t1_us_adr_event": {
-      "last_full_regen_date": "2026-09-21",
+      "last_full_regen_date": "2026-09-28",
       "current_status": "Fired",
-      "where_we_stand": "Fired: SK Hynix ADR listing completed July 10, 2026. F-1 filed March 24, 2026 (confidential); strong roadshow demand confirmed at pricing. No insider sales >$10M reported in the offering window; no cancellation or undersubscription. The peak-coincidence signal is live \u2014 ADR completion occurred concurrent with multiple Tier 3 signals firing\u2026",
-      "latest_developments": "",
+      "where_we_stand": "Fired. SK Hynix ADR listing completed July 10, 2026. Completion phase persists \u2014 no 90-day reversion rule applies. The peak-coincidence signal (memory maker cross-listing concurrent with Tier 3 signals firing) remains active. Today's Solidigm IPO buzz (reported alongside SK Hynix's HBM lock-in positioning) adds a secondary capital-markets event in the\u2026",
+      "latest_developments": "SK Hynix HBM lock-in and possible $150B Solidigm listing reported today \u2014 a second capital-markets event in the ADR window, consistent with peak-coincidence pattern.",
       "relevant_links": [
         {
-          "title": "SEC EDGAR \u2014 SK Hynix F-1 filing tracker",
-          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&type=F-1&dateb=&owner=include&count=40"
+          "title": "SK Hynix Triple Play: HBM Lock-In, Solidigm Listing, Hard Bargaining",
+          "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxNVkRyeWZOb0E1WTVqOG9tYkpnQlZVTHJoZ2l1aXdxdU1qc2F1XzQ1RXZ5OVBLaU5wQzRXWWNyWDBrYkFVb0ZFczBiZGxLN2xNLWJ3bmhhUFZxdUJiblR3S3c0T29XWmg0X1Y2VFhSQVI1R0Z4eGQ3LVNuUVlJUHVmLUFwS3FxWUtldDlaeTBkanh1V2Jsb2JNVTFwUHUyb01xQjFJVnhTY2lOWjBVbUczWGowYV9fZWZncEFUa1RpcEZWWEdYSndyS2k3c3YyZTJwMDd0dA?oc=5"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-21",
+      "updated_date": "2026-09-28",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -217,24 +221,24 @@
       "evidence_count": 2
     },
     "t2_hyperscaler_capex_revenue": {
-      "last_full_regen_date": "2026-09-21",
+      "last_full_regen_date": "2026-09-28",
       "current_status": "Fired",
-      "where_we_stand": "Fired. Aggregate 2-quarter rolling mean CapEx/OCF across MSFT/GOOGL/META/AMZN: 89.9% \u2014 well above the 50% full-fire threshold. Per-company 2Q rolling means: AMZN 121.2% (severe, >100%), GOOGL 96.5% (severe, >100% in Q2 alone at 115.0%), META 76.7%, MSFT 65.4%. Amazon Q1 2026 single-quarter CapEx/OCF 169.8% \u2014 the most extreme single-quarter reading in\u2026",
-      "latest_developments": "Oracle Q1 FY27 transcript: CapEx raised to $90-95B (from $70B prior), FY27-28 explicitly 'peak CapEx years' \u2014 reinforces aggregate strain at the hyperscaler tier.",
+      "where_we_stand": "Fired. Aggregate 2-quarter rolling mean CapEx/OCF across MSFT/GOOGL/META/AMZN = 89.9% \u2014 well above the 50% full-fire threshold. Per-company 2q means: MSFT 65.4%, GOOGL 96.5%, META 76.7%, AMZN 121.2%. GOOGL Q2 2026 single-quarter CapEx/OCF = 115.0% and AMZN Q1 2026 = 169.8% \u2014 both in the >100% single-company severe-strain overlay. Goldman\u2026",
+      "latest_developments": "Goldman Sachs forecasts AI CapEx +54% in 2027; JPMorgan CEO projects hyperscaler spend reaching $1T \u2014 analyst-level corroboration of sustained CapEx/OCF strain, consistent with Fired status.",
       "relevant_links": [
         {
-          "title": "Oracle Q1 FY27 Earnings \u2014 CapEx guidance $90-95B",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "Goldman Sachs: AI CapEx to rise 54% in 2027, hyperscaler valuations at decade lows",
+          "url": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE40eS0wbzhXLUNVVWZqdDlRVUpfaXZoQ2xTVk5IaGtYc3d1TWIzM29DMGZqbG1LU0w3aFFTbHAzMm9peHl5SW5IUURoaEZJMDUxYjRzdzJpTGtidTJR?oc=5"
         },
         {
-          "title": "Goldman Sachs: U.S. hyperscaler CapEx to $1.4T by 2027",
-          "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQcjFJOTNKRGhfd212cVJBclNqd2hKLWI0QkVlMmxpQ2dfdkdkM1ZfcldWVUVrZ2tZMmZhTU9lbjBIV3V4RFprek40M3dISDl4dC16c0otN2xxTF9IZzctUUY4eF9nWHFHS3h6cDNnb1Y1MkRKMHA5dko5TEJ0Z0hsQkl4SWZXUGhrZmUwd3dCUDUxNmg3MUZXdjRyR0kzajZRamV3"
+          "title": "JPMorgan CEO sees hyperscaler spending hitting $1T next year",
+          "url": "https://news.google.com/rss/articles/CBMimAJBVV95cUxPRlJrRnBaWkcwU3d0UDZQX2dOaENxamRmX2dwNUlmaWwxNXE4ZDV1U3hkMU9CTFg1QnhmMG00aUxTQ193dkU4RnRQaTZBYmFISW5YSnI3RDQtUWdPSkNEN0M0Y3RNbnRmUXEwOXJBd1FYRWNyVng2NVVRbGU4TmdaQjEzS3oyaWlocHh6OFVlaFFSc291bGItR1BzYVpwSmVxUDN1VlpVX1VINTlyQWFXUmhLbDFMMU5VYjUxc1lmNjlsUGVmM3lGN0ZGbV9tTkVIM2ZBSjA5ZDRwemZCUjctTkx6WnB6WkpSeUY0bXZrcFJlVGdsNDdlUkdpVkFwXzJlVHFuNXFQVmlEYVBPbF9YdnNQTWVYMUtp?oc=5"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-21",
+      "updated_date": "2026-09-28",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 1
     },
@@ -401,20 +405,24 @@
       "evidence_count": 1
     },
     "t3_supplier_inventory_rebuild": {
-      "last_full_regen_date": "2026-09-21",
+      "last_full_regen_date": "2026-09-28",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. Last TrendForce print (Q3 2025) showed supplier inventory at 2-3 weeks \u2014 below the 4-week fire threshold. Micron Q3 FY26 transcript (QoQ diff) dropped OEM inventory and supplier inventory rebuild language entirely, replacing it with 'supply-demand intercept not visible through 2028' \u2014 a bullish posture that does not support inventory rebuild. No new TrendForce monthly print in today's feed. Quarterly persistence: status holds Not fired until a new TrendForce or earnings disclosure shows inventory weeks crossing 4. Micron September 30 earnings is the next scheduled data point.",
-      "latest_developments": "Micron Q3 transcript diff: supplier inventory rebuild language dropped; 'supply-demand intercept not visible' added \u2014 no near-term rebuild signal.",
+      "where_we_stand": "Not fired. Supplier inventory remains at 2-3 weeks per last TrendForce print \u2014 well below the 4-week crossing threshold. Micron's fiscal Q4 earnings (imminent) will be the next primary data point; the transcript diff shows Micron dropped OEM inventory and supplier inventory rebuild language from its Q3 call, and supply-demand intercept was characterized as 'not visible through 2028.' No TrendForce monthly print or earnings disclosure in today's feed crosses the 4-week threshold. Watch for Micron's Q4 print tonight for any inventory weeks disclosure.",
+      "latest_developments": "Micron Q4 earnings imminent \u2014 the next primary data source for supplier inventory weeks. Micron Q3 transcript dropped inventory rebuild language; supply-demand intercept described as 'not visible through 2028.'",
       "relevant_links": [
         {
-          "title": "Micron Q3 FY26 earnings transcript",
-          "url": "https://investors.micron.com/events-and-presentations"
+          "title": "Micron earnings preview: Peak memory, or a new regime?",
+          "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxPR2dndERHakR6TVZVci1xYkNDanhVNENiaGJlck9sSTd3cS1RUDZ2T0JOYldvWDRUZmt5SngzNWF4MmUzX1hiTHpMTS12NjIyaXpkTDRraWN5UUg0empQNEZUMHI0VE9CVkRXR29WLUU0WV91aVVLUDdiTkk0Z3VOTDJoU1FEZEhMSEg5ZDVpb3RobTJiVEluRmJB?oc=5"
+        },
+        {
+          "title": "Micron: $17.6B FCF, $27B CapEx; Buybacks, Targets Up",
+          "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxQanlXbjRxdV9nWThfcFA0b0pIbmhFNUw1S0NZZHlCSnFNaDZCdnJXbFJuRDdGbkxWbGFyMHh3cFBPSjBfc2M0elo3X2U2dmhYaVJEN1g1UlN0VWR5Q21zM2toeGZHbmVTWDF5NHJlT3RVU1hyMldqcTVQcnFOcGNrbnl2ZmxxUTdkajlnZUR6cG1yZGpNRGxHMXNDZDJwUGZMamEwY3JGOTZxUUVneGRESktwSWdFVDA3Z3Jrekd3?oc=5"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-09-21",
+      "updated_date": "2026-09-28",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
