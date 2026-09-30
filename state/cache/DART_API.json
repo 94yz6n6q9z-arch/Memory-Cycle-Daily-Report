@@ -1,13 +1,22 @@
 {
   "source_id": "DART API",
   "payload": {
-    "fetched_at_iso": "2026-09-29T13:14:39.598430",
+    "fetched_at_iso": "2026-09-30T12:55:54.820685",
     "tickers": {
       "SK Hynix": {
         "corp_code": "00164779",
-        "n_disclosures": 0,
+        "n_disclosures": 1,
         "n_material": 0,
-        "disclosures": []
+        "disclosures": [
+          {
+            "report_nm": "\uc784\uc6d0\u318d\uc8fc\uc694\uc8fc\uc8fc\ud2b9\uc815\uc99d\uad8c\ub4f1\uc18c\uc720\uc0c1\ud669\ubcf4\uace0\uc11c",
+            "rcept_dt": "20260930",
+            "rcept_no": "20260930000861",
+            "flr_nm": "\uc11c\uc9c4\uc6b0",
+            "is_material": false,
+            "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260930000861"
+          }
+        ]
       },
       "Samsung Electronics": {
         "corp_code": "00126380",
@@ -23,5 +32,5 @@
       }
     }
   },
-  "fetched_at_iso": "2026-09-29T13:14:52.789197"
+  "fetched_at_iso": "2026-09-30T12:56:05.926755"
 }
