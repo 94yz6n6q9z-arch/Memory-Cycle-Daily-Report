@@ -27,42 +27,50 @@
       "evidence_count": 1
     },
     "t1_demand_destruction": {
-      "last_full_regen_date": "2026-10-03",
+      "last_full_regen_date": "2026-10-06",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired. IDC PC forecast -2.4% to -11.3% for 2026 (recorded Apr 2026, unrevised); Counterpoint smartphone -2% (Apr 2026, unrevised). Micron Q4 FY2026 earnings (Oct 3) show server unit growth in high teens and 75% of 2027 shipments pre-committed \u2014 AI/enterprise demand is intensifying, narrowing the destruction thesis to consumer\u2026",
-      "latest_developments": "Micron CEO guidance: supply tight through 2028, RAM prices to remain elevated even if AI boom slows due to robotics demand. No new IDC/Counterpoint/Gartner downgrade or upgrade. Consumer-device destruction thesis intact; enterprise demand deepens the\u2026",
+      "where_we_stand": "Partially fired. Quantity trigger met (IDC PC -2.4% to -11.3%, Counterpoint smartphone -2%). Today's Mirae Asset SK Hynix and Samsung broker reports (Oct 6) describe HBM demand 'stronger than expected; suppliers unable to meet volumes' and memory demand outpacing supply \u2014 consistent with AI infrastructure strength dampening the PC/smartphone destruction\u2026",
+      "latest_developments": "Mirae Asset (Oct 6) and Micron earnings commentary both reinforce supply-constrained, demand-strong AI narrative. No new end-market forecast cuts from IDC, Counterpoint, or Gartner in today's feed.",
       "relevant_links": [
         {
-          "title": "Micron Q4 FY2026 Earnings Call Transcript",
-          "url": "https://www.fool.com/earnings/call-transcripts/2026/10/01/micron-mu-q4-2026-earnings-call-transcript/"
+          "title": "Mirae Asset \u2014 SK Hynix: HBM demand stronger than expected",
+          "url": "https://securities.miraeasset.com/newir/view/pc/en/investor/researchReportsView.jsp?messageId=2343193"
         },
         {
-          "title": "Micron CEO: RAM prices high even if AI boom falls \u2014 because of robots",
-          "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE13cEhIR1VJaXRNUWt5OTA4bmdIVzFaWTNvc01jeG5taXZoYkZXTlVUNm1hQlVsVjk4TU9DVVV6WkJhc0ROVl9kcmxHM0pJT3JtdVE"
+          "title": "Micron: RAM shortages drag into 2028, much higher prices",
+          "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxNT1hUcWtodXZybVo0aEozUkhwQnV4QjVhSnZxWUhCbXR1dVEwUE9aTkc1ajItLTByajdmQWVjRElreVhKOTFhQy1zYkhsU3VTcXE4SDlsTzlJZFhuZnNJTFhzUTBOLUZtX1Znbk8tMEVDSnh5cVlRdWNIUV9mWUt3YnZVTHFCWTFjd3l3"
+        },
+        {
+          "title": "TrendForce: Micron sees tighter memory supply through FY28",
+          "url": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxOSkVSNUh1OU1jdmJZcUZyMFgwREtqMkN3cVNOSVlGa3J6Z0NGM0RNSExwZEh4bHpzWWNQMkRhR1UzTnNHNkJQVjViVGVXVXRlcGFFOUxPa3VMYUgyaldLVHZCc0Z1Qlg0X21nZ0czM2NwaXBYWlhPY0dhcHE2RXdkSUJpRTFFWmV3b1RkQ1FNS2FiZUw0T19CZlFBcldESkstS2Jvb2wyRmVpMXowTnJRT0dZN0tPZFpHbjcyYlFycVJrTzBmU1RFQTNJdzNKUGVZODZEOGFqOA"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "status": "Partially fired",
-      "updated_date": "2026-10-03",
+      "updated_date": "2026-10-06",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 2
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-09-29",
+      "last_full_regen_date": "2026-10-06",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026. Google TurboQuant published with 6x KV-cache compression and 8x inference speedup \u2014 a permanent algorithmic breakthrough in the literature. Today's Cerebras + Gimlet disaggregated inference deployment (Gimlet cloud partnership) is an incremental commercialization of efficiency gains but does not constitute a new 2x+ breakthrough event.\u2026",
-      "latest_developments": "Cerebras-Gimlet inference deployment announced today signals continued efficiency commercialization but falls short of the 2x+ memory-footprint-reduction threshold required for a new event. No new arXiv or official lab blog publication detected.",
+      "where_we_stand": "Fired. Google TurboQuant (March 24, 2026) \u2014 6x KV-cache compression, 8x H100 speedup \u2014 remains the anchoring event; the algorithmic breakthrough is permanent and the reversal condition is explicitly not applicable. Today's news adds Reflection AI's Beam (501B MoE, 23B active parameters, 10,500 GB300 GPUs over 4 weeks) as a\u2026",
+      "latest_developments": "Reflection AI's Beam (501B open-weight MoE, 23B active parameters) deployed on 10,500 GB300 GPUs; MoE architecture reduces per-token memory demand, consistent with the fired efficiency signal but does not constitute a new independent threshold event.",
       "relevant_links": [
         {
-          "title": "Gimlet cloud and Cerebras to accelerate inference",
-          "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNYTlyS3piQzdzaVI1WXZneVdiM0dJRVA3QXJrZmJNMER2WE5JNlFjQndQWXNXSHhNQXA4QjZ2SVg5d0JMdU93VDZaSENDaktnbkRyejVESVJSWFMybnN2VFM4RjJrM3ZkQTN4TGFIdzgzcHZzN2MzcXVtY0JNVXlNNGhaZmF0aTJwQjNOckpTZDIwa3JfVEczX0ZwOVhrbXROWGVGY3RwempPdw"
+          "title": "Reflection AI Beam \u2014 501B MoE model, 23B active parameters",
+          "url": "https://news.google.com/rss/articles/CBMi8AFBVV95cUxNSlVKdTJQNzZtN0ZiQ3dFNkdZMjYxVUxxeTVyNW5VV29uelNudmFLbjJNaEVBVHZuZ2JjWndHX0cxdTZTSFpFOUpNX1BQdzZabmxvM3U4WC12YVo4cC1Wa2IzelRUMWxRRU1uXzE3UTdaY280ekNnUGpib2wxaHhSOE1MYklVLTgwbEFFRk53VUJZNE8wMm5xbmp6S3Vld1JOUTRfTFdLTlZwWUZndFRsNnp6dGFlRkYzUWt4VnhXMWN3VWFDUHRrWUVkTXlkYkJ1MVNvem5yNXVybXE3SXhMV2pESmlGWW9VNnBWblFlcHE"
+        },
+        {
+          "title": "NVIDIA GB300 GPU deployment \u2014 10,500 units for Beam training",
+          "url": "https://news.google.com/rss/articles/CBMijwJBVV95cUxPbk1NbkcyYmZTZjR6eDA3TGJ3d1BBYnB3bnJtTHV5eVB3Nmx2LWdrNGJucGMtUXpiUVRiS1g4MGtaTVlZakhFYTlXSWU0SXJyX3BaOUEtNHpxdE5TZkctbE9XNTR2NEI1TlBsSWRlQWtLOERleVYtaUE4MVZnQXItdVo5Z2xDVDVvOURtZXpjc2RURTB6MVlkNGREblRubVVtSlVBd1U1elUtMjhEUWUycTZFNDBTRGpscWRua3pkRTdIZHhNVGxJaXR3R2ZDaWpvNW1XX25DWGxGNDkxWDJwcXhGZng1N1JtUkJFMXozdHhVNlQtdGROaFhPQXByWEhZTmRQUFU0YkwzLW1xZEh3"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-09-29",
+      "updated_date": "2026-10-06",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 1
     },
@@ -419,24 +427,24 @@
       "evidence_count": 2
     },
     "t3_wfe_orders_crack": {
-      "last_full_regen_date": "2026-09-29",
+      "last_full_regen_date": "2026-10-06",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired. No ASML or AMAT bookings data showing -10% QoQ decline or book-to-bill below 1.0 in today's feed. Applied Materials Q3 earnings transcript shows the opposite: Q3 revenue guidance accelerated to +51% YoY, DRAM revenue up 52% YoY to record levels, advanced packaging growing >70% in 2026. Customers providing\u2026",
-      "latest_developments": "Applied Materials Q3 transcript shows DRAM revenue +52% YoY to record, Q4 guidance +85% YoY EPS growth \u2014 the opposite of order-book cracking. ASML outperformed the tape today at +1.58%.",
+      "where_we_stand": "Not fired. No ASML or AMAT bookings print with QoQ decline \u226510%, no book-to-bill below 1.0, and no SEMI WFE billings MoM decline in today's evidence. ASML is flat -0.15% today with no earnings commentary available [\u2192\u00a71]. Applied Materials' most recent transcript (Q2\u2192Q3 diff) shows the opposite: Q3 guidance accelerated\u2026",
+      "latest_developments": "Applied Materials Q3 transcript diff shows DRAM revenue +52% YoY, Q4 guidance +85% YoY EPS growth, and 5-year customer visibility roadmaps \u2014 no order-book weakness detected. No ASML earnings commentary available this cycle.",
       "relevant_links": [
         {
-          "title": "Applied Materials Q3 earnings: DRAM +52% YoY, Q4 guidance +85% EPS YoY",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings-calls/"
+          "title": "Applied Materials Q3 earnings \u2014 DRAM +52% YoY, Q4 guidance +85% EPS growth",
+          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=AMAT&type=8-K&dateb=&owner=include&count=10"
         },
         {
-          "title": "ASML price performance",
-          "url": "https://finance.yahoo.com/quote/ASML"
+          "title": "ASML price performance \u2014 flat today, no earnings commentary",
+          "url": "https://finance.yahoo.com/quote/ASML/earnings-calls/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-09-29",
+      "updated_date": "2026-10-06",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
