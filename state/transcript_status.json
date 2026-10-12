@@ -1,11 +1,11 @@
 {
-  "written_at_iso": "2026-10-10T12:53:01.118916+00:00",
+  "written_at_iso": "2026-10-12T15:54:19.220083+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 0,
     "materials_only": 0,
-    "nothing": 2,
-    "already_processed": 33,
+    "nothing": 3,
+    "already_processed": 32,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
@@ -20,7 +20,7 @@
       "Dell": "already_processed",
       "HPE": "already_processed",
       "ASML": "already_processed",
-      "AMD": "already_processed",
+      "AMD": "nothing",
       "Intel": "already_processed",
       "Cerebras": "already_processed",
       "SK Hynix": "already_processed",
@@ -315,9 +315,9 @@
     {
       "company": "AMD",
       "ticker": "AMD",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
