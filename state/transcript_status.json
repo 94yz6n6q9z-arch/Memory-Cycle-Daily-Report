@@ -1,5 +1,5 @@
 {
-  "written_at_iso": "2026-10-12T15:54:19.220083+00:00",
+  "written_at_iso": "2026-10-13T14:29:21.060877+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 0,
@@ -16,11 +16,11 @@
       "Alphabet": "already_processed",
       "Meta": "already_processed",
       "Amazon": "already_processed",
-      "Oracle": "already_processed",
+      "Oracle": "nothing",
       "Dell": "already_processed",
       "HPE": "already_processed",
       "ASML": "already_processed",
-      "AMD": "nothing",
+      "AMD": "already_processed",
       "Intel": "already_processed",
       "Cerebras": "already_processed",
       "SK Hynix": "already_processed",
@@ -291,9 +291,9 @@
     {
       "company": "Oracle",
       "ticker": "ORCL",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
@@ -315,9 +315,9 @@
     {
       "company": "AMD",
       "ticker": "AMD",
-      "availability": "nothing",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
