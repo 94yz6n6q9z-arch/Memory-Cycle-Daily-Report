@@ -3,53 +3,77 @@
   "company": "ASML",
   "quarter_key": "2026-Q4",
   "digest": {
-    "source_id": "Yahoo Finance / ASML / 2026-10-14",
+    "source_id": "Motley Fool / ASML / 2026-10-14",
     "source_type": "earnings_transcript",
     "published_date_iso": "2026-10-14",
     "title": "ASML earnings call 2026-10-14",
-    "char_count_input": 12869,
+    "char_count_input": 58792,
     "key_metrics": {
-      "q3_2026_net_sales_eur_b": 11.7,
+      "q3_2026_total_net_sales_eur_b": 11.7,
       "q3_2026_gross_margin_pct": 57.5,
+      "q3_2026_net_system_sales_eur_b": 8.4,
+      "q3_2026_euv_system_sales_eur_b": 4.1,
+      "q3_2026_non_euv_system_sales_eur_b": 4.3,
+      "q3_2026_installed_base_management_sales_eur_b": 3.3,
       "q3_2026_net_income_eur_b": 5.0,
-      "q3_2026_installed_base_revenue_eur_b": 3.3,
-      "q4_2026_guidance_revenue_low_eur_b": 14.2,
-      "q4_2026_guidance_revenue_high_eur_b": 15.2,
+      "q3_2026_basic_eps_eur": 12.95,
+      "q3_2026_free_cash_flow_eur_b": 11.4,
+      "q4_2026_guidance_total_net_sales_eur_b_low": 14.2,
+      "q4_2026_guidance_total_net_sales_eur_b_high": 15.2,
       "q4_2026_guidance_gross_margin_pct": 57.0,
-      "q4_2026_guidance_installed_base_eur_b": 3.7,
-      "fy2026_guidance_revenue_low_eur_b": 44.0,
-      "fy2026_guidance_revenue_high_eur_b": 45.0,
+      "fy2026_guidance_total_net_sales_eur_b_low": 44.0,
+      "fy2026_guidance_total_net_sales_eur_b_high": 45.0,
       "fy2026_guidance_gross_margin_pct": 56.0,
-      "fy2026_euv_growth_yoy_pct": 45.0,
-      "fy2026_non_euv_growth_yoy_pct": 20.0,
-      "fy2026_installed_base_growth_yoy_pct": 50.0,
-      "fy2026_china_revenue_pct": 20.0,
-      "fy2026_total_growth_vs_2025_pct": 36.0,
-      "q3_2026_euv_systems_shipment_units": 65,
-      "euv_shipment_growth_vs_prior_year_pct": 50.0,
-      "capacity_expansion_plan_2027_pct": 30.0,
-      "capacity_expansion_plan_2028_pct": 30.0,
-      "nxe_3800f_wafers_per_hour_current": 230,
-      "nxe_3800f_wafers_per_hour_2027": 260,
-      "immersion_tools_wafers_per_hour_2027": 330,
-      "yieldstar_550_productivity_improvement_pct": 60.0,
-      "customer_demand_visibility_through_year": 2028,
-      "order_intake_visibility_2029_2030": true,
+      "fy2026_yoy_growth_pct": 36.0,
+      "fy2026_memory_net_system_sales_growth_pct": 75.0,
+      "fy2026_logic_net_system_sales_growth_pct": 10.0,
+      "fy2026_advanced_logic_growth_pct": 25.0,
+      "fy2026_euv_growth_pct": 45.0,
+      "fy2026_non_euv_growth_pct": 20.0,
+      "fy2026_installed_base_management_growth_pct": 50.0,
+      "low_na_euv_output_2026_systems": 65,
+      "low_na_euv_output_2025_systems": 44,
+      "low_na_euv_output_growth_pct": 47.7,
+      "china_region_sales_pct_fy2026": 20.0,
+      "capacity_increase_2027_pct": 30.0,
+      "capacity_increase_2028_investigation_pct": 30.0,
+      "nxe_3800f_throughput_wph": 260,
+      "nxe_3800e_throughput_wph": 32,
+      "next_gen_duv_immersion_throughput_wph": 330,
+      "yieldstar_550b_productivity_improvement_pct": 60.0,
+      "high_na_euv_systems_sold_q3": 1,
+      "high_na_euv_fleet_availability_pct": 90.0,
+      "share_buyback_q3_eur_b": 4.1,
+      "interim_dividend_per_share_eur": 1.88,
+      "cash_and_investments_q3_eur_b": 12.7,
+      "r_and_d_expenses_q3_eur_b": 1.2,
+      "effective_tax_rate_q3_pct": 16.1,
+      "effective_tax_rate_fy2026_expected_pct": 17.0,
+      "mistral_ai_valuation_gain_eur_m": 500.0,
+      "net_system_sales_logic_pct": 54.0,
+      "net_system_sales_memory_pct": 46.0,
+      "high_na_euv_12inch_mask_pilot_target_year": 2031,
+      "high_na_euv_12inch_mask_production_target_year": 2033,
+      "intel_high_na_euv_wafers_exposed_million": 1.0,
+      "samsung_high_na_euv_hvm_target_year": 2028,
+      "tsmc_high_na_euv_hvm_target_year": 2030,
+      "yieldstar_550b_demand_multiplier_vs_2025": 2.0,
       "_transcript_availability": "full_transcript"
     },
     "signal_relevance": [
+      "t3_wfe_orders_crack",
       "t2_capex_parabolic",
-      "t3_wfe_orders_crack"
+      "t1_demand_destruction"
     ],
     "key_quotes": [
-      "Customers expect supply will not meet demand at least until 2028.",
-      "30% in 2027, 30% in 2028 will not allow us to meet customer demand.",
-      "Overall basically for our holistic product portfolio very strong demand."
+      "demand for their product will outpace supply through at least 2028",
+      "customers are also expressing interest in placing orders for 2029 and even 2030",
+      "memory net system sales to grow around 75%"
     ],
     "target_price_action": null,
     "fired_status_evidence": "supports_not_fired",
-    "raw_url": "https://finance.yahoo.com/quote/ASML/earnings/ASML-Q3-2026-earnings_call-764773.html",
-    "digested_at_iso": "2026-10-14T12:17:42.851728"
+    "raw_url": "https://www.fool.com/earnings/call-transcripts/2026/10/14/asml-asml-q3-2026-earnings-call-transcript/",
+    "digested_at_iso": "2026-10-15T11:56:31.343411"
   },
   "diff_with_prior": {
     "ticker": "ASML",
@@ -62,110 +86,139 @@
       {
         "indicator_id": "t3_wfe_orders_crack",
         "direction": "weakening",
-        "summary": "Prior call emphasized 'backlog continues to increase with broad mix of customers.' Current call drops this language entirely and pivots to capacity constraint narrative ('supply will not meet demand at least until 2028'), suggesting order growth has moderated or confidence in sustained order momentu",
+        "summary": "Prior call emphasized backlog increases; current call shifts to forward-looking demand extending to 2029-2030, suggesting orders are being placed further out rather than immediate cracks appearing.",
         "prior_quote": "Backlog continues to increase with broad mix of customers.",
-        "current_quote": null
+        "current_quote": "customers are also expressing interest in placing orders for 2029 and even 2030"
       },
       {
         "indicator_id": "t2_capex_parabolic",
         "direction": "strengthening",
-        "summary": "Current call introduces explicit multi-year capacity expansion targets (30% in 2027, 30% in 2028) and states these expansions 'will not allow us to meet customer demand,' signaling accelerating capex cycle intensity and demand pulling forward investment.",
-        "prior_quote": "fy2027_euv_low_na_capacity_increase_pct: 30",
-        "current_quote": "30% in 2027, 30% in 2028 will not allow us to meet customer demand."
+        "summary": "Current call provides explicit confirmation of demand extending through 2028 and orders for 2029-2030, with strong Q3 results (11.7B revenue, 57.5% margin) and guidance to 14.2-15.2B in Q4, indicating parabolic capex environment persisting longer than prior guidance implied.",
+        "prior_quote": "Strong end market demand motivated customers to aggressively add capacity on leading-edge nodes.",
+        "current_quote": "demand for their product will outpace supply through at least 2028"
       },
       {
         "indicator_id": "t1_demand_destruction",
         "direction": "weakening",
-        "summary": "Indicator dropped from current call's signal_relevance list. Prior call tagged t1_demand_destruction as relevant; current call does not, indicating no evidence of demand weakness or destruction in management commentary.",
-        "prior_quote": null,
-        "current_quote": null
+        "summary": "No language of demand destruction; instead, explicit forward demand extension and order placement for future years. Prior call mentioned memory growth of 75%; current reaffirms this with zero softening signals.",
+        "prior_quote": "Memory-related net system sales to grow by over 75% this year.",
+        "current_quote": "memory net system sales to grow around 75%"
       }
     ],
     "metric_deltas": [
       {
-        "metric_name": "q3_2026_net_sales_eur_b",
-        "prior_value": "11.0-12.0 (guidance)",
+        "metric_name": "q3_2026_total_net_sales_eur_b",
+        "prior_value": "11.0-12.0 guidance",
         "current_value": "11.7",
         "direction": "up"
       },
       {
         "metric_name": "q3_2026_gross_margin_pct",
-        "prior_value": "55-57 (guidance)",
+        "prior_value": "55-57 guidance",
         "current_value": "57.5",
         "direction": "up"
       },
       {
-        "metric_name": "q4_2026_guidance_revenue_low_eur_b",
-        "prior_value": null,
+        "metric_name": "q3_2026_net_income_eur_b",
+        "prior_value": "not provided",
+        "current_value": "5.0",
+        "direction": "new"
+      },
+      {
+        "metric_name": "q3_2026_free_cash_flow_eur_b",
+        "prior_value": "not provided",
+        "current_value": "11.4",
+        "direction": "new"
+      },
+      {
+        "metric_name": "q4_2026_guidance_total_net_sales_eur_b_low",
+        "prior_value": "not provided",
         "current_value": "14.2",
         "direction": "new"
       },
       {
-        "metric_name": "q4_2026_guidance_revenue_high_eur_b",
-        "prior_value": null,
+        "metric_name": "q4_2026_guidance_total_net_sales_eur_b_high",
+        "prior_value": "not provided",
         "current_value": "15.2",
         "direction": "new"
       },
       {
-        "metric_name": "fy2026_guidance_revenue_low_eur_b",
-        "prior_value": "43.0",
+        "metric_name": "fy2026_guidance_total_net_sales_eur_b_low",
+        "prior_value": "43",
         "current_value": "44.0",
         "direction": "up"
       },
       {
-        "metric_name": "fy2026_guidance_revenue_high_eur_b",
-        "prior_value": "45.0",
+        "metric_name": "fy2026_guidance_total_net_sales_eur_b_high",
+        "prior_value": "45",
         "current_value": "45.0",
         "direction": "unchanged"
       },
       {
-        "metric_name": "fy2026_non_euv_growth_yoy_pct",
+        "metric_name": "fy2026_non_euv_growth_pct",
         "prior_value": "25",
-        "current_value": "20",
+        "current_value": "20.0",
         "direction": "down"
       },
       {
-        "metric_name": "fy2026_memory_net_system_sales_growth_pct",
-        "prior_value": "75",
-        "current_value": null,
+        "metric_name": "fy2027_euv_low_na_planned_shipments_units",
+        "prior_value": "85",
+        "current_value": "not provided",
         "direction": "dropped"
       },
       {
-        "metric_name": "fy2026_ibm_growth_pct",
-        "prior_value": "30",
-        "current_value": null,
+        "metric_name": "fy2028_euv_low_na_investigated_shipments_units",
+        "prior_value": "110",
+        "current_value": "not provided",
         "direction": "dropped"
       },
       {
-        "metric_name": "customer_demand_visibility_through_year",
-        "prior_value": null,
-        "current_value": "2028",
+        "metric_name": "low_na_euv_output_2026_systems",
+        "prior_value": "not provided",
+        "current_value": "65",
         "direction": "new"
       },
       {
-        "metric_name": "order_intake_visibility_2029_2030",
-        "prior_value": null,
-        "current_value": "True",
+        "metric_name": "low_na_euv_output_growth_pct",
+        "prior_value": "not provided",
+        "current_value": "47.7",
+        "direction": "new"
+      },
+      {
+        "metric_name": "fy2026_logic_net_system_sales_growth_pct",
+        "prior_value": "not provided",
+        "current_value": "10.0",
+        "direction": "new"
+      },
+      {
+        "metric_name": "fy2026_installed_base_management_growth_pct",
+        "prior_value": "not provided",
+        "current_value": "50.0",
         "direction": "new"
       }
     ],
     "language_dropped": [
-      "Memory-related net system sales to grow by over 75% this year (replaced with broader 50% installed-base growth metric)",
-      "Backlog continues to increase with broad mix of customers (backlog narrative discontinued)",
-      "fy2026_ibm_growth_pct: 30 commitment no longer cited separately"
+      "FY2027 and FY2028 specific shipment unit guidance (85 units FY2027, 110 units FY2028) replaced with capacity increase percentages only",
+      "FY2026 IBM sales growth of 30% and specific IBM sales guidance of EUR 2.9B dropped from current period",
+      "Specific immersion DUV shipment targets (130 units) no longer cited"
     ],
     "language_added": [
-      "Customers expect supply will not meet demand at least until 2028",
-      "30% in 2027, 30% in 2028 will not allow us to meet customer demand",
-      "Customer demand visibility through 2028 and order intake visibility for 2029-2030",
-      "Overall basically for our holistic product portfolio very strong demand"
+      "demand for their product will outpace supply through at least 2028",
+      "customers are also expressing interest in placing orders for 2029 and even 2030",
+      "High-NA EUV 12-inch mask pilot target 2031, production target 2033",
+      "Intel High-NA EUV wafers exposed milestone (1.0 million) achieved",
+      "Samsung High-NA EUV HVM target 2028; TSMC High-NA EUV HVM target 2030",
+      "YieldStar 550B productivity improvement of 60% and 2x demand multiplier vs 2025",
+      "Installed base management sales EUR 3.3B in Q3 with 50% growth cited",
+      "Share buyback of EUR 4.1B in Q3",
+      "Cash and investments position of EUR 12.7B"
     ],
     "overall_tone_shift": "more bullish",
-    "computed_at_iso": "2026-10-14T12:17:42.851587",
+    "computed_at_iso": "2026-10-15T11:56:31.343312",
     "haiku_model": "claude-haiku-4-5",
-    "haiku_input_tokens": 2516,
-    "haiku_output_tokens": 1257,
+    "haiku_input_tokens": 3059,
+    "haiku_output_tokens": 1719,
     "error": null
   },
-  "saved_at_iso": "2026-10-14T12:17:42.851842"
+  "saved_at_iso": "2026-10-15T11:56:31.343499"
 }
