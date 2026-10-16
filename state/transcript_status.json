@@ -1,5 +1,5 @@
 {
-  "written_at_iso": "2026-10-15T11:56:49.579569+00:00",
+  "written_at_iso": "2026-10-16T11:49:01.807665+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 2,
@@ -32,8 +32,8 @@
       "Micron",
       "Nvidia",
       "Broadcom",
-      "TSMC",
       "Applied Materials",
+      "ASML",
       "Microsoft",
       "Alphabet",
       "Meta",
@@ -74,10 +74,10 @@
     {
       "company": "TSMC",
       "ticker": "TSM",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Motley Fool",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 52857
     },
     {
       "company": "Applied Materials",
@@ -146,10 +146,10 @@
     {
       "company": "ASML",
       "ticker": "ASML",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 58792
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "AMD",
@@ -232,20 +232,20 @@
       "char_count": 0
     },
     {
-      "company": "TSMC",
-      "ticker": "TSM",
-      "availability": "full_transcript",
-      "source_name": "Yahoo Finance",
-      "note": null,
-      "char_count": 46618
-    },
-    {
       "company": "Applied Materials",
       "ticker": "AMAT",
       "availability": "already_processed",
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
+    },
+    {
+      "company": "ASML",
+      "ticker": "ASML",
+      "availability": "full_transcript",
+      "source_name": "Yahoo Finance",
+      "note": null,
+      "char_count": 50760
     },
     {
       "company": "Microsoft",
