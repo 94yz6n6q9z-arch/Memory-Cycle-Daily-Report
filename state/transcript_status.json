@@ -1,16 +1,16 @@
 {
-  "written_at_iso": "2026-10-16T11:49:01.807665+00:00",
+  "written_at_iso": "2026-10-17T11:04:11.475730+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 2,
+    "full_transcript": 0,
     "materials_only": 0,
     "nothing": 2,
-    "already_processed": 30,
+    "already_processed": 33,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
       "Broadcom": "already_processed",
-      "TSMC": "full_transcript",
+      "TSMC": "already_processed",
       "Applied Materials": "already_processed",
       "Microsoft": "already_processed",
       "Alphabet": "already_processed",
@@ -19,7 +19,7 @@
       "Oracle": "already_processed",
       "Dell": "already_processed",
       "HPE": "already_processed",
-      "ASML": "full_transcript",
+      "ASML": "already_processed",
       "AMD": "already_processed",
       "Intel": "already_processed",
       "Cerebras": "already_processed",
@@ -32,6 +32,7 @@
       "Micron",
       "Nvidia",
       "Broadcom",
+      "TSMC",
       "Applied Materials",
       "ASML",
       "Microsoft",
@@ -74,10 +75,10 @@
     {
       "company": "TSMC",
       "ticker": "TSM",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 52857
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "Applied Materials",
@@ -232,6 +233,14 @@
       "char_count": 0
     },
     {
+      "company": "TSMC",
+      "ticker": "TSM",
+      "availability": "already_processed",
+      "source_name": "Yahoo Finance",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
+    },
+    {
       "company": "Applied Materials",
       "ticker": "AMAT",
       "availability": "already_processed",
@@ -242,10 +251,10 @@
     {
       "company": "ASML",
       "ticker": "ASML",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": null,
-      "char_count": 50760
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "Microsoft",
