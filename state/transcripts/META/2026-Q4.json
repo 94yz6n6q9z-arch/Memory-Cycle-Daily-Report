@@ -3,66 +3,51 @@
   "company": "Meta",
   "quarter_key": "2026-Q4",
   "digest": {
-    "source_id": "Motley Fool / Meta / 2026-10-21",
+    "source_id": "Yahoo Finance / Meta / 2026-10-23",
     "source_type": "earnings_transcript",
-    "published_date_iso": "2026-10-21",
-    "title": "Meta earnings call 2026-10-21",
-    "char_count_input": 64254,
+    "published_date_iso": "2026-10-23",
+    "title": "Meta earnings call 2026-10-23",
+    "char_count_input": 57760,
     "key_metrics": {
-      "capex_2026_guidance_usd_b_low": 135,
-      "capex_2026_guidance_usd_b_high": 145,
-      "capex_2026_guidance_narrowed_from_low": 130,
-      "capex_2026_guidance_narrowed_from_high": 145,
-      "muse_users_us_canada_millions": 10,
-      "muse_daily_active_pct": 25,
-      "muse_commerce_user_pct": 25,
-      "muse_commerce_avg_purchase_usd": 200,
+      "muse_users_setup_us_canada_millions": 10,
+      "muse_daily_active_users_pct": 25,
+      "muse_shopping_users_pct": 25,
+      "muse_avg_purchase_size_usd": 200,
       "muse_compute_efficiency_improvement_target_x": 10,
-      "reality_labs_loss_2026_guidance_usd_b_low": 18,
-      "reality_labs_loss_2026_guidance_usd_b_high": 19,
-      "reality_labs_loss_2027_guidance_usd_b": 15,
-      "q3_revenue_usd_b": 64.6,
-      "q3_revenue_yoy_growth_pct": 26,
-      "q3_capex_usd_b": 34.9,
-      "q3_free_cash_flow_usd_b": -2.1,
-      "q3_operating_margin_pct": 20,
-      "q3_eps_gaap": 3.83,
-      "q3_eps_adjusted": 7.4,
-      "fq4_2026_revenue_guidance_usd_b_low": 73,
-      "fq4_2026_revenue_guidance_usd_b_high": 76,
-      "fy2026_total_expense_guidance_usd_b_low": 175,
-      "fy2026_total_expense_guidance_usd_b_high": 179,
-      "headcount_sept_2026": 66775,
-      "headcount_yoy_change_pct": -15,
-      "content_processing_cost_reduction_pct": 80,
-      "ad_conversion_gain_jem_model_pct": 9.6,
-      "partnership_ads_yoy_growth_pct": 97,
-      "partnership_ads_annual_run_rate_usd_b": 15,
-      "meta_1_subscriptions_millions": 15,
-      "generative_ai_ad_tool_users_millions": 10,
-      "video_generation_adoption_qoq_growth_pct": 25,
-      "reels_recommended_less_than_1day_old_pct": 45,
-      "reels_recommended_less_than_1day_old_prior_q_pct": 34,
-      "threads_time_spent_yoy_growth_pct": 20,
-      "family_dap_billions": 3.64,
-      "family_dap_yoy_growth_pct": 3,
-      "ad_impressions_yoy_growth_pct": 10,
-      "average_price_per_ad_yoy_growth_pct": 14,
+      "meta_2026_capex_guidance_low_usd_b": 135,
+      "meta_2026_capex_guidance_high_usd_b": 145,
+      "meta_2027_capex_guidance_direction": "not_provided",
+      "meta_q3_2026_revenue_usd_b": 64.6,
+      "meta_q3_2026_revenue_yoy_growth_pct": 26,
+      "meta_q4_2026_revenue_guidance_low_usd_b": 73,
+      "meta_q4_2026_revenue_guidance_high_usd_b": 76,
+      "meta_reality_labs_2026_loss_guidance_low_usd_b": 18,
+      "meta_reality_labs_2026_loss_guidance_high_usd_b": 19,
+      "meta_reality_labs_2027_loss_guidance_usd_b": 15,
+      "meta_capex_ocf_ratio_q3_2026": 0.42,
+      "meta_small_businesses_using_family_of_apps_millions": 500,
+      "muse_partnership_ads_annual_revenue_run_rate_usd_b": 15,
+      "meta_one_subscriptions_trials_millions": 15,
+      "meta_instagram_reels_time_spent_yoy_growth_pct": "double_digits",
+      "meta_facebook_reels_time_spent_yoy_growth_pct": "double_digits",
+      "meta_threads_time_spent_yoy_growth_pct": 20,
       "architecture_signals": {
-        "custom_silicon_memory_arch": "mixed",
         "custom_silicon_named": "Muse Wonder",
+        "custom_silicon_memory_arch": "HBM",
+        "inference_cost_reduction_pct": null,
+        "tokens_per_dollar_claim": null,
         "deployed_quantization": null,
         "deployed_moe": null,
         "deployed_speculative_decoding": null,
         "deployed_disaggregated_serving": null,
         "enterprise_ai_workload_context_tokens": null,
         "enterprise_ai_customer_name": null,
-        "enterprise_ai_use_case": "personal agent, shopping, productivity, enterprise API",
+        "enterprise_ai_use_case": "personal_agent_commerce_productivity",
         "enterprise_ai_revenue_growth_qoq_pct": null,
-        "agent_product_usage_disclosure": "Muse 10M users US/Canada, 25% daily active, 25% commerce engaged",
+        "agent_product_usage_disclosure": "Muse 10M users in 6 weeks, 25% DAU, shopping primary use case",
         "new_frontier_model_release": {
           "name": "Muse Wonder",
-          "release_date": "2026-10-21",
+          "release_date": null,
           "architecture_family": null,
           "num_layers": null,
           "num_kv_heads": null,
@@ -75,7 +60,7 @@
         },
         "new_accelerator_announcement": null,
         "enterprise_ai_quarterly_revenue": null,
-        "architecture_freetext": "Meta deploying Muse Wonder frontier model with 10x compute efficiency target over next year; shifting to smaller distilled models for broader deployment; LLM-based content understanding reducing per-unit costs 80%."
+        "architecture_freetext": "Meta deploying Muse Wonder frontier model for personal agent; targeting 10x compute efficiency improvement; building enterprise platform with API and business agents; content understanding models reducing per-unit processing costs >80%"
       },
       "competitor_signals": {
         "cxmt_oem_mainstream_win": null,
@@ -118,36 +103,111 @@
     },
     "signal_relevance": [
       "t2_capex_parabolic",
-      "t1_decode_hbm_captive_ratio",
-      "t1_competitor_dynamics"
+      "t3_capex_plateau",
+      "t1_decode_hbm_captive_ratio"
     ],
     "key_quotes": [
-      "expect to improve compute cost efficiency by more than 10x in next year",
-      "Muse will reach even higher revenue level over time due to commerce",
-      "narrowed capex guidance from 130-145B to 135-145B for 2026"
+      "improve compute cost efficiency by more than 10x in next year",
+      "expect to grow Muse to serve billions of people",
+      "narrowed 2026 capex guidance to $135-145 billion"
     ],
     "target_price_action": null,
-    "fired_status_evidence": "neutral",
-    "raw_url": "https://www.fool.com/earnings/call-transcripts/2026/10/21/meta-meta-q3-2026-earnings-call-transcript/",
-    "digested_at_iso": "2026-10-22T12:18:43.693708"
+    "fired_status_evidence": "supports_fire",
+    "raw_url": "https://finance.yahoo.com/quote/META/earnings/META-Q3-2026-earnings_call-718643.html",
+    "digested_at_iso": "2026-10-23T11:58:46.217006"
   },
   "diff_with_prior": {
     "ticker": "META",
     "company": "Meta",
     "current_quarter": "2026-Q4",
     "prior_quarter": "2026-Q3",
-    "current_digest_event_date": "2026-10-21",
+    "current_digest_event_date": "2026-10-23",
     "prior_digest_event_date": "2026-08-07",
-    "indicator_deltas": [],
-    "metric_deltas": [],
-    "language_dropped": [],
-    "language_added": [],
-    "overall_tone_shift": "unchanged",
-    "computed_at_iso": "2026-10-22T12:18:43.693549",
+    "indicator_deltas": [
+      {
+        "indicator_id": "t2_capex_parabolic",
+        "direction": "strengthening",
+        "summary": "CapEx guidance raised at lower end (130B\u2192135B) and maintained upper end (145B) despite being later in fiscal year; compounds evidence of sustained high spending trajectory.",
+        "prior_quote": "Narrowed 2026 CapEx to $130B-$145B to support AI infrastructure needs.",
+        "current_quote": "narrowed 2026 capex guidance to $135-145 billion"
+      },
+      {
+        "indicator_id": "t3_capex_plateau",
+        "direction": "weakening",
+        "summary": "2027 CapEx guidance explicitly stated as 'not_provided' in current call; prior call emphasized flexibility for 2028+ but current call omits forward guidance, reducing plateau-signal visibility.",
+        "prior_quote": "Focus on maximizing 2026 and 2027 capacity, flexibility for 2028 and beyond.",
+        "current_quote": null
+      },
+      {
+        "indicator_id": "t1_decode_hbm_captive_ratio",
+        "direction": "strengthening",
+        "summary": "New signal added in current quarter; custom silicon named 'Muse Wonder' explicitly tagged with HBM memory architecture, indicating captive infrastructure buildout for AI inference workloads.",
+        "prior_quote": null,
+        "current_quote": "Meta deploying Muse Wonder frontier model for personal agent; targeting 10x compute efficiency improvement"
+      }
+    ],
+    "metric_deltas": [
+      {
+        "metric_name": "meta_2026_capex_guidance_low_usd_b",
+        "prior_value": "130",
+        "current_value": "135",
+        "direction": "up"
+      },
+      {
+        "metric_name": "meta_q3_2026_revenue_usd_b",
+        "prior_value": null,
+        "current_value": "64.6",
+        "direction": "new"
+      },
+      {
+        "metric_name": "meta_q3_2026_revenue_yoy_growth_pct",
+        "prior_value": null,
+        "current_value": "26",
+        "direction": "new"
+      },
+      {
+        "metric_name": "muse_users_setup_us_canada_millions",
+        "prior_value": null,
+        "current_value": "10",
+        "direction": "new"
+      },
+      {
+        "metric_name": "muse_daily_active_users_pct",
+        "prior_value": null,
+        "current_value": "25",
+        "direction": "new"
+      },
+      {
+        "metric_name": "muse_compute_efficiency_improvement_target_x",
+        "prior_value": null,
+        "current_value": "10",
+        "direction": "new"
+      },
+      {
+        "metric_name": "meta_capex_ocf_ratio_q3_2026",
+        "prior_value": null,
+        "current_value": "0.42",
+        "direction": "new"
+      }
+    ],
+    "language_dropped": [
+      "Focus on maximizing 2026 and 2027 capacity, flexibility for 2028 and beyond.",
+      "Overall industry capacity going to remain tight for foreseeable future.",
+      "Meta business agents weekly users disclosure (1M+ figure)"
+    ],
+    "language_added": [
+      "improve compute cost efficiency by more than 10x in next year",
+      "expect to grow Muse to serve billions of people",
+      "Muse 10M users in 6 weeks, 25% DAU, shopping primary use case",
+      "content understanding models reducing per-unit processing costs >80%",
+      "custom silicon Muse Wonder with HBM architecture"
+    ],
+    "overall_tone_shift": "more bullish",
+    "computed_at_iso": "2026-10-23T11:58:46.216826",
     "haiku_model": "claude-haiku-4-5",
-    "haiku_input_tokens": 4575,
-    "haiku_output_tokens": 2000,
-    "error": "json_parse_error: Unterminated string starting at: line 162 column 5 (char 6350)"
+    "haiku_input_tokens": 4310,
+    "haiku_output_tokens": 989,
+    "error": null
   },
-  "saved_at_iso": "2026-10-22T12:18:43.693804"
+  "saved_at_iso": "2026-10-23T11:58:46.217105"
 }
