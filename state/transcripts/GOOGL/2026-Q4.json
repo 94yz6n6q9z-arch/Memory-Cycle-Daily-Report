@@ -1,0 +1,306 @@
+{
+  "ticker": "GOOGL",
+  "company": "Alphabet",
+  "quarter_key": "2026-Q4",
+  "digest": {
+    "source_id": "Motley Fool / Alphabet / 2026-10-29",
+    "source_type": "earnings_transcript",
+    "published_date_iso": "2026-10-29",
+    "title": "Alphabet earnings call 2026-10-29",
+    "char_count_input": 59200,
+    "key_metrics": {
+      "capex_q3_2026_usd_b": 51.4,
+      "capex_fy26_guidance_range_low_usd_b": 195,
+      "capex_fy26_guidance_range_high_usd_b": 205,
+      "capex_2027_guidance_direction": "increase_significantly",
+      "revenue_q3_2026_usd_b": 127.6,
+      "revenue_yoy_growth_pct": 25,
+      "google_cloud_revenue_q3_2026_usd_b": 30.7,
+      "google_cloud_revenue_yoy_growth_pct": 103,
+      "google_cloud_operating_margin_pct": 36.2,
+      "google_cloud_backlog_usd_b": 561,
+      "google_cloud_backlog_24m_recognition_pct": 55,
+      "tpu_8t_training_performance_improvement_x": 2.7,
+      "tpu_8i_inference_price_performance_improvement_pct": 80,
+      "ai_tokens_per_minute_billion": 32,
+      "ai_tokens_per_minute_qoq_growth_pct": 40,
+      "ai_tokens_per_minute_yoy_growth_x": 4.0,
+      "gemini_app_users_billion": 1.0,
+      "youtube_music_premium_subscribers_million": 150,
+      "search_query_growth_yoy_highest_years": 5,
+      "ai_mode_query_length_multiplier_vs_traditional": 3.0,
+      "inventory_q3_2026_usd_b": 13.3,
+      "inventory_prior_year_end_usd_b": 2.4,
+      "free_cash_flow_q3_2026_usd_b": -9.1,
+      "operating_cash_flow_q3_2026_usd_b": 42.3,
+      "capex_technical_infrastructure_servers_networking_pct": 65,
+      "architecture_signals": {
+        "custom_silicon_memory_arch": "HBM",
+        "custom_silicon_named": "TPU 8t",
+        "tokens_per_dollar_claim": null,
+        "deployed_quantization": null,
+        "deployed_moe": null,
+        "deployed_speculative_decoding": null,
+        "deployed_disaggregated_serving": null,
+        "cxl_production_deployment": null,
+        "lpddr_datacenter_design_win": null,
+        "hbf_mention": null,
+        "enterprise_ai_workload_context_tokens": null,
+        "enterprise_ai_customer_name": null,
+        "enterprise_ai_use_case": "knowledge work, agents, coding, finance, legal, cybersecurity",
+        "enterprise_ai_revenue_growth_qoq_pct": null,
+        "agent_product_usage_disclosure": "Gemini agent for enterprise; 1B Gemini app users moving to task/agent experiences",
+        "new_frontier_model_release": {
+          "name": "Gemini 4 Carbon",
+          "release_date": "2026-10-29",
+          "architecture_family": null,
+          "num_layers": null,
+          "num_kv_heads": null,
+          "head_dim": null,
+          "bytes_per_element": null,
+          "compression_factor": null,
+          "kv_kb_per_token": null,
+          "source_url": null,
+          "is_open": false
+        },
+        "new_accelerator_announcement": {
+          "vendor": "google",
+          "name": "TPU 8t",
+          "hbm_gb": null,
+          "release_date": null,
+          "generation": "8t",
+          "category": "custom_silicon",
+          "notes": "2.7x better training performance vs prior generation; 8i variant offers 80% better inference price performance"
+        },
+        "enterprise_ai_quarterly_revenue": {
+          "category": "google_cloud_ai",
+          "quarter": "2026-Q3",
+          "revenue_usd_b": 30.7,
+          "qoq_growth_pct": null,
+          "yoy_growth_pct": 103,
+          "source_quote": "Cloud revenues were up 103% to $30.7 billion, driven by strong growth in GCP with strength in AI"
+        },
+        "architecture_freetext": "Google deploying Gemini 4 series (Argon, Carbon) across infrastructure; TPU systems sold to external customers via partnerships (Oracle, Crux AI); 32B tokens/min processing, 4x YoY growth; enterprise AI agents in production at BNP Paribas, Tata Steel, Ulta Beauty; agentic commerce via Universal Cart launching"
+      },
+      "competitor_signals": {
+        "cxmt_oem_mainstream_win": null,
+        "cxmt_oem_lowend_win": null,
+        "cxmt_ddr5_share_pct": null,
+        "cxmt_ddr5_pricing_pressure_flagged": null,
+        "us_export_controls_easing_event": null,
+        "samsung_hbm4_nvidia_share_pct": null,
+        "sk_hynix_hbm4_nvidia_share_pct": null,
+        "samsung_hbm4_yield_pct": null,
+        "hbm_gross_margin_pct_sk_hynix": null,
+        "hbm_gross_margin_pct_samsung": null,
+        "hbm4e_qualification_lead": null,
+        "samsung_hbm4e_announcement": null,
+        "amd_samsung_hbm4_supply_mou": null,
+        "micron_vera_rubin_design_win": null,
+        "micron_total_hbm_share_pct": null,
+        "micron_hbm_share_growth_source": null,
+        "hbf_hyperscaler_design_win": null,
+        "hbf_hot_tier_displacement": null,
+        "jedec_hbf_spec_ratified": null,
+        "sk_hynix_on_jedec_hbf_working_group": null,
+        "sk_hynix_hbf_roadmap_mention": null,
+        "sk_hynix_solidigm_hbf_integration": null,
+        "sandisk_kioxia_hbf_milestone": null,
+        "hbf_commercial_stage": null
+      },
+      "adr_signals": {
+        "f1_filed": null,
+        "f1_canceled": null,
+        "underwriter_syndicate": null,
+        "roadshow_active": null,
+        "demand_classification": null,
+        "pricing_day": null,
+        "pricing_discount_pct": null,
+        "final_size_usd_b": null,
+        "insider_sale_event": null
+      },
+      "_transcript_availability": "full_transcript"
+    },
+    "signal_relevance": [
+      "t2_capex_parabolic",
+      "t1_decode_hbm_captive_ratio",
+      "t1_competitor_dynamics"
+    ],
+    "key_quotes": [
+      "CapEx to increase significantly in 2027, further details on Q4 call",
+      "32 billion tokens per minute, 40% growth from prior quarter, fourfold increase year ago",
+      "Gemini 4 Carbon ranks #1 on artificial analysis intelligence Index at 59"
+    ],
+    "target_price_action": null,
+    "fired_status_evidence": "supports_fire",
+    "raw_url": "https://www.fool.com/earnings/call-transcripts/2026/10/29/alphabet-googl-q3-2026-earnings-call-transcript/",
+    "digested_at_iso": "2026-10-29T13:34:33.975275"
+  },
+  "diff_with_prior": {
+    "ticker": "GOOGL",
+    "company": "Alphabet",
+    "current_quarter": "2026-Q4",
+    "prior_quarter": "2026-Q3",
+    "current_digest_event_date": "2026-10-29",
+    "prior_digest_event_date": "2026-07-23",
+    "indicator_deltas": [
+      {
+        "indicator_id": "t2_capex_parabolic",
+        "direction": "strengthening",
+        "summary": "Capex guidance maintained at $195-205B for 2026 with Q3 actual of $51.4B; 2027 expected to increase significantly. Capital intensity accelerating with inventory buildup ($13.3B, up 5.5x YoY) and negative FCF (-$9.1B Q3) signaling aggressive deployment phase.",
+        "prior_quote": "CapEx guidance raised to $195-205B from $180-190B, driven by acceleration in capacity delivery.",
+        "current_quote": "CapEx to increase significantly in 2027, further details on Q4 call"
+      },
+      {
+        "indicator_id": "t1_decode_hbm_captive_ratio",
+        "direction": "unchanged",
+        "summary": "No new disclosure on HBM captive ratio, yield, or supplier concentration. Prior call emphasized TPU 8t with HBM architecture; current call confirms TPU 8t deployment but no granular memory sourcing updates.",
+        "prior_quote": "Full-stack approach integrating chips, models, data, security, agents.",
+        "current_quote": "TPU systems sold to external customers via partnerships (Oracle, Crux AI)"
+      },
+      {
+        "indicator_id": "t1_competitor_dynamics",
+        "direction": "newly_present",
+        "summary": "New signal_relevance tag added in current call; however, no substantive competitor commentary in either digest. Tag addition suggests monitoring posture but no specific competitive threat articulated.",
+        "prior_quote": null,
+        "current_quote": null
+      }
+    ],
+    "metric_deltas": [
+      {
+        "metric_name": "capex_q3_2026_usd_b",
+        "prior_value": null,
+        "current_value": "51.4",
+        "direction": "new"
+      },
+      {
+        "metric_name": "cloud_backlog_usd_b",
+        "prior_value": "514",
+        "current_value": "561",
+        "direction": "up"
+      },
+      {
+        "metric_name": "cloud_operating_margin_pct",
+        "prior_value": "35.6",
+        "current_value": "36.2",
+        "direction": "up"
+      },
+      {
+        "metric_name": "tokens_per_minute_billion",
+        "prior_value": "22",
+        "current_value": "32",
+        "direction": "up"
+      },
+      {
+        "metric_name": "tokens_per_minute_qoq_growth_pct",
+        "prior_value": "37.5",
+        "current_value": "40",
+        "direction": "up"
+      },
+      {
+        "metric_name": "cloud_revenue_growth_yoy_pct",
+        "prior_value": "82",
+        "current_value": "103",
+        "direction": "up"
+      },
+      {
+        "metric_name": "tpu_8t_training_performance_improvement_x",
+        "prior_value": null,
+        "current_value": "2.7",
+        "direction": "new"
+      },
+      {
+        "metric_name": "tpu_8i_inference_price_performance_improvement_pct",
+        "prior_value": null,
+        "current_value": "80",
+        "direction": "new"
+      },
+      {
+        "metric_name": "inventory_q3_2026_usd_b",
+        "prior_value": null,
+        "current_value": "13.3",
+        "direction": "new"
+      },
+      {
+        "metric_name": "free_cash_flow_q3_2026_usd_b",
+        "prior_value": null,
+        "current_value": "-9.1",
+        "direction": "new"
+      },
+      {
+        "metric_name": "gemini_app_users_billion",
+        "prior_value": null,
+        "current_value": "1.0",
+        "direction": "new"
+      },
+      {
+        "metric_name": "ai_tokens_per_minute_yoy_growth_x",
+        "prior_value": null,
+        "current_value": "4.0",
+        "direction": "new"
+      },
+      {
+        "metric_name": "revenue_yoy_growth_pct",
+        "prior_value": null,
+        "current_value": "25",
+        "direction": "new"
+      },
+      {
+        "metric_name": "capex_as_pct_of_revenue_q2_2026",
+        "prior_value": "37.5",
+        "current_value": null,
+        "direction": "dropped"
+      },
+      {
+        "metric_name": "tpu_system_sales_revenue_recognition_2026_pct",
+        "prior_value": "small_portion",
+        "current_value": null,
+        "direction": "dropped"
+      },
+      {
+        "metric_name": "tpu_system_sales_revenue_recognition_2027_pct",
+        "prior_value": "vast_majority",
+        "current_value": null,
+        "direction": "dropped"
+      },
+      {
+        "metric_name": "cloud_customers_1_trillion_tokens_count",
+        "prior_value": "500",
+        "current_value": null,
+        "direction": "dropped"
+      },
+      {
+        "metric_name": "enterprises_100_billion_tokens_count",
+        "prior_value": "2000",
+        "current_value": null,
+        "direction": "dropped"
+      }
+    ],
+    "language_dropped": [
+      "Specific prior Q2 2026 capex-as-pct-of-revenue metric (37.5%) no longer disclosed",
+      "TPU system sales revenue recognition split for 2026 ('small_portion') and 2027 ('vast_majority') \u2014 shift from forward-looking deferral disclosure to realized revenue",
+      "Named enterprise customer list (PepsiCo, Intel, HSBC, Bell Canada, Macy's, SIGNAL IDUNA) dropped; replaced with generic use cases",
+      "Cloud customer token consumption thresholds (500 customers at 1T tokens/min, 2000 at 100B tokens/min) discontinued from disclosure",
+      "Antigravity 2.4M weekly active users and Agent Development Kit 70M downloads metrics no longer cited"
+    ],
+    "language_added": [
+      "32 billion tokens per minute, 40% growth from prior quarter, fourfold increase year ago",
+      "TPU systems sold to external customers via partnerships (Oracle, Crux AI)",
+      "Enterprise AI agents in production at BNP Paribas, Tata Steel, Ulta Beauty",
+      "Gemini 4 Carbon ranks #1 on artificial analysis intelligence Index at 59",
+      "1B Gemini app users moving to task/agent experiences",
+      "Agentic commerce via Universal Cart launching",
+      "Google Cloud backlog 24-month recognition: 55% (new metric)",
+      "Q3 capex actual disclosure ($51.4B) and inventory buildup ($13.3B, up from $2.4B YoY)",
+      "Negative free cash flow -$9.1B in Q3 2026",
+      "Gemini 4 series (Argon, Carbon) deployed across infrastructure"
+    ],
+    "overall_tone_shift": "more bullish",
+    "computed_at_iso": "2026-10-29T13:34:33.975066",
+    "haiku_model": "claude-haiku-4-5",
+    "haiku_input_tokens": 4417,
+    "haiku_output_tokens": 1894,
+    "error": null
+  },
+  "saved_at_iso": "2026-10-29T13:34:33.975405"
+}
