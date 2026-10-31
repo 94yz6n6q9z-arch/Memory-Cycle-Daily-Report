@@ -3,42 +3,64 @@
   "company": "Amazon",
   "quarter_key": "2026-Q4",
   "digest": {
-    "source_id": "Yahoo Finance / Amazon / 2026-10-30",
+    "source_id": "Motley Fool / Amazon / 2026-10-30",
     "source_type": "earnings_transcript",
     "published_date_iso": "2026-10-30",
     "title": "Amazon earnings call 2026-10-30",
-    "char_count_input": 49590,
+    "char_count_input": 55471,
     "key_metrics": {
-      "amzn_2027_capex_usd_b": 220,
-      "amzn_2026_capex_usd_b": 220,
-      "aws_revenue_run_rate_usd_b": 184,
-      "aws_yoy_growth_pct": 39.3,
+      "aws_revenue_q3_2026_usd_b": 46.0,
+      "aws_revenue_growth_yoy_pct": 39.3,
       "aws_operating_margin_pct": 38.7,
       "aws_backlog_usd_b": 578,
-      "aws_backlog_yoy_growth_pct": "triple_digits",
-      "ai_accelerator_installation_rate_per_second": 1,
+      "aws_backlog_growth_yoy_pct": "triple_digit",
+      "aws_annualized_run_rate_usd_b": 184,
+      "aws_qoq_revenue_increase_usd_b": 3.8,
+      "capex_q3_2026_usd_b": 75.9,
+      "capex_fy2026_guidance_usd_b": 220,
+      "capex_2027_guidance_direction": "meaningfully_higher",
       "bedrock_token_volume_growth_yoy_pct": 1700,
-      "bedrock_fortune500_spending_growth_yoy_pct": 600,
-      "trainium_revenue_commitment_growth_yoy_pct": 2000,
-      "graviton_revenue_commitment_growth_yoy_pct": 2000,
-      "customer_savings_q3_usd_b": 2,
+      "bedrock_fortune500_spending_growth_yoy_pct": 700,
+      "custom_silicon_revenue_commitments_growth_yoy_pct": 2000,
       "aws_projected_growth_2027_pct": 40,
       "aws_projected_growth_2028_pct": 40,
       "aws_trillion_dollar_target_years": "5_to_10",
-      "capex_ocf_ratio_q3": 0.75,
+      "inference_pct_of_aws_ai_revenue": 50,
+      "global_it_spend_on_premises_pct": 85,
+      "cloud_migration_cycle_years": "10_to_20",
+      "ai_accelerator_installation_rate_per_second": 0.023,
+      "memory_component_cost_impact": "heightened",
       "architecture_signals": {
         "custom_silicon_memory_arch": "mixed",
-        "custom_silicon_named": "Trainium",
+        "custom_silicon_named": [
+          "Trainium",
+          "Graviton",
+          "Graviton5"
+        ],
         "deployed_quantization": null,
         "deployed_moe": null,
         "deployed_speculative_decoding": null,
         "deployed_disaggregated_serving": null,
         "enterprise_ai_workload_context_tokens": null,
-        "enterprise_ai_customer_name": null,
-        "enterprise_ai_use_case": "inference_at_scale",
+        "enterprise_ai_customer_name": [
+          "Capital One",
+          "IBM",
+          "Infor",
+          "Luminate",
+          "Robinhood",
+          "Mondelez",
+          "EchoStar",
+          "3M",
+          "Southwest Airlines",
+          "DXC Technology"
+        ],
+        "enterprise_ai_use_case": "security_vulnerability_detection_inference_deployment_coding_agents_contact_center_migrations",
         "enterprise_ai_revenue_growth_qoq_pct": null,
-        "agent_product_usage_disclosure": "AgentCore: 2x more agents deployed Q3 vs prior three quarters combined",
-        "architecture_freetext": "Amazon deploying Trainium for Bedrock inference at scale; custom silicon strategy balancing internal cloud use vs external sales starting late 2027; enterprise inference adoption accelerating with security and cost efficiency as primary drivers."
+        "agent_product_usage_disclosure": "AgentCore_tens_of_thousands_customers_2x_agents_q3_vs_prior_3q",
+        "new_frontier_model_release": null,
+        "new_accelerator_announcement": null,
+        "enterprise_ai_quarterly_revenue": null,
+        "architecture_freetext": "Bedrock multi-model inference platform (Anthropic Claude, OpenAI, Kimi, GLM, SpaceX) running majority on Trainium custom silicon; AgentCore agentic deployment framework scaling; inference already >50% of AWS AI revenue; enterprise security/vulnerability detection and coding agents driving token growth 17x YoY."
       },
       "competitor_signals": {
         "cxmt_oem_mainstream_win": null,
@@ -85,14 +107,14 @@
       "t2_hyperscaler_capex_revenue"
     ],
     "key_quotes": [
-      "We still expect 2026 cash CapEx of approximately $220 billion, expect to spend meaningfully more in 2027.",
-      "AWS can grow north of 40% in each of 2027 and 2028 and be a trillion-dollar revenue business.",
-      "Bedrock token volume growing nearly 17x year-over-year, fastest growing multi-billion dollar service."
+      "AWS projected to grow north of 40% in each of 2027 and 2028.",
+      "Inference already accounts for well over half of AWS AI revenue.",
+      "We expect to spend meaningfully more in 2027 with clear line of sight to attractive returns."
     ],
     "target_price_action": null,
     "fired_status_evidence": "supports_fire",
-    "raw_url": "https://finance.yahoo.com/quote/AMZN/earnings/AMZN-Q3-2026-earnings_call-720308.html",
-    "digested_at_iso": "2026-10-30T13:22:41.195793"
+    "raw_url": "https://www.fool.com/earnings/call-transcripts/2026/10/30/amazon-amzn-q3-2026-earnings-call-transcript/",
+    "digested_at_iso": "2026-10-31T12:58:41.695008"
   },
   "diff_with_prior": {
     "ticker": "AMZN",
@@ -105,55 +127,31 @@
       {
         "indicator_id": "t2_capex_parabolic",
         "direction": "strengthening",
-        "summary": "Capex guidance holds flat at $220B for 2027 after 2026, with explicit statement of 'meaningfully more' planned, signaling continued aggressive acceleration rather than plateau.",
+        "summary": "Capex trajectory accelerating: Q3 2026 run-rate $75.9B annualized ~$304B; 2027 explicitly 'meaningfully higher' than $220B 2026 guidance, signaling parabolic spending phase deepening.",
         "prior_quote": "We now believe we will spend approximately $220 billion in cash CapEx in 2026.",
-        "current_quote": "We still expect 2026 cash CapEx of approximately $220 billion, expect to spend meaningfully more in 2027."
+        "current_quote": "We expect to spend meaningfully more in 2027 with clear line of sight to attractive returns."
       },
       {
         "indicator_id": "t1_decode_hbm_captive_ratio",
         "direction": "strengthening",
-        "summary": "Backlog grew 17% QoQ ($496B\u2192$578B) with AWS capacity reserved 'lion's share' through 2027; custom silicon Trainium commitment growth at 2000% YoY signals intensifying internal HBM demand and reduced external supply availability.",
-        "prior_quote": "aws_capacity_reserved_2027_pct: lion's share",
-        "current_quote": "trainium_revenue_commitment_growth_yoy_pct: 2000, custom_silicon_memory_arch: mixed"
+        "summary": "Memory cost elevation persists as 'heightened' constraint; custom silicon revenue commitments growing 2000% YoY; Trainium-dominant Bedrock inference deployment underscores HBM captive reliance.",
+        "prior_quote": "The higher cost of memory pushing this number up from our prior estimate of about $200 billion.",
+        "current_quote": "Memory component cost impact: heightened."
       },
       {
         "indicator_id": "t2_hyperscaler_capex_revenue",
         "direction": "strengthening",
-        "summary": "New indicator entry in current call. AWS backlog $578B triple-digit YoY growth with 40% revenue growth projection 2027\u20132028 creates structural capex-revenue coupling; trillion-dollar AWS target (5\u201310 years) locks multi-year capex commitment.",
-        "prior_quote": null,
-        "current_quote": "AWS can grow north of 40% in each of 2027 and 2028 and be a trillion-dollar revenue business."
+        "summary": "AWS backlog surged $82B QoQ ($496B\u2192$578B); annualized run-rate $184B (up from $169B prior); 40% growth projected 2027-2028; capex generating visible revenue pipeline with 'clear line of sight to attractive returns'.",
+        "prior_quote": "Even at that amount, we will still not have enough capacity to meet all the demand we have in 2026.",
+        "current_quote": "AWS projected to grow north of 40% in each of 2027 and 2028."
       }
     ],
     "metric_deltas": [
-      {
-        "metric_name": "capex_2026_guidance_usd_b",
-        "prior_value": "220",
-        "current_value": "220",
-        "direction": "unchanged"
-      },
-      {
-        "metric_name": "capex_2027_guidance_usd_b",
-        "prior_value": null,
-        "current_value": "220",
-        "direction": "new"
-      },
       {
         "metric_name": "aws_revenue_run_rate_usd_b",
         "prior_value": "169",
         "current_value": "184",
         "direction": "up"
-      },
-      {
-        "metric_name": "aws_yoy_growth_pct",
-        "prior_value": "36.7",
-        "current_value": "39.3",
-        "direction": "up"
-      },
-      {
-        "metric_name": "aws_operating_margin_pct",
-        "prior_value": "39",
-        "current_value": "38.7",
-        "direction": "down"
       },
       {
         "metric_name": "aws_backlog_usd_b",
@@ -162,68 +160,83 @@
         "direction": "up"
       },
       {
+        "metric_name": "capex_q3_2026_usd_b",
+        "prior_value": null,
+        "current_value": "75.9",
+        "direction": "new"
+      },
+      {
         "metric_name": "bedrock_token_volume_growth_yoy_pct",
         "prior_value": null,
         "current_value": "1700",
         "direction": "new"
       },
       {
-        "metric_name": "trainium_revenue_commitment_growth_yoy_pct",
+        "metric_name": "bedrock_fortune500_spending_growth_yoy_pct",
+        "prior_value": null,
+        "current_value": "700",
+        "direction": "new"
+      },
+      {
+        "metric_name": "custom_silicon_revenue_commitments_growth_yoy_pct",
         "prior_value": null,
         "current_value": "2000",
         "direction": "new"
       },
       {
-        "metric_name": "graviton_revenue_commitment_growth_yoy_pct",
+        "metric_name": "inference_pct_of_aws_ai_revenue",
         "prior_value": null,
-        "current_value": "2000",
+        "current_value": "50",
         "direction": "new"
       },
       {
-        "metric_name": "aws_projected_growth_2027_pct",
-        "prior_value": null,
-        "current_value": "40",
-        "direction": "new"
+        "metric_name": "aws_operating_margin_pct",
+        "prior_value": "39",
+        "current_value": "38.7",
+        "direction": "down"
       },
       {
-        "metric_name": "aws_projected_growth_2028_pct",
-        "prior_value": null,
-        "current_value": "40",
-        "direction": "new"
+        "metric_name": "ai_revenue_run_rate_usd_b",
+        "prior_value": "25",
+        "current_value": null,
+        "direction": "dropped"
       },
       {
-        "metric_name": "aws_trillion_dollar_target_years",
-        "prior_value": null,
-        "current_value": "5_to_10",
-        "direction": "new"
+        "metric_name": "chips_revenue_run_rate_usd_b",
+        "prior_value": "25",
+        "current_value": null,
+        "direction": "dropped"
       },
       {
-        "metric_name": "capex_ocf_ratio_q3",
-        "prior_value": null,
-        "current_value": "0.75",
-        "direction": "new"
+        "metric_name": "capacity_doubling_timeline",
+        "prior_value": "by end of 2027 vs 2025",
+        "current_value": null,
+        "direction": "dropped"
       }
     ],
     "language_dropped": [
-      "higher cost of memory pushing this number up from prior estimate of $200B (no prior guidance restatement in Q4 call)",
-      "capacity_doubling_timeline: by end of 2027 vs 2025 (timeline language removed)",
-      "server_breakeven_years: 2.8 and useful_life metrics (asset life disclosures dropped)",
-      "aws_capacity_reserved_2028_pct: quite a bit (2028 capacity language removed)"
+      "capacity doubling timeline 'by end of 2027 vs 2025' \u2014 no restatement in current call",
+      "specific AI and chips revenue run-rate figures ($25B each) \u2014 replaced with composite Bedrock/custom-silicon token/commitment growth metrics",
+      "server breakeven/useful-life depreciation disclosures (2.8yr/5.6yr/30yr) \u2014 no longer itemized",
+      "AWS capacity reserved percentages ('lion's share' 2027, 'quite a bit' 2028) \u2014 qualitative framework abandoned"
     ],
     "language_added": [
-      "expect to spend meaningfully more in 2027 (explicit escalation language post 2026)",
-      "AWS can grow north of 40% in each of 2027 and 2028 and be a trillion-dollar revenue business (multi-year guidance cadence added)",
-      "Bedrock token volume growing nearly 17x year-over-year, fastest growing multi-billion dollar service (Bedrock commercial milestone escalation)",
-      "AgentCore: 2x more agents deployed Q3 vs prior three quarters combined (agent velocity acceleration metric added)",
-      "custom silicon strategy balancing internal cloud use vs external sales starting late 2027 (timing specificity on capex-to-revenue transition added)",
-      "enterprise inference adoption accelerating with security and cost efficiency as primary drivers (use case rationale shift from prior)"
+      "Inference already accounts for well over half of AWS AI revenue (50% threshold quantified)",
+      "Bedrock multi-model inference platform (Anthropic Claude, OpenAI, Kimi, GLM, SpaceX) majority deployed on Trainium custom silicon",
+      "AgentCore agentic deployment framework scaling at tens of thousands customers, 2x agents Q3 vs prior 3Q",
+      "Enterprise security/vulnerability detection and coding agents driving token growth 17x YoY",
+      "Memory component cost impact: heightened",
+      "Custom silicon revenue commitments growing 2000% YoY",
+      "AWS projected to grow north of 40% in each of 2027 and 2028 (multi-year 40% guidance)",
+      "Clear line of sight to attractive returns (2027 capex justification language)",
+      "Global IT spend on-premises 85%, cloud migration cycle 10-20 years (TAM/penetration context)"
     ],
     "overall_tone_shift": "more bullish",
-    "computed_at_iso": "2026-10-30T13:22:41.195587",
+    "computed_at_iso": "2026-10-31T12:58:41.694896",
     "haiku_model": "claude-haiku-4-5",
-    "haiku_input_tokens": 3556,
-    "haiku_output_tokens": 1541,
+    "haiku_input_tokens": 3799,
+    "haiku_output_tokens": 1498,
     "error": null
   },
-  "saved_at_iso": "2026-10-30T13:22:41.195904"
+  "saved_at_iso": "2026-10-31T12:58:41.695093"
 }
