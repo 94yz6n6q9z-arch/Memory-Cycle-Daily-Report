@@ -1,11 +1,11 @@
 {
-  "written_at_iso": "2026-11-04T14:50:43.794899+00:00",
+  "written_at_iso": "2026-11-05T14:55:20.037048+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 1,
     "materials_only": 0,
-    "nothing": 1,
-    "already_processed": 33,
+    "nothing": 2,
+    "already_processed": 30,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
@@ -42,7 +42,6 @@
       "Oracle",
       "Dell",
       "HPE",
-      "AMD",
       "Intel",
       "Cerebras"
     ]
@@ -116,7 +115,7 @@
       "company": "Amazon",
       "ticker": "AMZN",
       "availability": "already_processed",
-      "source_name": "Motley Fool",
+      "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
@@ -155,10 +154,10 @@
     {
       "company": "AMD",
       "ticker": "AMD",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Motley Fool",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 53991
     },
     {
       "company": "Intel",
@@ -179,9 +178,9 @@
     {
       "company": "SK Hynix",
       "ticker": "000660.KS",
-      "availability": "already_processed",
-      "source_name": "SK Hynix IR (newsroom RSS)",
-      "note": "Already digested in a previous deep-tier run (cache hit): \"SK hynix Announces 3Q26 Financial Results\".",
+      "availability": "nothing",
+      "source_name": "SK Hynix IR",
+      "note": "IR RSS feed returned 10 entries but none matched earnings keywords. Newsroom may have shifted naming conventions.",
       "char_count": 0
     },
     {
@@ -281,14 +280,6 @@
       "char_count": 0
     },
     {
-      "company": "Amazon",
-      "ticker": "AMZN",
-      "availability": "already_processed",
-      "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
-    },
-    {
       "company": "Oracle",
       "ticker": "ORCL",
       "availability": "already_processed",
@@ -311,14 +302,6 @@
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
-    },
-    {
-      "company": "AMD",
-      "ticker": "AMD",
-      "availability": "full_transcript",
-      "source_name": "Yahoo Finance",
-      "note": null,
-      "char_count": 50159
     },
     {
       "company": "Intel",
