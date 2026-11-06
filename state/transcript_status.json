@@ -1,17 +1,17 @@
 {
-  "written_at_iso": "2026-11-05T14:55:20.037048+00:00",
+  "written_at_iso": "2026-11-06T14:31:44.232858+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 1,
+    "full_transcript": 0,
     "materials_only": 0,
-    "nothing": 2,
+    "nothing": 5,
     "already_processed": 30,
     "by_company": {
-      "Micron": "already_processed",
+      "Micron": "nothing",
       "Nvidia": "already_processed",
       "Broadcom": "already_processed",
       "TSMC": "already_processed",
-      "Applied Materials": "already_processed",
+      "Applied Materials": "nothing",
       "Microsoft": "already_processed",
       "Alphabet": "already_processed",
       "Meta": "already_processed",
@@ -20,8 +20,8 @@
       "Dell": "already_processed",
       "HPE": "already_processed",
       "ASML": "already_processed",
-      "AMD": "full_transcript",
-      "Intel": "already_processed",
+      "AMD": "already_processed",
+      "Intel": "nothing",
       "Cerebras": "already_processed",
       "SK Hynix": "already_processed",
       "Samsung Electronics": "already_processed"
@@ -42,6 +42,7 @@
       "Oracle",
       "Dell",
       "HPE",
+      "AMD",
       "Intel",
       "Cerebras"
     ]
@@ -115,7 +116,7 @@
       "company": "Amazon",
       "ticker": "AMZN",
       "availability": "already_processed",
-      "source_name": "Yahoo Finance",
+      "source_name": "Motley Fool",
       "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
@@ -154,10 +155,10 @@
     {
       "company": "AMD",
       "ticker": "AMD",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 53991
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "Intel",
@@ -210,9 +211,9 @@
     {
       "company": "Micron",
       "ticker": "MU",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
@@ -242,9 +243,9 @@
     {
       "company": "Applied Materials",
       "ticker": "AMAT",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
@@ -280,6 +281,14 @@
       "char_count": 0
     },
     {
+      "company": "Amazon",
+      "ticker": "AMZN",
+      "availability": "already_processed",
+      "source_name": "Yahoo Finance",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
+    },
+    {
       "company": "Oracle",
       "ticker": "ORCL",
       "availability": "already_processed",
@@ -304,11 +313,19 @@
       "char_count": 0
     },
     {
-      "company": "Intel",
-      "ticker": "INTC",
+      "company": "AMD",
+      "ticker": "AMD",
       "availability": "already_processed",
       "source_name": "Yahoo Finance",
       "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
+    },
+    {
+      "company": "Intel",
+      "ticker": "INTC",
+      "availability": "nothing",
+      "source_name": "Yahoo Finance",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     }
   ]
