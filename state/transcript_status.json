@@ -1,21 +1,21 @@
 {
-  "written_at_iso": "2026-11-09T16:45:33.662523+00:00",
+  "written_at_iso": "2026-11-10T15:08:28.665277+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 0,
     "materials_only": 0,
-    "nothing": 4,
-    "already_processed": 31,
+    "nothing": 2,
+    "already_processed": 33,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
       "Broadcom": "already_processed",
       "TSMC": "already_processed",
       "Applied Materials": "already_processed",
-      "Microsoft": "nothing",
+      "Microsoft": "already_processed",
       "Alphabet": "already_processed",
       "Meta": "already_processed",
-      "Amazon": "nothing",
+      "Amazon": "already_processed",
       "Oracle": "already_processed",
       "Dell": "already_processed",
       "HPE": "already_processed",
@@ -259,9 +259,9 @@
     {
       "company": "Microsoft",
       "ticker": "MSFT",
-      "availability": "nothing",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
@@ -283,9 +283,9 @@
     {
       "company": "Amazon",
       "ticker": "AMZN",
-      "availability": "nothing",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
