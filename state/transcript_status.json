@@ -1,28 +1,28 @@
 {
-  "written_at_iso": "2026-11-12T15:31:22.221106+00:00",
+  "written_at_iso": "2026-11-13T14:51:10.889296+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 0,
+    "full_transcript": 2,
     "materials_only": 0,
-    "nothing": 2,
-    "already_processed": 33,
+    "nothing": 4,
+    "already_processed": 28,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
       "Broadcom": "already_processed",
       "TSMC": "already_processed",
-      "Applied Materials": "already_processed",
-      "Microsoft": "already_processed",
+      "Applied Materials": "full_transcript",
+      "Microsoft": "nothing",
       "Alphabet": "already_processed",
       "Meta": "already_processed",
       "Amazon": "already_processed",
       "Oracle": "already_processed",
       "Dell": "already_processed",
       "HPE": "already_processed",
-      "ASML": "already_processed",
+      "ASML": "nothing",
       "AMD": "already_processed",
       "Intel": "already_processed",
-      "Cerebras": "already_processed",
+      "Cerebras": "full_transcript",
       "SK Hynix": "already_processed",
       "Samsung Electronics": "already_processed"
     },
@@ -33,7 +33,6 @@
       "Nvidia",
       "Broadcom",
       "TSMC",
-      "Applied Materials",
       "ASML",
       "Microsoft",
       "Alphabet",
@@ -43,8 +42,7 @@
       "Dell",
       "HPE",
       "AMD",
-      "Intel",
-      "Cerebras"
+      "Intel"
     ]
   },
   "results": [
@@ -83,10 +81,10 @@
     {
       "company": "Applied Materials",
       "ticker": "AMAT",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Motley Fool",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 56867
     },
     {
       "company": "Microsoft",
@@ -171,10 +169,10 @@
     {
       "company": "Cerebras",
       "ticker": "CBRS",
-      "availability": "already_processed",
-      "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "availability": "full_transcript",
+      "source_name": "Motley Fool",
+      "note": null,
+      "char_count": 50910
     },
     {
       "company": "SK Hynix",
@@ -241,27 +239,19 @@
       "char_count": 0
     },
     {
-      "company": "Applied Materials",
-      "ticker": "AMAT",
-      "availability": "already_processed",
-      "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
-    },
-    {
       "company": "ASML",
       "ticker": "ASML",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
       "company": "Microsoft",
       "ticker": "MSFT",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
