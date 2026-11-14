@@ -1,0 +1,214 @@
+{
+  "ticker": "CBRS",
+  "company": "Cerebras",
+  "quarter_key": "2026-Q4",
+  "digest": {
+    "source_id": "Yahoo Finance / Cerebras / 2026-11-14",
+    "source_type": "earnings_transcript",
+    "published_date_iso": "2026-11-14",
+    "title": "Cerebras earnings call 2026-11-14",
+    "char_count_input": 46756,
+    "key_metrics": {
+      "q3_core_revenue_usd_m": 231,
+      "q3_core_revenue_yoy_growth_pct": 70,
+      "q3_core_revenue_qoq_growth_pct": 10,
+      "q3_cloud_revenue_usd_m": 145,
+      "q3_cloud_revenue_yoy_growth_pct": 272,
+      "q3_cloud_revenue_qoq_growth_pct": 13,
+      "q3_hardware_revenue_usd_m": 86,
+      "q3_hardware_revenue_qoq_growth_pct": 5,
+      "q3_core_gross_margin_pct": 41,
+      "q3_hardware_gross_margin_pct": 31,
+      "q3_cloud_gross_margin_pct": 46.9,
+      "q3_core_operating_margin_pct": -14.3,
+      "q3_core_net_income_usd_m": 30,
+      "q4_core_revenue_guidance_low_usd_m": 310,
+      "q4_core_revenue_guidance_high_usd_m": 330,
+      "q4_core_gross_margin_guidance_low_pct": 47,
+      "q4_core_gross_margin_guidance_high_pct": 49,
+      "q4_core_operating_margin_guidance_low_pct": -1,
+      "q4_core_operating_margin_guidance_high_pct": 1,
+      "fy2026_core_revenue_guidance_low_usd_m": 940,
+      "fy2026_core_revenue_guidance_high_usd_m": 960,
+      "fy2026_core_gross_margin_guidance_low_pct": 42,
+      "fy2026_core_gross_margin_guidance_high_pct": 44,
+      "fy2026_core_operating_margin_guidance_low_pct": -10,
+      "fy2026_core_operating_margin_guidance_high_pct": -8,
+      "fy2027_revenue_growth_target_multiplier": 3.0,
+      "rpo_usd_b": 26.1,
+      "openai_contract_capacity_mw": 750,
+      "openai_delay_credit_risk_pct_of_mw": 5,
+      "data_center_capacity_under_contract_mw": 700,
+      "data_center_capacity_2027_outside_us_pct": 75,
+      "cash_and_equivalents_usd_b": 7.8,
+      "manufacturing_capacity_increase_yoy_multiplier": 10.0,
+      "cs4_performance_vs_cs3_multiplier": 2.0,
+      "cs5_performance_vs_cs4_multiplier": 2.0,
+      "wse5_tape_out_to_system_test_months": 5,
+      "disaggregated_inference_token_increase_multiplier": 5.0,
+      "kimi_31_tokens_per_second": 2000,
+      "q4_sequential_core_revenue_growth_pct": 40,
+      "q4_yoy_core_revenue_growth_pct": 85,
+      "q4_cloud_revenue_sequential_growth_pct": 0,
+      "q4_expected_hardware_mix_pct": 50,
+      "long_term_hardware_gross_margin_target_pct": 50,
+      "long_term_cloud_gross_margin_target_pct": 60,
+      "long_term_operating_margin_target_pct": 40,
+      "inference_speed_crossover_tokens_per_second_vs_gpu": 250,
+      "inference_speed_gpu_cannot_compete_tokens_per_second": 800,
+      "architecture_signals": {
+        "deployed_disaggregated_serving": true,
+        "inference_cost_reduction_pct": null,
+        "tokens_per_dollar_claim": null,
+        "custom_silicon_named": "Cerebras CS-3, CS-4, CS-5",
+        "custom_silicon_memory_arch": "non_hbm_accelerators",
+        "architecture_freetext": "Cerebras avoids HBM entirely; uses wafer-scale architecture with disaggregated inference (AMD GPU pre-fill + Cerebras decode) delivering 5x token throughput per megawatt vs monolithic GPU approaches."
+      },
+      "_transcript_availability": "full_transcript"
+    },
+    "signal_relevance": [
+      "t1_efficiency_shock",
+      "t2_capex_parabolic",
+      "t2_hyperscaler_capex_revenue"
+    ],
+    "key_quotes": [
+      "fast tokens command a premium, and our cloud customers tell us that fast tokens generate exceptional gross margins",
+      "disaggregated inference delivers substantially more high-speed tokens for the same power",
+      "we do not use HBM memory. We believe memory shortages and the price increases associated with them will continue through 2028"
+    ],
+    "target_price_action": null,
+    "fired_status_evidence": "neutral",
+    "raw_url": "https://finance.yahoo.com/quote/CBRS/earnings/CBRS-Q3-2026-earnings_call-731670.html",
+    "digested_at_iso": "2026-11-14T13:47:45.036154"
+  },
+  "diff_with_prior": {
+    "ticker": "CBRS",
+    "company": "Cerebras",
+    "current_quarter": "2026-Q4",
+    "prior_quarter": "2026-Q3",
+    "current_digest_event_date": "2026-11-14",
+    "prior_digest_event_date": "2026-08-13",
+    "indicator_deltas": [
+      {
+        "indicator_id": "t1_efficiency_shock",
+        "direction": "strengthening",
+        "summary": "Evidence for efficiency advantage intensified: current call introduces quantified inference speed thresholds (250 tps crossover, 800 tps GPU floor) and contrasts with prior's qualitative '10x advantage' claim. Disaggregated inference now explicitly monetized as 'fast tokens command premium' with mar",
+        "prior_quote": "Disaggregated solution delivers Cerebras speed with 5x higher throughput.",
+        "current_quote": "fast tokens command a premium, and our cloud customers tell us that fast tokens generate exceptional gross margins"
+      },
+      {
+        "indicator_id": "t1_decode_hbm_captive_ratio",
+        "direction": "strengthening",
+        "summary": "HBM avoidance narrative sharpened from defensive positioning to offensive competitive moat. Prior referenced HBM constraints as architectural advantage; current extends claim to sustained market constraint ('memory shortages...will continue through 2028') creating captive customer lock-in.",
+        "prior_quote": "We do not use HBM memory, CoWoS packaging, or require 3nm fab capacity.",
+        "current_quote": "we do not use HBM memory. We believe memory shortages and the price increases associated with them will continue through 2028"
+      },
+      {
+        "indicator_id": "t2_capex_parabolic",
+        "direction": "strengthening",
+        "summary": "OpenAI capacity commitment materialized (750 mW signed) with sequential Q4 guidance (+40% qoq revenue, +$100M midpoint vs Q3) signaling sustained capex pull. Prior cited secured 600 mW; current shows 750 mW OpenAI specifically plus 700 mW outside-US expansion (75% of 2027 capacity), indicating parab",
+        "prior_quote": null,
+        "current_quote": "openai_contract_capacity_mw: 750, data_center_capacity_under_contract_mw: 700"
+      },
+      {
+        "indicator_id": "t3_relative_strength",
+        "direction": "weakening",
+        "summary": "Relative strength claim dropped from signal_relevance. Prior explicitly tagged this indicator; current omits it entirely despite Q3 YoY growth deceleration (70% vs prior 103%) and Q4 guidance implying continued sequential momentum, suggesting less emphasis on competitive benchmarking narrative.",
+        "prior_quote": null,
+        "current_quote": null
+      }
+    ],
+    "metric_deltas": [
+      {
+        "metric_name": "q3_core_revenue_yoy_growth_pct",
+        "prior_value": "103",
+        "current_value": "70",
+        "direction": "down"
+      },
+      {
+        "metric_name": "q3_core_gross_margin_pct",
+        "prior_value": "40.6",
+        "current_value": "41",
+        "direction": "up"
+      },
+      {
+        "metric_name": "q3_core_operating_margin_pct",
+        "prior_value": "-16",
+        "current_value": "-14.3",
+        "direction": "up"
+      },
+      {
+        "metric_name": "fy2026_core_revenue_guidance_low_usd_m",
+        "prior_value": "880",
+        "current_value": "940",
+        "direction": "up"
+      },
+      {
+        "metric_name": "fy2026_core_operating_margin_guidance_low_pct",
+        "prior_value": "-19",
+        "current_value": "-10",
+        "direction": "up"
+      },
+      {
+        "metric_name": "q4_core_operating_margin_guidance_low_pct",
+        "prior_value": null,
+        "current_value": "-1",
+        "direction": "new"
+      },
+      {
+        "metric_name": "cash_and_equivalents_usd_b",
+        "prior_value": "8.6",
+        "current_value": "7.8",
+        "direction": "down"
+      },
+      {
+        "metric_name": "rpo_usd_b",
+        "prior_value": "25.4",
+        "current_value": "26.1",
+        "direction": "up"
+      },
+      {
+        "metric_name": "fy2027_revenue_growth_target_multiplier",
+        "prior_value": "3.1",
+        "current_value": "3.0",
+        "direction": "unchanged"
+      },
+      {
+        "metric_name": "q3_core_net_income_usd_m",
+        "prior_value": null,
+        "current_value": "30",
+        "direction": "new"
+      },
+      {
+        "metric_name": "q3_hardware_gross_margin_pct",
+        "prior_value": "38.8",
+        "current_value": "31",
+        "direction": "down"
+      }
+    ],
+    "language_dropped": [
+      "throughput_improvement_target_18mo_multiple: 20 (prior roadmap target dropped; current uses disaggregated_inference_token_increase_multiplier: 5.0 instead)",
+      "speed_improvement_target_annual_multiple: 2 (prior annual improvement metric removed from guidance)",
+      "gpt_5_6_sol_speed_advantage_multiple: 10 (prior specific GPT-5/6 competitive claim absent)",
+      "manufacturing_capacity_increase_2026_multiple: 10 (prior 2026-specific capex multiplier replaced with YoY multiple 10.0)",
+      "We expect to more than triple our core revenues in 2027 (prior explicit '3x+' commitment softened to 3.0x multiplier target)"
+    ],
+    "language_added": [
+      "fast tokens command a premium, and our cloud customers tell us that fast tokens generate exceptional gross margins",
+      "we believe memory shortages and the price increases associated with them will continue through 2028",
+      "OpenAI contract capacity (750 mW) quantified with specific customer attribution",
+      "CS-4 and CS-5 product roadmap introduced with 2.0x performance multiplier targets",
+      "Long-term operating margin target: 40% (explicit profitability milestone added)",
+      "inference_speed_gpu_cannot_compete_tokens_per_second: 800 (quantified competitive threshold)",
+      "q4_cloud_revenue_sequential_growth_pct: 0 (cloud flattening sequential growth guidance introduced)",
+      "wse5_tape_out_to_system_test_months: 5 (next-generation silicon timeline detail added)"
+    ],
+    "overall_tone_shift": "mixed",
+    "computed_at_iso": "2026-11-14T13:47:45.036050",
+    "haiku_model": "claude-haiku-4-5",
+    "haiku_input_tokens": 3204,
+    "haiku_output_tokens": 1705,
+    "error": null
+  },
+  "saved_at_iso": "2026-11-14T13:47:45.036243"
+}
