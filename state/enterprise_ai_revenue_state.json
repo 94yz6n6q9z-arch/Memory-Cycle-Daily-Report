@@ -3,10 +3,10 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.5 migration from v3.4.0-3.4.4.1 data/*.yaml; original entries preserved verbatim",
-    "last_aggregator_run": "2026-10-07T13:51:19Z",
+    "last_aggregator_run": "2026-11-14T17:55:43Z",
     "description": "Quarterly enterprise AI revenue by category. Auto-updated by src/analysis/dhcr_revenue_aggregator.py from architecture_signals extraction stream.",
-    "last_run_additions": 0,
-    "last_run_updates": 3
+    "last_run_additions": 1,
+    "last_run_updates": 2
   },
   "microsoft_azure_ai": [
     {
@@ -140,6 +140,14 @@
       "yoy_growth_pct": null,
       "source_quote": "Google's new TPU lineup adopts higher HBM3E capacity for inference",
       "source_id": "Mirae Asset Securities / 2026-05-30 / SK Hynix (000660 KS/Buy)Valuation upside remains substantial"
+    },
+    {
+      "quarter": "2026-Q3",
+      "revenue_usd_b": 30.7,
+      "qoq_growth_pct": null,
+      "yoy_growth_pct": 103,
+      "source_quote": "Cloud revenues were up 103% to $30.7 billion, driven by strong growth in GCP with strength in AI",
+      "source_id": "Motley Fool / Alphabet / 2026-10-29"
     }
   ],
   "oracle_ai_infra": [

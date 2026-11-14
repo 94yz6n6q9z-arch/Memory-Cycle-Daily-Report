@@ -3,12 +3,12 @@
     "schema_version": "2.0",
     "bootstrap_date": "2026-05-22",
     "bootstrap_source": "v3.4.4 framework session with Raul + public market data Q1-Q2 2026",
-    "last_aggregator_run": "2026-10-07T13:51:19Z",
+    "last_aggregator_run": "2026-11-14T17:55:43Z",
     "description": "Live measured values for Indicator 7 sub-indicators. Auto-updated by src/analysis/competitor_aggregator.py:aggregate_competitor_extractions() before each fast-tier snapshot computation. Bootstrap entries seeded once on v3.4.4.1 deploy; thereafter the aggregator is the only writer."
   },
   "sub_7a_cxmt": {
     "current_status": "Fired",
-    "status_evaluated_at": "2026-10-07",
+    "status_evaluated_at": "2026-11-14",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 22.0,
     "current_state": {
@@ -52,7 +52,7 @@
   },
   "sub_7b_samsung_hbm4": {
     "current_status": "Partially fired",
-    "status_evaluated_at": "2026-10-07",
+    "status_evaluated_at": "2026-11-14",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 10.0,
     "current_state": {
@@ -79,7 +79,7 @@
   },
   "sub_7c_micron": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-10-07",
+    "status_evaluated_at": "2026-11-14",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.5,
     "current_state": {
@@ -98,11 +98,11 @@
   },
   "sub_7d_hbf": {
     "current_status": "Not fired",
-    "status_evaluated_at": "2026-10-07",
+    "status_evaluated_at": "2026-11-14",
     "status_evaluator": "competitor_aggregator",
     "estimated_eps_impact_pct": 0.0,
     "current_state": {
-      "hbf_commercial_stage": "volume",
+      "hbf_commercial_stage": "development",
       "jedec_hbf_spec_ratified": true,
       "sk_hynix_on_jedec_hbf_working_group": null,
       "hyperscaler_hbf_design_wins": [
@@ -171,7 +171,8 @@
         "HBF for AI data centers and edge computing"
       ],
       "sk_hynix_solidigm_hbf_integration": true,
-      "hbf_hot_tier_displacement": true
+      "hbf_hot_tier_displacement": true,
+      "sk_hynix_hbf_roadmap_mention": true
     },
     "evidence_log": [
       {
