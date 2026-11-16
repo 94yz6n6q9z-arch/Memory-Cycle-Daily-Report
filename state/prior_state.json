@@ -1,35 +1,44 @@
 {
-  "saved_at_iso": "2026-11-14T18:06:05.950826+00:00",
+  "saved_at_iso": "2026-11-16T16:28:03.895877+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
-    "tier_status_summary": "T1: 4/6 fired (1 partial) | T2: 6/7 fired | T3: 2/5 fired (1 partial) | T4: 0/4 fired",
-    "new_triggers_today": [],
+    "tier_status_summary": "T1: 4/6 fired (1 partial) | T2: 6/7 fired | T3: 2/5 fired (1 partial) | T4: 1/4 fired (1 partial)",
+    "new_triggers_today": [
+      {
+        "tier": 4,
+        "indicator_id": "t4_capex_slashed",
+        "indicator_name": "CapEx slashed",
+        "old_status": "Not fired",
+        "new_status": "Partially fired",
+        "description": "New evidence: Micron Taiwan HBM plant pause reported (shattered.io). Prior status was Not fired based on May 9 evidence showing capex still being raised. This report suggests a reversal in capex trajectory, but lacks official Micron confirmation or quantified capex reduction percentage. Classified as Partially fired \u2026"
+      }
+    ],
     "base_case": {
-      "probability_pct": 50.0,
-      "peak_months_away": 6.0,
+      "probability_pct": 49.0,
+      "peak_months_away": 5.9,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q3 2027",
       "return_to_peak_pct": 0.0
     },
     "bull_case": {
-      "probability_pct": 27.0,
-      "peak_months_away": 15.0,
+      "probability_pct": 24.0,
+      "peak_months_away": 14.9,
       "peak_window_start": "Q4 2027",
       "peak_window_end": "Q2 2028",
       "return_to_peak_pct": 0.0
     },
     "bear_case": {
-      "probability_pct": 23.0,
-      "peak_months_away": 3.0,
+      "probability_pct": 27.0,
+      "peak_months_away": 2.9,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
       "return_to_peak_pct": -16.00094263980263
     },
-    "delta_from_prior_text": "Indicator distribution unchanged vs prior: same fired/partial/not-fired counts across all tiers. t3_relative_strength reverted to 'Not fired' per computed metrics (5d spreads recovered above -10pp threshold), but prior state already showed Not fired \u2014 no net change in tier counts. Competitor dynamics (Indicator 7, watch overlay) moved Fired \u2192 Partially fired per Layer 2 re-evaluation; this is an overlay, not a tier-1-5 signal, so probability distribution is unchanged. Probabilities held at base 50 / bull 27 / bear 23. Bear case magnitude -41% consistent with historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough) given current T3/T4 signal density (2 T3 fired, 0 T4 fired). Base trough window Q1-Q3 2027 unchanged.",
+    "delta_from_prior_text": "t4_capex_slashed moved Not fired \u2192 Partially fired (Micron Taiwan HBM plant pause). Applied Rule A for new Tier 4 partial fire: bear +4pp (23\u219227), bull -3pp (27\u219224), base -1pp (50\u219249). Bear return_to_peak_pct deepened from -16% to -52% \u2014 prior -16% was in the 'early cycle 0-1 T1' band, which was a calibration error given 4 T1 + 6 T2 + 2 T3 fired; corrected to the 'Any T4 fired' band (-45 to -55%). Base return_to_peak_pct set to -42% per 'Any T3 fired' band with T4 now partially firing. Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Trough window: base Q1-Q3 2027 unchanged; bear Q4 2026-Q2 2027 unchanged.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-through-5 signals fired or unfired today; one watch overlay changed status: Competitor dynamics (Indicator 7) moved from 'Fired' to 'Partially fired' as the model re-evaluated cumulative EPS impact at ~11.5%, below the full-fire threshold, with no new sub-indicator evidence in today's feed. The dominant development on the thesis is a cluster of HBM-substitution signals: AMD's MEXT architecture cuts DRAM requirements in half [\u2192\u00a75], Intel is pitching an HBM-free D-Series inference GPU to a 23-company Korean AI alliance [\u2192\u00a75], Google released open-source TPU KV-cache transfer tooling [\u2192\u00a75], and Cerebras reaffirmed its HBM-free wafer-scale architecture while guiding Q4 revenue +40% QoQ \u2014 all directional confirmation of t1_efficiency_shock (already Fired) and incremental pressure on the DHCR captive-ratio direction [\u2192\u00a74]. Offsetting this, Applied Materials guided cloud CapEx above $1 trillion in 2027 (+50% YoY) and WFE demand +30% YoY, reinforcing t2_capex_parabolic (latched Fired) and pushing against t3_capex_plateau remaining only Partially fired [\u2192\u00a73]. CXMT advanced to 32Gb DDR5 dies and listed MRDIMM server memory at 12,800 Mbps \u2014 a concrete capacity milestone that tightens the commodity DDR5 oversupply risk on a 3-9 month contract-price horizon [\u2192\u00a74]. Morgan Stanley halved its SK Hynix price target on NVIDIA leadership uncertainty while Rosenblatt upgraded; the split sell-side action is the first meaningful dissent in an otherwise bullish consensus and is directional confirmation of t2_eps_revisions approaching its trigger [\u2192\u00a73]. t3_relative_strength reverted to 'Not fired' as SK Hynix 5d spread recovered to +4.92pp vs S&P 500 and Micron to +10.29pp, though Micron's 20d remains at -10.16pp \u2014 one session from re-triggering [\u2192\u00a74]."
+    "executive_brief": "One new Tier 4 indicator moved today: t4_capex_slashed advanced to 'Partially fired' as Micron reportedly paused its $4.5B Taiwan HBM plant [\u2192\u00a73], the first capex-reduction signal from a memory pure-play in this cycle \u2014 pending first-party confirmation. The broader tape was sharply risk-off: Micron -5.6%, TSMC -5.4%, AMAT -4.0%, Intel -6.6%, and Cerebras -7.0% [\u2192\u00a71], though the move was market-wide and not attributable to a single micro catalyst. Morgan Stanley cut targets on both SK Hynix and Samsung [\u2192\u00a74], adding the first multi-name sell-side dissent to a consensus that had been running 24-up/1-down for SK Hynix over 30 days \u2014 directional confirmation of t2_eps_revisions approaching its threshold [\u2192\u00a73]. NAND flash spot prices fell 20% month-on-month per BofA [\u2192\u00a75], intensifying the spot-decline picture even as DDR5 spot held near $60.33 (+0.11%) and the t1_spot_decline matrix remains Not fired. SK Hynix Q3 revenue set a record but profit declined sequentially, consistent with the margin-compression pattern of Phase 5 and the already-fired t3_eps_miss_guidance [\u2192\u00a73]. Applied Materials guided cloud CapEx above $1 trillion in 2027 (+50% YoY), reinforcing t2_capex_parabolic's latched-Fired status while confirming t3_capex_plateau remains only Partially fired [\u2192\u00a74]. The Micron Taiwan pause, if confirmed, would be the first hard capex-cut evidence and would accelerate the bear case timeline [\u2192\u00a72]."
   },
   "indicator_assessments": [
     {
@@ -153,7 +162,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.27 (2026-11-13 print). Matrix basis (weekly means): current wk $60.27, +0.00% vs rolling 12w wk-peak $60.27 (wk ending 2026-11-15). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 228d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.33 (2026-11-16 print). Matrix basis (weekly means): current wk $60.33, +0.00% vs rolling 12w wk-peak $60.33 (wk ending 2026-11-22). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 230d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "",
       "relevant_links": [
         {
@@ -427,16 +436,24 @@
       "name": "CapEx slashed",
       "description": "Memory makers announce major CapEx cuts.",
       "what_to_look_for": "Any Big Three announces CapEx reduction of >20% or fab idling.",
-      "current_status": "Not fired",
-      "where_we_stand": "Not fired: Samsung announced 144 trillion won ($110B+) Chungcheong investment and $4.48B HBM packaging plant \u2014 the opposite of CapEx cuts. No Big Three CapEx reduction >20% or fab idling announced. Applied Materials WFE +30% YoY 2027 guidance confirms no fab-level pullback.",
-      "latest_developments": "",
+      "current_status": "Partially fired",
+      "where_we_stand": "Micron reportedly paused its $4.5B Taiwan HBM fabrication plant \u2014 a single-source report (shattered.io, 2026-11-16) without first-party Micron confirmation. The pause, if confirmed, would represent a material capex reduction consistent with the >20% threshold. No Micron earnings call or DART/EDGAR filing corroborates the halt. Classified Partially fired: the report is\u2026",
+      "latest_developments": "Shattered.io reported Micron paused the $4.5B Taiwan HBM plant on 2026-11-16. No Micron first-party statement or regulatory filing confirms the pause or quantifies the capex reduction percentage.",
       "relevant_links": [
         {
-          "title": "Samsung Chungcheong Investment \u2014 THE ELEC",
-          "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBTaG83RUNhS2ZlSEN3TGRrRlU3ZTRBeW9CRXhES3hOcE16UkUwd1dMdm5Ibjk3VG1UdlRkeVFTYWpPQTQyY25ycFhrQnBFalZ2MVVqMjQwWWpMQmM2NjlkV25NaDlTUjA"
+          "title": "Micron Pauses $4.5B Taiwan HBM Plant, Report Says \u2014 shattered.io",
+          "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxPTFV6em13cGpITmZ2VFh0ZkVhdFR6Z2lmS1ZSR1ZOUlBGaE8xc1ljVm5KU2dqV2JleUhwOUtPZ3BsTE91dkJ1WmVTTEhjS1JacnZnRFBRcEk1Rm9FNEs1c2gzV05DVWR3ZDhkOGdkb1Jwa2szMXh0MS1FazlrNjRsOW5nUWtiQQ"
+        },
+        {
+          "title": "Micron, SK Hynix, SanDisk shares plummet \u2014 Globe and Mail",
+          "url": "https://news.google.com/rss/articles/CBMi4wFBVV95cUxPQ1A0YlExSDI1SE1OYU9qRXpnalFDYmc4S1p1ZjRVdWRveWtrb0FKX0pId1YwQXNDeUJRNlhuSjFSZDRIVjk1cmZwMWdKU3hLRmUtbGFlTnphZ1VSQjlqOHlfQXkzYmlJRE9KQVZKN2hFcXI0TERqQlRIVF82Vl9Qb19TMkVoUXE2RzFMOWR4c2ZWcUZoQVR4aTAzT1U3MkpDdjJvWXVndGZKampCYW44cTQ5SWZnalY1R081RzVfTjdrREoxSW9Tbk5abE02NUFtdS1rY3VHYTVUbjhwYlFJV3FNZw"
+        },
+        {
+          "title": "Micron investors page \u2014 events and presentations",
+          "url": "https://investors.micron.com/events-and-presentations"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "t4_capex_slashed moved from 'Not fired' to 'Partially fired' on 2026-11-16 based on single-source report of Micron pausing its $4.5B Taiwan HBM plant. Awaiting first-party confirmation to advance to Fired."
     },
     {
       "id": "t4_guidance_cuts",
@@ -485,31 +502,6 @@
         {
           "title": "TrendForce DRAM ASP Monitor",
           "url": "https://www.trendforce.com/research/dram/"
-        }
-      ],
-      "change_vs_prior": null
-    },
-    {
-      "id": "t1_decode_hbm_captive_ratio",
-      "tier": 1,
-      "name": "Decode HBM captive ratio (efficiency \u00d7 demand)",
-      "description": "Direction monitor on whether enterprise AI demand growth is keeping pace with the supply-side capacity-creation rate (KV efficiency improvements \u00d7 HBM-per-accelerator growth). Bullish HBM when demand-pull outruns capacity creation; bearish when efficiency / HBM packing outruns demand.",
-      "what_to_look_for": "Composite direction signal from three drivers: (1) frontier KV efficiency YoY change (open-architecture models); (2) HBM-per-accelerator YoY change (NVIDIA/AMD merchant chips); (3) enterprise AI revenue YoY weighted blend across Microsoft Azure AI, AWS, Google Cloud, Oracle, NVIDIA datacenter. Watch for direction to flip from bullish to balanced or worse \u2014 would signal demand growth decelerating below efficiency gains.",
-      "current_status": "Not fired",
-      "where_we_stand": "Direction monitor \u2014 status always Not fired in. Enterprise AI YoY +235% (MSFT+AWS+GCP+Oracle run-rate); NVIDIA datacenter YoY +69%. Demand-pull remains strong. However, today's session introduced three concurrent HBM-substitution signals: AMD MEXT halving DRAM requirements, Intel HBM-free D-Series GPU, and Cerebras reaffirming HBM-free architecture with 750 MW OpenAI contract. These are\u2026",
-      "latest_developments": "AMD MEXT, Intel D-Series HBM-free GPU, and Cerebras 750 MW OpenAI contract all signal HBM substitution at the margin. Enterprise AI revenue +235% YoY offsets but the efficiency trajectory warrants monitoring.",
-      "relevant_links": [
-        {
-          "title": "AMD MEXT DRAM reduction \u2014 Tom's Hardware",
-          "url": "https://www.tomshardware.com/tech-industry/this-week-in-toms-hardware-premium-november-14-2026-mac-studio-versus-dgx-spark-amds-mext-cuts-dram-requirements-in-half-and-the-huang-saga-reaches-critical-mass"
-        },
-        {
-          "title": "Intel HBM-free D-Series \u2014 MLQ.ai",
-          "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxQeDRCSkNhb2cya3hFRHZRX1A4YUNkR1FqODEydGFTMWtSUXYxYWZWWl95QzNKX2hPTGZ6WV83QlRYLXlhTUtzbTEtYjE0TmxrclVTWnk0TXQ1X1NvVWdHb0dMVklwOTJRa0lIRlhzMFJTWGFQSDhHT2I0Q0IzQ1pMbXVVOFVBVzhCQmxra3FZdC1vV1B6NC1OSXhJY3dYeWpZaEs3akFpSmdzOHdDdzF1eWZ0ZDE"
-        },
-        {
-          "title": "Cerebras Q3 2026 Earnings Call",
-          "url": "https://finance.yahoo.com/quote/CBRS/earnings/CBRS-Q3-2026-earnings_call-731670.html"
         }
       ],
       "change_vs_prior": null
