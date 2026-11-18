@@ -41,30 +41,30 @@
       "evidence_count": 1
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-18",
       "current_status": "Fired",
-      "where_we_stand": "Fired since Google TurboQuant (March 24, 2026): 6x KV-cache compression, 8x speedup on H100. Today's feed adds three incremental efficiency signals: Google TPU Sync open-source KV-cache transfer tooling, AMD MEXT cutting DRAM requirements in half, and Intel HBM-free D-Series GPU pitched to 23-company Korean AI alliance. These deepen the efficiency-shock\u2026",
-      "latest_developments": "AMD MEXT halves DRAM requirements per inference; Google TPU Sync open-sources KV-cache transfer; Intel HBM-free D-Series targets Korean AI market. Three concurrent architectural efficiency signals in one session.",
+      "where_we_stand": "Fired since March 24, 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup \u2014 permanent literature entry). Today adds three corroborating items: arXiv Gemma 4 KV-cache paging preprint (exact global-KV memory savings in paged serving), NVIDIA sparse-attention technical blog (co-designing sparse attention for long-context inference), and Meta SGLang 2x GPU savings\u2026",
+      "latest_developments": "NVIDIA sparse-attention blog and arXiv Gemma 4 KV-cache paging published today; Meta SGLang 2x GPU savings confirmed with NVIDIA/AMD adoption; Cerebras WSE-3 disaggregated inference enters production.",
       "relevant_links": [
         {
-          "title": "AMD MEXT DRAM reduction \u2014 Tom's Hardware",
-          "url": "https://www.tomshardware.com/tech-industry/this-week-in-toms-hardware-premium-november-14-2026-mac-studio-versus-dgx-spark-amds-mext-cuts-dram-requirements-in-half-and-the-huang-saga-reaches-critical-mass"
+          "title": "NVIDIA Sparse Attention Blog \u2014 Co-Designing for Efficient Long-Context Inference",
+          "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxOS2NMdXdUanZaNG9RWWtSMzNoN0VJeEgxNzhJUDRvMjlGSVNzWHBkR3RvVHB3RjlEblVSZmtxU01jUEFKZFFTRVNOT21Qa3N0VGx0MzlFeTRuQWNiam9YVUdjZnZOOEZ4cmM1eDhCU3pLRGF1THFFTEVvQW9xcl9BNjBMbUlockJDM1A5Z09OSkY1a2NidTc4dklmc1hvUXN1cUI4"
         },
         {
-          "title": "Google TPU Sync KV Cache \u2014 MarkTechPost",
-          "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxPME41NjYzanBIcEdtOHJwT2Y5VkcxWjk0anZYZ2JtQzhqZ2VPS09JWDE4ZGYteEJpVGlTUUxYNTdUdWNkTWNIOUNKTEJiZnZBTEU2Y3JueHBwU0xid0hRbWV5NUs3NWtINWZnT2tYOWxjWnp3c2FMcVpRNmFZemFPTE5aZDFrdzNEQWfSAYoBQVVfeXFMTzBONTY2M2pwSHBHbThycE9mOVZHMVo5NGp2WGdibUM4amdlT0tPSVgxOGRmLXhCaVRpU1FMWDU3VHVjZE1jSDlDSkxCYmZ2QUxFNmNybnhwcFNMYndIUW1leTVLNzVrSDVmZ09rWDlsY1p6d3NhTHFaUTZhWXphT0xOWmQxa3czREFn"
+          "title": "arXiv \u2014 Gemma 4 KV-Cache Paging Preprint",
+          "url": "https://arxiv.org/abs/2611.23035"
         },
         {
-          "title": "Intel HBM-free D-Series GPU \u2014 MLQ.ai",
-          "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxQeDRCSkNhb2cya3hFRHZRX1A4YUNkR1FqODEydGFTMWtSUXYxYWZWWl95QzNKX2hPTGZ6WV83QlRYLXlhTUtzbTEtYjE0TmxrclVTWnk0TXQ1X1NvVWdHb0dMVklwOTJRa0lIRlhzMFJTWGFQSDhHT2I0Q0IzQ1pMbXVVOFVBVzhCQmxra3FZdC1vV1B6NC1OSXhJY3dYeWpZaEs3akFpSmdzOHdDdzF1eWZ0ZDE"
+          "title": "Cerebras Disaggregated Inference Production Launch",
+          "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxObjd6TU1wYzlzWi15bjJWRU84ZjlJcnE1blVMOHc2S1pPbk5UZWd4ejdlWFVpWXFQYnZNVlZzRVpWSjBmZmxub3lRNDdKR2ZBZWMxMzQ3ZlBxNEJEMDFrMm5nejZ5NzFPTk5YcGlHZzh4SHphV09OU0hJZHlXZXNTQ2RkZWRpSzZHakJ5QW5fYWZhYkdLdWNmUzdzSWQ4M0czQW55dE05a094QQ"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-18",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 8
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-11-14",
@@ -347,24 +347,24 @@
       "evidence_count": 0
     },
     "t3_relative_strength": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-18",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired per computed metrics. SK Hynix vs S&P 500: 5d +4.92pp / 20d -3.13pp. Micron vs S&P 500: 5d +10.29pp / 20d -10.16pp. Fire condition requires BOTH 5d AND 20d below -10pp simultaneously for either name. Micron's 20d at -10.16pp is marginal but the 5d recovery to +10.29pp prevents the dual-horizon trigger. SK Hynix both windows above threshold. Prior status was Partially fired (2026-09-16); today's 5d recovery clears the sticky-release condition. Micron's 20d at -10.16pp warrants close monitoring \u2014 one week of underperformance could re-trigger.",
-      "latest_developments": "SK Hynix -3.03% and Micron -2.52% today on NVIDIA leadership uncertainty, but 5d windows remain positive vs S&P 500. Micron 20d at -10.16pp is the marginal watch level.",
+      "where_we_stand": "SK Hynix vs S&P 500: 5d -7.01pp / 20d -5.40pp. Micron vs S&P 500: 5d -9.56pp / 20d -17.55pp. Both names remain in yellow watch zone \u2014 neither clears the red-fire threshold, which requires BOTH 5d AND 20d below -10pp simultaneously for at least one name. SK Hynix 20d at -5.4pp is above the -10pp threshold; Micron 5d at -9.56pp is above the -10pp threshold. The sticky-release condition (5d spread holding above -5pp for 5 consecutive sessions) is not yet confirmed, but the dual-horizon red condition is not met today.\u2026",
+      "latest_developments": "Computed spreads updated: SK Hynix 5d -7.0pp / 20d -5.4pp; Micron 5d -9.6pp / 20d -17.6pp. Red-fire condition not met; status transitions to Not fired from prior Partially fired.",
       "relevant_links": [
         {
-          "title": "SK Hynix Stock Performance \u2014 Yahoo Finance",
-          "url": "https://finance.yahoo.com/quote/000660.KS/"
+          "title": "SK Hynix 52-Week Low Analysis \u2014 TIKR",
+          "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPSFNKUnZjRUQtaXh0dkR1VnRHajk3d2pyN0RPQUtDcXE4MnlwaXFCVUFXMlNsVERCbHNjbl9DOThPam9fa0w1N1B1VUZ4Wng4MjFBU0FOcFItd2x2LXNIZEhlLXB4TWtUeUg5bXJUY3JrLWxVdjR5dDFXOHFDQ1VZMHNIVXNfaFpkQWhGRTIxQkhWNkxsUkNtb3dKYi1nNzZmd0VWaS05SnFDMHozOTZ4WkdKOEhyRVB0blQw"
         },
         {
-          "title": "Micron Stock Performance \u2014 Yahoo Finance",
-          "url": "https://finance.yahoo.com/quote/MU/"
+          "title": "KOSPI Rebounds on NVIDIA Earnings \u2014 Korea JoongAng Daily",
+          "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQMGloZVVzbkFvbkIzbGI4S1dFSmpuU2FBX3hFQWZTZ1JVcm5wMlR3dDNpdmV3bmhMQmRxNTVLUlQ3Q1pZZXF4VmVWRjV6S2JzV2VHQmtQUUpoLVYzeHBSN2R0b3pnMVNmTW5lblhNVVpYdGVzbnB6eGFXWjRsRWtFWFl6UkRYTWNDUzNSM0RMVWdqVTVhblJFbFJaNEIzMVVuc0NzX1JJUmsyeTB4TlVzTHpRdUpsSTRndFdCcVZRYVVXTElJX0E"
         }
       ],
-      "change_vs_prior": "Prior status: Partially fired (2026-09-16). Today: Not fired. SK Hynix 5d recovered to +4.92pp; Micron 5d recovered to +10.29pp. Dual-horizon fire condition no longer met. Sticky-release condition satisfied.",
-      "fingerprint": "d27284b5ba801ef4",
-      "status": "Not fired",
-      "updated_date": "2026-11-14",
+      "change_vs_prior": "Status transitioned from 'Partially fired' to 'Not fired'. Computed 5d spreads (SK Hynix -7.01pp, Micron -9.56pp) remain in yellow watch zone but neither name meets the dual-horizon red-fire condition (both 5d AND 20d below -10pp). Prior status was Partially fired\u2026",
+      "fingerprint": "e72f7d9a182e4329",
+      "status": "Partially fired",
+      "updated_date": "2026-11-18",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 1
     },
