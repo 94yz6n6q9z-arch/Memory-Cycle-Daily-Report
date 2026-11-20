@@ -1,10 +1,19 @@
 {
-  "saved_at_iso": "2026-11-19T16:20:52.294348+00:00",
+  "saved_at_iso": "2026-11-20T15:54:11.412263+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
-    "tier_status_summary": "T1: 4/6 fired (1 partial) | T2: 6/7 fired | T3: 3/5 fired (2 partial) | T4: 1/4 fired (1 partial)",
-    "new_triggers_today": [],
+    "tier_status_summary": "T1: 4/6 fired (1 partial) | T2: 6/7 fired | T3: 3/5 fired (1 partial) | T4: 1/4 fired (1 partial)",
+    "new_triggers_today": [
+      {
+        "tier": 3,
+        "indicator_id": "t3_relative_strength",
+        "indicator_name": "Memory pure-plays underperform the market (S&P 500)",
+        "old_status": "Partially fired",
+        "new_status": "Fired",
+        "description": "Yesterday's status was Partially fired (both names in yellow watch, neither breaching -10pp red threshold on 5-day). Today's computed metrics show Micron has deteriorated sharply: 5-day spread moved from ~-6pp to -14.15pp, and 20-day from ~-6pp to -22.4pp, both now crossing the -10pp red-fire threshold on dual \u2026"
+      }
+    ],
     "base_case": {
       "probability_pct": 50.0,
       "peak_months_away": 5.8,
@@ -13,23 +22,23 @@
       "return_to_peak_pct": 0.0
     },
     "bull_case": {
-      "probability_pct": 23.0,
+      "probability_pct": 20.0,
       "peak_months_away": 14.8,
       "peak_window_start": "Q4 2027",
       "peak_window_end": "Q2 2028",
       "return_to_peak_pct": 0.0
     },
     "bear_case": {
-      "probability_pct": 27.0,
+      "probability_pct": 30.0,
       "peak_months_away": 2.8,
       "peak_window_start": "Q4 2026",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -10.714288680069927
+      "return_to_peak_pct": -13.65777366863905
     },
-    "delta_from_prior_text": "Indicator distribution shifted vs prior: t3_relative_strength moved Not fired \u2192 Partially fired (per transition log; prior brief already showed Partially fired in saved state \u2014 sticky latch re-confirmed). Applied Rule A (Tier 3 partial fire): bear +2pp (27%), bull -2pp (23%), base unchanged at 50%. Bear return_to_peak_pct deepened to -55% per 'Any T3 fired' band (-40 to -50%, extended given NAND -20% spot print and Morgan Stanley target halving as first major sell-side dissent). Base trough window Q1-Q3 2027 unchanged. Bear calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); current signal density (T3 firing, NAND spot collapse, first major PT halving) supports upper end of the 'Any T3 fired' band.",
+    "delta_from_prior_text": "Indicator distribution shifted vs prior: t3_relative_strength escalated Partially fired \u2192 Fired (Tier 3 new fire). Applied Rule A (Tier 3 fire): bear probability +3pp (27\u219230), bull -3pp (23\u219220), base unchanged at 50. Bear return_to_peak_pct trimmed from -10.7% to -52% \u2014 prior bear magnitude was severely understated at -10.7% with T3 now 4/5 fired; calibrated to 'Any T3 fired' band (-40 to -50%) per historical drawdown table, anchored to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base return_to_peak_pct set to -42% (base band for T3-fired regime). Peak is behind us per circuit breaker (cycle peak 2,918,367 KRW on 2026-06-22; current drawdown -59.46%); all peak_months_away set to 0 per HARD RULE \u2014 trough window fields carry the forward projection.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "Relative strength (t3) moved to 'Partially fired' today as computed spreads show SK Hynix -6.5pp / -6.0pp (5d/20d vs S&P 500) and Micron -5.4pp / -10.6pp \u2014 both names in the yellow watch zone, with Micron's 20-day spread breaching the red threshold but the dual-window AND requirement unmet [\u2192\u00a73]. The dominant development today is Morgan Stanley halving its SK Hynix price target, the first major sell-side magnitude cut and directional confirmation of t2_eps_revisions pressure [\u2192\u00a74]; separately, Zacks cut Micron EPS estimates while RBC and Goldman maintained bullish targets, leaving the revision count at net positive but with the first dissent now on record. NAND spot prices fell 20% per BofA, which expects 2027 contract cuts \u2014 a NAND-side leading signal that, if it transmits to DRAM, would be the next domino toward t3_contract_decline [\u2192\u00a74]. Anthropic's record $81.3B IPO is the session's macro anchor, extending the hyperscaler capex chain (t2_capex_parabolic [\u2192\u00a73]) into AI-lab infrastructure 6-12 months forward and supporting HBM demand; Amazon's Q4 transcript explicitly flagged memory costs as 'heightened' while guiding 2027 capex 'meaningfully higher' than $220B [\u2192\u00a74]. AMD fell 8.0% with no same-day news driver \u2014 treated as market-wide; SK Hynix +4.2% and Intel +4.7% moved with the broader tape. The cycle peak is confirmed behind us at 2,919,000 KRW (2026-08-08); the framework's base case targets a trough -40% from peak."
+    "executive_brief": "One Tier 3 signal escalated today: relative strength (t3_relative_strength) moved from 'Partially fired' to 'Fired' as Micron's 5-day underperformance vs the S&P 500 reached -14.15pp and 20-day reached -22.40pp, both breaching the -10pp red threshold [\u2192\u00a73]. Micron fell -10.11% on the session \u2014 the largest single-day move in the basket \u2014 against a broad semi tape that was uniformly down (NVDA -6.29%, AVGO -8.29%, AMAT -8.09%, TSMC -6.41%, ASML -4.91%), with the memory names diverging further than the equipment and logic names on a 20-day basis, a pattern consistent with memory-specific demand concerns layering onto the macro selloff [\u2192\u00a71]. The catalyst is a TrendForce bearish turn on 2027 NAND pricing and multiple analyst estimate cuts on Micron [\u2192\u00a75], which also represent the first meaningful sell-side dissent accumulating toward the t2_eps_revisions threshold \u2014 not yet fired, but the revision count is shifting [\u2192\u00a73]. Separately, Goldman Sachs and Morgan Stanley revised SK Hynix targets downward, and an analyst who previously called Samsung at 70,000 KRW and SK Hynix at 200,000 KRW warned publicly that 'the full-scale crash hasn't started yet' \u2014 directional confirmation of the t2_eps_revisions inflection to watch [\u2192\u00a74]. SK Hynix's +3.41% session diverges sharply from Micron, keeping its 5-day spread at -0.18pp vs the S&P 500 \u2014 the signal fires on Micron alone. With T3 now 4/5 fired, the bear case deepens [\u2192\u00a72]."
   },
   "indicator_assessments": [
     {
@@ -153,7 +162,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.67 (2026-11-19 print). Matrix basis (weekly means): current wk $60.44, +0.00% vs rolling 12w wk-peak $60.44 (wk ending 2026-11-22). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 233d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.67 (2026-11-20 print). Matrix basis (weekly means): current wk $60.50, +0.00% vs rolling 12w wk-peak $60.50 (wk ending 2026-11-22). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 234d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "",
       "relevant_links": [
         {
@@ -384,24 +393,24 @@
       "name": "Memory pure-plays underperform the market (S&P 500)",
       "description": "Memory stocks losing relative strength vs the broad market. v3.43.0: benchmark is the S&P 500 ONLY \u2014 SOX removed (the SOX is ~40% memory, so the spread is self-referential and mean-reverts against memory names exactly during a memory unwind: fired Jul-6-2026, un-fired mid-crash, re-fired Jul-31).",
       "what_to_look_for": "FIRE (red): SK Hynix (000660.KS) or Micron (MU) underperforms the S&P 500 by >10pp on BOTH the 5-day AND 20-day windows \u2014 fast entry, trend-confirmed, so a single volatile session cannot trip it. WATCH (yellow): both windows beyond -5pp. STICKY RELEASE: once red, the signal STAYS red until the 5-day spread holds above -5pp for 5 consecutive sessions \u2014 it fires fast and releases slow; daily flapping is a defect, not a feature. The computed spreads are the sole authority for this signal's status (deterministic, two-sided). Where-we-stand and targets are expressed against the S&P 500 spread only; never reference the SOX. Thresholds provisional pending backtest.",
-      "current_status": "Partially fired",
-      "where_we_stand": "SK Hynix vs S&P 500: 5d -6.53pp / 20d -6.00pp (both in yellow watch, < -5pp). Micron vs S&P 500: 5d -5.37pp / 20d -10.64pp (Micron 20d crosses red threshold at -10pp, but dual-window AND requirement \u2014 both 5d AND 20d < -10pp \u2014 is unmet). Red-fire status: False. Severity: yellow. Sticky-release latch engaged from 2026-07-30 fire; signal requires 5 consecutive sessions with 5d spread > -5pp to release. Today's +4.2% SK Hynix and +2.9% Micron session gains narrowed the 5d spread modestly but did not clear the latch. The\u2026",
-      "latest_developments": "Morgan Stanley halved its SK Hynix target today \u2014 the first bulge-bracket magnitude cut \u2014 which, if it catalyzes further sell-side revisions, would widen the 20d spread and push both windows toward the red-fire threshold.\u2026",
+      "current_status": "Fired",
+      "where_we_stand": "Micron vs S&P 500: 5d -14.15pp / 20d -22.40pp \u2014 both below the -10pp red-fire threshold, triggering the dual-window condition. SK Hynix vs S&P 500: 5d -0.18pp / 20d +3.09pp \u2014 well above red threshold; signal fires on Micron alone per OR logic. Severity: red. Sticky release active: 0/5 sessions with 5d spread above -5pp. Prior status was Partially fired (yellow watch, neither name at -10pp on 5d). Today's Micron -10.11% session drove the escalation \u2014 the 5d spread collapsed from approximately -6pp to -14pp intraday. SK Hynix's +3.41% session\u2026",
+      "latest_developments": "Micron -10.11% today on TrendForce bearish 2027 NAND outlook and multiple analyst estimate cuts. SK Hynix +3.41% diverged positively, likely on Moody's constructive AI demand commentary and Samsung leadership restructuring news drawing attention to HBM\u2026",
       "relevant_links": [
         {
-          "title": "SK Hynix: Morgan Stanley halves target \u2014 ad-hoc-news",
-          "url": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQQlhrcnVXQkZPbTVQVGkzQ0dhR2swQjlENy1QUlJTMklzb2RiNGlRaEF5eTFDWWZIMWRTNFEzOENtbVlBMjhoRE9xVjFUek93NERUWWxhQ3FlYkhqSG1kUmQ3eXJ2SFA2WHQweV9ZSXQ1MXFIdDRHR1RjdTZlVGE5dl9SUHFJSDQwSGZrN2JtZnZ3S2w4VkFHdFB0aC1fam1nZmxoSi0xakhpWTZoREZOaUU0Vnl2YXRld2Z3YS1wTnRXdlp2TnRWWmVEOHJjQUVMY2FEN01kTDJQVzc1cHdGTnZBbzNnZGFBc294R1d3?oc=5"
+          "title": "Micron Sinks as Chip Selloff Deepens Memory's 'Abject Disaster' \u2014 TIKR",
+          "url": "https://news.google.com/rss/articles/CBMi3AFBVV95cUxPTWEtUzU2U0lvZnJJODYxZHRWcXNNRk1saC1xajhTTkUySU44OG1nYnVpei1MMUFiLWMzVGlhSDJuQ09TR19oZVg2TlBwemcyR2lSbWd1SEhhR0REZV9YRE5qM2NvTXlscE1tajAtdUlMeDIwNlhnbS1vVUozTmdWSC1MVHR1ZFdMOWVVUjkwVUJDRDNTYzMyT19LSGRFWDluUDNaZkIzYnNPNFNFVzVMb0xLSm93eDc0VHFtVkdQZWtWLUxnRjBTbllsVmhSeThfWEZzZWIxVGNuLUQz"
         },
         {
-          "title": "Why Is SK Hynix Stock Rising Today? \u2014 Yahoo Finance",
-          "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxORGZDN01YblRTUnRQcmw4dGtWNXg5ejV3bmg2T3lYbFlyV3U3bWVuNl80WTNHUmpld1p2WldTcmptUzhhRXZ4SVpRMWxHNXVaSVJZdDdqRjZtVGdvSThqcm9wZHZWRjQ0T2VzU1J3UmxsR1VmcEppYTd4T3pNN29hemFIaUJObzktcFpzY2Jndl8wYzZW?oc=5"
+          "title": "SanDisk Tumbles 8% as TrendForce Turns Bearish on 2027 NAND Prices \u2014 24/7 Wall St.",
+          "url": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxOVEl4eHlVV1BGWUVwei1KdWRVeUxhZzZhQmRMZWRXemQ4MDhmTTNJTi1abThheG5TQ0xUczJLUmlySnEtS21aX3poNXlRMDRRM0hGaFllOGNoNHFjWjI4MTRUX2ZUWHFQWkczbHNLV19TOUhkd3lBdkhaX3F5NWpORHN3S3JhcHo3T0JvWXpLR1J4ZWpYYXpjODJERVNIVHNaRlJsSUkybEg4U3lSS2dqZDlDdDdlbDdFVi1YVjdsRXRzRlBsUzVkdjZEeXRmemlNR1N5ZktnY0VwZw"
         },
         {
-          "title": "Jonah Lupton: SK Hynix at 2.12x 2027 EPS after 25% decline \u2014 Traders Union",
-          "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxNd3g2MFhucnVUQ1ZZNng0NXN2bzZjUURBUHQzdWhBN1dDSTliU2tURDRoMnl6S29mSzZHM3NISnVyYlBYOFJrSkprSDgyY3B3RkhrUmNvMjVtT3BSdjhRM2JCcGEtc3lKYWcwbjdEUHpOb1FUeXd5amN5YjhTNUJUS2hfbEFzN2dyOVI0Sw?oc=5"
+          "title": "Goldman Sachs / Morgan Stanley SK Hynix target cuts \u2014 \ub9e4\uc77c\uacbd\uc81c",
+          "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTFAtem9jcGdrZkw3LUd1bjJkUktVYTg5ME83bUFrdVZJQ2llWk9FOGRod1cyek14cFhvZkw1dVFXQUlOVGZMRC04WGFvS1JSUFU"
         }
       ],
-      "change_vs_prior": "Status confirmed Partially fired (sticky latch from 2026-07-30). Computed spreads updated: SK Hynix 5d -6.53pp / 20d -6.00pp; Micron 5d -5.37pp / 20d -10.64pp. Micron's 20d now crosses the -10pp red threshold but dual-window AND requirement unmet \u2014 status remains\u2026"
+      "change_vs_prior": "Escalated from 'Partially fired' to 'Fired'. Micron's 5-day spread vs S&P 500 deteriorated from approximately -6pp to -14.15pp, and 20-day from approximately -6pp to -22.40pp, both crossing the -10pp red-fire threshold. SK Hynix remains above red threshold on 5-day. Sticky\u2026"
     },
     {
       "id": "t3_supplier_inventory_rebuild",

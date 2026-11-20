@@ -1,15 +1,294 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-11-19T16:02:48.105102+00:00",
+    "fetched_at_iso": "2026-11-20T15:43:03.202634+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
         "code": "000660",
-        "actions": [],
-        "n_actions": 0,
-        "summary": {},
-        "error": "HTTPSConnectionPool(host='navercomp.wisereport.co.kr', port=443): Max retries exceeded with url: /v2/company/c1010001.aspx?cmp_cd=000660 (Caused by ConnectTimeoutError(<HTTPSConnection(host='navercomp.wisereport.co.kr', port=443) at 0x79b0849a5820>, 'Connection to navercomp.wisereport.co.kr timed out. (connect timeout=60)'))"
+        "actions": [
+          {
+            "broker_korean": "\ud55c\uad6d\ud22c\uc790",
+            "broker_english": "Korea Investment & Securities",
+            "rating": "\ub9e4\uc218",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3200000,
+            "prior_target_krw": 3200000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-18",
+            "raw": "\ud55c\uad6d\ud22c\uc790 | 26/11/18 | 3,200,000 | 3,200,000 | 0.00 | \ub9e4\uc218 | \ub9e4\uc218"
+          },
+          {
+            "broker_korean": "\ubbf8\ub798\uc5d0\uc14b",
+            "broker_english": "Mirae Asset Securities",
+            "rating": "\ub9e4\uc218",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3100000,
+            "prior_target_krw": 3100000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-17",
+            "raw": "\ubbf8\ub798\uc5d0\uc14b | 26/11/17 | 3,100,000 | 3,100,000 | 0.00 | \ub9e4\uc218 | \ub9e4\uc218"
+          },
+          {
+            "broker_korean": "NH\ud22c\uc790",
+            "broker_english": "NH Investment & Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3400000,
+            "prior_target_krw": 3400000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-16",
+            "raw": "NH\ud22c\uc790 | 26/11/16 | 3,400,000 | 3,400,000 | 0.00 | Buy | Buy"
+          },
+          {
+            "broker_korean": "\ud0a4\uc6c0",
+            "broker_english": "Kiwoom Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 1800000,
+            "prior_target_krw": 2100000,
+            "target_change_pct": -14.29,
+            "direction": "lowered",
+            "published_date_iso": "2026-11-16",
+            "raw": "\ud0a4\uc6c0 | 26/11/16 | 1,800,000 | 2,100,000 | -14.29 | BUY | BUY"
+          },
+          {
+            "broker_korean": "LS",
+            "broker_english": "LS Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 2400000,
+            "prior_target_krw": 2400000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-16",
+            "raw": "LS | 26/11/16 | 2,400,000 | 2,400,000 | 0.00 | Buy | Buy"
+          },
+          {
+            "broker_korean": "\ud558\ub098",
+            "broker_english": "Hana Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 2800000,
+            "prior_target_krw": 3600000,
+            "target_change_pct": -22.22,
+            "direction": "lowered",
+            "published_date_iso": "2026-11-12",
+            "raw": "\ud558\ub098 | 26/11/12 | 2,800,000 | 3,600,000 | -22.22 | BUY | BUY"
+          },
+          {
+            "broker_korean": "\uc720\uc9c4\ud22c\uc790",
+            "broker_english": "Eugene Investment & Securities",
+            "rating": "STRONG BUY",
+            "rating_english": "Strong Buy",
+            "prior_rating": "Strong Buy",
+            "target_price_krw": 3700000,
+            "prior_target_krw": 3700000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-12",
+            "raw": "\uc720\uc9c4\ud22c\uc790 | 26/11/12 | 3,700,000 | 3,700,000 | 0.00 | STRONG BUY | STRONG BUY"
+          },
+          {
+            "broker_korean": "\uba54\ub9ac\uce20",
+            "broker_english": "Meritz Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3200000,
+            "prior_target_krw": 3200000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-11",
+            "raw": "\uba54\ub9ac\uce20 | 26/11/11 | 3,200,000 | 3,200,000 | 0.00 | Buy | Buy"
+          },
+          {
+            "broker_korean": "\uc720\uc548\ud0c0",
+            "broker_english": "Yuanta Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3700000,
+            "prior_target_krw": 3700000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-11",
+            "raw": "\uc720\uc548\ud0c0 | 26/11/11 | 3,700,000 | 3,700,000 | 0.00 | Buy | Buy"
+          },
+          {
+            "broker_korean": "\uc2e0\ud55c\ud22c\uc790",
+            "broker_english": "Shinhan Investment",
+            "rating": "\ub9e4\uc218",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3000000,
+            "prior_target_krw": 3000000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-11",
+            "raw": "\uc2e0\ud55c\ud22c\uc790 | 26/11/11 | 3,000,000 | 3,000,000 | 0.00 | \ub9e4\uc218 | \ub9e4\uc218"
+          },
+          {
+            "broker_korean": "\ub300\uc2e0",
+            "broker_english": "Daishin Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3000000,
+            "prior_target_krw": 3000000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-10",
+            "raw": "\ub300\uc2e0 | 26/11/10 | 3,000,000 | 3,000,000 | 0.00 | Buy | Buy"
+          },
+          {
+            "broker_korean": "DS\ud22c\uc790",
+            "broker_english": "DS Investment & Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 2640000,
+            "prior_target_krw": 2640000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-10",
+            "raw": "DS\ud22c\uc790 | 26/11/10 | 2,640,000 | 2,640,000 | 0.00 | BUY | BUY"
+          },
+          {
+            "broker_korean": "iM",
+            "broker_english": "iM Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 2300000,
+            "prior_target_krw": 3500000,
+            "target_change_pct": -34.29,
+            "direction": "lowered",
+            "published_date_iso": "2026-11-04",
+            "raw": "iM | 26/11/04 | 2,300,000 | 3,500,000 | -34.29 | Buy | Buy"
+          },
+          {
+            "broker_korean": "\uad50\ubcf4",
+            "broker_english": "Kyobo Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 4000000,
+            "prior_target_krw": 4000000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-02",
+            "raw": "\uad50\ubcf4 | 26/11/02 | 4,000,000 | 4,000,000 | 0.00 | Buy | Buy"
+          },
+          {
+            "broker_korean": "KB",
+            "broker_english": "KB Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3500000,
+            "prior_target_krw": 3500000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-02",
+            "raw": "KB | 26/11/02 | 3,500,000 | 3,500,000 | 0.00 | BUY | BUY"
+          },
+          {
+            "broker_korean": "\ud55c\ud654\ud22c\uc790",
+            "broker_english": "Hanwha Investment & Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3150000,
+            "prior_target_krw": 3150000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-10-29",
+            "raw": "\ud55c\ud654\ud22c\uc790 | 26/10/29 | 3,150,000 | 3,150,000 | 0.00 | Buy | Buy"
+          },
+          {
+            "broker_korean": "\uc0bc\uc131",
+            "broker_english": "Samsung Securities",
+            "rating": "BUY",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3000000,
+            "prior_target_krw": 3000000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-10-29",
+            "raw": "\uc0bc\uc131 | 26/10/29 | 3,000,000 | 3,000,000 | 0.00 | BUY | BUY"
+          },
+          {
+            "broker_korean": "SK",
+            "broker_english": "SK Securities",
+            "rating": "\ub9e4\uc218",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 4000000,
+            "prior_target_krw": 4000000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-10-29",
+            "raw": "SK | 26/10/29 | 4,000,000 | 4,000,000 | 0.00 | \ub9e4\uc218 | \ub9e4\uc218"
+          },
+          {
+            "broker_korean": "IBK\ud22c\uc790",
+            "broker_english": "IBK Investment & Securities",
+            "rating": "\ub9e4\uc218",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3200000,
+            "prior_target_krw": 4000000,
+            "target_change_pct": -20.0,
+            "direction": "lowered",
+            "published_date_iso": "2026-10-29",
+            "raw": "IBK\ud22c\uc790 | 26/10/29 | 3,200,000 | 4,000,000 | -20.00 | \ub9e4\uc218 | \ub9e4\uc218"
+          },
+          {
+            "broker_korean": "BNK\ud22c\uc790",
+            "broker_english": "BNK Investment & Securities",
+            "rating": "\ubcf4\uc720",
+            "rating_english": "Hold",
+            "prior_rating": "Hold",
+            "target_price_krw": 1650000,
+            "prior_target_krw": 1480000,
+            "target_change_pct": 11.49,
+            "direction": "raised",
+            "published_date_iso": "2026-10-28",
+            "raw": "BNK\ud22c\uc790 | 26/10/28 | 1,650,000 | 1,480,000 | 11.49 | \ubcf4\uc720 | \ubcf4\uc720"
+          },
+          {
+            "broker_korean": "DB",
+            "broker_english": "DB Financial Investment",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 2300000,
+            "prior_target_krw": 2000000,
+            "target_change_pct": 15.0,
+            "direction": "raised",
+            "published_date_iso": "2026-09-07",
+            "raw": "DB | 26/09/07 | 2,300,000 | 2,000,000 | 15.00 | Buy | Buy"
+          }
+        ],
+        "n_actions": 21,
+        "summary": {
+          "avg_opinion_score": 4.0,
+          "avg_target_price_krw": 3001905,
+          "avg_eps_krw": 355971,
+          "avg_per": 3.32,
+          "num_estimating_institutions": 21
+        }
       },
       "Samsung Electronics": {
         "code": "005930",
@@ -289,7 +568,13 @@
           }
         ],
         "n_actions": 21,
-        "summary": {}
+        "summary": {
+          "avg_opinion_score": 4.0,
+          "avg_target_price_krw": 465714,
+          "avg_eps_krw": 45565,
+          "avg_per": 4.32,
+          "num_estimating_institutions": 21
+        }
       },
       "SK Square": {
         "code": "034730",
@@ -439,9 +724,15 @@
           }
         ],
         "n_actions": 11,
-        "summary": {}
+        "summary": {
+          "avg_opinion_score": 4.0,
+          "avg_target_price_krw": 744545,
+          "avg_eps_krw": 225195,
+          "avg_per": 2.19,
+          "num_estimating_institutions": 11
+        }
       }
     }
   },
-  "fetched_at_iso": "2026-11-19T16:08:28.902621"
+  "fetched_at_iso": "2026-11-20T15:43:42.946433"
 }
