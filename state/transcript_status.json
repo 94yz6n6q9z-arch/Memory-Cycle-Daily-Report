@@ -1,15 +1,15 @@
 {
-  "written_at_iso": "2026-11-20T15:42:14.420423+00:00",
+  "written_at_iso": "2026-11-21T14:52:30.088884+00:00",
   "status": "ok",
   "summary": {
     "full_transcript": 0,
     "materials_only": 0,
-    "nothing": 3,
-    "already_processed": 33,
+    "nothing": 4,
+    "already_processed": 32,
     "by_company": {
       "Micron": "already_processed",
       "Nvidia": "already_processed",
-      "Broadcom": "already_processed",
+      "Broadcom": "nothing",
       "TSMC": "already_processed",
       "Applied Materials": "already_processed",
       "Microsoft": "already_processed",
@@ -19,11 +19,11 @@
       "Oracle": "already_processed",
       "Dell": "already_processed",
       "HPE": "already_processed",
-      "ASML": "nothing",
+      "ASML": "already_processed",
       "AMD": "already_processed",
       "Intel": "already_processed",
       "Cerebras": "already_processed",
-      "SK Hynix": "already_processed",
+      "SK Hynix": "nothing",
       "Samsung Electronics": "already_processed"
     },
     "yahoo_attempted_for": [
@@ -203,9 +203,9 @@
     {
       "company": "SK Hynix",
       "ticker": "HY9H.MU",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
@@ -227,9 +227,9 @@
     {
       "company": "Broadcom",
       "ticker": "AVGO",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
@@ -251,9 +251,9 @@
     {
       "company": "ASML",
       "ticker": "ASML",
-      "availability": "nothing",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
