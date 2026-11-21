@@ -1,44 +1,44 @@
 {
   "cards": {
     "t1_competitor_dynamics": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired: Cumulative EPS impact ~11.5% (sub-indicator 7B Samsung HBM4 at ~10% impact, bootstrapped 2026-05-22). Full fire requires cumulative EPS impact above the full-fire threshold with multiple sub-indicators active. Today: CXMT advanced to 32Gb DDR5 dies and listed MRDIMM server memory at 12,800 Mbps (Pandaily, 2026-11-13) \u2014 a concrete capacity\u2026",
-      "latest_developments": "CXMT 32Gb DDR5 + MRDIMM at 12,800 Mbps: capacity milestone approaching Tier-1 OEM qualification threshold. CXMT targeting AI server DRAM and LPDDR6 \u2014 moving up-market toward the HBM-adjacent segment.",
+      "where_we_stand": "Cumulative EPS impact ~11.5% across four sub-indicators meets Partially fired threshold (\u22655%, <20%). Samsung HBM4 sub-indicator drives the bulk: Samsung holds ~28-30% Nvidia HBM4 share (below 50% threshold but above safe margin), estimated ~10% SK Hynix EPS impact. CXMT, Micron HBM, and HBF sub-indicators remain below individual fire thresholds. Google's\u2026",
+      "latest_developments": "Morgan Stanley trimmed SK Hynix target citing global chip rout and Kioxia restructuring. Google's direct HBM procurement strategy (bypassing Broadcom) reported by Bernstein \u2014 a new captive-ratio pressure point on SK Hynix HBM margin.",
       "relevant_links": [
         {
-          "title": "CXMT DDR5 32Gb + MRDIMM \u2014 Pandaily",
-          "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxNY1RNOHhwSUhJNmdRYzZuVHM2SnI4UXltQ1JuSVM0YnFjYzEwZGE0WTU1RW4tbC0xWklRU1JJaDhBeFVSRy1RNFpidS1qZkNrelNMWW9nUmxmUmV2Rm02MnJzU0JRVXR6UnF5TV81Vmk3cUFSc2ZpMGRCVVNGaW9TRUZn"
+          "title": "Morgan Stanley trims SK Hynix target \u2014 ad-hoc-news",
+          "url": "https://news.google.com/rss/articles/CBMi_gFBVV95cUxQSGxORWp4Ql91M3ZZMWpuTlM5Z19vS0tCd3hzdk5IMXpVUElhdWxLb2ZmQjNjekxnaWV2dmV4NDhOc21pbUlaV2hkWmpmOVZxdXZRcHNfcllkQkxJaHFoTkFCZmhJT1hZbWlWMWxGV0pDdDZxVU9DY1dWeEpZdzh2RVA1azg5SGFKYmpGdWlHcE9tTURmQ1EzUUlka2k0eUh2VjFDRXlablJKRi0yeGtfdmI1SnJZQXFwZzVhcWx5aUxxcjdXaFBfVmJuWG5IMG5DS2hDMmV0TVNQMG53OHJreVNTUXEtaTJRRDRfTGdBamhUVmVjTHphLUZYbE1Ydw"
         },
         {
-          "title": "CXMT AI Server DRAM + LPDDR6 \u2014 DigiTimes",
-          "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxQOVZPVDc2YXUtTUg5Z2ZxSEVsY1dRaHlmZlZneGlaR3JkelllZEszRi1DTG8tRzVjeFVOaUFQdHhqY1JvdDdvSW1jaXRYWW5oMkMzQU5UZ3d3TDA5eVdlZFA4Vk5iRjR6bEdzWkFZR01EMFcyNmFNY2VDc1dFbWx6RHZFMWtYWU5RUUpTRGdSU1pKZw"
+          "title": "Google bypasses Broadcom for HBM \u2014 BigGo Finance",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5nd3VWbGExTW9ReVZILWdvZDJaR0o1QmVHanZYX3NlRmdTb1AzdjFBV0JGNmFtSkpvOEtmX2lIQWhUVklJQXhXSEdmemdoamUxdEJvR0ZJTE1hbGNBdzExX0hmcWE3RlQ5MFZvMjlpZG5WM2F1MXc"
         }
       ],
-      "change_vs_prior": "Prior status: Fired. Today: Partially fired. the model re-evaluated cumulative EPS impact at ~11.5% with no new sub-indicator evidence in today's feed; signal history shows 7B at ~10% impact (bootstrapped 2026-05-22) as the sole active sub-indicator. Full-fire threshold not met\u2026",
+      "change_vs_prior": "Status moved from Fired (prior) to Partially fired per the model verdict. Sub-indicator reassessment: cumulative EPS impact ~11.5% places signal in Partially fired band (\u22655%, <20%); prior Fired status was overstated. Google direct-HBM procurement adds new captive-ratio risk but does\u2026",
       "fingerprint": "e72f7d9a182e4329",
       "status": "Partially fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t1_demand_destruction": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired: IDC PC forecast -2.4% to -11.3% for 2026 (recorded 2026-04-15); Counterpoint smartphone units -2% (2026-04-15). Applied Materials Q4 2026 call (2026-11-14) introduced a counter-signal: 'demand for advanced semiconductors remains much higher than supply' with WFE +30% YoY 2027 guidance. This reflects infrastructure/AI demand strength, not consumer-end recovery. No\u2026",
-      "latest_developments": "Applied Materials Q4 call: 'demand much higher than supply' \u2014 AI infrastructure demand strong, but consumer-end PC/smartphone weakness persists per quarterly-persistence evidence.",
+      "where_we_stand": "IDC PC shipment forecast -2.4% to -11.3% for 2026 (fired since April 2026). Counterpoint smartphone -2% (fired). Gartner server forecast cut on record. Signal is Partially fired \u2014 full fire requires intensification via OEM price pass-through (Apple, Dell, Microsoft raising end-device prices or cutting memory content). No new OEM pass-through\u2026",
+      "latest_developments": "No new OEM price pass-through evidence today. Applied Materials Q4 transcript dropped 'unprecedented visibility' language, replacing with 'demand much higher than supply' \u2014 a softening of the demand-certainty framing worth monitoring for next-quarter transmission.",
       "relevant_links": [
         {
-          "title": "Applied Materials Q4 2026 Earnings Call",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings/AMAT-Q4-2026-earnings_call-673413.html"
+          "title": "Applied Materials Q4 transcript diff \u2014 demand language shift",
+          "url": "https://finance.yahoo.com/quote/AMAT/earnings-calls/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "status": "Partially fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 1
+      "evidence_count": 0
     },
     "t1_efficiency_shock": {
       "last_full_regen_date": "2026-11-18",
@@ -67,180 +67,188 @@
       "evidence_count": 8
     },
     "t1_lead_times": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Not fired",
-      "where_we_stand": "LPDDR5X lead times remain above the 26-week trigger threshold (last recorded 26-39 weeks). HBM3E delivery slots remain sold out through 2026 per signal history. No earnings call or TrendForce print today updates lead-time data. Cerebras Q3 call (2026-11-14) noted memory shortages persisting through 2028, consistent with tight lead times.",
-      "latest_developments": "Cerebras Q3 call reaffirmed HBM supply tightness through 2028, corroborating no lead-time normalization.",
+      "where_we_stand": "LPDDR5X lead times remain above 26-week threshold per last available TrendForce/broker data. HBM3E delivery slots remain sold out through 2026. Micron president commentary ('can't support every customer') and Samsung capacity booked through 2029 both confirm supply remains tight \u2014 no lead-time contraction evidence in today's feed.",
+      "latest_developments": "Micron Singapore HBM plant received first equipment ahead of 2027 output ramp \u2014 a supply-expansion milestone, not a lead-time contraction signal. Taoyuan labor dispute persists as a near-term production risk.",
       "relevant_links": [
         {
-          "title": "Cerebras Q3 2026 Earnings Call",
-          "url": "https://finance.yahoo.com/quote/CBRS/earnings/CBRS-Q3-2026-earnings_call-731670.html"
+          "title": "Micron Singapore HBM plant first equipment \u2014 TrendForce",
+          "url": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxNQlg3cUNlSkI1T2Y5b3VxLVhSUDRxaUR3S1pydGpoX3NWQkI1R2pNX09oOHpqcEkwU0l0V1F4dE41ZDlBODJSM0JSVTBKNG5QQUtQVjVKWHlkVFNjQ2dGMktKVmpWcXd4OC1nVlpEUHJBSmdWbzV1RzFJX0UwZmdxRzhyeWNaSTllZ3R5LVkyV2xIblRTQ3I1aUFobmc1V3FxZ1Rsa2VQSVFyc2Q5NnJUS1dCOTFKT3FURXBXRlRIdDNHSDNMcEtmZ3Awd1M5Z0w3RkswYXRTVm1leDEyVkJoUDBpN1RtTTNjdVlz"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t1_oem_inventory": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired: TrendForce Q3 2025 documented supplier inventory ~2-3 weeks vs OEM inventory ~10 weeks \u2014 a 7+ week gap exceeding the 5-week unprecedented threshold. Quarterly persistence rule holds; reversal requires buyer inventory <5 weeks OR supplier inventory >5 weeks. No new OEM (Dell/HPE/Lenovo) or supplier inventory print today. Gap persists.",
-      "latest_developments": "",
+      "where_we_stand": "TrendForce Q3 2025 canonical print: supplier inventory 2-3 weeks, OEM/buyer inventory ~10 weeks \u2014 7+ week gap, well above the 5-week unprecedented threshold. Stitched signal (both supplier and buyer sides confirmed). Quarterly persistence: no reversal evidence (buyer inventory <5 weeks or supplier >5 weeks) in today's feed. Micron president's 'can't\u2026",
+      "latest_developments": "No new OEM inventory data today. Samsung capacity booked through 2029 (BigGo Finance) is consistent with the prior stitched signal \u2014 buyers locking supply because their own inventory is being drawn down, but the gap\u2026",
       "relevant_links": [
         {
-          "title": "TrendForce Q3 2025 Memory Supply Chain Report",
-          "url": "https://www.trendforce.com/research/dram/"
+          "title": "Samsung memory booked through 2029 \u2014 BigGo Finance",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE1HLTMwclU3TGNoLUdNYVRmRlZmOXNRX0xTV2RhWFc5d1d1aDFGY1B0M0JoUUd4X2pRV3FkVW94ZmdUa2ZQcTl4bDRpdk5uMkZZWDdmSUh3MEQ2Z3JKaF8yRWN1MU1ieGNrTWNwVlpZMzJwRmhBbFE"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t1_price_cuts_no_demand": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired since TrendForce April 28, 2026 statement: 'DDR4 price cuts failed to revive purchasing activity.' Quarterly persistence rule holds; no reversal condition met today. No new TrendForce or DigiTimes DDR5-specific demand-destruction language in today's feed. Status persists.",
-      "latest_developments": "",
+      "where_we_stand": "TrendForce April 28, 2026 statement ('DDR4 price cuts failed to revive purchasing activity') remains the canonical fired evidence. Quarterly persistence: no reversal condition met. Today's DDR5 spot ($60.67, flat) and minor eTT uptick (+0.26%) do not constitute demand revival. TrendForce's bearish 2027 NAND call deepens the demand-destruction narrative for the\u2026",
+      "latest_developments": "TrendForce turned bearish on 2027 NAND prices \u2014 directional confirmation of demand destruction extending into the NAND segment. DDR5 spot flat at $60.67; no demand-revival language in today's feed.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Price Commentary Apr 2026",
-          "url": "https://www.trendforce.com/research/dram/"
+          "title": "TrendForce bearish 2027 NAND \u2014 Yahoo Finance",
+          "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxOUGNpc1Z4ZHNOaDQtaVpsX253NGxWcHdER3ltMktEd1NnYWstbldjUHRibTVCNUZPeFFNbkNSbGJmMWY4WnZ1bGlLUmlfYjgzWUxYR0xIUG9MTTcxekhQQUlZWGx1cEZ6c2ZFeG1KMm5UWTMyVGJSbEcya1k4UmVpVXczQ3dPRnd1SmdUaWRFVkxTWHptc1FFUVMtYzQ2SHlr"
+        },
+        {
+          "title": "TrendForce DRAM spot \u2014 2026-11-20",
+          "url": "https://www.trendforce.com/price/dram/dram_spot"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t1_spot_decline": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Not fired",
-      "where_we_stand": "Matrix cell: Row 1 \u00d7 Col 1 \u2014 Not fired. DDR5 16Gb 4800/5600 spot at $60.27 (2026-11-13 print), 0% drawdown from rolling 12-week peak ($60.27, week ending 2026-11-15). Contract anchor: Q2 2026 +58-63% QoQ \u2014 placing the contract row firmly in R1 (\u2265+30%). With spot at peak and contract growth strongly positive, no firing condition is met. The matrix is the framework's earliest warning; current position reflects full-cycle strength in pricing. No TrendForce spot commentary in today's feed to update the anchor.",
-      "latest_developments": "",
+      "where_we_stand": "Matrix cell: Row 1 \u00d7 Col 1 \u2014 Not fired. DDR5 16Gb 4800/5600 spot: $60.67 (2026-11-20), flat on the day. Rolling 12-week peak: $60.50 (week ending 2026-11-22); current week mean $60.50 \u2014 drawdown 0.0% from peak (Col 1, at peak). Contract anchor: Q2 2026 +58-63% QoQ (Row 1, \u2265+30%). At R1/C1, the matrix returns Not fired \u2014 full position. TrendForce's bearish 2027 NAND call is a forward pricing signal, not a current DDR5 spot event; it does not move the matrix today. The matrix is the canonical early-warning signal \u2014\u2026",
+      "latest_developments": "DDR5 spot $60.67, unchanged. TrendForce bearish 2027 NAND call does not affect DDR5 spot matrix. Minor DDR4 decline (-0.10%) and eTT uptick (+0.26%) are noise at current matrix position.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Spot Price Monitor",
-          "url": "https://www.trendforce.com/research/dram/"
+          "title": "TrendForce DRAM spot prices \u2014 2026-11-20",
+          "url": "https://www.trendforce.com/price/dram/dram_spot"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 1
     },
     "t1_us_adr_event": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired: ADR listing completed 2026-07-10. Today's SEC EDGAR filing (146.1M shares, direct owner) is routine post-ADR ownership disclosure. Peak-coincidence signal persists through Phase 5. No new dilution event or insider sales >$10M.",
-      "latest_developments": "SEC EDGAR filing: 146.1M shares held by direct owner in SK Hynix (SKHY) \u2014 routine post-ADR disclosure, no new event.",
+      "where_we_stand": "SK Hynix ADR listing completed 2026-07-10 with strong roadshow demand. F-1 filed and pricing executed. Peak-coincidence condition met: ADR completed concurrent with multiple Tier 3 signals firing. 12-month aging window active. No reversal condition (ADR cancellation or delisting) in today's feed. SK Hynix's Kioxia bond-to-equity conversion (~14% indirect stake) is\u2026",
+      "latest_developments": "SK Hynix converts Kioxia bonds into shares, taking ~14% indirect stake. Separate from ADR mechanics but reinforces peak-coincidence pattern \u2014 major strategic moves clustering at cycle top.",
       "relevant_links": [
         {
-          "title": "SK Hynix EDGAR Filing \u2014 Stock Titan",
-          "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPR2x0a2puX282NGFpSEs5ak5iT2wtdktUaDRvX1RPa2VnTjNVLVZ0bE96ckl6RGxQZjRKdDdJZ0J4Q0Y0NnhkaXVlSmNFX1NCUlRWREwxNmg5LXl2NGdJNjNHRTlBc3RqQU9URDhjbXg2OGVwVnRhZXdEVTc5endkb1ZYblZTQkdtYlYzTy14dFVESVA3Uzl5VDdvcFEtZll6TWQtMUhXdks1YUVDOUViMjBEdXRlNlp4eThr"
+          "title": "SK Hynix Kioxia stake conversion \u2014 MLQ.ai",
+          "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQaFdPWVZMRkRidldXV2RzaWFGbV9PRkJ5a3VTZXVTeFVTQWxhQXZUdUl2N2lBMXVfVS01Ymtjb3lEb2hFS29rb19Pb0lNWk84ZnNhMEdVbkhWQWhlWkhJY3NOLTUwR2w0bWpzZVV0Q0VaajJQZDZidjlNWGRYVE8zLTBBZWNxVnZRRzlzc0VBRC1MQlI2RnFtdFVKMFRJTDc0eUNnQ1lKdk1PbDVPTE9uejhYenNLRktLaUR5THFjNTlFdWw4aHd1d1VB"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t2_capex_parabolic": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired and latched. Applied Materials Q4 2026 call (2026-11-14) adds independent supply-side corroboration: cloud CapEx >$1 trillion in 2027 (+50% YoY), WFE demand +30% YoY 2027. This compounds the hyperscaler first-party evidence: Amazon guided $220B 2026 (+10% vs prior) with 2027 'meaningfully higher'; Alphabet guided 2027 above 2026; Meta raised 2026 guidance floor to $135B; Oracle raised FY2027 to $90-95B calling FY2027-28 'peak CapEx years.' Samsung committed 144 trillion won ($110B+) to Chungcheong region memory fabs. Big Three combined CapEx >2x 2024 (fired). Aggregate hyperscaler 2026 >$725B (fired). No reversal\u2026",
-      "latest_developments": "Applied Materials Q4 call: cloud CapEx >$1T in 2027 (+50% YoY), WFE +30% YoY \u2014 strongest independent supply-side confirmation of parabolic trajectory to date. Samsung 144 trillion won Chungcheong commitment adds memory-maker CapEx confirmation.",
+      "where_we_stand": "Latched Fired since January 2026. Aggregate 2026 hyperscaler CapEx: $725B+ confirmed via Q4 2025 earnings cycle. Amazon Q4 2026 transcript: 2027 CapEx 'meaningfully higher' than $220B 2026 guidance \u2014 parabolic trajectory deepening. Alphabet Q4 2026: CapEx to 'increase significantly' in 2027 ($195-205B 2026 base). Oracle raised FY2027 CapEx guidance to $90-95B from $70B, calling FY2027-2028 'peak CapEx years.' Applied Materials Q4 transcript: cloud CapEx expected to exceed $1 trillion in 2027 (+50% YoY). Meta narrowed 2026 guidance to $135-145B (lower end raised). NVIDIA $390B supply commitments mostly for memory (Motley\u2026",
+      "latest_developments": "Amazon Q4 transcript: 2027 CapEx 'meaningfully higher' than $220B. Applied Materials: cloud CapEx >$1T in 2027. Oracle: FY2027-28 'peak CapEx years' at $90-95B. NVIDIA $390B supply commitments, mostly memory.",
       "relevant_links": [
         {
-          "title": "Applied Materials Q4 2026 Earnings Call",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings/AMAT-Q4-2026-earnings_call-673413.html"
+          "title": "Applied Materials Q4 transcript \u2014 cloud CapEx >$1T 2027",
+          "url": "https://finance.yahoo.com/quote/AMAT/earnings-calls/"
         },
         {
-          "title": "Samsung 144 Trillion Won Chungcheong Investment \u2014 THE ELEC",
-          "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBTaG83RUNhS2ZlSEN3TGRrRlU3ZTRBeW9CRXhES3hOcE16UkUwd1dMdm5Ibjk3VG1UdlRkeVFTYWpPQTQyY25ycFhrQnBFalZ2MVVqMjQwWWpMQmM2NjlkV25NaDlTUjA"
+          "title": "NVIDIA $390B supply commitments \u2014 Motley Fool",
+          "url": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxQcUxGZ2xYWjFVd1dyT0V3bkdPVHZ2U2gzUzZUUzRPd2RqRXcxemNKem9zbnplNGwzQWY4SENsdXF3dUlIMU9Dc281WmJXdmo3eVk2UThLT2JPR3hwdUlpa3AzVE5hZEktR0lfY0xaVjZuZUVqamF0M0tDbmhTVVpjUHU1bXZnRzQtdXI2YWh2Zm1wRDlPSFpvRDJObTRUbnJ4ZGNDR3J5SmNoVC0zTmc1QXBfdTR1TExLNno3RXJ5eU8waVNCaDIwNnhkZWJrcHR6dExKemJVQmsxb0VCdEtBUUhqY2Q0STNrdVpr"
         },
         {
-          "title": "Samsung $4.48B HBM Packaging Plant \u2014 Economic Times",
-          "url": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxQUnJzT1Z2SkJzSjk0OTUyeUo4OXhCR1oyZ204eUxyU3daSnE3ODA1S0VKU1k5NUY1WVZDdzh2cEo5UUFoSm5sNGdZNU1zbE1SZWJhZTJJT0pBcVNKTndXS2ZQeHNmMUhmcU5zSmcwZ3VmRFpTa19VX2t6OTUzcU5CaEk5NE5PMU52ZC1BbkpVQWdkMVJDanFOZnlJVVR0aVdpd3FrZG41LXBiSHdHZGdEN3hzU0JxVWNGNzlnMUFyT1lBQUxteDZFbi1HbHlENlgtVFYyYnRUaldVWEhvUWQ0"
+          "title": "Oracle FY2027 peak CapEx years \u2014 Oracle Q3 transcript",
+          "url": "https://finance.yahoo.com/quote/ORCL/earnings-calls/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 2
+      "evidence_count": 0
     },
     "t2_eps_revisions": {
-      "last_full_regen_date": "2026-11-17",
-      "current_status": "Not fired",
-      "where_we_stand": "Rolling 30-day net revision score: +1.5 (net bullish) for SK Hynix. Naver Finance shows zero Tier-A broker FY27/FY28 EPS estimate cuts in the window; the Nov 17 Kiwoom (SK Hynix to \u20a91.8M) and Daishin (SK Square to \u20a91.5M from \u20a92.1M, -28.6%) actions are valuation-multiple target cuts, not earnings estimate revisions. GF Securities NAND glut warning is the first explicit supply-glut call from a named broker \u2014 a directional precursor to watch. Fire threshold requires >5 analysts revising FY27 EPS down in a single month while <3 revise up; not yet\u2026",
-      "latest_developments": "Kiwoom cut SK Hynix target to \u20a91.8M; Daishin cut SK Square to \u20a91.5M from \u20a92.1M (-28.6%). GF Securities issued first named-broker NAND glut warning. These are target-price and sector calls, not FY27 EPS estimate cuts\u2026",
+      "last_full_regen_date": "2026-11-21",
+      "current_status": "Partially fired",
+      "where_we_stand": "Escalated to Partially fired today on BNK's SK Hynix target cut to \u20a91.05M from \u20a91.65M (-36.4%), triggering the early-signal threshold (single broker >-10% PT cut). Rolling 30-day weighted score: -0.5 (net bearish: -5.0 down vs +4.5 up). Goldman Sachs cut Micron EPS estimates today \u2014 the first named sell-side EPS cut on Micron this cycle \u2014 a directional confirmation. Full Fired status requires >5 analysts revising FY27/FY28 EPS DOWN in a single month while <3 revise up; current count does not yet meet that threshold. SK Hynix: 24 up /\u2026",
+      "latest_developments": "BNK cut SK Hynix target to \u20a91.05M (-36.4%) on 2026-11-20, warning of imminent memory price plunge. Goldman Sachs cut Micron EPS estimates \u2014 first named EPS cut this cycle. Morgan Stanley also trimmed SK Hynix\u2026",
       "relevant_links": [
         {
-          "title": "Kiwoom Securities cuts SK Hynix target to 1.8M won",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE03V3FHNUlxdGhfUDltTE1KbmxWY1VvMVdwSS1ZeGJkb1JUT2VGLWRLWFFFQTBOR0diOWtVVEZqYS1uaXY1dUdmRU5qQ1RVeDk4djl3YmlBZDRCRGNCamhPeDZka3NwTEx0bDlEU0RtcUptaDlhOVE?oc=5"
+          "title": "BNK slashes SK Hynix target to \u20a91.05M \u2014 BigGo Finance",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFAzbUtTUTNTdGxlRXhQTWVCMm82djItUGtFWG5rdTdycHJycTllOHEtSjdOR1ZmVVFGQzlONmRNWnZYUDh1Mk9nQVN4ZHEyQ2Y5d0JRWDcydlJfRVV1Uk5wTjFhUlNGNWQyeGl1U2FJeFZtcXF2TFE"
         },
         {
-          "title": "Daishin cuts SK Square target to 1.5M from 2.1M won",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE0xVEtyaEo3VHV4MjdxTFFOd3hYSkNHQlNkeTZQUW1YaWNydkdsWDhsSFVYcjVsSFpSandobFNOZ0RKU1FjNnVRbXFJMW43c05STlVkYkxSemhQTmpfX291anJRaktzd3FUVHJ6NVlJNlZ1eU84YkE?oc=5"
+          "title": "Goldman Sachs cuts Micron EPS \u2014 Seeking Alpha",
+          "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxQcmNkNlpFVWJMb1BCTmJvUU1oQnhER2tIYzNZOFpvR0o4bTFvMy1MQTlpQnlUSF9ONGNwZ3AtYmhIRmNLUzFoc0p5WVRZSGJzWVB5NnRfMWdIaFlHdUJ6TDFDRkVMQU83MWRMWFluN013aDVGb1ZDVzhCczZYMzYybG4tOC0waXRuYTRBMUg2RWNxVldQak1GRmdCVjc5Z2xuM2c"
         },
         {
-          "title": "GF Securities cuts NAND price forecast, warns of glut",
-          "url": "https://news.google.com/rss/articles/CBMi3gFBVV95cUxNTjhxMWdCdlBPVzZFcllkOUFvaWtIeWpQSE4wQjdfOHhpMkN2bW5hUmZYcmc4SzhaNVdpQ2tmcEZ1eGp6SlcxZ29uVzRwaFlJNVZDTlVuMHp3dF9SSC15SldENkZLZmZnZnJkUks5Qk5oaGZLN21TSVlZX1B0WExiVlVEcEdVekljakpWUXBhMVhXVFBCQnRrVHRrYnk0QzVUZ3lNa1kzRUpzbGV3MkgzYktQOXliVWZSM05qQ2JIM2xKQV9oQXA4clJzTVBoRk56OTRvNWg4b2pRbkVudlE?oc=5"
+          "title": "Morgan Stanley trims SK Hynix target \u2014 ad-hoc-news",
+          "url": "https://news.google.com/rss/articles/CBMi_gFBVV95cUxQSGxORWp4Ql91M3ZZMWpuTlM5Z19vS0tCd3hzdk5IMXpVUElhdWxLb2ZmQjNjekxnaWV2dmV4NDhOc21pbUlaV2hkWmpmOVZxdXZRcHNfcllkQkxJaHFoTkFCZmhJT1hZbWlWMWxGV0pDdDZxVU9DY1dWeEpZdzh2RVA1azg5SGFKYmpGdWlHcE9tTURmQ1EzUUlka2k0eUh2VjFDRXlablJKRi0yeGtfdmI1SnJZQXFwZzVhcWx5aUxxcjdXaFBfVmJuWG5IMG5DS2hDMmV0TVNQMG53OHJreVNTUXEtaTJRRDRfTGdBamhUVmVjTHphLUZYbE1Ydw"
         }
       ],
-      "change_vs_prior": null,
-      "fingerprint": "d27284b5ba801ef4",
-      "status": "Not fired",
-      "updated_date": "2026-11-17",
+      "change_vs_prior": "Escalated from Not fired to Partially fired. BNK's -36.4% SK Hynix PT cut on 2026-11-20 triggered the early-signal threshold. Goldman Sachs Micron EPS cut is the first named sell-side EPS revision downward this cycle. Rolling 30d score remains net slightly\u2026",
+      "fingerprint": "e72f7d9a182e4329",
+      "status": "Partially fired",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 3
+      "evidence_count": 1
     },
     "t2_hyperscaler_capex_revenue": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired: Mean CapEx/OCF 2-quarter rolling = 114.9% (threshold: >50% full fire). Per-company 2Q rolling means: AMZN 176.0%, GOOGL 118.2%, META 99.0%, MSFT 66.2%. Three of four companies exceed 100% single-quarter CapEx/OCF (AMZN Q3 182.1%, GOOGL Q3 121.4%, META Q3 103.5%) \u2014 all must tap debt/equity to fund CapEx. Amazon Q3\u2026",
-      "latest_developments": "Amazon Q3 2026 call: AWS backlog $578B, 2027 CapEx 'meaningfully higher' than $220B. Applied Materials confirms cloud CapEx >$1T in 2027. Strain deepening.",
+      "where_we_stand": "Aggregate 2-quarter rolling mean CapEx/OCF: 114.9% \u2014 well above the 50% full-fire threshold. Per-company 2Q rolling means: Amazon 176.0%, Alphabet 118.2%, Meta 99.0%, Microsoft 66.2%. Three of four hyperscalers exceed 100% CapEx/OCF on a single-quarter basis (Alphabet Q3: 121.4%, Meta Q3: 103.5%, Amazon Q3: 182.1%). Amazon Q4 transcript confirms 2027\u2026",
+      "latest_developments": "Amazon Q4 transcript: 2027 CapEx 'meaningfully higher' than $220B, AWS backlog $578B (+$82B QoQ). Alphabet Q4: CapEx to 'increase significantly' in 2027. Both deepen the strain trajectory. Meta narrowed 2026 guidance to $135-145B (lower end\u2026",
       "relevant_links": [
         {
-          "title": "Applied Materials Q4 2026 Earnings Call",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings/AMAT-Q4-2026-earnings_call-673413.html"
+          "title": "Amazon Q4 2026 earnings transcript",
+          "url": "https://finance.yahoo.com/quote/AMZN/earnings-calls/"
+        },
+        {
+          "title": "Alphabet Q4 2026 earnings transcript",
+          "url": "https://finance.yahoo.com/quote/GOOGL/earnings-calls/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 1
     },
     "t2_insider_sales": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired: Mehrotra Micron Form 4 sale (March 15, 2026) \u2014 12-month aging reversal condition not met (8 months elapsed). DART API shows zero new material disclosures (B/D/I-type) for SK Hynix or Samsung today. Samsung DART filing today (rcept_no 20261113801115) classified as IR event, not ownership change. No new insider sales\u2026",
-      "latest_developments": "",
+      "where_we_stand": "Micron CEO Mehrotra Form 4 sale filed 2026-03-15 (SEC EDGAR, transaction code S, >$1M). 12-month aging window expires 2027-03-15; today (2026-11-21) is within window. DART: 0 new material disclosures across SK Hynix and Samsung in today's computed metrics. No reversal condition met. Signal persists on the Mehrotra sale alone through\u2026",
+      "latest_developments": "No new Form 4 or DART filings today. Signal persists on Mehrotra March 2026 sale within the 12-month window.",
       "relevant_links": [
         {
-          "title": "SEC EDGAR Form 4 Feed \u2014 Micron",
-          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=MU&type=4&dateb=&owner=include&count=10"
+          "title": "SEC EDGAR Form 4 feed \u2014 Micron",
+          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=MU&type=4&dateb=&owner=include&count=40"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -271,78 +279,78 @@
       "evidence_count": 1
     },
     "t2_pe_compressed": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired: SK Hynix forward FY27 P/E 2.27x (vs 5x threshold); Micron 3.75x (vs 8x threshold); Samsung 2.66x (vs 6x threshold). All three below their respective thresholds per today's computed analyst estimates. These are peak-earnings denominators compressing multiples \u2014 bearish, not bullish. Last confirmed signal change 2026-07-29; today's computed values confirm\u2026",
-      "latest_developments": "",
+      "where_we_stand": "Computed forward P/E: SK Hynix 2.07x (FY27 EPS est \u20a9537,911, price \u20a91,113,000) \u2014 well below the 5x threshold. Micron 2.85x (FY27 EPS est $175.61, price $594.51) \u2014 well below the 8x threshold. Samsung 2.35x (FY27 EPS est \u20a978,052, price \u20a9183,100) \u2014 well below the 6x threshold. All three names are\u2026",
+      "latest_developments": "Today's selloff pushed all three names to new compression lows. BNK's SK Hynix PT cut to \u20a91.05M implies a target P/E of ~1.95x on FY27 estimates \u2014 below even the current market price multiple.",
       "relevant_links": [
         {
-          "title": "SK Hynix Analyst Estimates \u2014 Yahoo Finance",
+          "title": "SK Hynix analyst estimates \u2014 Yahoo Finance",
           "url": "https://finance.yahoo.com/quote/000660.KS/analysis/"
         },
         {
-          "title": "Micron Analyst Estimates \u2014 Yahoo Finance",
+          "title": "Micron analyst estimates \u2014 Yahoo Finance",
           "url": "https://finance.yahoo.com/quote/MU/analysis/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t2_spot_contract_spread": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired: DDR4 spot-contract inversion recorded 2026-04-01 (live persistence). DDR5 spot at $60.27 (2026-11-13) remains above DDR5 server contract \u2014 DDR5 spread not yet inverted. DDR4 inversion persists; no reversal evidence (DDR4 spot has not recovered above contract). No new TrendForce spot/contract print in today's feed.",
-      "latest_developments": "",
+      "where_we_stand": "DDR4 spot-contract inversion confirmed as of April 2026 (live persistence). DDR4 16Gb spot $78.625 (-0.10% today). DDR5 16Gb spot $60.67 (flat). DDR5 server contract remains above DDR5 spot \u2014 DDR5 spread not yet inverted. TrendForce bearish 2027 NAND call is a forward signal; current DDR5 spot/contract spread has not inverted.\u2026",
+      "latest_developments": "DDR4 spot -0.10% today; DDR5 spot flat. No new contract price data. TrendForce bearish 2027 NAND call adds forward pressure but does not update the current spot/contract spread.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM Price Monitor",
-          "url": "https://www.trendforce.com/research/dram/"
+          "title": "TrendForce DRAM spot \u2014 2026-11-20",
+          "url": "https://www.trendforce.com/price/dram/dram_spot"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t3_contract_decline": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired: DDR5 server contract QoQ growth remains strongly positive (Q2 2026 +58-63% QoQ projected). No TrendForce monthly contract-price report in today's feed. No HBM contract renegotiation reported. CXMT's DDR5 32Gb die advancement is a 3-9 month leading indicator for commodity DDR5 contract pressure, not an immediate trigger.",
-      "latest_developments": "CXMT 32Gb DDR5 + MRDIMM at 12,800 Mbps is a capacity milestone that raises medium-term (3-9 month) contract-price risk for commodity server DRAM.",
+      "where_we_stand": "DDR5 server contract: Q2 2026 +58-63% QoQ (last TrendForce quarterly print). No MoM contract price decline reported. TrendForce bearish 2027 NAND call is a forward pricing signal for NAND, not a DDR5 server contract decline. No HBM contract renegotiation reported. Signal requires a DDR5 server contract MoM decline or HBM\u2026",
+      "latest_developments": "TrendForce bearish on 2027 NAND prices \u2014 a forward signal for NAND, not a current DDR5 contract event. DRAM 2027 outlook remains rising per TrendForce. No contract decline trigger today.",
       "relevant_links": [
         {
-          "title": "CXMT DDR5 32Gb + MRDIMM \u2014 Pandaily",
-          "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxNY1RNOHhwSUhJNmdRYzZuVHM2SnI4UXltQ1JuSVM0YnFjYzEwZGE0WTU1RW4tbC0xWklRU1JJaDhBeFVSRy1RNFpidS1qZkNrelNMWW9nUmxmUmV2Rm02MnJzU0JRVXR6UnF5TV81Vmk3cUFSc2ZpMGRCVVNGaW9TRUZn"
+          "title": "TrendForce NAND bearish 2027 \u2014 24/7 Wall St.",
+          "url": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxOVEl4eHlVV1BGWUVwei1KdWRVeUxhZzZhQmRMZWRXemQ4MDhmTTNJTi1abThheG5TQ0xUczJLUmlySnEtS21aX3poNXlRMDRRM0hGaFllOGNoNHFjWjI4MTRUX2ZUWHFQWkczbHNLV19TOUhkd3lBdkhaX3F5NWpORHN3S3JhcHo3T0JvWXpLR1J4ZWpYYXpjODJERVNIVHNaRlJsSUkybEg4U3lSS2dqZDlDdDdlbDdFVi1YVjdsRXRzRlBsUzVkdjZEeXRmemlNR1N5ZktHY0VwZw"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t3_eps_miss_guidance": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Fired",
-      "where_we_stand": "Fired: SK Hynix Q2 2026 (2026-07-29) missed consensus EPS with guidance not raised \u2014 textbook Scenario B fire. Quarterly persistence rule holds until next quarterly print explicitly reverses (beat re-widening to \u226530% or guidance cut). No new SK Hynix or Micron quarterly print today. Status persists.",
-      "latest_developments": "",
+      "where_we_stand": "Fired on SK Hynix Q2 2026 earnings (print date 2026-07-29): record profit (+557% YoY) that missed consensus EPS with guidance maintained \u2014 textbook Scenario B per the contrarian-direction rules. Quarterly persistence: status holds until next quarterly print. No reversal evidence today (reversal requires beat re-widening to \u226530% on a new\u2026",
+      "latest_developments": "No new quarterly print today. Signal persists on SK Hynix Q2 2026 miss. Korean press coverage of 'record-breaking turnaround expected next year' is forward-looking analyst commentary \u2014 not a reversal of the fired condition.",
       "relevant_links": [
         {
-          "title": "SK Hynix Q2 2026 Earnings \u2014 IR",
-          "url": "https://news.skhynix.com/feed/rss/"
+          "title": "SK Hynix earnings coverage \u2014 \ud30c\uc774\ub0b8\uc15c\ub274\uc2a4",
+          "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE5JRE03ODg4ZURrVHhTZjh2Q0dPWmVOVHZBY2h6TE5RV3FGUGF1SHNwLWxBRE4yekpMMmIxcjFJQ1c3Nm5VdFNCNnlsYjR5bTJsdllURWI2T0w"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -373,38 +381,42 @@
       "evidence_count": 1
     },
     "t3_supplier_inventory_rebuild": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired: SK Hynix and Micron inventory weeks remain at 2-3 weeks per last TrendForce print (well below the 4-week trigger threshold). Cerebras Q3 call noted HBM supply tightness through 2028, consistent with suppliers running lean. Applied Materials 'demand much higher than supply' language corroborates tight supplier inventory. No new earnings disclosure or TrendForce print today updates the inventory weeks figure. Trigger requires crossing 4 weeks \u2014 not imminent given current demand environment.",
-      "latest_developments": "Cerebras and Applied Materials both confirm supply tightness, consistent with supplier inventory remaining below trigger threshold.",
+      "where_we_stand": "SK Hynix and Micron supplier inventory: 2-3 weeks per last TrendForce print (Q3 2025). Threshold: 4+ weeks. No new TrendForce monthly print or earnings disclosure in today's feed updating this figure. Micron Singapore HBM plant receiving first equipment for 2027 ramp \u2014 a capacity-expansion signal, not an inventory-rebuild signal. Samsung capacity booked through 2029 is consistent with tight supplier inventory persisting. Signal remains Not fired; next scheduled re-check is the next TrendForce monthly print or Micron/SK Hynix quarterly earnings.",
+      "latest_developments": "No new supplier inventory data today. Micron Singapore HBM plant first equipment receipt is a 2027 supply-expansion milestone \u2014 does not update current inventory weeks.",
       "relevant_links": [
         {
-          "title": "Cerebras Q3 2026 Earnings Call",
-          "url": "https://finance.yahoo.com/quote/CBRS/earnings/CBRS-Q3-2026-earnings_call-731670.html"
+          "title": "Micron Singapore HBM plant \u2014 TrendForce",
+          "url": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxNQlg3cUNlSkI1T2Y5b3VxLVhSUDRxaUR3S1pydGpoX3NWQkI1R2pNX09oOHpqcEkwU0l0V1F4dE41ZDlBODJSM0JSVTBKNG5QQUtQVjVKWHlkVFNjQ2dGMktKVmpWcXd4OC1nVlpEUHJBSmdWbzV1RzFJX0UwZmdxRzhyeWNaSTllZ3R5LVkyV2xIblRTQ3I1aUFobmc1V3FxZ1Rsa2VQSVFyc2Q5NnJUS1dCOTFKT3FURXBXRlRIdDNHSDNMcEtmZ3Awd1M5Z0w3RkswYXRTVm1leDEyVkJoUDBpN1RtTTNjdVlz"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t3_wfe_orders_crack": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired: ASML Q4 2026 call (QoQ diff available) stated 'demand will outpace supply through at least 2028' \u2014 the opposite of order-book cracking. Applied Materials Q4 2026 guided WFE demand +30% YoY in 2027. ASML revenue beat guidance ($11.7B vs $11.0-12.0B range); gross margin 57.5% above guidance. No book-to-bill\u2026",
-      "latest_developments": "ASML: 'demand outpaces supply through 2028.' Applied Materials WFE +30% YoY 2027. Both equipment makers confirm order strength \u2014 no cracking signal.",
+      "where_we_stand": "ASML Q4 2026 transcript: 'Demand will outpace supply through at least 2028'; customers accelerating capacity build-out plans beyond 2028. High-NA EUV HVM timelines: Intel 1M wafers exposed, Samsung 2028, TSMC 2030. ASML -6.6% today is a market-wide move, not a bookings event. Applied Materials Q4: WFE demand up 30%+ YoY\u2026",
+      "latest_developments": "ASML Q4 transcript: demand outpaces supply through 2028; customers accelerating beyond 2028. Applied Materials: WFE +30%+ YoY 2027. Both are anti-fire signals for this indicator. ASML -6.6% today is market-wide, not bookings-driven.",
       "relevant_links": [
         {
-          "title": "Applied Materials Q4 2026 Earnings Call",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings/AMAT-Q4-2026-earnings_call-673413.html"
+          "title": "ASML Q4 2026 transcript",
+          "url": "https://finance.yahoo.com/quote/ASML/earnings-calls/"
+        },
+        {
+          "title": "Applied Materials Q4 transcript",
+          "url": "https://finance.yahoo.com/quote/AMAT/earnings-calls/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
@@ -435,76 +447,84 @@
       "evidence_count": 1
     },
     "t4_guidance_cuts": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired: No guidance cut or pre-announcement of miss from Micron, SK Hynix, or Samsung in today's feed. Micron guided to $50B revenue per TradingKey item (AI memory demand strong). No reversal of prior positive guidance.",
-      "latest_developments": "",
+      "where_we_stand": "No guidance cut or pre-announcement of miss from Micron, SK Hynix, or Samsung in today's feed. BNK's SK Hynix PT cut and Goldman's Micron EPS cut are sell-side actions, not company guidance. TrendForce bearish 2027 NAND call is an analyst forecast, not a company pre-announcement. Signal requires a first-party company\u2026",
+      "latest_developments": "No company guidance cuts today. Sell-side PT and EPS cuts (BNK, Goldman, Morgan Stanley) are directional confirmation of deteriorating sentiment but do not satisfy the first-party guidance-cut threshold.",
       "relevant_links": [
         {
-          "title": "Micron Revenue Guidance \u2014 TradingKey",
-          "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxOVW44UW9zZ0wyM0k4VzA1ZTJDaTBDWnZUSjl5dWdfSl9Na1p5bzBQdUstYk5nUlRsZDRsbnZDb0o5UWhaTlVJV2hRUUpQZnZ6b1dGRGxxOUVQbGZpekRyaG85T3FqNkNKdVplX3RPaTF3eGRXNEJJRUtLbGxmdEt4eEFERjRHbXA0MXdEdUdZdXZpV3dBY0lad1pHUXZzOU1URXA2aTgtRkFLVTdEeW5JQmhWR24"
+          "title": "Micron investor relations",
+          "url": "https://investors.micron.com/events-and-presentations"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t4_layoffs": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired: Samsung seventh union formation reported today (Gwangju plant, Seoul Economic Daily; Businesskorea). Union activity affects labor costs and production flexibility but does not constitute memory-division layoffs or fab idling. Business-unit scoping rule: union formation at Samsung is not a memory-operations headcount reduction. No Micron or SK Hynix workforce\u2026",
-      "latest_developments": "Samsung seventh union forming at Gwangju plant \u2014 labor action watch, but union formation is not a layoff or fab-idling event under the memory-operations scoping rule.",
+      "where_we_stand": "Samsung DX (semiconductor) workers plan protest over bonus structure (TechJuice). Business-unit scoping: 'DX' at Samsung refers to the Device eXperience division (smartphones, consumer electronics) \u2014 NOT the DS (Device Solutions / memory) division. This protest does not satisfy the memory-operations scoping requirement. No layoffs or fab utilization cuts in memory\u2026",
+      "latest_developments": "Samsung DX workers protest over bonus structure \u2014 scoped to Device eXperience (consumer electronics), not memory/DS division. Does not satisfy memory-operations trigger.",
       "relevant_links": [
         {
-          "title": "Samsung Seventh Union \u2014 Seoul Economic Daily",
-          "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxNeWxpQ2VYY3VDSUU2blc5eDFTV2hJM2E1M3F3SHNVNzlNVWRsa1JpNlJzMmdBRzZocFRGTndkaFkxdmZnRDU5MnlqMkZhcU9KajZudF80eE1JOTRKZS11N1lCVzg2cjl2Rk9La0YzRjA4aXFsZXVpSm1IMTlpb3JqWTRWUTVWZl9vUVUyOHZrU2dqcFFveWNXWDMxOA"
+          "title": "Samsung DX workers protest \u2014 TechJuice",
+          "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxNWk90ZmdNalZYbzUzN3ZRS3RIVWVhT1l4SVNyVkl0aVdhYlBmMFJuYktGdTBpQkEwd3pReVd3c3pianRGN2pMdkpXTXBoMmxwZW9YN0pVZ0VGbllIenVLODRpd0FqdV9qMll1VWNVWnQtM3FRRHY5RldyWE1rYVNzeVo3eFA1TmdaRTEwSWdCYTV4RnYtZktz"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t4_yoy_asp_negative": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Not fired",
-      "where_we_stand": "Not fired: No TrendForce or supplier earnings print showing negative YoY DRAM or NAND ASP in today's feed. DDR5 spot at $60.27 remains at rolling 12-week peak. YoY ASP comparisons remain positive given the strong 2025-2026 pricing cycle. No trigger evidence today.",
-      "latest_developments": "",
+      "where_we_stand": "TrendForce turned bearish on 2027 NAND prices \u2014 a forward pricing signal, not a current YoY ASP print. Current DDR5 spot $60.67 (flat); DDR4 $78.625 (-0.10%). No TrendForce or supplier earnings print showing DRAM or NAND ASP YoY negative in today's feed. Signal requires an actual YoY decline print, not\u2026",
+      "latest_developments": "TrendForce bearish 2027 NAND prices \u2014 forward signal only. Current spot prices flat to slightly negative on the day; no YoY ASP negative print today.",
       "relevant_links": [
         {
-          "title": "TrendForce DRAM ASP Monitor",
-          "url": "https://www.trendforce.com/research/dram/"
+          "title": "TrendForce NAND bearish 2027 \u2014 Yahoo Finance",
+          "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxOUGNpc1Z4ZHNOaDQtaVpsX253NGxWcHdER3ltMktEd1NnYWstbldjUHRibTVCNUZPeFFNbkNSbGJmMWY4WnZ1bGlLUmlfYjgzWUxYR0xIUG9MTTcxekhQQUlZWGx1cEZ6c2ZFeG1KMm5UWTMyVGJSbEcya1k0UmVpVXczQ3dPRnd1SmdUaWRFVkxTWHptc1FFUVMtYzQ2SHlr"
+        },
+        {
+          "title": "TrendForce DRAM spot \u2014 2026-11-20",
+          "url": "https://www.trendforce.com/price/dram/dram_spot"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "d27284b5ba801ef4",
       "status": "Not fired",
-      "updated_date": "2026-11-14",
+      "updated_date": "2026-11-21",
       "fingerprint_algo": "v3-fired-status",
       "evidence_count": 0
     },
     "t3_capex_plateau": {
-      "last_full_regen_date": "2026-11-14",
+      "last_full_regen_date": "2026-11-21",
       "current_status": "Partially fired",
-      "where_we_stand": "Partially fired: N=2/4 companies at stable-or-beyond (bands: 0=Not fired, 1-2=Partially fired, 3-4=Fired). LEDGER (last print dates): Microsoft \u2014 FY27 $175B, 2026-08-07, accounting reclassification (finance\u2192operating lease), verb=unchanged, basis=changed, stance=stable [+1]. Meta \u2014 CY2026 $135-145B, 2026-11-14 (raised floor from $130B), verb=raised, stance=accelerating [-1] per prior ledger; 2027 guidance withheld, watch flag. Amazon\u2026",
-      "latest_developments": "Applied Materials Q4 2026 call: cloud CapEx >$1T in 2027 (+50% YoY) \u2014 supplier-side confirmation that hyperscaler CapEx is accelerating, not plateauing. No new first-party hyperscaler guidance today; ledger unchanged.",
+      "where_we_stand": "Guidance ledger (deterministic, 4 companies): \u2022 Microsoft: stable [+1] \u2014 FY27 $175B (accounting basis change, finance\u2192operating lease; investment unchanged), print 2026-08-07, -7.9% vs prior $190B basis \u2022 Alphabet: accelerating [-1] \u2014 CY2027 'increase significantly' above 2026 ($195-205B), print 2026-10-30 (Q4 call); no specific 2027 number provided \u2022 Amazon: accelerating [-1]\u2026",
+      "latest_developments": "Amazon Q4 transcript: 2027 CapEx 'meaningfully higher' than $220B \u2014 directional raise but no specific figure; no ledger update. Meta Q4: 2026 guidance narrowed to $135-145B (lower end raised $5B). Alphabet Q4: 2027 'increase significantly.'\u2026",
       "relevant_links": [
         {
-          "title": "Applied Materials Q4 2026 Earnings Call",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings/AMAT-Q4-2026-earnings_call-673413.html"
+          "title": "Amazon Q4 2026 transcript",
+          "url": "https://finance.yahoo.com/quote/AMZN/earnings-calls/"
+        },
+        {
+          "title": "Meta Q4 2026 transcript",
+          "url": "https://finance.yahoo.com/quote/META/earnings-calls/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "fingerprint_algo": "v3-fired-status",
       "status": "Partially fired",
-      "evidence_count": 1,
-      "updated_date": "2026-11-14"
+      "evidence_count": 0,
+      "updated_date": "2026-11-21"
     }
   }
 }

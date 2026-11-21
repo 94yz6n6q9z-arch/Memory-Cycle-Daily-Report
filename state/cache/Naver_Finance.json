@@ -1,12 +1,25 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-11-20T15:43:03.202634+00:00",
+    "fetched_at_iso": "2026-11-21T14:53:13.469249+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
         "code": "000660",
         "actions": [
+          {
+            "broker_korean": "BNK\ud22c\uc790",
+            "broker_english": "BNK Investment & Securities",
+            "rating": "\ubcf4\uc720",
+            "rating_english": "Hold",
+            "prior_rating": "Hold",
+            "target_price_krw": 1050000,
+            "prior_target_krw": 1650000,
+            "target_change_pct": -36.36,
+            "direction": "lowered",
+            "published_date_iso": "2026-11-20",
+            "raw": "BNK\ud22c\uc790 | 26/11/20 | 1,050,000 | 1,650,000 | -36.36 | \ubcf4\uc720 | \ubcf4\uc720"
+          },
           {
             "broker_korean": "\ud55c\uad6d\ud22c\uc790",
             "broker_english": "Korea Investment & Securities",
@@ -34,6 +47,19 @@
             "raw": "\ubbf8\ub798\uc5d0\uc14b | 26/11/17 | 3,100,000 | 3,100,000 | 0.00 | \ub9e4\uc218 | \ub9e4\uc218"
           },
           {
+            "broker_korean": "LS",
+            "broker_english": "LS Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 2400000,
+            "prior_target_krw": 2400000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-16",
+            "raw": "LS | 26/11/16 | 2,400,000 | 2,400,000 | 0.00 | Buy | Buy"
+          },
+          {
             "broker_korean": "NH\ud22c\uc790",
             "broker_english": "NH Investment & Securities",
             "rating": "Buy",
@@ -58,19 +84,6 @@
             "direction": "lowered",
             "published_date_iso": "2026-11-16",
             "raw": "\ud0a4\uc6c0 | 26/11/16 | 1,800,000 | 2,100,000 | -14.29 | BUY | BUY"
-          },
-          {
-            "broker_korean": "LS",
-            "broker_english": "LS Securities",
-            "rating": "Buy",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 2400000,
-            "prior_target_krw": 2400000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-11-16",
-            "raw": "LS | 26/11/16 | 2,400,000 | 2,400,000 | 0.00 | Buy | Buy"
           },
           {
             "broker_korean": "\ud558\ub098",
@@ -255,19 +268,6 @@
             "raw": "IBK\ud22c\uc790 | 26/10/29 | 3,200,000 | 4,000,000 | -20.00 | \ub9e4\uc218 | \ub9e4\uc218"
           },
           {
-            "broker_korean": "BNK\ud22c\uc790",
-            "broker_english": "BNK Investment & Securities",
-            "rating": "\ubcf4\uc720",
-            "rating_english": "Hold",
-            "prior_rating": "Hold",
-            "target_price_krw": 1650000,
-            "prior_target_krw": 1480000,
-            "target_change_pct": 11.49,
-            "direction": "raised",
-            "published_date_iso": "2026-10-28",
-            "raw": "BNK\ud22c\uc790 | 26/10/28 | 1,650,000 | 1,480,000 | 11.49 | \ubcf4\uc720 | \ubcf4\uc720"
-          },
-          {
             "broker_korean": "DB",
             "broker_english": "DB Financial Investment",
             "rating": "Buy",
@@ -284,9 +284,9 @@
         "n_actions": 21,
         "summary": {
           "avg_opinion_score": 4.0,
-          "avg_target_price_krw": 3001905,
+          "avg_target_price_krw": 2973333,
           "avg_eps_krw": 355971,
-          "avg_per": 3.32,
+          "avg_per": 3.13,
           "num_estimating_institutions": 21
         }
       },
@@ -572,7 +572,7 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 465714,
           "avg_eps_krw": 45565,
-          "avg_per": 4.32,
+          "avg_per": 4.02,
           "num_estimating_institutions": 21
         }
       },
@@ -728,11 +728,11 @@
           "avg_opinion_score": 4.0,
           "avg_target_price_krw": 744545,
           "avg_eps_krw": 225195,
-          "avg_per": 2.19,
+          "avg_per": 2.05,
           "num_estimating_institutions": 11
         }
       }
     }
   },
-  "fetched_at_iso": "2026-11-20T15:43:42.946433"
+  "fetched_at_iso": "2026-11-21T14:53:53.988971"
 }
