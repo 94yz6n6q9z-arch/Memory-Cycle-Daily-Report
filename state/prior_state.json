@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-11-23T18:49:28.318889+00:00",
+  "saved_at_iso": "2026-11-24T18:22:07.820782+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
@@ -24,12 +24,12 @@
       "peak_months_away": 4.2,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -8.227444968553465
+      "return_to_peak_pct": -5.859120967741937
     },
-    "delta_from_prior_text": "No indicator status changes today; probabilities held flat vs prior brief. Bear case return_to_peak_pct corrected from prior -8.2% to -55% per historical calibration bands (T3 fired regime: -40 to -55%; bear case calibrated to historical average drawdown of -43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base case return_to_peak_pct set to -40% per Phase 5 default anchor. Bull case set to -25% (shallower decline). Trough window unchanged vs prior.",
+    "delta_from_prior_text": "No indicator status changes today; probabilities held vs prior brief. Bear return_to_peak_pct deepened to -50% (from -8.2% prior \u2014 prior was miscalibrated against the D-band rule: T3 fired regime requires -40 to -50%). Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base trough window unchanged at Q3-Q4 2027. Goldman Sachs 2028 oversupply forecast and BNP Paribas Neutral downgrade are directional confirmations of existing signals, not new fires.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-through-5 signals fired or unfired today; the framework holds at its prior configuration with the cycle peak confirmed behind us at 2,919,000 KRW (June 22, 2026), drawdown now -61.9% [\u2192\u00a72]. The dominant development is a sharp sell-side divergence: Goldman Sachs cut Samsung's target 30% and SK Hynix's 43%, projecting DRAM prices -19% in 2028, while Citi simultaneously argued the memory rout is overdone and raised Micron's target with a doubling thesis \u2014 the first sustained bull/bear split in what had been a one-directional consensus, a directional confirmation of t2_eps_revisions [\u2192\u00a73]. Goldman's 2028 DRAM forecast of -19% is the most explicit sell-side articulation of Phase 5 pricing trajectory yet and reinforces the bear case on t1_spot_decline and t3_contract_decline [\u2192\u00a74]. Today's broad semi tape surged \u2014 NVDA +31%, MU +18%, TSMC +15%, AMAT +14% \u2014 but SK Hynix -5.9% and Samsung -7.0% diverged sharply from the rally, a memory-specific underperformance that keeps t3_relative_strength latched red (recovery 1/5 sessions) [\u2192\u00a73]. Anthropic's $81.3B IPO sustains the hyperscaler capex chain into t2_capex_parabolic [\u2192\u00a74], while CXMT's LPDDR6 mass-production announcement adds incremental commodity DRAM supply pressure bearing on t1_competitor_dynamics [\u2192\u00a73]. The Goldman/Citi split is the session's most actionable signal: watch for transmission into formal FY27 EPS estimate cuts \u2014 the next domino on the t2_eps_revisions path to full fire [\u2192\u00a74]."
+    "executive_brief": "No tier-1-through-5 signals fired or unfired today; the dominant development is a coordinated analyst assault on memory valuations. Goldman Sachs cut SK Hynix's price target by 43% and Micron's by 54%, while BNP Paribas downgraded Micron to Neutral with a target of $775, explicitly citing 2028 hyperscaler capacity risk \u2014 the first formal Neutral rating from a bulge-bracket name and a directional confirmation of the EPS-revisions signal (t2_eps_revisions, Partially fired) [\u2192\u00a73]. Micron fell 10.6% and the broader semi tape sold off sharply (NVDA -7.4%, AMD -9.4%, AMAT -6.4%), a market-wide move with no single micro catalyst \u2014 the driver is the analyst repricing of the 2028 oversupply thesis [\u2192\u00a71]. Goldman's published DRAM supply/demand gap forecast through 2028 projects a 20% price decline that year, transmitting directly into forward EPS models and reinforcing the case for t2_eps_revisions escalating to Fired once the revision count crosses threshold [\u2192\u00a74]. Offsetting this, Jensen Huang's return to Nvidia lifted Samsung and SK Hynix intraday on HBM demand reassurance, and Apple is reported near a 4-5 year DRAM supply deal with Samsung \u2014 both directional confirmations of t2_ltas_signed (Fired) [\u2192\u00a73]. The circuit breaker remains at Level 3 Sell with SK Hynix down 62.8% from the June 22 cycle peak; trough timing and depth are the operative questions [\u2192\u00a72]."
   },
   "indicator_assessments": [
     {
@@ -157,7 +157,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.70 (2026-11-23 print). Matrix basis (weekly means): current wk $60.70, +0.00% vs rolling 12w wk-peak $60.70 (wk ending 2026-11-29). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 237d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.83 (2026-11-24 print). Matrix basis (weekly means): current wk $60.77, +0.00% vs rolling 12w wk-peak $60.77 (wk ending 2026-11-29). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 238d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "DDR5 spot $60.67, unchanged. TrendForce bearish 2027 NAND call does not affect DDR5 spot matrix. Minor DDR4 decline (-0.10%) and eTT uptick (+0.26%) are noise at current matrix position.",
       "relevant_links": [
         {
@@ -216,23 +216,23 @@
       "description": "First month with net negative FY27 or FY28 EPS revisions for SK Hynix or Micron. The single most important missing signal \u2014 currently NOT FIRED.",
       "what_to_look_for": ">5 analysts revise SK Hynix or MU FY27 EPS DOWN in a single month while <3 revise up. Single broker target price cut of >-10% vs prior is a strong early signal even before the count threshold.",
       "current_status": "Partially fired",
-      "where_we_stand": "Rolling 30-day net score: -0.5 (bearish -5.0 vs bullish +4.5). Goldman Sachs cut SK Hynix target 43% (to approximately \u20a9940K implied) and Samsung 30% on Nov 23, citing 2028 DRAM -19% \u2014 the largest single-session PT cuts in this cycle. BNK Securities cut SK Hynix to \u20a91.05M (-36%) on Nov 20 remains the formal early-signal trigger. Citi raised Micron (doubling thesis) \u2014 the first sustained bull dissent, creating the sell-side split that historically precedes formal EPS estimate divergence. No formal FY27/FY28 EPS down-revision count threshold met (requires >5 down, <3\u2026",
-      "latest_developments": "Goldman Sachs cut Samsung target -30% and SK Hynix -43% on Nov 23, projecting 2028 DRAM prices -19% \u2014 the most bearish sell-side call this cycle. Citi simultaneously raised Micron with a doubling thesis, marking\u2026",
+      "where_we_stand": "Rolling 30-day net revision score for SK Hynix: -0.5 (bearish -5.0 vs bullish +4.5 \u2014 mixed, not yet sustained downward pressure). Goldman Sachs cut SK Hynix PT -43% and Micron PT -54% (published 2026-11-23/24); BNP Paribas cut Micron to Neutral with PT $775, explicitly citing 2028 oversupply. BNK cut SK Hynix PT -36% on 2026-11-20. All three exceed the -10% single-broker early-signal threshold. No explicit FY27/FY28 EPS estimate cuts are documented in structured data \u2014 PT cuts reflect valuation multiple compression, not yet earnings forecast downgrades. Escalation to Fired requires\u2026",
+      "latest_developments": "Goldman Sachs published SK Hynix PT cut to ~1.7M KRW (-43%) and Micron PT cut to ~$700 (-54%) on 2026-11-23/24, citing 2028 DRAM oversupply. BNP Paribas downgraded Micron to Neutral, PT $775, flagging 2028 hyperscaler\u2026",
       "relevant_links": [
         {
-          "title": "Goldman Sachs slashes Samsung, SK Hynix targets; 2028 DRAM -19%",
-          "url": "https://news.google.com/rss/articles/CBMiYkFVX3lxTE12WlNnVXNzRW1nbkJoMWFEcXhhUnhmSDNFQ2FxOUhsZlVXYnpVeWtPQVgyVWdEeXVYYnBTczJpMXVHSXhhREdZWEdGWXpoNXVZMkJTYzhHV0dQSWdiT0xlR2xB"
+          "title": "Goldman Sachs cuts Samsung, SK Hynix targets by up to 43%",
+          "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE51ZGlaaExMc2hyaHBPTGdpMmZLZDc0WGY3R3FCTkZqSm1mb0toVDBUd0p2dFpKNklyNlRCYzFUdXZHdmRaMVlJU0R6N0NnWUJ6ekt6YTBhRUpuQ3g2MXl1cWNJSDhjc2tUMEhyMFRicjFlOWdR"
         },
         {
-          "title": "Citi: Memory rout overdone; Micron doubling thesis",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE8yazg4UElia25TOFNPRURwTWxyYmNRU0RwMlQwVVZhWjJYWUxJczFJc090MG9qYXY3czZsdlN4SURqRnllQnVkd1d6TFF4WVY5ZlBlNW1kMVBqMl9ENVMzcWlxbW1UcHRieXlzaVN0MnItdXVQRFE"
+          "title": "BNP Paribas slashes Micron to Neutral, cuts target to $775 on 2028 oversupply fears",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE9kTTUtcXlqcUJfM0NuU0gtSThfX3BGREVsTE1mMGZHVW9tanBZSk5NZmJxcDlTYmNGS2ZiX0Fkd1JpNFgwZmN3YkctbE9JektZWWl0YURKRzhvUExxb1lOUUdpMUZNSUt4WnkxRkh5RVlTbkgyS1E"
         },
         {
-          "title": "BNK Securities cuts SK Hynix target to \u20a91.05M (-36%)",
-          "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE01WkVmRnl6a3J0OTFkc3pXWXNZMGJFS3VZdWRnVXlBN2lsYzNOallhNEkycVlrbC1feFlvdEdsTVJZM1VPbWhScXFGUHpFdmRYaTlhYXg4MXQ"
+          "title": "Goldman Sachs forecast: 20% memory chip price drop expected in 2028",
+          "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTE5GRWNUVmZmMThXMWI0dUZZWGpYal9MZjdSaF93OVVIaHBtTURZOXBfSW5TUm5FT3F4dGJ5WUgtX3h4TnpzMktmQjZHX0xTdGVXb1I4"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status unchanged at Partially fired. Goldman Sachs and BNP Paribas PT cuts (2026-11-23/24) add three new data points exceeding the -10% single-broker early-signal threshold, strengthening the case for escalation to Fired but not yet crossing the >5 analyst FY27 EPS-down\u2026"
     },
     {
       "id": "t2_hyperscaler_capex_revenue",
@@ -279,20 +279,20 @@
       "description": "Buyers panic-locking long-term supply. Paradoxical bearish signal \u2014 already fired.",
       "what_to_look_for": "3+ year HBM LTA announcements. 'Sold out through 2027/2028' phrasing. Currently fired (HBM3E sold out through 2026; Hynix HBM4 LTAs with Nvidia).",
       "current_status": "Fired",
-      "where_we_stand": "Fired since Dec 2025. HBM3E sold out through 2026; SK Hynix HBM4 LTAs with Nvidia confirmed. Today adds two independent corroborations: (1) Micron AI memory sold out through 2027 \u2014 extends the multi-supplier sold-out landscape to a third major maker; (2) Apple reportedly near a four-to-five-year Samsung DRAM supply agreement.\u2026",
-      "latest_developments": "Micron AI memory sold out through 2027 (24/7 Wall St.). Apple near 4-5 year Samsung DRAM LTA (multiple Korean sources, Yahoo Finance). Both items independently corroborate the existing fired status.",
+      "where_we_stand": "HBM3E sold out through 2026; SK Hynix HBM4 LTAs with Nvidia for Vera Rubin platform active. Samsung 2027 DRAM supply reported effectively sold out with customer contracts extending through 2031. Apple reported near a 4-5 year DRAM supply deal with Samsung \u2014 a major OEM locking multi-year supply at current\u2026",
+      "latest_developments": "Apple near 4-5 year DRAM deal with Samsung (reported 2026-11-24) \u2014 the largest OEM consumer locking multi-year supply. Samsung 2027 DRAM supply reported sold out with contracts through 2031. Both reinforce the paradoxical bearish read\u2026",
       "relevant_links": [
         {
-          "title": "Micron AI memory sold out through 2027",
-          "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPWjh2dFN5WHN4UC1wZU1YM29FOHJIclRtQUo5cTRWVmFOd2ZfTllNZnc3clo5ckQ2blBXZDJIS0s2N3BCdGh4TkY0UkRyYW9aMnA2UzZzWVB5Y21JaUE4RTdicnZkbG14dnJZMGlIaDhqbHBjSWt1X2oyOHlORlB2UndIN2dkTG40cHVMT0pqOXBXbnlIcmt4ejNTUzBDd3kzekxLVDVUNFFCYjhjWGhXOC1ROVA1X0lrS1RsVl85SGlxZw?oc=5"
+          "title": "Apple nears 4-5 year DRAM deal with Samsung",
+          "url": "https://news.google.com/rss/articles/CBMikAFBVV95cUxONWQxLURKVjBlUHVvVnpLV0hzRzhmRE9LdmZwTWdPN2c2WUhyNHV2eER0T0lmUE9yT3hxV1gzQktsTFo5Wml4YzhMV01uVlhIWTdraVVVMXA3ZTlZWF82MjVkZ1J0bk9RbE1CODRLb2RzY3g5SU5IWEFhT2dTQmlrUXJQaDBEekdzamJFNnRMNTc"
         },
         {
-          "title": "Apple near multi-year Samsung DRAM supply deal",
-          "url": "https://news.google.com/rss/articles/CBMi5wFBVV95cUxOekw3dHpSQUFqQVBhMzJST1RmWE5yOUlvY0V2ZXNFTlRmSmN6TERQQUxlMzhuSVFLT0IycTZJemxZRmFpdEQzaVVOc3QwT09BYlZ5ejVxWU1XYTFtSmJDLUhHSHhsSWJSYmxHYm4xU00wSGNBeXF4a3hiZWlWWmJEWGRUbjVNMmt1S0g5OFByYzdmQjZqWGFGblhkZ19TY01mVmgwRUEyUHVCcGFCVENHdW9mWlBkVlBWMDNtZ3ltaGZfSUI4ajJ0WlZsTmdyMkxQU0RwVGszcmVvWG5mdWVwMDlvNUlaT1k?oc=5"
+          "title": "Samsung 2027 DRAM supply effectively sold out",
+          "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxNWUtZOFVrRWhoV1Q5eThlNFQ2U1pGUVhfQm93VVlVdm5YblRuTW05Z2tSYmhtZHpobGRDd2Q0S2RERGZITUJRS3daY3JkR25vRGM4dkh6NERkM3Q1cl9FVXJkNlp2RVhmT05LdGpGTGNCRDhUUzFxZlhOdGhTSFlWNEJObS1LaUprSmtJQ2tzX081VWxBbkZzSkozMA"
         },
         {
-          "title": "Samsung-Apple four-to-five-year DRAM supply deal (MLQ.ai)",
-          "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxPOS0yeDBRS2dKSGJhcHVvS0Jzcm04eEhzR2VkdlZYQjl0dzRZM29oaU5BWkZRQ2JzcGtKUFpIMTJaeUdoa2w4T0h2SWk0Qjh6SktsbkgwTEltTFVVTGF3akd4NEM0S1lUT0JpUExuMmx5UWV1MmhsaVd0UVpWRWhPREo4VkNEYi1uMTdaTlNJUzY5SG1jMU1fS09hM3VhYnNPa01pQ0VlNk5rUzZ1T0E?oc=5"
+          "title": "Samsung memory capacity sold out through 2031 with long-term contracts",
+          "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOUTlfTFo2V3VrY2V3S0Jib055SHBLSjZHbWxsREZ2NjlLVkw4QjZxYUltSlRFYnlPNVlSM1NIRHlvbEJTSUo5U2pyYm1uMmZRSXRaUmQ0RUhIUFVXUXAzVGVQeDZEZFd4R05BdnQwR1M1clAxckI1QzNFai1uUnc2eGdpNWhNNVhPeXZOZ3Y3Q081QVlNeGo1MmNUVUMyUnE2MnBTRm5fbXo"
         }
       ],
       "change_vs_prior": null
