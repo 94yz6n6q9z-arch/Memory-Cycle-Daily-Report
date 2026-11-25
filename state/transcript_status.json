@@ -1,29 +1,29 @@
 {
-  "written_at_iso": "2026-11-24T18:08:45.604943+00:00",
+  "written_at_iso": "2026-11-25T17:33:35.599523+00:00",
   "status": "ok",
   "summary": {
-    "full_transcript": 1,
+    "full_transcript": 2,
     "materials_only": 0,
     "nothing": 4,
-    "already_processed": 30,
+    "already_processed": 29,
     "by_company": {
-      "Micron": "already_processed",
+      "Micron": "nothing",
       "Nvidia": "already_processed",
-      "Broadcom": "already_processed",
+      "Broadcom": "nothing",
       "TSMC": "already_processed",
       "Applied Materials": "already_processed",
       "Microsoft": "already_processed",
       "Alphabet": "already_processed",
-      "Meta": "nothing",
+      "Meta": "already_processed",
       "Amazon": "already_processed",
       "Oracle": "already_processed",
-      "Dell": "already_processed",
+      "Dell": "full_transcript",
       "HPE": "full_transcript",
       "ASML": "already_processed",
       "AMD": "already_processed",
       "Intel": "already_processed",
       "Cerebras": "already_processed",
-      "SK Hynix": "nothing",
+      "SK Hynix": "already_processed",
       "Samsung Electronics": "already_processed"
     },
     "yahoo_attempted_for": [
@@ -40,7 +40,7 @@
       "Meta",
       "Amazon",
       "Oracle",
-      "Dell",
+      "HPE",
       "AMD",
       "Intel",
       "Cerebras"
@@ -130,18 +130,18 @@
     {
       "company": "Dell",
       "ticker": "DELL",
-      "availability": "already_processed",
+      "availability": "full_transcript",
       "source_name": "Motley Fool",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 68711
     },
     {
       "company": "HPE",
       "ticker": "HPE",
-      "availability": "full_transcript",
+      "availability": "already_processed",
       "source_name": "Motley Fool",
-      "note": null,
-      "char_count": 67835
+      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "char_count": 0
     },
     {
       "company": "ASML",
@@ -202,17 +202,17 @@
     {
       "company": "SK Hynix",
       "ticker": "HY9H.MU",
-      "availability": "nothing",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
       "company": "Micron",
       "ticker": "MU",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
@@ -226,9 +226,9 @@
     {
       "company": "Broadcom",
       "ticker": "AVGO",
-      "availability": "already_processed",
+      "availability": "nothing",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
+      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
       "char_count": 0
     },
     {
@@ -274,9 +274,9 @@
     {
       "company": "Meta",
       "ticker": "META",
-      "availability": "nothing",
+      "availability": "already_processed",
       "source_name": "Yahoo Finance",
-      "note": "Yahoo Finance earnings-calls index fetch failed (proxy unavailable, blocked, or rate-limited).",
+      "note": "Already digested in a previous deep-tier run (cache hit).",
       "char_count": 0
     },
     {
@@ -296,12 +296,12 @@
       "char_count": 0
     },
     {
-      "company": "Dell",
-      "ticker": "DELL",
-      "availability": "already_processed",
+      "company": "HPE",
+      "ticker": "HPE",
+      "availability": "full_transcript",
       "source_name": "Yahoo Finance",
-      "note": "Already digested in a previous deep-tier run (cache hit).",
-      "char_count": 0
+      "note": null,
+      "char_count": 56227
     },
     {
       "company": "AMD",
