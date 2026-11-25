@@ -41,30 +41,22 @@
       "evidence_count": 0
     },
     "t1_efficiency_shock": {
-      "last_full_regen_date": "2026-11-18",
+      "last_full_regen_date": "2026-11-25",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup \u2014 permanent literature entry). Today adds three corroborating items: arXiv Gemma 4 KV-cache paging preprint (exact global-KV memory savings in paged serving), NVIDIA sparse-attention technical blog (co-designing sparse attention for long-context inference), and Meta SGLang 2x GPU savings\u2026",
-      "latest_developments": "NVIDIA sparse-attention blog and arXiv Gemma 4 KV-cache paging published today; Meta SGLang 2x GPU savings confirmed with NVIDIA/AMD adoption; Cerebras WSE-3 disaggregated inference enters production.",
+      "where_we_stand": "Fired since March 24, 2026: Google TurboQuant published 6x KV-cache compression + 8x inference speedup on H100 \u2014 a permanent, irreversible literature entry. No new efficiency breakthrough announced today. Cerebras Q4 transcript introduces quantified inference speed thresholds (250 tps crossover, 800 tps GPU floor) and reiterates HBM avoidance as competitive\u2026",
+      "latest_developments": "Cerebras Q4 call sharpened HBM-avoidance narrative and introduced CS-4/CS-5 roadmap with 2x performance targets. No new lab blog, arXiv, or mainstream publication announcing a second efficiency breakthrough today.",
       "relevant_links": [
         {
-          "title": "NVIDIA Sparse Attention Blog \u2014 Co-Designing for Efficient Long-Context Inference",
-          "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxOS2NMdXdUanZaNG9RWWtSMzNoN0VJeEgxNzhJUDRvMjlGSVNzWHBkR3RvVHB3RjlEblVSZmtxU01jUEFKZFFTRVNOT21Qa3N0VGx0MzlFeTRuQWNiam9YVUdjZnZOOEZ4cmM1eDhCU3pLRGF1THFFTEVvQW9xcl9BNjBMbUlockJDM1A5Z09OSkY1a2NidTc4dklmc1hvUXN1cUI4"
-        },
-        {
-          "title": "arXiv \u2014 Gemma 4 KV-Cache Paging Preprint",
-          "url": "https://arxiv.org/abs/2611.23035"
-        },
-        {
-          "title": "Cerebras Disaggregated Inference Production Launch",
-          "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxObjd6TU1wYzlzWi15bjJWRU84ZjlJcnE1blVMOHc2S1pPbk5UZWd4ejdlWFVpWXFQYnZNVlZzRVpWSjBmZmxub3lRNDdKR2ZBZWMxMzQ3ZlBxNEJEMDFrMm5nejZ5NzFPTk5YcGlHZzh4SHphV09OU0hJZHlXZXNTQ2RkZWRpSzZHakJ5QW5fYWZhYkdLdWNmUzdzSWQ4M0czQW55dE05a094QQ"
+          "title": "Cerebras Q4 2026 earnings \u2014 HBM avoidance and inference speed commentary",
+          "url": "https://finance.yahoo.com/quote/CBRS/earnings-calls/"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-18",
+      "updated_date": "2026-11-25",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 8
+      "evidence_count": 1
     },
     "t1_lead_times": {
       "last_full_regen_date": "2026-11-21",
@@ -235,22 +227,26 @@
       "evidence_count": 1
     },
     "t2_insider_sales": {
-      "last_full_regen_date": "2026-11-21",
+      "last_full_regen_date": "2026-11-25",
       "current_status": "Fired",
-      "where_we_stand": "Micron CEO Mehrotra Form 4 sale filed 2026-03-15 (SEC EDGAR, transaction code S, >$1M). 12-month aging window expires 2027-03-15; today (2026-11-21) is within window. DART: 0 new material disclosures across SK Hynix and Samsung in today's computed metrics. No reversal condition met. Signal persists on the Mehrotra sale alone through\u2026",
-      "latest_developments": "No new Form 4 or DART filings today. Signal persists on Mehrotra March 2026 sale within the 12-month window.",
+      "where_we_stand": "Fired since March 15, 2026: Micron CEO Mehrotra Form 4 sale (transaction code S, >$1M) \u2014 12-month aging window active through March 15, 2027. SK Hynix filed a DART material disclosure on Nov 25, 2026 (rcept_no 20261125800766), but this is an enterprise value enhancement report (\uae30\uc5c5\uac00\uce58\uc81c\uace0\uacc4\ud68d), not an insider sale\u2026",
+      "latest_developments": "SK Hynix DART filing Nov 25 confirmed as enterprise value report \u2014 regulatory activity, not insider divestiture. Mehrotra aging window expires 2027-03-15; no new Form 4 or DART ownership-change disclosures today.",
       "relevant_links": [
         {
-          "title": "SEC EDGAR Form 4 feed \u2014 Micron",
-          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=MU&type=4&dateb=&owner=include&count=40"
+          "title": "SK Hynix DART disclosure 20261125800766",
+          "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261125800766"
+        },
+        {
+          "title": "SEC EDGAR Form 4 feed \u2014 Micron Technology",
+          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=MU&type=4&dateb=&owner=include&count=10"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "614aa365f41e275a",
       "status": "Fired",
-      "updated_date": "2026-11-21",
+      "updated_date": "2026-11-25",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 0
+      "evidence_count": 1
     },
     "t2_ltas_signed": {
       "last_full_regen_date": "2026-11-24",
@@ -421,26 +417,26 @@
       "evidence_count": 0
     },
     "t4_capex_slashed": {
-      "last_full_regen_date": "2026-11-23",
+      "last_full_regen_date": "2026-11-25",
       "current_status": "Partially fired",
-      "where_we_stand": "Micron paused $4.5B Taiwan HBM plant construction (Nov 16, 2026) \u2014 the sole evidence entry. Today's news raises a $32B capex question around Micron's forward investment trajectory, with 24/7 Wall St. framing Micron's heavy CapEx as a peak-cycle risk. No Big Three announcement of a >20% CapEx reduction or explicit\u2026",
-      "latest_developments": "No new CapEx cut announcements today. The $32B Micron capex question surfaced in analyst commentary but no formal guidance change was issued. Micron's Taiwan HBM pause (Nov 16) remains the sole partial-fire evidence.",
+      "where_we_stand": "Partially fired since November 16, 2026: Micron paused construction of its Taiwan HBM plant \u2014 a documented capex reduction signal below the >20% full-fire threshold. Today's BofA note ('Semis cuts have started') and broader market commentary reference capex pressure but cite no new specific >20% cut or fab idling announcement\u2026",
+      "latest_developments": "BofA flagged 'semis cuts have started' on Nov 24; no new primary-source capex cut announcement from SK Hynix, Samsung, or Micron today. Micron Taiwan HBM plant pause (Nov 16) remains the active evidence anchor.",
       "relevant_links": [
         {
-          "title": "Micron's $32B capex question and NAND inflection analysis",
-          "url": "https://news.google.com/rss/articles/CBMi6gFBVV95cUxQWHhZOVVuRFlrM0V1bUJkX3hVem14b25HZm1WT3ltU2FsdFNJOTE0OGdlMlpTYUw1VGFhbUM2dXRVY0JYanVmNlFoUUhjeTdmYlgwdTJDbHA3RlZqYWxScnRyUS1lWUY2Qk96OUhUX3Y4cXRmTVZEM1NnSW44aXhXOGlWRThOV2hhYno3dTFreHhGWE0zcjFkbmh3aXVwNHpqRnVIeTk3LTNYT0pqUm9PY3ZWOXJVZEp0V214bHpxY3djWXFhU3c0TVZrcE9BV0NZOEdjZWwzbVNJTHZvNktsQno1Rk5FZlNrekE"
+          "title": "BofA: 'Semis Cuts Have Started' \u2014 TIKR.com",
+          "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQVTE2RmU0LVhxQ3ZGMW5tVnFTNEN4ZUNSMUlmSkVPVlpRd0hXSGhnbHc3bjdpYVIyVERVaEc3NlVBNmx6bDY2YWY4YWJNOUduMmVBZkI2eXFOLXY3MjRFbzFlRDZKV09uUnh4Q3VYNkNqakVvSmVhWTVOQjZoT1pvbkJkdlN1VHU4anE3UTNZUHR0czBkOE9PeHhBeGV2WF9LcnVZckZkRUpNQVRNTDNLYjRn"
         },
         {
-          "title": "Micron stock gains 2% but $32B capex question hangs over recovery",
-          "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxNVFd1S0hGcHNWTnBVRTJzUUJBNExCbU9DV0VPUm01ZnF1eFdiZzM3U1dOcmNzUVUtdFJGdEVWRTlZYTJRS081LWlOamVadi1GNXRDaFItaHFjTGs3MVJWVDkyTVd4N1ZyYmVWZ3NvaW5MbzBKdUEyei1kbXE4c1diNjlpTmdpVmdSREZ5NzkwenFTMk5rOXZjWUNuNlBMZzFILVBiR0FuV3k2UGVvakZNbTFSaGJqOHF5SU9UQnJwQW81dHM"
+          "title": "Micron halts Taiwan HBM plant construction \u2014 BigGo Finance",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFAxa2lBZ3otM0tsTWtZQUwzd1YyZWdnRWhmb2d4YlZLc0ltWWEzbEV1Q2lCRFBMOWxqVXpYcnF5My1QYVY1UGFvRWZ2eU10Y0hWMkFvMW9HVE41RkRlMFhWWW5lbXJsMVhhb19HZlRDeHV6V2wxNUE"
         }
       ],
       "change_vs_prior": null,
       "fingerprint": "e72f7d9a182e4329",
       "status": "Partially fired",
-      "updated_date": "2026-11-23",
+      "updated_date": "2026-11-25",
       "fingerprint_algo": "v3-fired-status",
-      "evidence_count": 0
+      "evidence_count": 1
     },
     "t4_guidance_cuts": {
       "last_full_regen_date": "2026-11-21",

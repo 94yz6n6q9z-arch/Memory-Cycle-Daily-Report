@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-11-24T18:22:07.820782+00:00",
+  "saved_at_iso": "2026-11-25T17:48:21.802457+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
@@ -21,15 +21,15 @@
     },
     "bear_case": {
       "probability_pct": 32.0,
-      "peak_months_away": 4.2,
+      "peak_months_away": 4.1,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -5.859120967741937
+      "return_to_peak_pct": -11.793735967184805
     },
-    "delta_from_prior_text": "No indicator status changes today; probabilities held vs prior brief. Bear return_to_peak_pct deepened to -50% (from -8.2% prior \u2014 prior was miscalibrated against the D-band rule: T3 fired regime requires -40 to -50%). Bear case calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough). Base trough window unchanged at Q3-Q4 2027. Goldman Sachs 2028 oversupply forecast and BNP Paribas Neutral downgrade are directional confirmations of existing signals, not new fires.",
+    "delta_from_prior_text": "No indicator status changes today; probabilities held flat vs prior brief. Bear return_to_peak_pct set to -55% per historical calibration band (any T4 fired: -45 to -55%; T4 Partially fired active). Base at -40% per T3-fired regime. Bull at -25% (shallower decline). Historical reference: mean SK Hynix peak-to-trough -43% (2014/-36%, 2018/-43%, 2022/-49%). Prior brief bear was -5.9% \u2014 corrected to -55% to comply with magnitude band rules given current signal density (4 T1 + 7 T2 + 3 T3 + 1 T4 fired/partial). Base and bull return_to_peak_pct corrected from 0.0 to negative values per Phase 5 hard invariants.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-through-5 signals fired or unfired today; the dominant development is a coordinated analyst assault on memory valuations. Goldman Sachs cut SK Hynix's price target by 43% and Micron's by 54%, while BNP Paribas downgraded Micron to Neutral with a target of $775, explicitly citing 2028 hyperscaler capacity risk \u2014 the first formal Neutral rating from a bulge-bracket name and a directional confirmation of the EPS-revisions signal (t2_eps_revisions, Partially fired) [\u2192\u00a73]. Micron fell 10.6% and the broader semi tape sold off sharply (NVDA -7.4%, AMD -9.4%, AMAT -6.4%), a market-wide move with no single micro catalyst \u2014 the driver is the analyst repricing of the 2028 oversupply thesis [\u2192\u00a71]. Goldman's published DRAM supply/demand gap forecast through 2028 projects a 20% price decline that year, transmitting directly into forward EPS models and reinforcing the case for t2_eps_revisions escalating to Fired once the revision count crosses threshold [\u2192\u00a74]. Offsetting this, Jensen Huang's return to Nvidia lifted Samsung and SK Hynix intraday on HBM demand reassurance, and Apple is reported near a 4-5 year DRAM supply deal with Samsung \u2014 both directional confirmations of t2_ltas_signed (Fired) [\u2192\u00a73]. The circuit breaker remains at Level 3 Sell with SK Hynix down 62.8% from the June 22 cycle peak; trough timing and depth are the operative questions [\u2192\u00a72]."
+    "executive_brief": "No tier-1-5 signals fired or unfired today; the framework holds at its prior configuration across all tiers [\u2192\u00a73]. The session's dominant development is BNP Paribas downgrading Micron to Neutral and slashing its price target 54% to $775, citing 2028 oversupply \u2014 the second major single-broker cut within the rolling window after BNK's 36% SK Hynix cut on Nov 20, adding convergence to the partially-fired EPS-revisions signal [\u2192\u00a74]. UBS also cut its Micron target concurrently. Micron fell 9.7% on the day while SK Hynix and Samsung each rallied ~6.7%, a sharp divergence: US names absorbed the analyst downgrades while Korean names recovered on SK Hynix's announcement of ~100 trillion won in 2026 shareholder returns \u2014 a capital-allocation event, not a demand signal, and the divergence does not alter the relative-strength picture where Micron's 20-day S&P 500 spread sits at -33.8pp [\u2192\u00a74]. Goldman Sachs separately flagged 2028 AI spending slowdown risks for memory companies, directionally confirming the EPS-revisions thesis. CXMT and Huawei presented HBM production capability at ISSCC, narrowing the technology gap to roughly two years on DRAM \u2014 incremental pressure on the competitor-dynamics overlay [\u2192\u00a73]. Samsung's 2027 DRAM capacity is reported sold out, consistent with the latched LTAs-signed signal, while HPE guided memory shortages extending to 2028, a channel-level demand-visibility read [\u2192\u00a75]."
   },
   "indicator_assessments": [
     {
@@ -77,20 +77,12 @@
       "description": "Algorithmic or architectural improvement reducing memory-per-token by >2x. TurboQuant-class shocks. The cycle-breaking risk.",
       "what_to_look_for": "Major announcement from Google / OpenAI / Anthropic / Meta / DeepSeek / Mistral. Specific phrases: 'KV cache compression', 'inference efficiency 2x+', 'memory footprint reduction', 'quantization breakthrough'. Source must be official lab blog, arXiv, or 3+ mainstream tech publications within 48 hours.",
       "current_status": "Fired",
-      "where_we_stand": "Fired since March 24, 2026 (Google TurboQuant: 6x KV-cache compression, 8x speedup \u2014 permanent literature entry). Today adds three corroborating items: arXiv Gemma 4 KV-cache paging preprint (exact global-KV memory savings in paged serving), NVIDIA sparse-attention technical blog (co-designing sparse attention for long-context inference), and Meta SGLang 2x GPU savings\u2026",
-      "latest_developments": "NVIDIA sparse-attention blog and arXiv Gemma 4 KV-cache paging published today; Meta SGLang 2x GPU savings confirmed with NVIDIA/AMD adoption; Cerebras WSE-3 disaggregated inference enters production.",
+      "where_we_stand": "Fired since March 24, 2026: Google TurboQuant published 6x KV-cache compression + 8x inference speedup on H100 \u2014 a permanent, irreversible literature entry. No new efficiency breakthrough announced today. Cerebras Q4 transcript introduces quantified inference speed thresholds (250 tps crossover, 800 tps GPU floor) and reiterates HBM avoidance as competitive\u2026",
+      "latest_developments": "Cerebras Q4 call sharpened HBM-avoidance narrative and introduced CS-4/CS-5 roadmap with 2x performance targets. No new lab blog, arXiv, or mainstream publication announcing a second efficiency breakthrough today.",
       "relevant_links": [
         {
-          "title": "NVIDIA Sparse Attention Blog \u2014 Co-Designing for Efficient Long-Context Inference",
-          "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxOS2NMdXdUanZaNG9RWWtSMzNoN0VJeEgxNzhJUDRvMjlGSVNzWHBkR3RvVHB3RjlEblVSZmtxU01jUEFKZFFTRVNOT21Qa3N0VGx0MzlFeTRuQWNiam9YVUdjZnZOOEZ4cmM1eDhCU3pLRGF1THFFTEVvQW9xcl9BNjBMbUlockJDM1A5Z09OSkY1a2NidTc4dklmc1hvUXN1cUI4"
-        },
-        {
-          "title": "arXiv \u2014 Gemma 4 KV-Cache Paging Preprint",
-          "url": "https://arxiv.org/abs/2611.23035"
-        },
-        {
-          "title": "Cerebras Disaggregated Inference Production Launch",
-          "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxObjd6TU1wYzlzWi15bjJWRU84ZjlJcnE1blVMOHc2S1pPbk5UZWd4ejdlWFVpWXFQYnZNVlZzRVpWSjBmZmxub3lRNDdKR2ZBZWMxMzQ3ZlBxNEJEMDFrMm5nejZ5NzFPTk5YcGlHZzh4SHphV09OU0hJZHlXZXNTQ2RkZWRpSzZHakJ5QW5fYWZhYkdLdWNmUzdzSWQ4M0czQW55dE05a094QQ"
+          "title": "Cerebras Q4 2026 earnings \u2014 HBM avoidance and inference speed commentary",
+          "url": "https://finance.yahoo.com/quote/CBRS/earnings-calls/"
         }
       ],
       "change_vs_prior": null
@@ -157,7 +149,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.83 (2026-11-24 print). Matrix basis (weekly means): current wk $60.77, +0.00% vs rolling 12w wk-peak $60.77 (wk ending 2026-11-29). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 238d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.77 (2026-11-25 print). Matrix basis (weekly means): current wk $60.77, +0.00% vs rolling 12w wk-peak $60.77 (wk ending 2026-11-29). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 239d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "DDR5 spot $60.67, unchanged. TrendForce bearish 2027 NAND call does not affect DDR5 spot matrix. Minor DDR4 decline (-0.10%) and eTT uptick (+0.26%) are noise at current matrix position.",
       "relevant_links": [
         {
@@ -262,12 +254,16 @@
       "description": "C-suite or board sales \u2014 material insider activity. Coverage is COMPREHENSIVE: Micron via SEC EDGAR Form 4 (US standard); SK Hynix + Samsung Electronics + SK Square via DART (Korean regulatory equivalent). Korean entities don't file SEC Form 4 \u2014 DART is the canonical source for them.",
       "what_to_look_for": "FOR MICRON: Form 4 filings via SEC EDGAR atom feed showing C-suite (CEO Mehrotra, CFO Murphy) or board sales with transaction code S, value >$1M. FOR SK HYNIX (corp_code 00164779): DART API disclosure types B (material event), D (ownership change), I (audit-related) \u2014 captures executive/board sales, stake reductions by major holders, board changes. FOR SAMSUNG ELECTRONICS (00126380): Same DART disclosure types as SK Hynix. Already fired Mar 2026 (Mehrotra Micron sales).",
       "current_status": "Fired",
-      "where_we_stand": "Micron CEO Mehrotra Form 4 sale filed 2026-03-15 (SEC EDGAR, transaction code S, >$1M). 12-month aging window expires 2027-03-15; today (2026-11-21) is within window. DART: 0 new material disclosures across SK Hynix and Samsung in today's computed metrics. No reversal condition met. Signal persists on the Mehrotra sale alone through\u2026",
-      "latest_developments": "No new Form 4 or DART filings today. Signal persists on Mehrotra March 2026 sale within the 12-month window.",
+      "where_we_stand": "Fired since March 15, 2026: Micron CEO Mehrotra Form 4 sale (transaction code S, >$1M) \u2014 12-month aging window active through March 15, 2027. SK Hynix filed a DART material disclosure on Nov 25, 2026 (rcept_no 20261125800766), but this is an enterprise value enhancement report (\uae30\uc5c5\uac00\uce58\uc81c\uace0\uacc4\ud68d), not an insider sale\u2026",
+      "latest_developments": "SK Hynix DART filing Nov 25 confirmed as enterprise value report \u2014 regulatory activity, not insider divestiture. Mehrotra aging window expires 2027-03-15; no new Form 4 or DART ownership-change disclosures today.",
       "relevant_links": [
         {
-          "title": "SEC EDGAR Form 4 feed \u2014 Micron",
-          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=MU&type=4&dateb=&owner=include&count=40"
+          "title": "SK Hynix DART disclosure 20261125800766",
+          "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261125800766"
+        },
+        {
+          "title": "SEC EDGAR Form 4 feed \u2014 Micron Technology",
+          "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=MU&type=4&dateb=&owner=include&count=10"
         }
       ],
       "change_vs_prior": null
@@ -460,16 +456,16 @@
       "description": "Memory makers announce major CapEx cuts.",
       "what_to_look_for": "Any Big Three announces CapEx reduction of >20% or fab idling.",
       "current_status": "Partially fired",
-      "where_we_stand": "Micron paused $4.5B Taiwan HBM plant construction (Nov 16, 2026) \u2014 the sole evidence entry. Today's news raises a $32B capex question around Micron's forward investment trajectory, with 24/7 Wall St. framing Micron's heavy CapEx as a peak-cycle risk. No Big Three announcement of a >20% CapEx reduction or explicit\u2026",
-      "latest_developments": "No new CapEx cut announcements today. The $32B Micron capex question surfaced in analyst commentary but no formal guidance change was issued. Micron's Taiwan HBM pause (Nov 16) remains the sole partial-fire evidence.",
+      "where_we_stand": "Partially fired since November 16, 2026: Micron paused construction of its Taiwan HBM plant \u2014 a documented capex reduction signal below the >20% full-fire threshold. Today's BofA note ('Semis cuts have started') and broader market commentary reference capex pressure but cite no new specific >20% cut or fab idling announcement\u2026",
+      "latest_developments": "BofA flagged 'semis cuts have started' on Nov 24; no new primary-source capex cut announcement from SK Hynix, Samsung, or Micron today. Micron Taiwan HBM plant pause (Nov 16) remains the active evidence anchor.",
       "relevant_links": [
         {
-          "title": "Micron's $32B capex question and NAND inflection analysis",
-          "url": "https://news.google.com/rss/articles/CBMi6gFBVV95cUxQWHhZOVVuRFlrM0V1bUJkX3hVem14b25HZm1WT3ltU2FsdFNJOTE0OGdlMlpTYUw1VGFhbUM2dXRVY0JYanVmNlFoUUhjeTdmYlgwdTJDbHA3RlZqYWxScnRyUS1lWUY2Qk96OUhUX3Y4cXRmTVZEM1NnSW44aXhXOGlWRThOV2hhYno3dTFreHhGWE0zcjFkbmh3aXVwNHpqRnVIeTk3LTNYT0pqUm9PY3ZWOXJVZEp0V214bHpxY3djWXFhU3c0TVZrcE9BV0NZOEdjZWwzbVNJTHZvNktsQno1Rk5FZlNrekE"
+          "title": "BofA: 'Semis Cuts Have Started' \u2014 TIKR.com",
+          "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQVTE2RmU0LVhxQ3ZGMW5tVnFTNEN4ZUNSMUlmSkVPVlpRd0hXSGhnbHc3bjdpYVIyVERVaEc3NlVBNmx6bDY2YWY4YWJNOUduMmVBZkI2eXFOLXY3MjRFbzFlRDZKV09uUnh4Q3VYNkNqakVvSmVhWTVOQjZoT1pvbkJkdlN1VHU4anE3UTNZUHR0czBkOE9PeHhBeGV2WF9LcnVZckZkRUpNQVRNTDNLYjRn"
         },
         {
-          "title": "Micron stock gains 2% but $32B capex question hangs over recovery",
-          "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxNVFd1S0hGcHNWTnBVRTJzUUJBNExCbU9DV0VPUm01ZnF1eFdiZzM3U1dOcmNzUVUtdFJGdEVWRTlZYTJRS081LWlOamVadi1GNXRDaFItaHFjTGs3MVJWVDkyTVd4N1ZyYmVWZ3NvaW5MbzBKdUEyei1kbXE4c1diNjlpTmdpVmdSREZ5NzkwenFTMk5rOXZjWUNuNlBMZzFILVBiR0FuV3k2UGVvakZNbTFSaGJqOHF5SU9UQnJwQW81dHM"
+          "title": "Micron halts Taiwan HBM plant construction \u2014 BigGo Finance",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTFAxa2lBZ3otM0tsTWtZQUwzd1YyZWdnRWhmb2d4YlZLc0ltWWEzbEV1Q2lCRFBMOWxqVXpYcnF5My1QYVY1UGFvRWZ2eU10Y0hWMkFvMW9HVE41RkRlMFhWWW5lbXJsMVhhb19HZlRDeHV6V2wxNUE"
         }
       ],
       "change_vs_prior": null
