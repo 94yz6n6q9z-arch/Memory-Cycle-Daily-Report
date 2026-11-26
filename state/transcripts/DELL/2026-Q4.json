@@ -1,0 +1,272 @@
+{
+  "ticker": "DELL",
+  "company": "Dell",
+  "quarter_key": "2026-Q4",
+  "digest": {
+    "source_id": "Yahoo Finance / Dell / 2026-11-26",
+    "source_type": "earnings_transcript",
+    "published_date_iso": "2026-11-26",
+    "title": "Dell earnings call 2026-11-26",
+    "char_count_input": 54518,
+    "key_metrics": {
+      "component_inventory_weeks": null,
+      "supplier_inventory_weeks": null,
+      "lead_time_weeks": null,
+      "asp_yoy_pct": null,
+      "contract_price_qoq_pct": null,
+      "capex_2027_guidance_usd_b": null,
+      "ai_server_revenue_q3_usd_b": 22.0,
+      "ai_server_orders_q3_usd_b": 60.2,
+      "ai_server_backlog_usd_b": 132.3,
+      "traditional_server_revenue_growth_yoy_pct": 235,
+      "storage_revenue_growth_yoy_pct": 24,
+      "total_revenue_q3_usd_b": 54.9,
+      "total_revenue_growth_yoy_pct": 103,
+      "diluted_eps_q3": 9.45,
+      "diluted_eps_growth_yoy_pct": 265,
+      "operating_margin_rate_pct": 14.2,
+      "isg_operating_margin_rate_pct": 17,
+      "cash_flow_operations_q3_usd_b": 4.5,
+      "shareholder_returns_q3_usd_b": 4.9,
+      "ai_server_revenue_q4_guidance_usd_b": 23.5,
+      "total_revenue_q4_guidance_usd_b": 56.25,
+      "total_revenue_growth_q4_guidance_yoy_pct": 69,
+      "diluted_eps_q4_guidance": 8.4,
+      "diluted_eps_growth_q4_guidance_pct": 115,
+      "fy2027_total_revenue_guidance_usd_b": 202,
+      "fy2027_total_revenue_growth_yoy_pct": 80,
+      "fy2027_diluted_eps_guidance": 29.68,
+      "fy2027_diluted_eps_growth_yoy_pct": 190,
+      "four_quarter_ai_orders_usd_b": 180,
+      "four_quarter_ai_revenue_shipped_usd_b": 66,
+      "dell_ai_factory_customers_count": 7500,
+      "agentic_servers_asp_multiple": 2.0,
+      "token_growth_forecast_through_2030_multiplier": 87,
+      "total_tokens_forecast_quadrillion": 3600,
+      "training_demand_growth_multiplier": 5,
+      "power_build_out_forecast_gw": 200,
+      "architecture_signals": {
+        "enterprise_ai_workload_context_tokens": null,
+        "enterprise_ai_customer_name": null,
+        "enterprise_ai_use_case": "agentic AI, inference, recursive learning, KV cache, multimodal workflows",
+        "enterprise_ai_revenue_growth_qoq_pct": null,
+        "agent_product_usage_disclosure": "100,000 agents spun up daily across Dell organization; doubling in 90 days",
+        "deployed_quantization": null,
+        "deployed_moe": null,
+        "deployed_speculative_decoding": null,
+        "deployed_disaggregated_serving": true,
+        "custom_silicon_memory_arch": "HBM",
+        "custom_silicon_named": "NVIDIA Vera Rubin NVL72, AMD MI400",
+        "inference_cost_reduction_pct": null,
+        "tokens_per_dollar_claim": null,
+        "hbm_capex_pct": null,
+        "lpddr_capex_pct": null,
+        "ddr_capex_pct": null,
+        "hbm_bit_share_pct": null,
+        "wafer_allocation_language": null,
+        "memory_pct_of_capex": null,
+        "cxl_production_deployment": null,
+        "lpddr_datacenter_design_win": null,
+        "hbf_mention": null,
+        "new_frontier_model_release": null,
+        "new_accelerator_announcement": null,
+        "enterprise_ai_quarterly_revenue": null,
+        "architecture_freetext": "Dell shipping majority of new orders on NVIDIA Vera Rubin NVL72; agentic workloads driving CPU server demand for harness/orchestration; KV cache, multimodal, recursive learning expanding storage and traditional server TAM"
+      },
+      "competitor_signals": {
+        "cxmt_oem_mainstream_win": null,
+        "cxmt_oem_lowend_win": null,
+        "cxmt_ddr5_share_pct": null,
+        "cxmt_ddr5_pricing_pressure_flagged": null,
+        "us_export_controls_easing_event": null,
+        "samsung_hbm4_nvidia_share_pct": null,
+        "sk_hynix_hbm4_nvidia_share_pct": null,
+        "samsung_hbm4_yield_pct": null,
+        "hbm_gross_margin_pct_sk_hynix": null,
+        "hbm_gross_margin_pct_samsung": null,
+        "hbm4e_qualification_lead": null,
+        "samsung_hbm4e_announcement": null,
+        "amd_samsung_hbm4_supply_mou": null,
+        "micron_vera_rubin_design_win": null,
+        "micron_total_hbm_share_pct": null,
+        "micron_hbm_share_growth_source": null,
+        "hbf_hyperscaler_design_win": null,
+        "hbf_hot_tier_displacement": null,
+        "jedec_hbf_spec_ratified": null,
+        "sk_hynix_on_jedec_hbf_working_group": null,
+        "sk_hynix_hbf_roadmap_mention": null,
+        "sk_hynix_solidigm_hbf_integration": null,
+        "sandisk_kioxia_hbf_milestone": null,
+        "hbf_commercial_stage": null
+      },
+      "adr_signals": {
+        "f1_filed": null,
+        "f1_canceled": null,
+        "underwriter_syndicate": null,
+        "roadshow_active": null,
+        "demand_classification": null,
+        "pricing_day": null,
+        "pricing_discount_pct": null,
+        "final_size_usd_b": null,
+        "insider_sale_event": null
+      },
+      "_transcript_availability": "full_transcript"
+    },
+    "signal_relevance": [
+      "t1_oem_inventory",
+      "t1_demand_destruction",
+      "t2_capex_parabolic",
+      "t3_capex_plateau",
+      "t1_decode_hbm_captive_ratio"
+    ],
+    "key_quotes": [
+      "Demand continues to exceed supply; gap between component supply and end-user demand continues to widen.",
+      "Agentic AI driving 10x productivity improvements; agents spun up 100,000 daily across organization.",
+      "Memory demand way ahead of supply; DRAM wafer capacity shift to HBM crunch continues into 2027."
+    ],
+    "target_price_action": null,
+    "fired_status_evidence": "neutral",
+    "raw_url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q3-2027-earnings_call-742337.html",
+    "digested_at_iso": "2026-11-26T17:16:08.555929"
+  },
+  "diff_with_prior": {
+    "ticker": "DELL",
+    "company": "Dell",
+    "current_quarter": "2026-Q4",
+    "prior_quarter": "2026-Q3",
+    "current_digest_event_date": "2026-11-26",
+    "prior_digest_event_date": "2026-09-02",
+    "indicator_deltas": [
+      {
+        "indicator_id": "t1_oem_inventory",
+        "direction": "strengthening",
+        "summary": "Demand-supply gap explicitly widening; inventory language absent in both calls but current call emphasizes gap expansion vs. prior's constraint flagging.",
+        "prior_quote": "Demand outstripped supply. Demand was even greater than results published.",
+        "current_quote": "Demand continues to exceed supply; gap between component supply and end-user demand continues to widen."
+      },
+      {
+        "indicator_id": "t1_demand_destruction",
+        "direction": "weakening",
+        "summary": "No demand destruction signals in either call; current call reports accelerating agentic adoption (100k agents daily) and guidance raises, contradicting destruction thesis.",
+        "prior_quote": null,
+        "current_quote": "Agentic AI driving 10x productivity improvements; agents spun up 100,000 daily across organization."
+      },
+      {
+        "indicator_id": "t2_capex_parabolic",
+        "direction": "strengthening",
+        "summary": "New indicator added in current call; language on 200 GW power buildout and 87x token growth through 2030 signals parabolic capex trajectory.",
+        "prior_quote": null,
+        "current_quote": "Power build out forecast gw: 200; token growth forecast through 2030 multiplier: 87."
+      },
+      {
+        "indicator_id": "t3_capex_plateau",
+        "direction": "weakening",
+        "summary": "New indicator added in current call; no plateau signals present; instead guidance extends through 2030 with continued growth.",
+        "prior_quote": null,
+        "current_quote": "Memory demand way ahead of supply; DRAM wafer capacity shift to HBM crunch continues into 2027."
+      },
+      {
+        "indicator_id": "t1_decode_hbm_captive_ratio",
+        "direction": "strengthening",
+        "summary": "Current call names specific NVIDIA Vera Rubin NVL72 and AMD MI400 as majority-shipped configs, confirming HBM as captive design standard vs. prior's generic disaggregated architecture language.",
+        "prior_quote": null,
+        "current_quote": "Dell shipping majority of new orders on NVIDIA Vera Rubin NVL72; custom silicon named: NVIDIA Vera Rubin NVL72, AMD MI400."
+      }
+    ],
+    "metric_deltas": [
+      {
+        "metric_name": "ai_server_revenue_q_usd_b",
+        "prior_value": "16.4 (Q2)",
+        "current_value": "22.0 (Q3)",
+        "direction": "up"
+      },
+      {
+        "metric_name": "ai_server_backlog_usd_b",
+        "prior_value": "95",
+        "current_value": "132.3",
+        "direction": "up"
+      },
+      {
+        "metric_name": "enterprise_ai_customer_count",
+        "prior_value": "6500",
+        "current_value": "7500",
+        "direction": "up"
+      },
+      {
+        "metric_name": "traditional_server_growth_yoy_pct",
+        "prior_value": "122",
+        "current_value": "235",
+        "direction": "up"
+      },
+      {
+        "metric_name": "storage_revenue_growth_yoy_pct",
+        "prior_value": "26",
+        "current_value": "24",
+        "direction": "down"
+      },
+      {
+        "metric_name": "total_revenue_growth_yoy_pct",
+        "prior_value": null,
+        "current_value": "103",
+        "direction": "new"
+      },
+      {
+        "metric_name": "diluted_eps_growth_yoy_pct",
+        "prior_value": null,
+        "current_value": "265",
+        "direction": "new"
+      },
+      {
+        "metric_name": "four_quarter_ai_orders_usd_b",
+        "prior_value": null,
+        "current_value": "180",
+        "direction": "new"
+      },
+      {
+        "metric_name": "four_quarter_ai_revenue_shipped_usd_b",
+        "prior_value": null,
+        "current_value": "66",
+        "direction": "new"
+      },
+      {
+        "metric_name": "agentic_servers_asp_multiple",
+        "prior_value": null,
+        "current_value": "2.0",
+        "direction": "new"
+      },
+      {
+        "metric_name": "fy2027_total_revenue_guidance_usd_b",
+        "prior_value": null,
+        "current_value": "202",
+        "direction": "new"
+      },
+      {
+        "metric_name": "fy2027_diluted_eps_growth_yoy_pct",
+        "prior_value": null,
+        "current_value": "190",
+        "direction": "new"
+      }
+    ],
+    "language_dropped": [
+      "Spotty CPU shortages (CPU constraint language from Q3 absent in Q4)",
+      "Demand-supply gap phrased as 'demand was even greater than results published' \u2014 Q4 shifts to focus on widening gap and component supply constraints rather than demand surprise",
+      "Generic consolidation ratios (17G, 18G) with multiples \u2014 no longer specified in Q4"
+    ],
+    "language_added": [
+      "100,000 agents spun up daily across Dell organization; doubling in 90 days (new agent deployment velocity metric)",
+      "Agentic AI driving 10x productivity improvements (new quantified benefit claim)",
+      "NVIDIA Vera Rubin NVL72 and AMD MI400 named as specific majority-shipped configs (prior call had no named accelerators)",
+      "Recursive learning, multimodal workflows (new workload use-case categories beyond agentic, inference, KV cache)",
+      "Memory demand way ahead of supply; DRAM wafer capacity shift to HBM crunch continues into 2027 (escalated memory constraint language and 2027 extension)",
+      "87x token growth through 2030; 200 GW power buildout forecast (new large-scale projections)",
+      "Agentic servers asp multiple: 2.0x (new pricing power metric)"
+    ],
+    "overall_tone_shift": "more bullish",
+    "computed_at_iso": "2026-11-26T17:16:08.555741",
+    "haiku_model": "claude-haiku-4-5",
+    "haiku_input_tokens": 4171,
+    "haiku_output_tokens": 1639,
+    "error": null
+  },
+  "saved_at_iso": "2026-11-26T17:16:08.556009"
+}
