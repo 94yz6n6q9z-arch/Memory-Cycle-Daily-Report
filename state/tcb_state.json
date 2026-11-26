@@ -1,7 +1,7 @@
 {
   "level": 3,
   "level_since": "2026-07-31",
-  "updated": "2026-11-25",
+  "updated": "2026-11-26",
   "last_verdict": {
     "level": 3,
     "action": "SELL \u2014 thesis stopped out",
@@ -16,8 +16,8 @@
     "components": {
       "shock": {
         "fired": true,
-        "worst_day": "2026-11-06",
-        "worst_ret_pct": -10.44,
+        "worst_day": "2026-11-25",
+        "worst_ret_pct": -11.05,
         "threshold_pct": -8.0
       },
       "drawdown": {
@@ -26,31 +26,31 @@
         "stopout_depth": true,
         "stopout_depth_base": true,
         "stopout_gate_pct": -30.0,
-        "drawdown_pct": -60.32,
+        "drawdown_pct": -64.71,
         "peak_price": 2918367.25,
         "peak_date": "2026-06-22",
-        "last_close": 1158000.0,
-        "last_date": "2026-11-24"
+        "last_close": 1030000.0,
+        "last_date": "2026-11-25"
       },
       "distribution": {
         "fired": true,
         "status": "data_ok",
-        "days": 3,
+        "days": 4,
         "needed": 5,
         "mode": "v2",
-        "udvr": 0.71,
+        "udvr": 0.57,
         "mature": false,
         "lower_highs": true,
         "watermark": 2918367.25,
         "raw_today": false,
-        "asof": "2026-11-24"
+        "asof": "2026-11-25"
       },
       "trend_break": {
         "status": "data_ok",
         "fired": true,
-        "close": 1158000.0,
-        "ma50": 1462860.0,
-        "ma20": 1254450.0,
+        "close": 1030000.0,
+        "ma50": 1446400.0,
+        "ma20": 1231600.0,
         "ma50_falling": true,
         "ma20_below_ma50": true,
         "reason": null
@@ -62,9 +62,9 @@
     },
     "peak_price": 2918367.25,
     "peak_date": "2026-06-22",
-    "drawdown_pct": -60.32,
-    "last_close": 1158000.0,
-    "last_date": "2026-11-24",
+    "drawdown_pct": -64.71,
+    "last_close": 1030000.0,
+    "last_date": "2026-11-25",
     "data_status": "fresh",
     "deescalation": {
       "closes_above_ma50_streak_ok": false,
@@ -105,6 +105,13 @@
           "ret_pct": -10.44,
           "sp_day_sig": -4.99,
           "sp_dd_sig": -6.81,
+          "class": "MACRO-excused"
+        },
+        {
+          "date": "2026-11-25",
+          "ret_pct": -11.05,
+          "sp_day_sig": -0.39,
+          "sp_dd_sig": -6.44,
           "class": "MACRO-excused"
         }
       ],

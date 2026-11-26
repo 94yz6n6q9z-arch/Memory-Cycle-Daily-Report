@@ -1,7 +1,7 @@
 {
   "source_id": "Naver Finance",
   "payload": {
-    "fetched_at_iso": "2026-11-25T17:34:14.724614+00:00",
+    "fetched_at_iso": "2026-11-26T17:16:55.907203+00:00",
     "source": "WiseReport via navercomp.wisereport.co.kr (Naver iframe target)",
     "tickers": {
       "SK Hynix": {
@@ -19,6 +19,19 @@
             "direction": "maintained",
             "published_date_iso": "2026-11-24",
             "raw": "\ub300\uc2e0 | 26/11/24 | 3,000,000 | 3,000,000 | 0.00 | Buy | Buy"
+          },
+          {
+            "broker_korean": "\uc720\uc548\ud0c0",
+            "broker_english": "Yuanta Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 3700000,
+            "prior_target_krw": 3700000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-24",
+            "raw": "\uc720\uc548\ud0c0 | 26/11/24 | 3,700,000 | 3,700,000 | 0.00 | Buy | Buy"
           },
           {
             "broker_korean": "\ub2e4\uc62c\ud22c\uc790",
@@ -149,19 +162,6 @@
             "direction": "maintained",
             "published_date_iso": "2026-11-11",
             "raw": "\uba54\ub9ac\uce20 | 26/11/11 | 3,200,000 | 3,200,000 | 0.00 | Buy | Buy"
-          },
-          {
-            "broker_korean": "\uc720\uc548\ud0c0",
-            "broker_english": "Yuanta Securities",
-            "rating": "Buy",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 3700000,
-            "prior_target_krw": 3700000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-11-11",
-            "raw": "\uc720\uc548\ud0c0 | 26/11/11 | 3,700,000 | 3,700,000 | 0.00 | Buy | Buy"
           },
           {
             "broker_korean": "\uc2e0\ud55c\ud22c\uc790",
@@ -295,7 +295,13 @@
           }
         ],
         "n_actions": 22,
-        "summary": {}
+        "summary": {
+          "avg_opinion_score": 4.0,
+          "avg_target_price_krw": 2929091,
+          "avg_eps_krw": 354118,
+          "avg_per": 2.91,
+          "num_estimating_institutions": 22
+        }
       },
       "Samsung Electronics": {
         "code": "005930",
@@ -312,6 +318,19 @@
             "direction": "maintained",
             "published_date_iso": "2026-11-24",
             "raw": "\ub300\uc2e0 | 26/11/24 | 500,000 | 500,000 | 0.00 | Buy | Buy"
+          },
+          {
+            "broker_korean": "\uc720\uc548\ud0c0",
+            "broker_english": "Yuanta Securities",
+            "rating": "Buy",
+            "rating_english": "Buy",
+            "prior_rating": "Buy",
+            "target_price_krw": 690000,
+            "prior_target_krw": 690000,
+            "target_change_pct": 0.0,
+            "direction": "maintained",
+            "published_date_iso": "2026-11-24",
+            "raw": "\uc720\uc548\ud0c0 | 26/11/24 | 690,000 | 690,000 | 0.00 | Buy | Buy"
           },
           {
             "broker_korean": "\ub2e4\uc62c\ud22c\uc790",
@@ -429,19 +448,6 @@
             "direction": "maintained",
             "published_date_iso": "2026-11-11",
             "raw": "\uba54\ub9ac\uce20 | 26/11/11 | 500,000 | 500,000 | 0.00 | Buy | Buy"
-          },
-          {
-            "broker_korean": "\uc720\uc548\ud0c0",
-            "broker_english": "Yuanta Securities",
-            "rating": "Buy",
-            "rating_english": "Buy",
-            "prior_rating": "Buy",
-            "target_price_krw": 690000,
-            "prior_target_krw": 690000,
-            "target_change_pct": 0.0,
-            "direction": "maintained",
-            "published_date_iso": "2026-11-11",
-            "raw": "\uc720\uc548\ud0c0 | 26/11/11 | 690,000 | 690,000 | 0.00 | Buy | Buy"
           },
           {
             "broker_korean": "\uc2e0\ud55c\ud22c\uc790",
@@ -588,7 +594,13 @@
           }
         ],
         "n_actions": 22,
-        "summary": {}
+        "summary": {
+          "avg_opinion_score": 4.0,
+          "avg_target_price_krw": 458182,
+          "avg_eps_krw": 45515,
+          "avg_per": 3.75,
+          "num_estimating_institutions": 22
+        }
       },
       "SK Square": {
         "code": "034730",
@@ -725,9 +737,15 @@
           }
         ],
         "n_actions": 10,
-        "summary": {}
+        "summary": {
+          "avg_opinion_score": 4.0,
+          "avg_target_price_krw": 736000,
+          "avg_eps_krw": 222611,
+          "avg_per": 1.92,
+          "num_estimating_institutions": 10
+        }
       }
     }
   },
-  "fetched_at_iso": "2026-11-25T17:34:54.377192"
+  "fetched_at_iso": "2026-11-26T17:17:35.906433"
 }

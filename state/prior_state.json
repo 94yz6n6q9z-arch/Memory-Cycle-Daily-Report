@@ -1,5 +1,5 @@
 {
-  "saved_at_iso": "2026-11-25T17:48:21.802457+00:00",
+  "saved_at_iso": "2026-11-26T17:29:32.326212+00:00",
   "executive_summary": {
     "current_phase": 5,
     "current_phase_label": "Decline",
@@ -7,14 +7,14 @@
     "new_triggers_today": [],
     "base_case": {
       "probability_pct": 50.0,
-      "peak_months_away": 10.2,
+      "peak_months_away": 10.1,
       "peak_window_start": "Q3 2027",
       "peak_window_end": "Q4 2027",
       "return_to_peak_pct": 0.0
     },
     "bull_case": {
       "probability_pct": 18.0,
-      "peak_months_away": 17.7,
+      "peak_months_away": 17.6,
       "peak_window_start": "Q1 2028",
       "peak_window_end": "Q3 2028",
       "return_to_peak_pct": 0.0
@@ -24,12 +24,12 @@
       "peak_months_away": 4.1,
       "peak_window_start": "Q1 2027",
       "peak_window_end": "Q2 2027",
-      "return_to_peak_pct": -11.793735967184805
+      "return_to_peak_pct": -0.8321808252427232
     },
-    "delta_from_prior_text": "No indicator status changes today; probabilities held flat vs prior brief. Bear return_to_peak_pct set to -55% per historical calibration band (any T4 fired: -45 to -55%; T4 Partially fired active). Base at -40% per T3-fired regime. Bull at -25% (shallower decline). Historical reference: mean SK Hynix peak-to-trough -43% (2014/-36%, 2018/-43%, 2022/-49%). Prior brief bear was -5.9% \u2014 corrected to -55% to comply with magnitude band rules given current signal density (4 T1 + 7 T2 + 3 T3 + 1 T4 fired/partial). Base and bull return_to_peak_pct corrected from 0.0 to negative values per Phase 5 hard invariants.",
+    "delta_from_prior_text": "No indicator status changes today; probability distribution unchanged from prior brief. Bear case magnitude calibrated to historical average drawdown (-43%, mean of 2014/-36%, 2018/-43%, 2022/-49% SK Hynix peak-to-trough); with T3 signals fired (t3_relative_strength, t3_eps_miss_guidance) and T4 partial (t4_capex_slashed), bear band is -45 to -55% per the 'Any T3 fired' row. Bear set at -55% reflecting current signal density. Base trough window Q3-Q4 2027 unchanged. Trough window fields (semantically): base Q3-Q4 2027, bull Q1-Q3 2028, bear Q1-Q2 2027.",
     "urgent_attention_needed": false,
     "urgent_attention_text": "",
-    "executive_brief": "No tier-1-5 signals fired or unfired today; the framework holds at its prior configuration across all tiers [\u2192\u00a73]. The session's dominant development is BNP Paribas downgrading Micron to Neutral and slashing its price target 54% to $775, citing 2028 oversupply \u2014 the second major single-broker cut within the rolling window after BNK's 36% SK Hynix cut on Nov 20, adding convergence to the partially-fired EPS-revisions signal [\u2192\u00a74]. UBS also cut its Micron target concurrently. Micron fell 9.7% on the day while SK Hynix and Samsung each rallied ~6.7%, a sharp divergence: US names absorbed the analyst downgrades while Korean names recovered on SK Hynix's announcement of ~100 trillion won in 2026 shareholder returns \u2014 a capital-allocation event, not a demand signal, and the divergence does not alter the relative-strength picture where Micron's 20-day S&P 500 spread sits at -33.8pp [\u2192\u00a74]. Goldman Sachs separately flagged 2028 AI spending slowdown risks for memory companies, directionally confirming the EPS-revisions thesis. CXMT and Huawei presented HBM production capability at ISSCC, narrowing the technology gap to roughly two years on DRAM \u2014 incremental pressure on the competitor-dynamics overlay [\u2192\u00a73]. Samsung's 2027 DRAM capacity is reported sold out, consistent with the latched LTAs-signed signal, while HPE guided memory shortages extending to 2028, a channel-level demand-visibility read [\u2192\u00a75]."
+    "executive_brief": "No tier-1-through-5 signals fired or unfired today; the indicator distribution is unchanged from yesterday's brief. The most material development is a demand-destruction intensification signal: TelecomLead reports global smartphone shipments forecast to fall 13.9% in 2026 and 6% in 2027, explicitly attributed to memory cost pressure \u2014 a deepening of the already-fired demand-destruction signal [\u2192\u00a73] and a directional confirmation that OEM price pass-through is transmitting into unit demand. Dell's Q3 2027 earnings (Nov 26) add a contradictory data point at the AI-infrastructure layer: AI server backlog rose to $132.3B with management stating 'memory demand way ahead of supply' and 'DRAM wafer capacity shift to HBM crunch continues into 2027,' corroborating the OEM inventory signal [\u2192\u00a73] but not reversing the consumer-device destruction thesis. BNP Paribas cut Micron's price target 54% (to $775), the second major broker cut in 30 days alongside BNK's 36% SK Hynix cut, adding to the directional pressure on EPS revisions (Partially fired) [\u2192\u00a73]. Memory pure-plays led the tape lower: SK Hynix -11.1%, Samsung -9.9%, Micron -4.5% [\u2192\u00a71], with Micron's 5d/20d underperformance vs the S&P 500 at -12.8pp/-31.6pp sustaining the red-fire on relative strength [\u2192\u00a74]. Huawei's disclosure of a custom 5-layer hybrid-bonding HBM chip with 4,096 data pins adds incremental competitive pressure on the Competitor Dynamics overlay [\u2192\u00a73]. The cycle peak is confirmed behind us at 2,919,000 KRW (Jun 22); SK Hynix trades at 1,030,000 KRW, a 64.7% drawdown [\u2192\u00a72]."
   },
   "indicator_assessments": [
     {
@@ -60,15 +60,23 @@
       "description": "IDC, Counterpoint, Gartner revise forecasts down (the quantity signal) PLUS the leading price-pass-through edge \u2014 OEMs raising end-device prices or cutting memory content to offset memory costs.",
       "what_to_look_for": "QUANTITY (firing condition, already met): IDC PC shipment forecast revised to -5% or worse for 2026 (current -2.4 to -11.3% \u2014 already fired). Counterpoint smartphone <0% (current -2%). Gartner data center server forecast cut. LEADING / INTENSIFICATION (signal already fired \u2014 these DEEPEN it, they are the early end-market tell before forecast cuts widen): OEMs raising end-device prices to offset memory costs (Apple, Microsoft, Sony, Nintendo, Dell, Valve), removing low-spec/entry configurations, cutting memory content per device, substituting cheaper nodes, or delaying refresh cycles. NOTE: holding a price point by cutting memory content AND raising price to hold content are BOTH demand-destruction mechanisms \u2014 do not read a memory-content INCREASE (e.g. iPhone to 12GB for on-device AI) as a reversal; the destruction shows up in unit demand and price elasticity.",
       "current_status": "Partially fired",
-      "where_we_stand": "IDC PC shipment forecast -2.4% to -11.3% for 2026 (fired since April 2026). Counterpoint smartphone -2% (fired). Gartner server forecast cut on record. Signal is Partially fired \u2014 full fire requires intensification via OEM price pass-through (Apple, Dell, Microsoft raising end-device prices or cutting memory content). No new OEM pass-through\u2026",
-      "latest_developments": "No new OEM price pass-through evidence today. Applied Materials Q4 transcript dropped 'unprecedented visibility' language, replacing with 'demand much higher than supply' \u2014 a softening of the demand-certainty framing worth monitoring for next-quarter transmission.",
+      "where_we_stand": "Partially fired. Quantity conditions met since April 2026: IDC PC forecast -2.4% to -11.3% for 2026; Counterpoint smartphone -2%. Today's intensification: TelecomLead reports global smartphone shipments forecast -13.9% in 2026 and -6% in 2027, explicitly tied to memory cost pressure \u2014 a material deepening of the unit-volume destruction signal. Dell\u2026",
+      "latest_developments": "TelecomLead (Nov 26): global smartphone shipments forecast -13.9% in 2026, -6% in 2027, attributed to memory cost pressure. Dell Q3 2027 call: AI server backlog $132.3B, 'memory demand way ahead of supply.' HPE/Dell 45% mid-contract\u2026",
       "relevant_links": [
         {
-          "title": "Applied Materials Q4 transcript diff \u2014 demand language shift",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings-calls/"
+          "title": "Global smartphone outlook: shipments to fall 13.9% in 2026",
+          "url": "https://news.google.com/rss/articles/CBMi_AFBVV95cUxOQW5BNXV4cGdDRjlTRXp1Qkd3MmExSWxxY2dsU0dUb0dfblZNcndmTGVVYnNCNFVRdWdWYjFUQ0tYbWRBTUM0SU1uLXlRajV0S3lhYVQzakZYeGduZUE4RXVyeGRqa3Y4ZlM1MThyNmlUYUw0YjhveGFQallGcU02S0tuM21ZWGx6dlFIMmhHXzQxOEExZjVRcHpXeVJkQXZ0blNwNS10cEtOTld4T3ZEOHlKQkpJa0c0enBUZnpfek9mNV83TmNscEtaUktPTXIxMjEwQXZKZDBpSVdlT3M2TTdFYVFhd0NiLWpyNVMwOHNJR1dRdHI5Vktycm7SAYQCQVVfeXFMUDJCM1RCWlB3dUtkZUZlT3c3bHozUVIxcW5LZGZiT0N4elE5M3NkTll3MDZLeWVJU1hla2FPZGdlZmlKMVRQeFhrNnA3OGdsQVJBRndYbTYzT3NjeVZKZ2ZBblY0QnNBVjdXeEN0YzFzY3FrUUoySzZ3OVhETUNyOE56MTI5Z2pvYldXeGFuTDZVYlB2S1ZJTExidGhjeTQyS1RiU3F3ZVU4UlJGMXVUeWZnWjJYXzROUmV6Sk00dHFPN1BoczZ0MzlXWE95cnU5N2d2QVZEUW5lMzJmWXJ1TkZ5NDcxUThuRzdXRnBycl9Bb2NSeEZ5R25iTVdnc1N5aExIUXU"
+        },
+        {
+          "title": "HPE/Dell hiking AI server prices 45% as memory shortage bites",
+          "url": "https://news.google.com/rss/articles/CBMijwJBVV95cUxQZXViUFAwSGlMWDFueVhJc0RydlFZb29FYUFTRkljQzd2RGtENGJLdk5MQ0QxcmwyMmN3Y0dvNXpYVGdUZEhsTkphQ1FvLVNpUUg5YkxHYlFNbE1FN3lvYkhic2hjMWJsaVZtTmNKM0VQTlpiRi1oaktQdmVxLS1jSzlLY05heV9OUVFSSzJ0MGJRRFpQdFN6YW5sZFlHWkx5VTVlZUlFQ1I1VVk3cGNWX2R1cVdVdG5JQndmU0VhRk5jdEtwcjdfU1d4UjVPbUswS0NBRHM2THVncVRnWU9ZWTY5QkpiSFBpTXlKb0l1NGNPWVMwdnk1bnZaQXhQaGJvU0VnYlVUb04wY1Q1Q2RZ"
+        },
+        {
+          "title": "Dell Q3 2027 earnings call",
+          "url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q3-2027-earnings_call-742337.html"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status unchanged (Partially fired). Intensification: smartphone unit-volume forecast deepened to -13.9% for 2026 (vs prior -2% Counterpoint figure); enterprise OEM price pass-through confirmed via HPE/Dell 45% mid-contract hikes. Dell AI server data does not reverse consumer destruction thesis."
     },
     {
       "id": "t1_efficiency_shock",
@@ -111,12 +119,16 @@
       "description": "Supplier-buyer inventory gap exposes prior double-ordering. Requires BOTH sides confirmed (stitched signal).",
       "what_to_look_for": "Supplier inventory <3 weeks AND OEM/buyer inventory >7 weeks. Gap >5 weeks is unprecedented (currently ~7 weeks per TrendForce Q3 2025). Trigger requires evidence from BOTH supplier-side (memory makers) AND buyer-side (Dell/HPE/Lenovo).",
       "current_status": "Fired",
-      "where_we_stand": "TrendForce Q3 2025 canonical print: supplier inventory 2-3 weeks, OEM/buyer inventory ~10 weeks \u2014 7+ week gap, well above the 5-week unprecedented threshold. Stitched signal (both supplier and buyer sides confirmed). Quarterly persistence: no reversal evidence (buyer inventory <5 weeks or supplier >5 weeks) in today's feed. Micron president's 'can't\u2026",
-      "latest_developments": "No new OEM inventory data today. Samsung capacity booked through 2029 (BigGo Finance) is consistent with the prior stitched signal \u2014 buyers locking supply because their own inventory is being drawn down, but the gap\u2026",
+      "where_we_stand": "Fired since Sep 2025 on TrendForce Q3 2025 data: supplier inventory ~2-3 weeks, OEM/buyer inventory ~10 weeks, gap ~7+ weeks (threshold: gap >5 weeks). Dell Q3 2027 earnings (Nov 26) add qualitative corroboration: 'demand continues to exceed supply; gap between component supply and end-user demand continues to widen' and 'memory\u2026",
+      "latest_developments": "Dell Q3 2027 call (Nov 26) explicitly states demand-supply gap is widening and HBM crunch extends into 2027 \u2014 qualitative corroboration of persistent supplier tightness. No new TrendForce inventory-week print.",
       "relevant_links": [
         {
-          "title": "Samsung memory booked through 2029 \u2014 BigGo Finance",
-          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE1HLTMwclU3TGNoLUdNYVRmRlZmOXNRX0xTV2RhWFc5d1d1aDFGY1B0M0JoUUd4X2pRV3FkVW94ZmdUa2ZQcTl4bDRpdk5uMkZZWDdmSUh3MEQ2Z3JKaF8yRWN1MU1ieGNrTWNwVlpZMzJwRmhBbFE"
+          "title": "Dell Q3 2027 earnings call \u2014 memory demand ahead of supply",
+          "url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q3-2027-earnings_call-742337.html"
+        },
+        {
+          "title": "Is Micron Stock a Buy After HPE Said Memory Will Stay Scarce Into 2028?",
+          "url": "https://news.google.com/rss/articles/CBMi7AFBVV95cUxQSWpmQnJHOWNBdlkwdlV5OHBKUTZnVVFZLVdsZm4zNUpfQmU2M0FBT01GM1k2MFZOU19EQkxuc2pWSXM4Z1ZVdGRubVFreWdOZExvQkRmb1JZLWxTTDhyQVNwWHhsd0RHVks4andES0dpMVIxaVZyZDBNNUlXN0Vvd196RVlLM0k3UlRNVDFTQ2s2TVc5aUxrX1pqRUVabDQwdzZ0am1hSllLT21fZUNteEhDWVdibF9nbWdTM0xxRFRGN0N6RjhWUHJzZGh3UkU5WHRVN1BxTUJ2TkRVbTRLSHh5dHpyM0VqbFhPMw"
         }
       ],
       "change_vs_prior": null
@@ -149,7 +161,7 @@
       "description": "5x5 trigger matrix mapping DRAM contract QoQ growth (rows) against DDR5 16Gb 4800/5600 spot drawdown from rolling 12-week peak (cols). Returns Not fired / Partially fired / Fired per cell. Replaces the v3.39 absolute-threshold trigger ($38.2 spot / $950 module). The matrix is the framework's canonical early-warning signal \u2014 spot drawdown leads contract direction by 6-10 weeks. Matrix engine: src/data/cycle_matrix.py; charts: src/analysis/chart_generator.py.",
       "what_to_look_for": "Today's cell position on the 5x5 matrix. ROWS (contract QoQ): R1 >=+30%, R2 +20-30%, R3 +10-20%, R4 +5-10%, R5 <=+5%. COLS (spot drawdown from rolling 12w peak): C1 at peak, C2 <5% off, C3 5-10% off, C4 10-20% off, C5 >=20% off. Not fired = R1/R2 with low drawdown (full position). Partially fired = mid-band (review thesis, consider 25-33% trim). Fired = any R4-R5 row, any C5 column, or R3+C4. Historical cycle peaks all landed in R5 by the time contract growth hit ~0% \u2014 the matrix exists to act BEFORE that. Contract row uses a SYNTHETIC estimate: anchor (most recent TrendForce quarterly forecast, preferring server_ddr5 > conventional_dram_aggregate segments) + 0.4 * tone_adj + 0.4 * supplier_adj + 0.2 * spot_lead_adj, each capped +/-30pp.",
       "current_status": "Not fired",
-      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.77 (2026-11-25 print). Matrix basis (weekly means): current wk $60.77, +0.00% vs rolling 12w wk-peak $60.77 (wk ending 2026-11-29). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 239d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
+      "where_we_stand": "Cell: Not fired (Row 1 x Col 1). No firing condition met \u2014 hold full position. DDR5 16Gb 4800/5600 spot $60.77 (2026-11-26 print). Matrix basis (weekly means): current wk $60.77, +0.00% vs rolling 12w wk-peak $60.77 (wk ending 2026-11-29). 0w since last new peak. Contract anchor: Q2_2026 58-63% QoQ (trendforce_press_release, published 2026-03-31, 240d old). Synthetic adjusted: 61.5% central (range 59-64%). Adjustments: spot_lead +5.0pp (1 src, weight 0.2).",
       "latest_developments": "DDR5 spot $60.67, unchanged. TrendForce bearish 2027 NAND call does not affect DDR5 spot matrix. Minor DDR4 decline (-0.10%) and eTT uptick (+0.26%) are noise at current matrix position.",
       "relevant_links": [
         {
@@ -183,20 +195,20 @@
       "description": "Memory makers' and hyperscalers' CapEx growing parabolic \u2014 building 2027-28 supply glut. ALREADY FIRED on aggregate. v3.44.0: LATCHED \u2014 this signal ratchets up only and never reverts.",
       "what_to_look_for": "Big Three combined CapEx >2x 2024 (fired). Hyperscaler 2026 aggregate >$725B (fired). 2027-guidance direction is CONTEXT for this card, never a reversal condition: above-2026 guidance is bull-confirm color; flat/down guidance is the t3_capex_plateau signal's event and can NEVER move this signal down. LATCH RULE (v3.44.0, Raul Jul-31: 'once triggered it triggered'): once Fired, this signal STAYS Fired \u2014 the parabola is a historical fact; the eventual stop and decline of CapEx growth is later-stage progression told by the plateau and Tier 4 signals, not a de-risking of this one. FORBIDDEN COUNTEREXAMPLE (2026-07-31): this signal was downgraded Fired \u2192 Partially fired because Microsoft guided FY27 flat and Meta withheld 2027 \u2014 exactly the forbidden move. Status is deterministically ratcheted after every run: any Layer 2 or Layer 3 output below the prior status is overwritten.",
       "current_status": "Fired",
-      "where_we_stand": "Latched Fired since January 2026. Aggregate 2026 hyperscaler CapEx: $725B+ confirmed via Q4 2025 earnings cycle. Amazon Q4 2026 transcript: 2027 CapEx 'meaningfully higher' than $220B 2026 guidance \u2014 parabolic trajectory deepening. Alphabet Q4 2026: CapEx to 'increase significantly' in 2027 ($195-205B 2026 base). Oracle raised FY2027 CapEx guidance to $90-95B from $70B, calling FY2027-2028 'peak CapEx years.' Applied Materials Q4 transcript: cloud CapEx expected to exceed $1 trillion in 2027 (+50% YoY). Meta narrowed 2026 guidance to $135-145B (lower end raised). NVIDIA $390B supply commitments mostly for memory (Motley\u2026",
-      "latest_developments": "Amazon Q4 transcript: 2027 CapEx 'meaningfully higher' than $220B. Applied Materials: cloud CapEx >$1T in 2027. Oracle: FY2027-28 'peak CapEx years' at $90-95B. NVIDIA $390B supply commitments, mostly memory.",
+      "where_we_stand": "Fired and latched. Parabola established: aggregate 2026 hyperscaler CapEx >$725B (MSFT $175B FY27, GOOGL $195-205B CY26, AMZN $220B CY26, META $135-145B CY26); memory maker CapEx >2x 2024 levels. Amazon Q4 2026 transcript explicitly guides 2027 'meaningfully higher' than $220B; Alphabet guides 2027 'increase significantly'; Applied Materials Q4 2026 call states 'cloud CapEx expected to increase more than 50% in 2027 to well over $1 trillion' and 'WFE demand will be up more than 30% YoY in 2027.' Dell Q3 2027 call adds: AI server backlog $132.3B, 'DRAM wafer capacity shift\u2026",
+      "latest_developments": "Dell Q3 2027 call (Nov 26): AI server backlog $132.3B, memory demand 'way ahead of supply,' HBM crunch extends into 2027 \u2014 reinforces parabolic CapEx thesis. No new hyperscaler guidance print today; prior prints from\u2026",
       "relevant_links": [
         {
-          "title": "Applied Materials Q4 transcript \u2014 cloud CapEx >$1T 2027",
-          "url": "https://finance.yahoo.com/quote/AMAT/earnings-calls/"
+          "title": "Dell Q3 2027 earnings \u2014 AI server backlog $132.3B",
+          "url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q3-2027-earnings_call-742337.html"
         },
         {
-          "title": "NVIDIA $390B supply commitments \u2014 Motley Fool",
-          "url": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxQcUxGZ2xYWjFVd1dyT0V3bkdPVHZ2U2gzUzZUUzRPd2RqRXcxemNKem9zbnplNGwzQWY4SENsdXF3dUlIMU9Dc281WmJXdmo3eVk2UThLT2JPR3hwdUlpa3AzVE5hZEktR0lfY0xaVjZuZUVqamF0M0tDbmhTVVpjUHU1bXZnRzQtdXI2YWh2Zm1wRDlPSFpvRDJObTRUbnJ4ZGNDR3J5SmNoVC0zTmc1QXBfdTR1TExLNno3RXJ5eU8waVNCaDIwNnhkZWJrcHR6dExKemJVQmsxb0VCdEtBUUhqY2Q0STNrdVpr"
+          "title": "Applied Materials Q4 2026: cloud CapEx >$1T in 2027",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5qMVZ1UGY3WldkLWRuOEIwLWZjS0lRZjRSQ20zNUU1WXV4MEN2azZwTzNvdENhUGJTclJfX2lmdS1JRUVvZjBhVWlRTGJTTml0UzJZZHp3T1lDbGRXbHBRdTF5ZmhEUjgwemVOZFRoOUNJeVJUb3c"
         },
         {
-          "title": "Oracle FY2027 peak CapEx years \u2014 Oracle Q3 transcript",
-          "url": "https://finance.yahoo.com/quote/ORCL/earnings-calls/"
+          "title": "JPMorgan projects $450B AI bond surge in 2027 as spending growth nears peak",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5qMVZ1UGY3WldkLWRuOEIwLWZjS0lRZjRSQ20zNUU1WXV4MEN2azZwTzNvdENhUGJTclJfX2lmdS1JRUVvZjBhVWlRTGJTTml0UzJZZHp3T1lDbGRXbHBRdTF5ZmhEUjgwemVOZFRoOUNJeVJUb3c"
         }
       ],
       "change_vs_prior": null
@@ -275,23 +287,19 @@
       "description": "Buyers panic-locking long-term supply. Paradoxical bearish signal \u2014 already fired.",
       "what_to_look_for": "3+ year HBM LTA announcements. 'Sold out through 2027/2028' phrasing. Currently fired (HBM3E sold out through 2026; Hynix HBM4 LTAs with Nvidia).",
       "current_status": "Fired",
-      "where_we_stand": "HBM3E sold out through 2026; SK Hynix HBM4 LTAs with Nvidia for Vera Rubin platform active. Samsung 2027 DRAM supply reported effectively sold out with customer contracts extending through 2031. Apple reported near a 4-5 year DRAM supply deal with Samsung \u2014 a major OEM locking multi-year supply at current\u2026",
-      "latest_developments": "Apple near 4-5 year DRAM deal with Samsung (reported 2026-11-24) \u2014 the largest OEM consumer locking multi-year supply. Samsung 2027 DRAM supply reported sold out with contracts through 2031. Both reinforce the paradoxical bearish read\u2026",
+      "where_we_stand": "Fired. HBM3E sold out through 2026 (prior evidence); SK Hynix HBM4 LTAs with NVIDIA confirmed. Today: Samsung announces memory sold out through 2029 \u2014 extends the sold-out window by three years and adds a second major vendor to the multi-year lock-in narrative. No LTA cancellations or buyer pull-outs reported. The\u2026",
+      "latest_developments": "Samsung announces memory sold out through 2029 (mobidevices.com, Nov 26) \u2014 extends LTA window beyond prior HBM3E 2026 and SK Hynix HBM4 records. Second major vendor now in sold-out status.",
       "relevant_links": [
         {
-          "title": "Apple nears 4-5 year DRAM deal with Samsung",
-          "url": "https://news.google.com/rss/articles/CBMikAFBVV95cUxONWQxLURKVjBlUHVvVnpLV0hzRzhmRE9LdmZwTWdPN2c2WUhyNHV2eER0T0lmUE9yT3hxV1gzQktsTFo5Wml4YzhMV01uVlhIWTdraVVVMXA3ZTlZWF82MjVkZ1J0bk9RbE1CODRLb2RzY3g5SU5IWEFhT2dTQmlrUXJQaDBEekdzamJFNnRMNTc"
+          "title": "Samsung has sold out of all its memory through 2029",
+          "url": "https://news.google.com/rss/articles/CBMiZkFVX3lxTFA4VE85c0V6R1E2eW1xb2tQSng2X1RUVGVoTkNzQkNKeTJhQWszUnVYZGstVVZKUGFFVnotVnZqb1lXNC1ET1ZlOEZfWVp5MmxLMGhHQVpweHFTcHpCTkg2VkREakExQQ"
         },
         {
-          "title": "Samsung 2027 DRAM supply effectively sold out",
-          "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxNWUtZOFVrRWhoV1Q5eThlNFQ2U1pGUVhfQm93VVlVdm5YblRuTW05Z2tSYmhtZHpobGRDd2Q0S2RERGZITUJRS3daY3JkR25vRGM4dkh6NERkM3Q1cl9FVXJkNlp2RVhmT05LdGpGTGNCRDhUUzFxZlhOdGhTSFlWNEJObS1LaUprSmtJQ2tzX081VWxBbkZzSkozMA"
-        },
-        {
-          "title": "Samsung memory capacity sold out through 2031 with long-term contracts",
-          "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOUTlfTFo2V3VrY2V3S0Jib055SHBLSjZHbWxsREZ2NjlLVkw4QjZxYUltSlRFYnlPNVlSM1NIRHlvbEJTSUo5U2pyYm1uMmZRSXRaUmQ0RUhIUFVXUXAzVGVQeDZEZFd4R05BdnQwR1M1clAxckI1QzNFai1uUnc2eGdpNWhNNVhPeXZOZ3Y3Q081QVlNeGo1MmNUVUMyUnE2MnBTRm5fbXo"
+          "title": "Is Micron Stock a Buy After HPE Said Memory Will Stay Scarce Into 2028?",
+          "url": "https://news.google.com/rss/articles/CBMi7AFBVV95cUxQSWpmQnJHOWNBdlkwdlV5OHBKUTZnVVFZLVdsZm4zNUpfQmU2M0FBT01GM1k2MFZOU19EQkxuc2pWSXM4Z1ZVdGRubVFreWdOZExvQkRmb1JZLWxTTDhyQVNwWHhsd0RHVks4andES0dpMVIxaVZyZDBNNUlXN0Vvd196RVlLM0k3UlRNVDFTQ2s2TVc5aUxrX1pqRUVabDQwdzZ0am1hSllLT21fZUNteEhDWVdibF9nbWdTM0xxRFRGN0N6RjhWUHJzZGh3UkU5WHRVN1BxTUJ2TkRVbTRLSHh5dHpyM0VqbFhPMw"
         }
       ],
-      "change_vs_prior": null
+      "change_vs_prior": "Status unchanged (Fired). New evidence: Samsung sold out through 2029 extends the LTA window and adds a second major vendor to the sold-out narrative."
     },
     {
       "id": "t2_pe_compressed",
@@ -338,16 +346,16 @@
       "description": "Hyperscalers keep spending at enormous scale but STOP ACCELERATING \u2014 next-period guidance lands flat vs the prior baseline. This is the 'infrastructure is built' moment: a peak-confirmation signal, distinct from CapEx acceleration (t2_capex_parabolic, boom fuel) and from CapEx cuts (Tier 4, bust confirmation).",
       "what_to_look_for": "SCORING MODEL (v3.45.0, deterministic via the guidance ledger): per company (MSFT, GOOGL, AMZN, META), latest print vs that company's OWN PRIOR FORWARD GUIDANCE \u2014 the signal is the SURPRISE, not the level. Points: RAISE >5% above prior guidance = -1 (accelerating). REITERATE/CONFIRM within \u00b15% = +1 (stable \u2014 merely confirming the number IS the event). CUT >5% = +2 (BEYOND plateau \u2014 'we are done'). Withheld forward guidance after previously guiding = 0 points + watch flag (does NOT count toward the plateau tally). No print this cycle = 0, 'awaiting print'. STATUS IS DECIDED BY COUNT ALONE (ruling 2026-08-08): N = companies at stable-or-cutting: 0 = Not fired; 1-2 = Partially fired; 3-4 = Fired. Raises can never veto the count floor; cuts can never jump the band \u2014 the score S is INTENSITY display only. HARD RULE \u2014 qualifiers cannot override numbers: growth language attached to a reiterated number does NOT disqualify the plateau (forbidden escape, 2026-07-31: 'guidance is AT baseline, not flat'). WORKED EXAMPLE (Aug-7 prints): Meta stable +1 (2026 $130-145B reiterated within \u00b15% of prior), Microsoft stable +1 (accounting basis change: FY27 $175B vs $190B prior is a finance-to-operating lease reclassification, investment unchanged \u2014 ruled 2026-08-08, NOT an economic cut), Amazon accelerating -1 ($220B raise), Alphabet accelerating -1 (2027 guided above 2026) -> N=2, S=0 -> Partially fired. ENUMERATION HARD RULE: where-we-stand MUST list all four companies every day with stance, points, and last print date \u2014 'awaiting print' when silent, never omitted. OUTPUT CONTRACT: when evidence contains a NEW forward-guidance number, emit exactly one line per company in the form LEDGER_UPDATE: <Company> | <PERIOD> | <low>-<high> | <event_date YYYY-MM-DD, the CALL date not the coverage date> | prior=<the company's own prior guidance in $B, when the call states it, e.g. 'up from about $200 billion' -> prior=200> | verb=<raised|cut|unchanged|reiterated|narrowed> | basis=<changed|same, 'changed' only for accounting-basis moves like finance->operating lease reclassification> | <source> \u2014 the deterministic ledger computes stance, count, score, and status from these; your prose never sets status; verbs corroborate, ARITHMETIC DECIDES. EVENT RULE (Amazon-echo counterexample, 2026-08-08): emit a LEDGER_UPDATE ONLY for a NEW guidance event \u2014 an earnings call or an official company revision. Coverage that restates a known print (a September article saying 'Amazon has committed $220B') is NOT a new event and must NOT be emitted; the ledger will reject non-call-dated updates. BASIS COUNTEREXAMPLE (Microsoft, Jul-29-26): '$175B, expectations remain unchanged, finance->operating lease shift' is an accounting reclassification \u2014 emit with prior=190 | verb=unchanged | basis=changed; it is NOT an economic cut. Other rules unchanged: NOT CapEx cutting as a de-risk \u2014 dollars remain enormous, the SIGNAL is the growth-rate surprise reaching zero; contrarian-direction ('we are done building \u2014 thanks Nvidia, Micron, SK Hynix'), never good news; a company leaves the tally only by re-ACCELERATING >10% above its prior guidance on a subsequent print; deep hyperscaler cuts also feed Tier 4 context but this signal persists.",
       "current_status": "Partially fired",
-      "where_we_stand": "Guidance ledger (deterministic, 4 companies): \u2022 Microsoft: stable [+1] \u2014 FY27 $175B (accounting basis change, finance\u2192operating lease; investment unchanged), print 2026-08-07, -7.9% vs prior $190B basis \u2022 Alphabet: accelerating [-1] \u2014 CY2027 'increase significantly' above 2026 ($195-205B), print 2026-10-30 (Q4 call); no specific 2027 number provided \u2022 Amazon: accelerating [-1]\u2026",
-      "latest_developments": "Amazon Q4 transcript: 2027 CapEx 'meaningfully higher' than $220B \u2014 directional raise but no specific figure; no ledger update. Meta Q4: 2026 guidance narrowed to $135-145B (lower end raised $5B). Alphabet Q4: 2027 'increase significantly.'\u2026",
+      "where_we_stand": "Partially fired. Ledger state as of last hyperscaler prints (Aug 7-11, 2026): Microsoft: stable +1 (FY27 $175B, accounting basis change, investment unchanged, print 2026-08-07). Meta: stable +1 (CY2026 $137.5B reiterated within \u00b15% of prior, print 2026-08-07). Amazon: accelerating -1 (CY2026 $220B, +10% vs prior $200B, print 2026-08-11). Alphabet: accelerating -1\u2026",
+      "latest_developments": "No new hyperscaler guidance prints today. Dell Q3 2027 call mentions strong AI demand but contains no MSFT/GOOGL/AMZN/META CapEx guidance. Amazon Q4 2026 and Alphabet Q4 2026 transcripts (from QoQ diffs) both show acceleration language\u2026",
       "relevant_links": [
         {
-          "title": "Amazon Q4 2026 transcript",
-          "url": "https://finance.yahoo.com/quote/AMZN/earnings-calls/"
+          "title": "JPMorgan projects $450B AI bond surge in 2027 as spending growth nears peak",
+          "url": "https://news.google.com/rss/articles/CBMidkFVX3lxTE5qMVZ1UGY3WldkLWRuOEIwLWZjS0lRZjRSQ20zNUU1WXV4MEN2azZwTzNvdENhUGJTclJfX2lmdS1JRUVvZjBhVWlRTGJTTml0UzJZZHp3T1lDbGRXbHBRdTF5ZmhEUjgwemVOZFRoOUNJeVJUb3c"
         },
         {
-          "title": "Meta Q4 2026 transcript",
-          "url": "https://finance.yahoo.com/quote/META/earnings-calls/"
+          "title": "Dell Q3 2027 earnings call",
+          "url": "https://finance.yahoo.com/quote/DELL/earnings/DELL-Q3-2027-earnings_call-742337.html"
         }
       ],
       "change_vs_prior": null
