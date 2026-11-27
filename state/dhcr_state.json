@@ -1,6 +1,6 @@
 {
   "current": {
-    "computed_at_iso": "2026-11-26T17:20:19.475702",
+    "computed_at_iso": "2026-11-27T16:58:36.489640",
     "frontier_kv_kb_per_token": 4.8444,
     "frontier_kv_gb_per_1m_tokens": 4.62,
     "frontier_model_name": "DeepSeek V4 Flash",
@@ -91,7 +91,7 @@
     "status_reasoning": "Position score 52 in transition zone (30-65) but volume trajectory bullish \u2014 enterprise demand pulling toward HBM. Hold positive read.",
     "narrative_summary": "Frontier KV: 4.8 KB/tok (4.6 GB per 1M tokens) on DeepSeek V4 Flash. Operative context (volume-weighted across 5 categories): ~49K tokens. Workload-implied cell sits in LPDDR/HBM zone; market-deployed cell (+1 Y-band anticipation premium) sits in HBM/GDDR zone. Position score: 52/100. Volume index: 80 (May 2026 = 100). Composite HBM bit demand: 42. Status: Not fired.",
     "bull_case_summary": "BULL CASE: enterprise agentic adoption ignites. Today enterprise vertical category is 50% volume share at 65K context. If enterprise share grows to 25-30% (driven by Microsoft Copilot Enterprise, Hebbia, Harvey, Anthropic Claude Enterprise, custom F500 deployments) AND context per session grows to 3-5M as efficiency unlocks the economic frontier, operative context shifts right from C2 to C4. Combined with the +1 anticipation premium, that places market-deployed cell deep in HBM territory (score 70-85). Volume index simultaneously growing 5-10x on the enterprise expansion \u2192 composite HBM bit demand 10-15x today's baseline. This is the SK Hynix bull case quantified: efficiency \u00d7 HBM unlocks 42M-token capacity per accelerator, enterprise fills it.",
-    "bear_case_summary": "BEAR CASE: enterprise agentic stalls. KV efficiency improves on schedule (MLA + INT4 + sliding window getting frontier to ~3 KB/tok), but enterprise vertical share never breaks 10% and context plateaus around 1M. Operative context stays in C3 region while KV efficiency pulls Y-axis down to R1. Workload-implied cell lands at R1C3 (score 33, LPDDR/heterogeneous zone). Even with anticipation premium, market-deployed cell sits at R2C3 \u2014 score drops below 50, status flips to Partially fired. The market broadens to LPDDR/CXL warm tier and SSD/NAND cold tier; Samsung, Micron and Chinese suppliers gain at SK Hynix's expense. Watch for: substitution news from Cerebras / Groq / Etched winning major contracts, hyperscaler earnings explicitly mentioning decode moving off HBM, or HBM contract prices rolling over. Today's sanity check shows zero substitution evidence \u2014 the bear case is NOT materializing as of 2026-11-26.",
+    "bear_case_summary": "BEAR CASE: enterprise agentic stalls. KV efficiency improves on schedule (MLA + INT4 + sliding window getting frontier to ~3 KB/tok), but enterprise vertical share never breaks 10% and context plateaus around 1M. Operative context stays in C3 region while KV efficiency pulls Y-axis down to R1. Workload-implied cell lands at R1C3 (score 33, LPDDR/heterogeneous zone). Even with anticipation premium, market-deployed cell sits at R2C3 \u2014 score drops below 50, status flips to Partially fired. The market broadens to LPDDR/CXL warm tier and SSD/NAND cold tier; Samsung, Micron and Chinese suppliers gain at SK Hynix's expense. Watch for: substitution news from Cerebras / Groq / Etched winning major contracts, hyperscaler earnings explicitly mentioning decode moving off HBM, or HBM contract prices rolling over. Today's sanity check shows zero substitution evidence \u2014 the bear case is NOT materializing as of 2026-11-27.",
     "substitution_risk_notes": [
       "Cerebras WSE-3: estimated <1% AI compute share (Single-wafer chip with 44GB SRAM. Pure substitution case but limited share.)",
       "Groq LPU v2: estimated <1% AI compute share (Inference-only. Uses commodity DDR for capacity tier.)",
@@ -742,704 +742,17 @@
         "date": "2026-11-26",
         "operative_context_tokens": 48820,
         "band": "C2"
+      },
+      {
+        "date": "2026-11-27",
+        "operative_context_tokens": 48820,
+        "band": "C2"
       }
     ],
     "context_volume_proposal": null
   },
-  "saved_at_iso": "2026-11-26T17:20:19.646220",
+  "saved_at_iso": "2026-11-27T16:58:36.656866",
   "recent_snapshots": [
-    {
-      "computed_at_iso": "2026-10-07T13:51:19.482014",
-      "frontier_kv_kb_per_token": 4.8444,
-      "frontier_kv_gb_per_1m_tokens": 4.62,
-      "frontier_model_name": "DeepSeek V4 Flash",
-      "frontier_model_arch": "novel:CSA-HCA",
-      "kv_band_index": 2,
-      "kv_band_name": "R3",
-      "kv_band_label": "4-16 GB/1M tok",
-      "kv_intensity": 0.5,
-      "kv_yoy_change_pct": 0.0,
-      "operative_context_tokens": 48820,
-      "operative_context_kb": 230.96,
-      "context_band_index": 1,
-      "context_band_name": "C2",
-      "context_band_label": "32-200K",
-      "context_intensity": 0.3,
-      "context_categories": [
-        {
-          "key": "consumer_chat",
-          "label": "Consumer chat",
-          "context_tokens": 8500,
-          "volume_share_pct": 20.0,
-          "contribution_tokens": 1700,
-          "confidence": "high"
-        },
-        {
-          "key": "coding_agents",
-          "label": "Coding agents",
-          "context_tokens": 200000,
-          "volume_share_pct": 4.0,
-          "contribution_tokens": 8000,
-          "confidence": "high"
-        },
-        {
-          "key": "enterprise_vertical_agents",
-          "label": "Enterprise vertical agents",
-          "context_tokens": 65000,
-          "volume_share_pct": 50.0,
-          "contribution_tokens": 32500,
-          "confidence": "low"
-        },
-        {
-          "key": "developer_raw_api",
-          "label": "Developer raw API",
-          "context_tokens": 40000,
-          "volume_share_pct": 14.0,
-          "contribution_tokens": 5600,
-          "confidence": "medium"
-        },
-        {
-          "key": "other_creative_rag",
-          "label": "Other (RAG / creative / specialized)",
-          "context_tokens": 8500,
-          "volume_share_pct": 12.0,
-          "contribution_tokens": 1020,
-          "confidence": "medium"
-        }
-      ],
-      "workload_implied_cell": [
-        2,
-        1
-      ],
-      "workload_implied_zone": "LPDDR/HBM",
-      "workload_implied_zone_category": "HBM_HYBRID",
-      "market_deployed_cell": [
-        3,
-        1
-      ],
-      "market_deployed_zone": "HBM/GDDR",
-      "market_deployed_zone_category": "HBM_HYBRID",
-      "anticipation_gap_bands": 1,
-      "position_score": 52,
-      "enterprise_ai_run_rate_usd_b": 97.0,
-      "enterprise_ai_yoy_growth_pct": 235.09,
-      "nvidia_datacenter_yoy_growth_pct": 69.0,
-      "volume_index": 80.2,
-      "volume_trajectory": "bullish",
-      "hbm_bit_demand_index": 41.7,
-      "sanity_signal_substitution_news_count": 0,
-      "sanity_signal_substitution_threshold": 5,
-      "sanity_signal_hyperscaler_decode_mentions": 0,
-      "sanity_signal_hbm_price_trend": "rising",
-      "sanity_signal_lpddr_contract_direction": "no_data",
-      "sanity_check_confirms": 3,
-      "sanity_check_contradicts": 0,
-      "calibration_flag": false,
-      "status": "Not fired",
-      "status_color": "#C0DD97",
-      "status_reasoning": "Position score 52 in transition zone (30-65) but volume trajectory bullish \u2014 enterprise demand pulling toward HBM. Hold positive read.",
-      "narrative_summary": "Frontier KV: 4.8 KB/tok (4.6 GB per 1M tokens) on DeepSeek V4 Flash. Operative context (volume-weighted across 5 categories): ~49K tokens. Workload-implied cell sits in LPDDR/HBM zone; market-deployed cell (+1 Y-band anticipation premium) sits in HBM/GDDR zone. Position score: 52/100. Volume index: 80 (May 2026 = 100). Composite HBM bit demand: 42. Status: Not fired.",
-      "bull_case_summary": "BULL CASE: enterprise agentic adoption ignites. Today enterprise vertical category is 50% volume share at 65K context. If enterprise share grows to 25-30% (driven by Microsoft Copilot Enterprise, Hebbia, Harvey, Anthropic Claude Enterprise, custom F500 deployments) AND context per session grows to 3-5M as efficiency unlocks the economic frontier, operative context shifts right from C2 to C4. Combined with the +1 anticipation premium, that places market-deployed cell deep in HBM territory (score 70-85). Volume index simultaneously growing 5-10x on the enterprise expansion \u2192 composite HBM bit demand 10-15x today's baseline. This is the SK Hynix bull case quantified: efficiency \u00d7 HBM unlocks 42M-token capacity per accelerator, enterprise fills it.",
-      "bear_case_summary": "BEAR CASE: enterprise agentic stalls. KV efficiency improves on schedule (MLA + INT4 + sliding window getting frontier to ~3 KB/tok), but enterprise vertical share never breaks 10% and context plateaus around 1M. Operative context stays in C3 region while KV efficiency pulls Y-axis down to R1. Workload-implied cell lands at R1C3 (score 33, LPDDR/heterogeneous zone). Even with anticipation premium, market-deployed cell sits at R2C3 \u2014 score drops below 50, status flips to Partially fired. The market broadens to LPDDR/CXL warm tier and SSD/NAND cold tier; Samsung, Micron and Chinese suppliers gain at SK Hynix's expense. Watch for: substitution news from Cerebras / Groq / Etched winning major contracts, hyperscaler earnings explicitly mentioning decode moving off HBM, or HBM contract prices rolling over. Today's sanity check shows zero substitution evidence \u2014 the bear case is NOT materializing as of 2026-10-07.",
-      "substitution_risk_notes": [
-        "Cerebras WSE-3: estimated <1% AI compute share (Single-wafer chip with 44GB SRAM. Pure substitution case but limited share.)",
-        "Groq LPU v2: estimated <1% AI compute share (Inference-only. Uses commodity DDR for capacity tier.)",
-        "Etched Sohu: estimated <0.5% AI compute share (Speculative new entrant. Watch but not material yet.)"
-      ],
-      "operative_context_history": [
-        {
-          "date": "2026-05-25",
-          "operative_context_tokens": 47095,
-          "band": "C2"
-        },
-        {
-          "date": "2026-05-26",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-05-27",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-05-28",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-05-29",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-05-30",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-01",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-02",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-03",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-04",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-05",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-06",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-08",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-09",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-10",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-11",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-12",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-13",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-14",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-15",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-16",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-17",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-18",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-19",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-20",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-22",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-23",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-24",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-25",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-26",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-27",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-29",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-06-30",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-01",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-02",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-03",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-04",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-06",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-07",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-08",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-09",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-10",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-11",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-13",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-14",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-15",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-16",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-17",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-18",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-20",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-21",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-22",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-23",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-24",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-25",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-27",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-28",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-29",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-30",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-07-31",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-01",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-03",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-04",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-05",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-06",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-07",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-08",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-10",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-11",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-12",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-13",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-14",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-15",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-17",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-18",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-19",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-20",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-21",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-22",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-24",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-25",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-26",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-27",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-28",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-29",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-08-31",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-01",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-02",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-03",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-04",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-05",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-07",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-08",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-09",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-10",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-11",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-12",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-14",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-15",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-16",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-17",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-18",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-19",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-21",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-22",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-23",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-24",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-25",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-26",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-28",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-29",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-09-30",
-          "operative_context_tokens": 47690,
-          "band": "C2"
-        },
-        {
-          "date": "2026-10-01",
-          "operative_context_tokens": 48820,
-          "band": "C2"
-        },
-        {
-          "date": "2026-10-02",
-          "operative_context_tokens": 48820,
-          "band": "C2"
-        },
-        {
-          "date": "2026-10-03",
-          "operative_context_tokens": 48820,
-          "band": "C2"
-        },
-        {
-          "date": "2026-10-05",
-          "operative_context_tokens": 48820,
-          "band": "C2"
-        },
-        {
-          "date": "2026-10-06",
-          "operative_context_tokens": 48820,
-          "band": "C2"
-        },
-        {
-          "date": "2026-10-07",
-          "operative_context_tokens": 48820,
-          "band": "C2"
-        }
-      ],
-      "context_volume_proposal": null
-    },
     {
       "computed_at_iso": "2026-11-14T17:55:43.617164",
       "frontier_kv_kb_per_token": 4.8444,
@@ -9376,6 +8689,758 @@
         },
         {
           "date": "2026-11-26",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        }
+      ],
+      "context_volume_proposal": null
+    },
+    {
+      "computed_at_iso": "2026-11-27T16:58:36.489640",
+      "frontier_kv_kb_per_token": 4.8444,
+      "frontier_kv_gb_per_1m_tokens": 4.62,
+      "frontier_model_name": "DeepSeek V4 Flash",
+      "frontier_model_arch": "novel:CSA-HCA",
+      "kv_band_index": 2,
+      "kv_band_name": "R3",
+      "kv_band_label": "4-16 GB/1M tok",
+      "kv_intensity": 0.5,
+      "kv_yoy_change_pct": 0.0,
+      "operative_context_tokens": 48820,
+      "operative_context_kb": 230.96,
+      "context_band_index": 1,
+      "context_band_name": "C2",
+      "context_band_label": "32-200K",
+      "context_intensity": 0.3,
+      "context_categories": [
+        {
+          "key": "consumer_chat",
+          "label": "Consumer chat",
+          "context_tokens": 8500,
+          "volume_share_pct": 20.0,
+          "contribution_tokens": 1700,
+          "confidence": "high"
+        },
+        {
+          "key": "coding_agents",
+          "label": "Coding agents",
+          "context_tokens": 200000,
+          "volume_share_pct": 4.0,
+          "contribution_tokens": 8000,
+          "confidence": "high"
+        },
+        {
+          "key": "enterprise_vertical_agents",
+          "label": "Enterprise vertical agents",
+          "context_tokens": 65000,
+          "volume_share_pct": 50.0,
+          "contribution_tokens": 32500,
+          "confidence": "low"
+        },
+        {
+          "key": "developer_raw_api",
+          "label": "Developer raw API",
+          "context_tokens": 40000,
+          "volume_share_pct": 14.0,
+          "contribution_tokens": 5600,
+          "confidence": "medium"
+        },
+        {
+          "key": "other_creative_rag",
+          "label": "Other (RAG / creative / specialized)",
+          "context_tokens": 8500,
+          "volume_share_pct": 12.0,
+          "contribution_tokens": 1020,
+          "confidence": "medium"
+        }
+      ],
+      "workload_implied_cell": [
+        2,
+        1
+      ],
+      "workload_implied_zone": "LPDDR/HBM",
+      "workload_implied_zone_category": "HBM_HYBRID",
+      "market_deployed_cell": [
+        3,
+        1
+      ],
+      "market_deployed_zone": "HBM/GDDR",
+      "market_deployed_zone_category": "HBM_HYBRID",
+      "anticipation_gap_bands": 1,
+      "position_score": 52,
+      "enterprise_ai_run_rate_usd_b": 97.0,
+      "enterprise_ai_yoy_growth_pct": 235.09,
+      "nvidia_datacenter_yoy_growth_pct": 69.0,
+      "volume_index": 80.2,
+      "volume_trajectory": "bullish",
+      "hbm_bit_demand_index": 41.7,
+      "sanity_signal_substitution_news_count": 0,
+      "sanity_signal_substitution_threshold": 5,
+      "sanity_signal_hyperscaler_decode_mentions": 0,
+      "sanity_signal_hbm_price_trend": "rising",
+      "sanity_signal_lpddr_contract_direction": "no_data",
+      "sanity_check_confirms": 3,
+      "sanity_check_contradicts": 0,
+      "calibration_flag": false,
+      "status": "Not fired",
+      "status_color": "#C0DD97",
+      "status_reasoning": "Position score 52 in transition zone (30-65) but volume trajectory bullish \u2014 enterprise demand pulling toward HBM. Hold positive read.",
+      "narrative_summary": "Frontier KV: 4.8 KB/tok (4.6 GB per 1M tokens) on DeepSeek V4 Flash. Operative context (volume-weighted across 5 categories): ~49K tokens. Workload-implied cell sits in LPDDR/HBM zone; market-deployed cell (+1 Y-band anticipation premium) sits in HBM/GDDR zone. Position score: 52/100. Volume index: 80 (May 2026 = 100). Composite HBM bit demand: 42. Status: Not fired.",
+      "bull_case_summary": "BULL CASE: enterprise agentic adoption ignites. Today enterprise vertical category is 50% volume share at 65K context. If enterprise share grows to 25-30% (driven by Microsoft Copilot Enterprise, Hebbia, Harvey, Anthropic Claude Enterprise, custom F500 deployments) AND context per session grows to 3-5M as efficiency unlocks the economic frontier, operative context shifts right from C2 to C4. Combined with the +1 anticipation premium, that places market-deployed cell deep in HBM territory (score 70-85). Volume index simultaneously growing 5-10x on the enterprise expansion \u2192 composite HBM bit demand 10-15x today's baseline. This is the SK Hynix bull case quantified: efficiency \u00d7 HBM unlocks 42M-token capacity per accelerator, enterprise fills it.",
+      "bear_case_summary": "BEAR CASE: enterprise agentic stalls. KV efficiency improves on schedule (MLA + INT4 + sliding window getting frontier to ~3 KB/tok), but enterprise vertical share never breaks 10% and context plateaus around 1M. Operative context stays in C3 region while KV efficiency pulls Y-axis down to R1. Workload-implied cell lands at R1C3 (score 33, LPDDR/heterogeneous zone). Even with anticipation premium, market-deployed cell sits at R2C3 \u2014 score drops below 50, status flips to Partially fired. The market broadens to LPDDR/CXL warm tier and SSD/NAND cold tier; Samsung, Micron and Chinese suppliers gain at SK Hynix's expense. Watch for: substitution news from Cerebras / Groq / Etched winning major contracts, hyperscaler earnings explicitly mentioning decode moving off HBM, or HBM contract prices rolling over. Today's sanity check shows zero substitution evidence \u2014 the bear case is NOT materializing as of 2026-11-27.",
+      "substitution_risk_notes": [
+        "Cerebras WSE-3: estimated <1% AI compute share (Single-wafer chip with 44GB SRAM. Pure substitution case but limited share.)",
+        "Groq LPU v2: estimated <1% AI compute share (Inference-only. Uses commodity DDR for capacity tier.)",
+        "Etched Sohu: estimated <0.5% AI compute share (Speculative new entrant. Watch but not material yet.)"
+      ],
+      "operative_context_history": [
+        {
+          "date": "2026-05-25",
+          "operative_context_tokens": 47095,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-26",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-27",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-28",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-29",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-05-30",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-01",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-02",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-03",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-04",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-05",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-06",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-08",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-09",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-10",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-11",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-12",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-13",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-14",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-15",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-16",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-17",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-18",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-19",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-20",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-22",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-23",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-24",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-25",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-26",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-27",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-29",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-06-30",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-01",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-02",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-03",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-04",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-06",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-07",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-08",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-09",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-10",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-11",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-13",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-14",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-15",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-16",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-17",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-18",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-20",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-21",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-22",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-23",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-24",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-25",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-27",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-28",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-29",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-30",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-07-31",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-01",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-03",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-04",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-05",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-06",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-07",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-08",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-10",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-11",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-12",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-13",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-14",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-15",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-17",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-18",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-19",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-20",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-21",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-22",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-24",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-25",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-26",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-27",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-28",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-29",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-08-31",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-01",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-02",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-03",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-04",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-05",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-07",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-08",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-09",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-10",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-11",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-12",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-14",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-15",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-16",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-17",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-18",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-19",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-21",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-22",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-23",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-24",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-25",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-26",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-28",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-29",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-09-30",
+          "operative_context_tokens": 47690,
+          "band": "C2"
+        },
+        {
+          "date": "2026-10-01",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-10-02",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-10-03",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-10-05",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-10-06",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-10-07",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-14",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-16",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-17",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-18",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-19",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-20",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-21",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-23",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-24",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-25",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-26",
+          "operative_context_tokens": 48820,
+          "band": "C2"
+        },
+        {
+          "date": "2026-11-27",
           "operative_context_tokens": 48820,
           "band": "C2"
         }
